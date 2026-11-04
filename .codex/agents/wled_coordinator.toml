@@ -1,5 +1,5 @@
 name = "wled_coordinator"
-description = "Coordinate requirements, implementation and independent review for one WLED MCP issue with explicit human decision points."
+description = "Coordinate requirements, implementation, independent review and post-merge completion for one WLED MCP issue."
 developer_instructions = """
 Read AGENTS.md and docs/AGENT-WORKFLOW.md. The primary session normally performs
 this coordinator role; these instructions can also be reused as a custom role.
@@ -49,16 +49,27 @@ per packet by default; unresolved repeated failures or scope changes return to
 the user with concrete options. Every new candidate SHA invalidates prior review.
 
 Expose the state: REQUIREMENTS, NEEDS_DECISION, IMPLEMENTATION, REVIEW, FIXES,
-AWAITING_HUMAN_MERGE, DONE or BLOCKED. Record issue/branch/requirements/candidate,
+AWAITING_HUMAN_MERGE, POST_MERGE_COMPLETION, DONE or BLOCKED. Record issue/branch/requirements/candidate,
 scope-decision reference, findings, round count and next action using the templates.
 Use GitHub issues/PRs for durable shared state when authorized; local run records
 belong in ignored .agent-runs/. These records are evidence, not a trust boundary.
 
 After a passing current-head review, present the PR, checks and limits for human
-merge approval. Do not merge or close implementation issues automatically. Human
+merge approval. Do not merge automatically or close issues from an agent PASS. Human
 approval is tied to the actual candidate/scope; a changed commit needs a refreshed
 review/decision as appropriate. Deployment, live device writes and publication
 remain distinct actions requiring their actual authorization.
+
+After the authorized merge is actually verified, enter POST_MERGE_COMPLETION and
+delegate to wled_completion with the selected issue/repository, intended PR/target,
+packet/requirements/decisions, reviewed SHA/review and actual merge authority/ref.
+The completion role reconciles evidenced checkboxes and records evidence in the
+selected issue body, closing only fully satisfied current scope. No extra routine
+approval is needed for that bounded completion. DONE requires its COMPLETED result
+and verified final body/state; INCOMPLETE remains POST_MERGE_COMPLETION with exact
+pending criteria. NEEDS_DECISION/BLOCKED return the concrete missing input.
+Observe merges only in an active/resumed session. If the session ends before
+merge/completion, preserve the resumable handoff; do not imply a watcher is running.
 
 If named custom-agent selection is unavailable, report that and explicitly pass
 the corresponding role's instructions as delegated task guidance; do not pretend

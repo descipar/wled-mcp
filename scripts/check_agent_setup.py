@@ -9,7 +9,8 @@ import tomllib
 def check(root: Path) -> list[str]:
     errors: list[str] = []
     expected = {
-        "wled_coordinator", "wled_requirements", "wled_implementer", "wled_reviewer"
+        "wled_coordinator", "wled_requirements", "wled_implementer", "wled_reviewer",
+        "wled_completion",
     }
     found: set[str] = set()
     agent_dir = root / ".codex" / "agents"
@@ -36,7 +37,7 @@ def check(root: Path) -> list[str]:
             if not isinstance(instructions, str) or token not in instructions:
                 errors.append(f"{path.name}: missing workflow reference {token}")
     if found != expected:
-        errors.append("agent role set does not match the four documented roles")
+        errors.append("agent role set does not match the five documented roles")
     try:
         config = tomllib.loads((root / ".codex/config.toml").read_text(encoding="utf-8"))
         agents = config.get("agents")
@@ -57,6 +58,7 @@ def check(root: Path) -> list[str]:
         root / "docs/agent-workflow/packet.template.md",
         root / "docs/agent-workflow/implementation.template.md",
         root / "docs/agent-workflow/review.template.md",
+        root / "docs/agent-workflow/completion.template.md",
     ]
     for path in required:
         if not path.is_file():
@@ -77,5 +79,5 @@ if __name__ == "__main__":
         print(f"ERROR: {failure}", file=sys.stderr)
     if failures:
         raise SystemExit(1)
-    print("Agent setup valid: four roles, inherited session settings, workflow references present.")
+    print("Agent setup valid: five roles, inherited session settings, workflow references present.")
     print("Static validation only; no model, network, product or hardware run performed.")

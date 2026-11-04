@@ -49,6 +49,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-003 | Project / transport scope | Support both Streamable HTTP and client-managed stdio via uvx, sharing the WLED tool/domain contract. | Confirmed human scope instruction, transport discussion, 2026-11-04; [requirements](REQUIREMENTS.md), [issue #14](https://github.com/descipar/wled-mcp/issues/14) |
 | DEC-004 | Stage 3 | Named zones, temporary signals, static previews, lighting explanations and effect-property search belong to stage 3 and do not block stage-2 publication. | Confirmed human stage assignment, roadmap discussion, 2026-11-04; [stage-3 roadmap](STAGE-3.md), [tracker #26](https://github.com/descipar/wled-mcp/issues/26) |
 | DEC-005 | Project documentation / issues | Use neutral roles and synthetic examples. Exclude personal names, private hostnames and installation-specific personal context unless explicitly requested. | Existing governing [AGENTS.md](../AGENTS.md) rule, recorded 2026-11-04 |
+| DEC-006 | Workflow | Add an agent responsible for completing issue checklists after merge. | Confirmed human instruction, post-merge workflow discussion, 2026-11-04; [issue #34](https://github.com/descipar/wled-mcp/issues/34) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -56,6 +57,30 @@ The conversation has no source permalink available in these files. PR/issue link
 locate the durable project restatement, not an invented original-message URL.
 The entries are active only within their described scope. A later human decision
 can explicitly amend them.
+
+### DEC-006 — Post-merge issue completion
+
+- Status: active workflow intent; implementation and its merge remain subject to
+  the normal branch, independent review and human merge process.
+- Authority/source: human request in the current project conversation on
+  2026-11-04 following observation that PR #33 was merged while issue #2 remained
+  open with unchecked criteria. No source-message permalink is available;
+  [issue #34](https://github.com/descipar/wled-mcp/issues/34) records the work scope.
+- Scope/decision: add an agent responsible for post-merge issue/checklist
+  completion. This is a workflow change, not authorization to implement the WLED
+  backlog, merge future PRs, deploy, change devices or publish.
+- Conditions: use actual merged work and acceptance evidence under the governing
+  project rules. A merge or agent verdict does not prove unrelated requirements.
+  Detailed handoff, idempotency and issue-state policies in PM-01–06 are technical
+  implementation choices, not separately supplied human decisions.
+- Rationale supplied: issue completion should follow merge; no further rationale
+  supplied. Supersedes no earlier recorded human decision; refines the existing
+  workflow's missing post-merge handoff.
+- Affected: PM-01–06; completion/coordinator roles, workflow, report template and
+  setup checker. Coordinator propagates this ID with the requirements packet to
+  implementer and reviewer; its recording is not evidence of a live completion run.
+- Revalidation: changed scope, missing acceptance evidence or a different candidate
+  requires reassessment; no bounded operation approval becomes standing authority.
 
 ## Still unresolved
 
