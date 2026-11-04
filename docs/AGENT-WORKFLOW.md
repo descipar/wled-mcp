@@ -28,24 +28,22 @@ Source, checked 2026-11-04: [official Codex subagent documentation](https://lear
 
 ## Start from a normal Codex session
 
-Open this checkout in Codex. Use this kickoff prompt for a requirements-only run:
+Open this checkout in Codex. One sentence starts the defined issue workflow:
 
 ```text
-Act as the primary coordinator for WLED MCP issue #2.
-Read AGENTS.md, docs/AGENT-WORKFLOW.md and the developer_instructions in
-.codex/agents/wled_coordinator.toml as task guidance.
-Delegate requirements analysis to wled_requirements.
-Prepare a work packet only; do not implement or merge anything yet.
+Implement issue #2 and follow the defined workflow.
 ```
 
-When implementation is actually desired, use an explicit scope such as:
+AGENTS.md routes issue implementation to this workflow by default. The main
+session reads the coordinator role, retrieves the current issue/dependencies,
+derives the stage, delegates requirements/implementation/review and presents the
+reviewed PR for the human merge decision. The user does not need to repeat role
+names, file paths, test steps, stage or existing merge rules in every request.
+
+For a requirements-only run, narrow the request explicitly:
 
 ```text
-Coordinate implementation of issue #2 within its existing scope.
-Use the repository workflow and roles: wled_requirements, wled_implementer and
-wled_reviewer. Resolve material contract questions with me; perform routine
-implementation and mocked tests autonomously. Present the reviewed PR for my
-merge decision. Do not deploy, change physical devices or publish packages.
+Prepare only the requirements for issue #2 using the defined workflow.
 ```
 
 Only the issue identifier is needed; the coordinator derives stage context from
@@ -54,16 +52,14 @@ evidence in the packet. Ask only for conflicting relevant metadata or genuinely
 unclear scope, not for an unambiguous stage. Tooling issues outside the product
 roadmap can be recorded as cross-stage without blocking otherwise clear work.
 
-A minimal implementation kickoff is:
-
-```text
-Implement issue #2 using the repository agent workflow.
-Present the independently reviewed PR for my merge decision.
-```
-
 Substitute the issue deliberately; these examples are not implementation
 authorization from merely reading this file. Already accepted scope decisions
 remain valid and should not be requested again without a material change.
+
+An actual implementation request authorizes work within that issue plus routine
+tests and a reviewable PR. It does not automatically merge the PR, deploy services,
+change physical devices or publish packages. Those boundaries are defined here,
+not extra wording the user must append to the kickoff sentence.
 
 The primary session is the coordinator so it can talk directly to the human.
 Reading its role file is explicit guidance, not a claim that a root-session
