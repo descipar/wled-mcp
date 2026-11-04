@@ -10,6 +10,8 @@ The confirmed direction is to make the project publicly available eventually and
 
 Stage 1 delivers the working server, named devices, typed controls/layouts, persistent presets, both transports and actual acceptance evidence. Stage 2 builds on that foundation; it does not silently add every future feature to stage 1's completion criteria. Design/docs/release preparation can happen in parallel, but a public stable release requires the relevant stage-1 evidence.
 
+The five later ideas—named physical zones, temporary signals, static SVG previews, evidence-based lighting explanations and effect-property search—belong to [stage 3](STAGE-3.md), tracker [#26](https://github.com/descipar/wled-mcp/issues/26), rather than this stage's launch criteria.
+
 ## Product judgment and priorities
 
 The most useful next features are **setup and diagnosis**, **groups/scenes**, and **preset/playlist workflows**. Advanced CCT/2D support follows demonstrated device needs. Distribution, compatibility and maintenance are first-class release work: a catalog entry alone does not make installation reliable.

@@ -66,3 +66,7 @@ Requirement IDs are linked in the table and issue bodies; detailed expected test
 ## Stage 2 — public project and product extensions
 
 [Tracker #15](https://github.com/descipar/wled-mcp/issues/15) and child issues #16–#25 form a separate `stage:2` backlog. See [the roadmap and issue map](STAGE-2.md) for proposed Launch versus Should priorities and [marketplace research](MARKETPLACE.md) for distinct submission paths. Stage-1 #1 does not wait for every stage-2 feature. Public stable launch waits for relevant stage-1 evidence; stage-2 preparation can proceed earlier.
+
+## Stage 3 — lighting experience and agent usability
+
+[Tracker #26](https://github.com/descipar/wled-mcp/issues/26) owns five `stage:3` issues: [zones #27](https://github.com/descipar/wled-mcp/issues/27), [temporary signals #28](https://github.com/descipar/wled-mcp/issues/28), [static previews #29](https://github.com/descipar/wled-mcp/issues/29), [lighting explanations #30](https://github.com/descipar/wled-mcp/issues/30) and [effect search #31](https://github.com/descipar/wled-mcp/issues/31). See [STAGE-3.md](STAGE-3.md) for contracts/dependencies and acceptance scenarios. These do not block stage-2 launch.

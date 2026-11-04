@@ -7,6 +7,7 @@
 - Keep documentation and issues impersonal: use neutral roles and synthetic examples. Do not include personal names, private hostnames or details of an individual installation unless explicitly requested. Actual repository/issue URLs remain valid project references.
 - Start with README.md and docs/AGENT-HANDOFF.md. Use GitHub issues and requirement IDs for scope and progress.
 - Stage 1 is tracked by #1; future product/public-release work is tracked separately by #15 and docs/STAGE-2.md. Prepare public-ready artifacts and listing drafts when commissioned, but do not infer a visibility change, license choice, package publication or external submission from the roadmap alone.
+- The five additional usability features are stage 3, tracked by #26 and docs/STAGE-3.md. They do not block stage-2 publication; do not merge the stages' acceptance criteria implicitly.
 - Define scope from WLED capabilities and this project's requirements. Do not make features conditional on what a separate home-automation integration already provides.
 - The original assignment created specifications and a backlog only. A later implementation instruction authorizes code work; it does not implicitly authorize deployment to the home hub or physical lighting changes. Follow the actual later instruction and do not ask again for actions already authorized.
 

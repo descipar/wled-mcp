@@ -12,6 +12,8 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 
 **Stage 2:** plan a reusable public project with additional WLED workflows, distributable releases and MCPHub marketplace discovery. See the [stage-2 roadmap](docs/STAGE-2.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). The repository remains private; public release and external submissions have not been performed.
 
+**Stage 3:** named lighting zones, temporary signals, static layout previews, explanations of ineffective changes and property-based effect search. See the [stage-3 roadmap](docs/STAGE-3.md) and [tracker #26](https://github.com/descipar/wled-mcp/issues/26). These extensions do not block stage-2 publication.
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md).
@@ -33,6 +35,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Sources](docs/SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Stage 2](docs/STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
+| [Stage 3](docs/STAGE-3.md) | Five additional usability features, dependencies and acceptance scenarios |
 | [Marketplace plan](docs/MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
 | [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual home-network configuration |
 | [Stdio hub example](examples/mcphub.example.json) | Proposed uvx entry with separate arguments and placeholder artifact path |
@@ -55,3 +58,5 @@ Repository: https://github.com/descipar/wled-mcp
 Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with thirteen child issues covering contract, both transports, implementation, validation, integration and optional scope. Start implementation with [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2).
 
 Future public/product work has its own [stage-2 tracker #15](https://github.com/descipar/wled-mcp/issues/15), with ten child issues (#16–#25), all labeled `stage:2`. These do not silently expand stage-1 acceptance.
+
+Additional usability features have a separate [stage-3 tracker #26](https://github.com/descipar/wled-mcp/issues/26), with five child issues (#27–#31), all labeled `stage:3`.
