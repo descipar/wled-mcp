@@ -1,13 +1,13 @@
 """Exercise shared role synchronization without models, network or LAN devices."""
 
-from contextlib import redirect_stderr, redirect_stdout
 import io
 import json
-from pathlib import Path
 import sys
 import tempfile
 import tomllib
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
@@ -26,10 +26,11 @@ class SyncAgentsTests(unittest.TestCase):
             self.write_source(stem, "A synthetic role", f"Read AGENTS.md.\nWork on {stem}.\n")
 
     def write_source(self, stem, description, body):
+        encoded_description = json.dumps(description, ensure_ascii=False).replace("\x7f", "\\u007f")
         text = (
             "+++\n"
             f"name = {json.dumps('wled_' + stem)}\n"
-            f"description = {json.dumps(description, ensure_ascii=False)}\n"
+            f"description = {encoded_description}\n"
             "+++\n" + body
         )
         (self.root / "agents" / f"{stem}.md").write_bytes(text.encode("utf-8"))
@@ -37,7 +38,8 @@ class SyncAgentsTests(unittest.TestCase):
     def snapshot(self):
         return {
             str(path.relative_to(self.root)): (path.read_bytes(), path.stat().st_mtime_ns)
-            for path in self.root.rglob("*") if path.is_file()
+            for path in self.root.rglob("*")
+            if path.is_file()
         }
 
     def test_native_content_roundtrips_with_escaping_and_delimiters(self):
@@ -48,9 +50,10 @@ class SyncAgentsTests(unittest.TestCase):
         codex = tomllib.loads(
             (self.root / ".codex/agents/wled_reviewer.toml").read_text(encoding="utf-8")
         )
-        self.assertEqual(codex, {
-            "name": "wled_reviewer", "description": description, "developer_instructions": body
-        })
+        self.assertEqual(
+            codex,
+            {"name": "wled_reviewer", "description": description, "developer_instructions": body},
+        )
         claude = (self.root / ".claude/agents/wled_reviewer.md").read_bytes().decode("utf-8")
         self.assertTrue(claude.startswith("---\n"))
         header, actual_body = claude[4:].split("\n---\n", 1)
@@ -58,7 +61,8 @@ class SyncAgentsTests(unittest.TestCase):
         # scalar values, which can be independently decoded with stdlib JSON.
         metadata = {
             key: json.loads(value.strip())
-            for line in header.splitlines() if not line.startswith("#")
+            for line in header.splitlines()
+            if not line.startswith("#")
             for key, value in [line.split(":", 1)]
         }
         self.assertEqual(metadata, {"name": "wled_reviewer", "description": description})
@@ -73,6 +77,27 @@ class SyncAgentsTests(unittest.TestCase):
         expected_body = "Read AGENTS.md.\nWork on reviewer.\n"
         self.assertEqual(sync_agents.load_roles(self.root)[3].instructions, expected_body)
         self.assertNotIn(b"\r\n", (self.root / ".claude/agents/wled_reviewer.md").read_bytes())
+        self.assertEqual(sync_agents.sync(self.root, check=True), [])
+
+    def test_yaml_forbidden_literals_are_escaped_with_exact_metadata_fidelity(self):
+        codepoints = (*range(0x7F, 0xA0), 0xFFFE, 0xFFFF)
+        description = "Controls: " + "".join(chr(value) for value in codepoints) + " 🦉"
+        self.write_source("completion", description, "Full synthetic prompt.\n")
+        sync_agents.sync(self.root)
+        claude = (self.root / ".claude/agents/wled_completion.md").read_text(encoding="utf-8")
+        header = claude[4:].split("\n---\n", 1)[0]
+        description_line = next(
+            line for line in header.splitlines() if line.startswith("description:")
+        )
+        self.assertEqual(json.loads(description_line.split(":", 1)[1]), description)
+        for value in codepoints:
+            self.assertNotIn(chr(value), header)
+            self.assertIn(f"\\u{value:04x}", header)
+        self.assertIn("🦉", header)  # No surrogate-pair downgrade for non-BMP text.
+        codex = tomllib.loads(
+            (self.root / ".codex/agents/wled_completion.toml").read_text(encoding="utf-8")
+        )
+        self.assertEqual(codex["description"], description)
         self.assertEqual(sync_agents.sync(self.root, check=True), [])
 
     def test_regeneration_is_byte_identical_and_does_not_rewrite_files(self):
@@ -112,7 +137,7 @@ class SyncAgentsTests(unittest.TestCase):
             '+++\nname = "wled_completion"\ndescription = "x"\nmodel = "forced"\n+++\nBody\n',
             '+++\nname = "wled_completion"\ndescription = 12\n+++\nBody\n',
             '+++\nname = "wled_completion"\ndescription = "x"\n+++\n  \n',
-            'not a role file\n',
+            "not a role file\n",
         )
         for bad in bad_inputs:
             with self.subTest(bad=bad):
@@ -138,8 +163,13 @@ class SyncAgentsTests(unittest.TestCase):
         self.assertEqual(self.snapshot(), before)
 
     def test_unrelated_files_are_preserved(self):
-        files = ("agents/README.md", "agents/private.txt", ".codex/agents/other.toml",
-                 ".claude/agents/other.md", "elsewhere.txt")
+        files = (
+            "agents/README.md",
+            "agents/private.txt",
+            ".codex/agents/other.toml",
+            ".claude/agents/other.md",
+            "elsewhere.txt",
+        )
         for relative in files:
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)

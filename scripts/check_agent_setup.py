@@ -1,9 +1,9 @@
 """Validate repository agent definitions without launching models or network calls."""
 
-from pathlib import Path
 import re
 import sys
 import tomllib
+from pathlib import Path
 
 from sync_agents import SOURCE_STEMS, sync
 
@@ -16,7 +16,10 @@ def check(root: Path) -> list[str]:
     except (OSError, ValueError, UnicodeError) as exc:
         errors.append(f"shared role sources: {exc}")
     expected = {
-        "wled_coordinator", "wled_requirements", "wled_implementer", "wled_reviewer",
+        "wled_coordinator",
+        "wled_requirements",
+        "wled_implementer",
+        "wled_reviewer",
         "wled_completion",
     }
     found: set[str] = set()
@@ -54,7 +57,9 @@ def check(root: Path) -> list[str]:
             or type(agents.get("enabled")) is not bool
             or type(agents.get("max_concurrent_threads_per_session")) is not int
         ):
-            errors.append("project config must only enable agents and cap child concurrency at three")
+            errors.append(
+                "project config must only enable agents and cap child concurrency at three"
+            )
     except (OSError, tomllib.TOMLDecodeError) as exc:
         errors.append(f"project config: {exc}")
     required = [
@@ -96,5 +101,5 @@ if __name__ == "__main__":
         print(f"ERROR: {failure}", file=sys.stderr)
     if failures:
         raise SystemExit(1)
-    print("Agent setup valid: five shared roles, synchronized Codex/Claude adapters, inherited settings.")
+    print("Agent setup valid: five shared roles, synchronized adapters, inherited settings.")
     print("Static validation only; no model, network, product or hardware run performed.")
