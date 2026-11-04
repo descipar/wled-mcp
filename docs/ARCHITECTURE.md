@@ -43,10 +43,10 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 | Python, async HTTP, official MCP SDK | Proposed | Fits existing hub ecosystem and small adapter scope; choose maintained compatible versions at bootstrap |
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |
 | Streamable HTTP plus stdio in v1 | Confirmed scope update | Independent service mode plus client-managed uvx mode; identical tools and domain layer |
-| One HTTP worker, SDK-managed sessions/stateless strategy | Proposed baseline | Shared process-wide per-device locks protect concurrent clients; finalize lifecycle and endpoint access in #2/#14 |
+| One HTTP worker, SDK stateless JSON responses | Issue-2 technical design | No session IDs/replay store; shared process-wide resources and locks; bounded drain, access checks before device work; implement/test in #14 |
 | Explicit named inventory | Proposed | Predictable target selection; avoids Docker multicast/mDNS assumptions |
 | No arbitrary caller-supplied hosts | Proposed | Limits tool targeting to the configured installation and removes accidental host selection |
-| Separate segment patch and layout replacement | Proposed core contract | Prevents stale fields and unintended deletion; finalize missing-field behavior before code |
+| Separate segment patch and layout replacement | Issue-2 technical design | Preserve existing omitted state; new IDs use explicit defaults; reject unrepresentable ID/preservation plans; see contract and decisions |
 | Typed operations before optional raw state | Proposed | Clear agent schemas and validation; raw tool must not bypass domain rules |
 | Direct implementation rather than upstream fork | Proposed | Existing candidates have useful ideas but material limitations; no upstream code copied |
 | No public license selected | Open | User requested private work; future reuse/publication needs a decision |
@@ -61,7 +61,7 @@ Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`
 
 Build the same tool/domain graph for either explicitly selected transport. In HTTP mode create shared resources once per process, not per request/session; all sessions share the same device locks and backup store. Use the maintained SDK for `/mcp`, protocol negotiation and session handling. One worker is the v1 baseline; multiple worker processes need cross-process coordination before they can provide equivalent write guarantees.
 
-CLI stdio is the default and opens no listener; `--transport streamable-http` starts the independent service with explicit bind/port options. HTTP defaults to loopback. Private container-network binding, Host/Origin allowlists, runtime credential injection and optional authenticated proxy termination are deployment configuration. Protect the endpoint independently of the hub, without inventing a new OAuth product. Prefer SDK-supported stateless request handling if compatible with required tools; document the selected lifecycle and test reconnect/shutdown without mutation replay.
+CLI stdio is the default and opens no listener; `--transport streamable-http` starts the independent service with explicit bind/port options. HTTP defaults to loopback. Private container-network binding and the actual allowlist/secret values remain deployment configuration. The contract fixes loopback port 8000, exact allowlists, mandatory auth on every method and fail-closed startup; no HTTP credential is required for stdio. Protect the endpoint independently of the hub, without inventing a new OAuth product. Use SDK-supported stateless JSON responses with no session IDs or replay store, as specified in [the transport contract](TOOL-CONTRACT.md#transport-access-and-lifecycle). Test initialization, auth/Host/Origin rejection, reconnect and bounded shutdown without replay. #3 selects a compatible SDK; #14 implements this lifecycle.
 
 Reuse one managed async HTTP client with bounded connections, close it on process exit, and use operation deadlines. Reads can use a single bounded retry for transient transport failures; parse errors and invalid requests are not retry candidates. Writes are never automatically retried.
 
@@ -71,7 +71,7 @@ Do not claim transactions. Other WLED API clients and another server process do 
 
 ## Backups
 
-Use JSON snapshots with a versioned envelope, generated backup ID, UTC timestamp, configured device ID and relevant firmware/preset metadata. Write a temporary file in the same directory, flush/close and atomically replace the destination; snapshot filenames derive from validated IDs, never unsanitized user names. Preserve unknown preset fields. Validate snapshots before considering backup successful.
+Use the [version-1 snapshot envelope](TOOL-CONTRACT.md#snapshot-and-explicit-restoration), generated backup ID, UTC timestamp, configured device ID and relevant firmware/preset metadata. Single-entry restoration execution remains Should until a safe storage-only path is verified; exporting a snapshot is not a restoration test. Write a temporary file in the same directory, flush/close and atomically replace the destination; snapshot filenames derive from validated IDs, never unsanitized user names. Preserve unknown preset fields. Validate snapshots before considering backup successful.
 
 Proposed retention is 20 snapshots per controller, configurable; prune only valid older snapshot files in the resolved backup directory, only after a new snapshot is durable, and never remove the snapshot needed by the operation in progress. Data remains outside version control. If the path is not persistent/writable, destructive preset operations fail before touching WLED. Restore is explicit; a failed write does not trigger an automatic compensating mutation.
 

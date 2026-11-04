@@ -1,0 +1,229 @@
+{
+  "kind": "synthetic_contract_case",
+  "acceptance": [
+    "C2-07",
+    "C2-08",
+    "C2-10"
+  ],
+  "scenarios": [
+    "T11",
+    "T13"
+  ],
+  "persistent_before": {
+    "0": {},
+    "1": {
+      "n": "Existing",
+      "on": true,
+      "bri": 80
+    },
+    "2": {
+      "vendor_extension": {
+        "opaque": true
+      }
+    },
+    "3": null
+  },
+  "capture_reference": {
+    "on": true,
+    "brightness": 140,
+    "transition_ms": 700,
+    "main_segment_id": 0,
+    "segments": [
+      {
+        "id": 0,
+        "start": 0,
+        "stop": 30,
+        "on": true,
+        "brightness": 100,
+        "effective_brightness": 100,
+        "colors": [
+          [
+            10,
+            20,
+            30
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "effect_id": 0,
+        "palette_id": 0,
+        "speed": 128,
+        "intensity": 128,
+        "name": "Base"
+      },
+      {
+        "id": 2,
+        "start": 30,
+        "stop": 60,
+        "on": true,
+        "brightness": 180,
+        "effective_brightness": 180,
+        "colors": [
+          [
+            255,
+            80,
+            0
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ]
+        ],
+        "effect_id": 1,
+        "palette_id": 0,
+        "speed": 90,
+        "intensity": 70,
+        "name": "Edge"
+      }
+    ]
+  },
+  "request": {
+    "device_id": "desk",
+    "name": "Evening"
+  },
+  "planned_wire_storage_controls": {
+    "psave": 3,
+    "n": "Evening",
+    "ib": true,
+    "sb": true,
+    "sc": false
+  },
+  "observations": [
+    "The exact ID 3 is still free at the immediate pre-dispatch recheck.",
+    "First persistent read lacks ID 3; a later read within the same deadline matches name and all included normalized capture fields."
+  ],
+  "expected": {
+    "schema_version": 1,
+    "ok": true,
+    "operation": "save_preset",
+    "device_id": "desk",
+    "dry_run": false,
+    "application": "applied",
+    "verification": "verified",
+    "data": {
+      "preset_id": 3,
+      "name": "Evening",
+      "captured_state": {
+        "on": true,
+        "brightness": 140,
+        "transition_ms": 700,
+        "main_segment_id": 0,
+        "segments": [
+          {
+            "id": 0,
+            "start": 0,
+            "stop": 30,
+            "on": true,
+            "brightness": 100,
+            "effective_brightness": 100,
+            "colors": [
+              [
+                10,
+                20,
+                30
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "effect_id": 0,
+            "palette_id": 0,
+            "speed": 128,
+            "intensity": 128,
+            "name": "Base"
+          },
+          {
+            "id": 2,
+            "start": 30,
+            "stop": 60,
+            "on": true,
+            "brightness": 180,
+            "effective_brightness": 180,
+            "colors": [
+              [
+                255,
+                80,
+                0
+              ],
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                6
+              ]
+            ],
+            "effect_id": 1,
+            "palette_id": 0,
+            "speed": 90,
+            "intensity": 70,
+            "name": "Edge"
+          }
+        ]
+      },
+      "postconditions": [
+        "ID 0 excluded; nonempty unknown ID 2 stays occupied.",
+        "IDs 1 and 2 remain unchanged in observed persistent data.",
+        "No live state fields or activation controls were sent.",
+        "Persistence verified against capture, not only ID/name."
+      ]
+    },
+    "warnings": [
+      "Capture occurs asynchronously on firmware; external changes can race."
+    ],
+    "error": null
+  },
+  "collision_request": {
+    "device_id": "desk",
+    "preset_id": 1,
+    "name": "Evening"
+  },
+  "collision_outcome": {
+    "schema_version": 1,
+    "ok": false,
+    "operation": "save_preset",
+    "device_id": "desk",
+    "dry_run": false,
+    "application": "not_attempted",
+    "verification": "not_requested",
+    "data": {},
+    "warnings": [],
+    "error": {
+      "code": "PRESET_CONFLICT",
+      "message": "Preset 1 is occupied and overwrite is false.",
+      "read_retryable": false,
+      "write_retryable": false,
+      "reconciliation": "Inspect preset 1; explicitly choose overwrite=true only when replacement is intended."
+    }
+  },
+  "additional_assertions": [
+    "A newly occupied allocated ID fails instead of silently reallocating.",
+    "Overwrite=true without an explicit ID is invalid.",
+    "Backup failure prevents overwrite/delete.",
+    "No supplied state input or apply-save-restore workaround."
+  ]
+}

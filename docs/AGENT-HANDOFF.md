@@ -23,7 +23,7 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
 2. Confirm scope from the new user instruction. Distinguish implementation, installation, hub deployment and hardware writes.
-3. Finalize patch-versus-replacement missing-field behavior and preset-save semantics in the contract issue. Read official WLED API documentation for the observed firmware; do not infer behavior solely from the reviewed candidate projects.
+3. Read the issue-2 [contract](TOOL-CONTRACT.md), [scoped decisions](decisions/issue-2.md) and [synthetic examples](../examples/contracts/README.md). Preserve existing omitted state, explicitly default new IDs, verify firmware representability and persistently verify saves. Recheck the pinned source profile against observed firmware; source review is not hardware acceptance. Supplied-state save and restore execution remain deferred Should work.
 4. Bootstrap one package with `--transport stdio|streamable-http`, default listener-free stdio, pinned uvx launch, locked dependencies and meaningful mocks. Test real stdio and loopback Streamable HTTP clients. Implement the independent HTTP service in #14 using the same tool/domain graph and process-wide per-device locks.
 5. Implement named inventory/client/reads, then typed controls, layouts and persistent presets following dependency order.
 6. Keep the optional raw tool out of the default surface until its allowlist and non-bypass behavior are defined; defer Should work explicitly if necessary.

@@ -1,0 +1,155 @@
+{
+  "kind": "synthetic_contract_case",
+  "acceptance": [
+    "C2-01",
+    "C2-04",
+    "C2-06",
+    "C2-10"
+  ],
+  "scenarios": [
+    "T04",
+    "T07",
+    "T08"
+  ],
+  "before": {
+    "segments": [
+      {
+        "id": 0,
+        "start": 0,
+        "stop": 30,
+        "on": true,
+        "brightness": 100,
+        "effective_brightness": 100,
+        "colors": [
+          [
+            10,
+            20,
+            30
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "effect_id": 0,
+        "palette_id": 0,
+        "speed": 128,
+        "intensity": 128,
+        "name": "Base"
+      },
+      {
+        "id": 2,
+        "start": 30,
+        "stop": 60,
+        "on": true,
+        "brightness": 180,
+        "effective_brightness": 180,
+        "colors": [
+          [
+            255,
+            80,
+            0
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ]
+        ],
+        "effect_id": 1,
+        "palette_id": 0,
+        "speed": 90,
+        "intensity": 70,
+        "name": "Edge"
+      }
+    ]
+  },
+  "request": {
+    "device_id": "desk",
+    "segments": [
+      {
+        "id": 2,
+        "on": false,
+        "brightness": 0,
+        "speed": 0
+      }
+    ],
+    "dry_run": true
+  },
+  "expected": {
+    "schema_version": 1,
+    "ok": true,
+    "operation": "patch_segments",
+    "device_id": "desk",
+    "dry_run": true,
+    "application": "not_attempted",
+    "verification": "not_requested",
+    "data": {
+      "plan": {
+        "update_segment_ids": [
+          2
+        ],
+        "create_segment_ids": [],
+        "remove_segment_ids": [],
+        "resolved_segments": [
+          {
+            "id": 2,
+            "start": 30,
+            "stop": 60,
+            "on": false,
+            "brightness": 180,
+            "effective_brightness": 0,
+            "colors": [
+              [
+                255,
+                80,
+                0
+              ],
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                6
+              ]
+            ],
+            "effect_id": 1,
+            "palette_id": 0,
+            "speed": 0,
+            "intensity": 70,
+            "name": "Edge"
+          }
+        ],
+        "preserve_segment_ids": [
+          0
+        ]
+      },
+      "postconditions": [
+        "No device POST or filesystem mutation occurs.",
+        "Applying this plan requires fresh validation; ID 0 stays unchanged.",
+        "ID 2 retains remembered brightness 180, colors, intensity and name; power is false and effective brightness is zero."
+      ]
+    },
+    "warnings": [],
+    "error": null
+  },
+  "additional_assertions": [
+    "Positive brightness on an off master or segment preserves omitted power through targeted compensation.",
+    "Zero brightness with resolved on=true fails VALIDATION_ERROR before POST and suggests explicit on=false.",
+    "A range-changing patch compensates omitted name where firmware would clear it."
+  ]
+}

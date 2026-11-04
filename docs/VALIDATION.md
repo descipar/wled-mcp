@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Current result: **not run — no implementation exists**. The following are future acceptance scenarios, not test results.
+Current runtime result: **not run — no runtime implementation exists**. Issue #2 adds a concrete design contract and synthetic JSON examples, checked for document/example consistency only. The following T/H scenarios remain future acceptance, not executed test results.
 
 ## Automated checks, without hardware
 
@@ -9,26 +9,54 @@ Current result: **not run — no implementation exists**. The following are futu
 | T01 | Invalid/duplicate inventory, URL credentials, path traversal and arbitrary host inputs fail before HTTP; valid explicit ports work | DEV-01, OPS-03 |
 | T02 | One offline probe does not hide other configured devices; list without probe performs no HTTP | DEV-02, MULTI-01 |
 | T03 | Effect/palette IDs remain correct with gaps and unknown metadata; name ambiguity is explicit; optional metadata endpoint failure does not erase catalogs | READ-02–03 |
-| T04 | Patch `speed=0`, `on=false`, `brightness=0` preserves omitted fields; updates explicit ID 2 without rewriting ID 0 or deleting others | CTRL-01, SEG-01 |
-| T05 | Replacement starting with noncontiguous existing IDs deletes exactly old-minus-desired IDs; no fixed tail of dummy deletions; new/existing defaults match the finalized contract | SEG-02 |
-| T06 | Bad ranges, excessive LEDs/segments, duplicated IDs, invalid RGBW, invalid effect IDs and malformed payloads reject the entire operation with zero POSTs | SEG-03 |
-| T07 | Dry runs perform no POST, no backup writes and no slot reservation; plans clearly distinguish patch and replace | SEG-04 |
-| T08 | HTTP success with mismatching readback is a verification failure; ignored writes and unsupported features are visible | SEG-04, MCP-02 |
-| T09 | Timeout after a possible write returns unknown outcome; no POST retry; read retry/deadlines remain bounded | REL-01–02 |
-| T10 | Two writes to one device cannot interleave with readback; different-device calls can progress; tests do not claim to serialize other WLED API clients | MULTI-01, REL-03 |
-| T11 | Existing preset ID without overwrite fails; free allocation checks collisions; unknown fields and playlist type survive read/backup | PRE-01–02, PLAY-01 |
-| T12 | Backup failure prevents overwrite/delete; atomic snapshot and retention never delete unrelated files; restore validates target and snapshot | PRE-04 |
-| T13 | Delayed preset persistence is observed with a bounded poll; uncertain save/delete is not replayed | PRE-05, REL-02 |
-| T14 | Real subprocess stdio handshake, tool listing and calls work with SDK client; stdout contains no diagnostics; error flags and structured/text fallback agree | MCP-01–02 |
+| T04 | Patch explicit ID 2 with speed=0/on=false/brightness=0; retain omitted colors/name/intensity and unrelated ID 0. Verify off/effective zero and remembered master/segment brightness separately; positive brightness while off preserves omitted power. Reject contradictory zero/on=true and test 149/150 ms conversion, transition-only/too-short inputs and unchanged persistent transition | CTRL-01, SEG-01 |
+| T05 | Noncontiguous old active IDs 0/2/5 become exactly desired 2/6 under a known allocation profile; remove only 0/5, preserve existing omitted state/name, explicitly default new 6. No bulk purge, silent renumbering or dummy tail; sparse new 8 fails before POST. Test safe intermediate ordering, main-ID bookkeeping and partial-step outcomes | SEG-02 |
+| T06 | Whole-request validation rejects invalid ranges/counts/IDs/colors/catalogs/overlap before all POSTs. RGB-only requires 3 channels, RGBW 4; unknown moved/new range capability fails. Scalar patches retain preexisting overlap while geometry patches check untouched IDs. Test rejected unrepresentable preservation and zero/power combinations | SEG-03 |
+| T07 | Dry runs perform bounded reads only: no device POST, snapshot/temp-file/retention writes or slot reservation. Plans show exact update/create/remove IDs, resolved defaults, compensation and required backup; actual invocation replans under lock | SEG-04 |
+| T08 | ACK alone is not success; mismatching/unavailable readback fails. Normalized off retains remembered brightness; expected transient frames do not fail equality. Verify all relevant fields/IDs and expose ignored unsupported changes | SEG-04, MCP-02 |
+| T09 | Possible dispatched timeout/reset stays unknown unless bounded readback establishes postcondition; readable mismatch does not prove never applied. No mutation replay; partial sequences stop without further destructive steps, include completed/remaining state; reads/retries share one overall deadline | REL-01–02 |
+| T10 | Per-device lock spans fresh reads, validation, backup, all mutation steps and verification; same-device calls cannot interleave, different devices progress. Actual writes revalidate dry-run plans; external client race is acknowledged | MULTI-01, REL-03 |
+| T11 | List/read preserve types and unknown fields; key 0/temporary 255 excluded, null/empty absent, unknown nonempty occupied. Lowest-free allocation rechecks chosen ID; observed conflict does not reallocate. Explicit overwrite/name byte validation; storage-only capture controls; supported activation leaves storage unchanged | PRE-01–02, PLAY-01 |
+| T12 | Snapshot format/version/source/device/preset/firmware/path validation, exact unknown-field retention, atomic durable backup and safe retention. Backup failure prevents overwrite/delete; changed prior object aborts before overwrite. Restore execution is Should pending safe single-entry storage path; no apply/bulk shortcut or claimed restore acceptance from export | PRE-04 |
+| T13 | Delay persistent visibility within one deadline; compare saved name plus all captured included state, not only ID/name. Delete verifies target absence and reports unrelated interference. Asynchronous capture may mismatch; uncertain save/delete/allocation is never resent; unavailable readback and readable mismatch differ | PRE-05, REL-02 |
+| T14 | Real subprocess SDK handshake/list/call, no stdout diagnostics; structured envelope equals JSON text fallback, isError=!ok across success/domain error/uncertainty. Test SDK argument-shape/protocol errors separately | MCP-01–02 |
 | T15 | Mocked HTTP redirect, HTML response, malformed JSON, huge response, missing capabilities and connection reset return actionable bounded errors | READ-01, REL-01, OPS-03 |
 | T16 | Build a wheel and start the installed console command in a clean environment using pinned dependencies; README command matches reality | OPS-02 |
 | T17 | If optional raw tool is enabled, reject endpoints, hosts, persistence keys, layout deletion/replacement and unallowlisted fields that bypass typed rules | ADV-01 |
-| T18 | Real SDK client initializes and lists/calls tools through Streamable HTTP at `/mcp`; schemas and structured/text/error outcomes match stdio | MCP-01–02, OPS-05 |
-| T19 | Concurrent HTTP clients share one per-device write/verify lock while other devices progress; no session-local resource duplication or false multi-worker guarantees | MCP-04, MULTI-01 |
-| T20 | Missing/invalid credentials and disallowed Host/Origin reject before device operations; credentials do not leak; explicit HTTP binding and listener-free stdio defaults work | MCP-03, OPS-03 |
-| T21 | HTTP reconnect/disconnect, chosen session lifecycle and graceful shutdown do not replay writes; installed service/uvx entry points support explicit transport selection | MCP-04, REL-02, OPS-05 |
+| T18 | Actual SDK clients initialize/list/call through stateless JSON /mcp with no session ID; tool/schema/outcome parity with stdio, including failure/uncertainty. Negotiation/notification 202/GET 405 and transport errors follow selected SDK | MCP-01–02, OPS-05 |
+| T19 | Concurrent HTTP clients share process inventory/client/cache/snapshots and one per-device lock through write/verify, while different devices progress. No per-request resource duplication or multi-worker coordination claim | MCP-04, MULTI-01 |
+| T20 | Fail closed before listen on missing/conflicting bearer config. Missing/wrong credential gives 401; disallowed/malformed Host or supplied Origin gives 403 before device access on every method. Absent Origin authenticated client works; no wildcard/proxy bypass or secret leakage. Loopback:8000 default, alternate binding explicit, stdio listener-free | MCP-03, OPS-03 |
+| T21 | Disconnect is not cancellation; continue bounded verification, release lock, never requeue. Stateless reconnect/restart does not replay; client resubmission is a new invocation. Shutdown stops admission, drains within existing deadlines, closes resources; interrupted writes remain uncertain. Both installed modes select transport explicitly | MCP-04, REL-02, OPS-05 |
 
 CI should run on supported Python versions and a Linux environment, with lint/type checking proportional to the implementation. Protocol tests must run the actual console entry point, catching the missing-main class of issue observed in a candidate project. HTTP tests use ephemeral loopback ports and mocked WLED transport, not LAN devices. Build/dependency errors must not be hidden by mocks. T18–T21 are required alongside T01–T16; T17 remains conditional on the optional raw tool.
+
+## Issue-2 contract traceability
+
+C2 IDs are acceptance criteria for documentation delivery, not runtime tests.
+All refer to [TOOL-CONTRACT.md](TOOL-CONTRACT.md) and the
+[scoped decisions](decisions/issue-2.md). Synthetic JSON parse/consistency checks
+cannot establish that an adapter implements these outcomes.
+
+| Criterion | Concrete artifact / observable assertion | Future runtime evidence / owner |
+| --- | --- | --- |
+| C2-01 | Power/brightness section; [patch case](../examples/contracts/patch.json): zero/false, remembered versus effective values, preservation | T04/T06/T08; #6/#10 |
+| C2-02 | Existing/new omission rules and default table; [replacement](../examples/contracts/replace.json) | T05/T08; #7/#10 |
+| C2-03 | Complete range/ID/overlap validation, supported noncontiguous and rejected sparse IDs, bounded partial sequence | T05/T06/T09; #6/#7/#10 |
+| C2-04 | Proven range RGB/RGBW widths and unknown capability rejection, omitted color slots | T06/T15; #5/#6/#7/#10 |
+| C2-05 | One-call half-up transition conversion and bounds; [error assertions](../examples/contracts/errors.json) | T04/T06/T08; #6/#10 |
+| C2-06 | Reads-only dry-run, resolved plan, no reservation or backup mutation | T07/T10/T19; #6/#7/#9/#14/#10 |
+| C2-07 | Reviewed persistent ID range, reserved/empty/unknown occupancy, allocation and byte-limited names | T11; #5/#9/#10 |
+| C2-08 | Storage-only current capture, persistent full-field verification, deferred supplied-state | T09/T11/T13; #9/#10/#13 |
+| C2-09 | [Snapshot envelope](../examples/contracts/snapshot.json), durability/retention/failure and explicit deferred restore boundary | T12; #8/#9/#10 |
+| C2-10 | Application/verification table, envelope/text/isError parity, [conflict](../examples/contracts/preset.json) and [uncertainty](../examples/contracts/errors.json) | T08–T14/T18; #3/#6/#7/#9/#10/#14 |
+| C2-11 | Explicit transport, stateless SDK lifecycle, shared resources, disconnect/drain semantics | T18/T19/T21; #3/#14/#10/#11 |
+| C2-12 | Direct endpoint auth, exact Host/Origin checks, 401/403, no proxy bypass | T20; #14 implementation, #10 software acceptance, #11 integration |
+
+MCP-03/MCP-04/OPS-05 map to #14 implementation, #10 T18–T21 acceptance, and #11
+integration/deployment evidence. H02/H03 remain separate authorized operational
+checks. SDK version selection, mocked/runtime protocol execution and hardware
+compatibility remain pending. PRE-03 and restore execution are explicitly deferred
+Should work; durable backup before destructive operations remains Must.
 
 ## Read-only hardware checks
 

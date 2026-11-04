@@ -1,6 +1,6 @@
 # Stage-1 implementation plan and GitHub backlog
 
-Status: all issues below are open at planning handoff, 2026-11-04. Live GitHub state takes precedence over this initial status snapshot. No code has been implemented.
+Status, 2026-11-04: issue #2 has a scoped contract candidate and synthetic examples; runtime implementation has not started. Live GitHub state and commit-specific review take precedence over this document. Documentation delivery does not close issues or establish hardware acceptance.
 
 ## Delivery tracker
 
@@ -10,7 +10,7 @@ Status: all issues below are open at planning handoff, 2026-11-04. Live GitHub s
 
 | Order | Issue | Depends on | Main requirements / evidence |
 | --- | --- | --- | --- |
-| 1 | [#2 — Finalize tool contract and layout/preset semantics](https://github.com/descipar/wled-mcp/issues/2) | None | CTRL-01, SEG-01–04, PRE-01–05, MCP-02; settle observable outcomes |
+| 1 | [#2 — Finalize tool contract and layout/preset semantics](https://github.com/descipar/wled-mcp/issues/2) | None | CTRL-01, SEG-01–04, PRE-01–05, MCP-01–04, OPS-05; C2-01–12 contract criteria and synthetic examples (not runtime results) |
 | 2 | [#3 — Package, uvx launch and selectable transports](https://github.com/descipar/wled-mcp/issues/3) | #2 | MCP-01–02, OPS-01–03, TEST-01; T14/T16, HTTP foundation |
 | 3 | [#4 — Inventory and bounded HTTP client](https://github.com/descipar/wled-mcp/issues/4) | #3 | DEV-01–02, REL-01–03, MULTI-01, OPS-03; T01/T02/T09/T10/T15 |
 | 4 | [#5 — State, capabilities and catalogs](https://github.com/descipar/wled-mcp/issues/5) | #4 | READ-01–03, DEV-02, OPS-04; T02/T03/T15 |
@@ -62,6 +62,8 @@ Missing actual device addresses must not block issues #2–#10. Physical writes 
 ## Requirement traceability maintenance
 
 Requirement IDs are linked in the table and issue bodies; detailed expected test evidence is in VALIDATION.md. As implementation proceeds, add test names/paths, PR/commit links and actual run results to the corresponding issues. Do not replace this chain with a test-count target. All Must IDs must retain at least one owning issue and an acceptance scenario; optional omissions need a recorded decision.
+
+Issue #2 fixes the shared transport design: #14 owns MCP-03/MCP-04/OPS-05 implementation and T18–T21 behavior; #10 owns automated acceptance/parity evidence; #11 owns integration/deployment instructions and actual authorized H02/H03 evidence. [VALIDATION.md](VALIDATION.md#issue-2-contract-traceability) maps every C2 criterion to its future scenarios. PRE-03 supplied-state save and restore execution are explicitly deferred Should scope; backup safety remains Must in #8/#9.
 
 ## Stage 2 — public project and product extensions
 
