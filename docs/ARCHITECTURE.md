@@ -1,5 +1,13 @@
 # Proposed architecture and decisions
 
+Issue #4 implements one process-owned `Resources` graph: immutable configured
+inventory/settings, one managed async client, stable per-device locks, shared
+metadata container and an inert backup-directory/retention handle. Tool factories
+close over the same graph; the CLI opens/serves/closes it in one async lifecycle.
+The [bounded client profile](INVENTORY-CLIENT.md) and [decisions](decisions/issue-4.md)
+are current implementation details. Cache freshness, durable snapshots and actual
+multi-session HTTP handling remain #5/#8/#14 work.
+
 ## Components
 
 Issue #3 implements the bootstrap using Python 3.13 and official MCP SDK 2.3.0.

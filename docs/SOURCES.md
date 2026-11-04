@@ -65,6 +65,19 @@ are still downstream work.
 
 No candidate was installed or tested on actual WLED hardware during this research. GitHub push timestamps were not treated as main-branch release dates. Both MCPHub catalogs were searched: 43 local substring matches and 340 registry version entries, with no relevant direct WLED entry after filtering names/descriptions/repositories; `knowledge` caused unrelated matches.
 
+## Issue-4 client evidence
+
+Checked 2026-11-04 against the installed locked HTTPX2 2.16.0 API and its
+[official package metadata](https://pypi.org/project/httpx2/) and
+[documentation](https://pydantic.dev/docs/httpx2/). HTTPX2 continues the maintained
+client line used by the selected MCP SDK; the dependency is declared directly.
+Its package metadata is separate from the unselected project outbound license.
+Installed API/source confirms `trust_env=false`, redirect refusal, stream contexts,
+MockTransport injection and zero transport retries by default. Per-I/O inactivity
+timeouts do not provide one logical-operation deadline; an outer AnyIO deadline
+bounds the complete operation. WLED endpoints follow the existing official JSON
+API sources. No upstream WLED server implementation was copied.
+
 ## Licensing
 
 No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.

@@ -64,6 +64,31 @@ def test_paths_and_precedence(startup):
             load_config(config_path, data_dir, {})
 
 
+def test_deep_toml_fails_safely_in_loader_and_console(startup):
+    config, data = startup
+    config.write_text(
+        "schema_version=1\ndevices=[]\nx=" + "[" * 1500 + '"synthetic-secret"' + "]" * 1500,
+        encoding="utf-8",
+    )
+    assert config.stat().st_size < 65536
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(config), str(data), {})
+    assert "synthetic-secret" not in str(caught.value)
+    result = subprocess.run(
+        [str(CONSOLE), "--config", str(config), "--data-dir", str(data)],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "Startup configuration error:" in result.stderr
+    assert "synthetic-secret" not in result.stderr
+    assert "Traceback" not in result.stderr
+    assert "RecursionError" not in result.stderr
+    assert set(data.iterdir()) == {config}
+
+
 @pytest.mark.parametrize(
     "args", [[], ["--unknown", "synthetic-secret"], ["--transport", "synthetic-secret"]]
 )
@@ -124,7 +149,10 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
                 assert client.protocol_version == (
                     "2025-11-25" if mode == "legacy" else "2026-07-28"
                 )
-                assert (await client.list_tools()).tools == []
+                tools = (await client.list_tools()).tools
+                assert [tool.name for tool in tools] == ["wled_list_devices"]
+                result = await client.call_tool("wled_list_devices", {})
+                assert result.structured_content["data"] == {"devices": []}
 
     anyio.run(exercise)
     assert set(data.iterdir()) == {config}
@@ -218,7 +246,7 @@ def test_stdout_is_only_protocol_and_clean_eof(startup):
         process.stdout.close()
         process.stderr.close()
     assert responses[1]["result"]["serverInfo"]["name"] == "wled-mcp"
-    assert responses[2]["result"]["tools"] == []
+    assert [tool["name"] for tool in responses[2]["result"]["tools"]] == ["wled_list_devices"]
     assert responses[3]["error"]["code"] == -32601
     assert responses[4]["error"]["code"] == -32602
 

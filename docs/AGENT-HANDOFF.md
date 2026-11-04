@@ -23,9 +23,11 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 
 Issue #3 bootstrap commands exist in [DEVELOPMENT.md](DEVELOPMENT.md).
 Read [its decisions](decisions/issue-3.md) before extending configuration/tools.
-The production registry is empty; HTTP fails before listening pending #14.
-Continue with #4 inventory/client. Fixture uncertainty is result-schema evidence,
-not evidence of an implemented WLED write/verification state machine.
+Issue #4 adds validated inventory, `wled_list_devices`, a bounded HTTP client and
+shared process resources. Read [inventory/client behavior](INVENTORY-CLIENT.md)
+and [issue-4 decisions](decisions/issue-4.md). Continue with #5 read/catalog tools;
+HTTP fails before listening pending #14. Internal mocked write/reconciliation
+tests do not establish actual WLED domain-control or hardware acceptance.
 
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
 2. Confirm scope from the new user instruction. Distinguish implementation, installation, hub deployment and hardware writes.

@@ -33,7 +33,13 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert client.server_info is not None
                 assert client.server_info.name == "wled-mcp"
                 assert client.server_info.version == "0.1.0"
-                assert (await client.list_tools()).tools == []
+                tools = (await client.list_tools()).tools
+                assert [tool.name for tool in tools] == ["wled_list_devices"]
+                assert tools[0].input_schema["additionalProperties"] is False
+                result = await client.call_tool("wled_list_devices", {})
+                assert result.structured_content is not None
+                assert result.structured_content["data"] == {"devices": []}
+                assert not result.is_error
 
 
 def main() -> None:
@@ -42,7 +48,7 @@ def main() -> None:
     artifacts.mkdir(exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith("WLED_MCP_")}
     env.update(
-        UV_CACHE_DIR=str(root / ".uv-cache"),
+        UV_CACHE_DIR=env.get("UV_CACHE_DIR", str(root / ".uv-cache")),
         UV_TOOL_DIR=str(root / ".uv-tools"),
         UV_PYTHON_INSTALL_DIR=str(root / ".uv-python"),
         UV_PYTHON_DOWNLOADS="never",

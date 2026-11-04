@@ -6,9 +6,18 @@ import sys
 from collections.abc import Sequence
 from typing import Never
 
+import anyio
+
 from wled_mcp import __version__
-from wled_mcp.config import ConfigurationError, load_config
-from wled_mcp.server import create_server, run_stdio
+from wled_mcp.config import ConfigurationError, StartupConfig, load_config
+from wled_mcp.operations import build_operations
+from wled_mcp.resources import Resources
+from wled_mcp.server import create_server, serve_stdio
+
+
+async def serve(config: StartupConfig) -> None:
+    async with Resources(config) as resources:
+        await serve_stdio(create_server(build_operations(resources)))
 
 
 class SafeParser(argparse.ArgumentParser):
@@ -17,14 +26,14 @@ class SafeParser(argparse.ArgumentParser):
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = SafeParser(description="WLED MCP bootstrap (device tools follow in later issues).")
+    parser = SafeParser(description="WLED MCP inventory service.")
     parser.add_argument("--version", action="version", version=f"wled-mcp {__version__}")
     parser.add_argument("--config", help="Absolute TOML configuration path (WLED_MCP_CONFIG).")
     parser.add_argument("--data-dir", help="Absolute existing data directory (WLED_MCP_DATA_DIR).")
     parser.add_argument("--transport", choices=("stdio", "streamable-http"), default="stdio")
     args = parser.parse_args(argv)
     try:
-        load_config(args.config, args.data_dir)
+        config = load_config(args.config, args.data_dir)
         if args.transport == "streamable-http":
             raise ConfigurationError(
                 "Streamable HTTP is not implemented yet; authenticated service support "
@@ -35,7 +44,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
     try:
-        run_stdio(create_server())
+        anyio.run(serve, config)
     except KeyboardInterrupt:
         return 0
     except Exception:
