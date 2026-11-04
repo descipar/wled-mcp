@@ -2,11 +2,18 @@
 
 Issue #4 implements one process-owned `Resources` graph: immutable configured
 inventory/settings, one managed async client, stable per-device locks, shared
-metadata container and an inert backup-directory/retention handle. Tool factories
-close over the same graph; the CLI opens/serves/closes it in one async lifecycle.
-The [bounded client profile](INVENTORY-CLIENT.md) and [decisions](decisions/issue-4.md)
-are current implementation details. Cache freshness, durable snapshots and actual
-multi-session HTTP handling remain #5/#8/#14 work.
+effect/palette catalog cache (`metadata_cache`, issue #5) and an inert backup-directory/
+retention handle. Tool factories close over the same graph; the CLI opens/serves/closes
+it in one async lifecycle. The [bounded client profile](INVENTORY-CLIENT.md) and
+[decisions](decisions/issue-4.md) are current implementation details.
+
+Issue #5 adds read-only state/catalog tools: `readmodels.py` (pure normalization of
+`/json/state` and `/json/info`, redaction), `catalogs.py` (ID-preserving catalogs,
+optional fxdata, firmware-aware cache, internal name resolver) and three operations in
+`operations.py`. Reads take the per-device lock and one deadline; the injectable
+`Clock` lives on `Resources`. See [TOOL-CONTRACT](TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5)
+and [decisions](decisions/issue-5.md). Durable snapshots and actual multi-session HTTP
+handling remain #8/#14 work.
 
 ## Components
 

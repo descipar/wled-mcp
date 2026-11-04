@@ -1,9 +1,10 @@
 # V1 MCP tool contract
 
-Implementation status: #4 exposes only `wled_list_devices` from this table. Its
-network-free default, bounded explicit probes and internal client foundations are
-described in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). Remaining tools and the
-protected HTTP service are design requirements, not executable behavior yet.
+Implementation status: #4 exposes `wled_list_devices`; #5 adds the read-only
+`wled_get_state`, `wled_get_effects` and `wled_get_palettes` (see
+[Read tools](#read-tools-state-and-catalogs-implemented-in-5)). Inventory and client
+foundations are in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). Setters, presets and
+the protected HTTP service are design requirements, not executable behavior yet.
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their
@@ -57,6 +58,76 @@ Activation is restricted to verified state/playlist shapes and safe referenced
 entries. API-command/unknown presets remain readable and backupable, but activation
 returns `UNSUPPORTED_CAPABILITY` until their effects are validated. No arbitrary
 command forwarding or implicit playlist editing.
+
+## Read tools: state and catalogs (implemented in #5)
+
+Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions
+[ISSUE-5-DEC-001–006](decisions/issue-5.md). Inputs are strict (unknown fields and
+non-boolean `refresh` rejected). All three are read-only, idempotent, closed-world and
+return `application=not_attempted`, `verification=not_requested`, `dry_run=false`.
+Failures use existing error codes only, with `ok=false` and empty `data`; messages name
+the fixed resource label and numeric HTTP status, never a body, URL or exception text.
+An unknown `device_id` gives `UNKNOWN_DEVICE` (envelope `device_id` null) and no HTTP.
+
+**`wled_get_state(device_id)`** reads `/json/state` then `/json/info` sequentially under
+one deadline and the per-device lock. It is never cached and not an atomic snapshot.
+`data`: `device{id,name}`, `freshness{source="device",read_at}`, `firmware{version,
+build_id,product,brand,arch}` (null if absent; only `ver` is required), `capabilities`
+(`led_count`, `max_segments`, `effect_count`, `palette_count`, `device_wide_color`,
+`segment_color_capability_reported`), `state`, `raw{state,info,redacted_info_keys}` and
+`diagnostics{server_version,unknown_capabilities}`; `warnings` lists tolerated anomalies.
+
+- Required: info object with string `ver`; state boolean `on`, integer `bri` 0–255
+  (booleans rejected), `seg` list of objects with unique non-negative integer `id` and
+  integer `start`/`stop`. Violations give `INVALID_RESPONSE`. Optional fields of the
+  wrong type become `null` plus a warning; unreported capabilities are `null`, never
+  `false`, and the unknown names are listed in `diagnostics.unknown_capabilities`.
+- `state`: `on`, `brightness` (remembered), `effective_brightness` (`on ? bri : 0`),
+  `default_transition_ms` (`transition * 100`), `active_preset_id` and
+  `active_playlist_id` (`-1` becomes `null`), `main_segment` and `segments`. Segments are
+  identified by their explicit `id`, never by array position, and carry `start`, `stop`,
+  `on`, `brightness`, `effective_brightness` (`brightness` if the segment is on, else 0;
+  master power is separate), `colors`, `color_channels`, `reported_color_capability`,
+  `effect_id`, `palette_id`, `speed`, `intensity` and, when present, `grouping`,
+  `spacing`, `offset`, `reverse`, `mirror`, `selected`, `name`; missing values are null.
+- `device_wide_color{scope,rgb,white,cct}` is the firmware aggregate (`info.leds.lc`),
+  reported only when that value is an integer, and is not proof for any range.
+  `reported_color_capability` comes from `info.leds.seglc`, which the pinned firmware
+  emits per active segment in order; it is used only when its length equals the segment
+  list. A fourth color channel is trimmed only when that capability proves the segment
+  RGB-only (RGB bit without white/CCT), every slot's fourth channel is 0 and thus
+  nothing is lost; `raw.state` always keeps the original arrays.
+- Redaction (runtime privacy default, DEC-006): `mac`, `ip` and `wifi.bssid` are removed
+  from `raw.info` and listed in `raw.redacted_info_keys`. Raw state is unchanged.
+
+**`wled_get_effects` / `wled_get_palettes(device_id, refresh=false)`** return `effects` or
+`palettes` as `[{id,name,[placeholder:true],[metadata:{fxdata}]}]` ordered by ID, `count`,
+(effects only) `metadata{status: available|unavailable, reason}` and `freshness{source:
+device|cache, fetched_at, age_seconds, cache_ttl_seconds, firmware{version,build_id},
+refreshed}`. `refreshed` echoes that the call bypassed the cache by request.
+
+- ID is the array index of the device list; lists are never compacted and no count is
+  hardcoded. A difference from `fxcount`/`palcount` is a warning only. Effect slots the
+  firmware serializes as `"RSVD"` are returned with `placeholder=true`; they and
+  `RSVD` are never matched by the name resolver. `/json/pal` lists built-in/gradient
+  names, not custom palettes, so `palcount` may legitimately exceed the list.
+- Effect metadata is the raw `/json/fxdata` string per effect, attached by index only
+  when the list length equals the effect list; it is never a name source and is not
+  parsed. Any fxdata failure or length mismatch gives `ok=true`, intact names,
+  `metadata.status=unavailable`, a reason (error code or `length_mismatch`) and one
+  warning. The optional read gets at most half of the remaining deadline.
+- Cache: key `(device_id, kind)`, effects plus fxdata one unit, TTL
+  `http.catalog_cache_seconds` (0 disables storage). Every call performs one fresh
+  `/json/info` read. A live entry with identical `(ver, vid)` is served as
+  `source=cache` with its age and no catalog/fxdata request; a changed identity drops it
+  and refetches. `refresh=true` always reads the device and replaces the entry only on
+  success; a failed refresh or info failure returns that error (no stale fallback, an
+  expired entry is never served) and leaves the previous entry in place. Cached warnings
+  repeat for the entry's lifetime.
+- Internal name resolution (for later setters; no public parameter in #5): a unique
+  exact case-sensitive match, else a unique case-folded trimmed match; several matches
+  give `AMBIGUOUS_NAME` with at most ten `{id,name}` candidates (a later setter envelope is
+  intended to carry them in `data.candidates`); no match gives `VALIDATION_ERROR`; no fuzzy match.
 
 ## Power, brightness and transition
 

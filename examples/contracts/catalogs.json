@@ -1,0 +1,252 @@
+{
+  "note": "Synthetic mock-transport output of the #5 read tools; not a firmware observation.",
+  "cases": {
+    "effects_fresh": {
+      "request": {
+        "device_id": "desk"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_effects",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "effects": [
+            {
+              "id": 0,
+              "name": "Solid",
+              "metadata": {
+                "fxdata": ""
+              }
+            },
+            {
+              "id": 1,
+              "name": "Blink",
+              "metadata": {
+                "fxdata": "!,Duty cycle;!,!;!;01"
+              }
+            },
+            {
+              "id": 2,
+              "name": "RSVD",
+              "placeholder": true,
+              "metadata": {
+                "fxdata": ""
+              }
+            },
+            {
+              "id": 3,
+              "name": "Wipe",
+              "metadata": {
+                "fxdata": "!,!;!,!;!"
+              }
+            }
+          ],
+          "count": 4,
+          "freshness": {
+            "source": "device",
+            "fetched_at": "2026-01-01T00:16:40+00:00",
+            "age_seconds": 0.0,
+            "cache_ttl_seconds": 300,
+            "firmware": {
+              "version": "0.15.1",
+              "build_id": 2510010
+            },
+            "refreshed": false
+          },
+          "metadata": {
+            "status": "available",
+            "reason": null
+          }
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "effects_cache_hit_after_42s": {
+      "request": {
+        "device_id": "desk"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_effects",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "effects": [
+            {
+              "id": 0,
+              "name": "Solid",
+              "metadata": {
+                "fxdata": ""
+              }
+            },
+            {
+              "id": 1,
+              "name": "Blink",
+              "metadata": {
+                "fxdata": "!,Duty cycle;!,!;!;01"
+              }
+            },
+            {
+              "id": 2,
+              "name": "RSVD",
+              "placeholder": true,
+              "metadata": {
+                "fxdata": ""
+              }
+            },
+            {
+              "id": 3,
+              "name": "Wipe",
+              "metadata": {
+                "fxdata": "!,!;!,!;!"
+              }
+            }
+          ],
+          "count": 4,
+          "freshness": {
+            "source": "cache",
+            "fetched_at": "2026-01-01T00:16:40+00:00",
+            "age_seconds": 42.0,
+            "cache_ttl_seconds": 300,
+            "firmware": {
+              "version": "0.15.1",
+              "build_id": 2510010
+            },
+            "refreshed": false
+          },
+          "metadata": {
+            "status": "available",
+            "reason": null
+          }
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "effects_metadata_unavailable": {
+      "request": {
+        "device_id": "desk",
+        "refresh": true
+      },
+      "note_case": "fxdata length differs from the effect list",
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_effects",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "effects": [
+            {
+              "id": 0,
+              "name": "Solid"
+            },
+            {
+              "id": 1,
+              "name": "Blink"
+            },
+            {
+              "id": 2,
+              "name": "RSVD",
+              "placeholder": true
+            },
+            {
+              "id": 3,
+              "name": "Wipe"
+            }
+          ],
+          "count": 4,
+          "freshness": {
+            "source": "device",
+            "fetched_at": "2026-01-01T00:17:22+00:00",
+            "age_seconds": 0.0,
+            "cache_ttl_seconds": 300,
+            "firmware": {
+              "version": "0.15.1",
+              "build_id": 2510010
+            },
+            "refreshed": true
+          },
+          "metadata": {
+            "status": "unavailable",
+            "reason": "length_mismatch"
+          }
+        },
+        "warnings": [
+          "Effect metadata length differs from the effect list; metadata unavailable."
+        ],
+        "error": null
+      }
+    },
+    "palettes": {
+      "request": {
+        "device_id": "desk"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_palettes",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "palettes": [
+            {
+              "id": 0,
+              "name": "Default"
+            },
+            {
+              "id": 1,
+              "name": "* Random Cycle"
+            },
+            {
+              "id": 2,
+              "name": "Party"
+            }
+          ],
+          "count": 3,
+          "freshness": {
+            "source": "device",
+            "fetched_at": "2026-01-01T00:17:22+00:00",
+            "age_seconds": 0.0,
+            "cache_ttl_seconds": 300,
+            "firmware": {
+              "version": "0.15.1",
+              "build_id": 2510010
+            },
+            "refreshed": false
+          }
+        },
+        "warnings": [],
+        "error": null
+      }
+    }
+  }
+}

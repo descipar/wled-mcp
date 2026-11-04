@@ -1,0 +1,383 @@
+{
+  "note": "Synthetic mock-transport output of the #5 read tools; not a firmware observation.",
+  "cases": {
+    "state": {
+      "request": {
+        "device_id": "desk"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_state",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "freshness": {
+            "source": "device",
+            "read_at": "2026-01-01T00:16:40+00:00"
+          },
+          "firmware": {
+            "version": "0.15.1",
+            "build_id": 2510010,
+            "product": "FOSS",
+            "brand": "WLED",
+            "arch": "esp32"
+          },
+          "capabilities": {
+            "led_count": 90,
+            "max_segments": 32,
+            "effect_count": 4,
+            "palette_count": 3,
+            "device_wide_color": {
+              "scope": "aggregate_of_active_segments",
+              "rgb": true,
+              "white": true,
+              "cct": false
+            },
+            "segment_color_capability_reported": true
+          },
+          "state": {
+            "on": true,
+            "brightness": 128,
+            "effective_brightness": 128,
+            "default_transition_ms": 700,
+            "active_preset_id": null,
+            "active_playlist_id": null,
+            "main_segment": 0,
+            "segments": [
+              {
+                "id": 0,
+                "start": 0,
+                "stop": 30,
+                "on": true,
+                "brightness": 255,
+                "effective_brightness": 255,
+                "colors": [
+                  [
+                    255,
+                    160,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ]
+                ],
+                "color_channels": 3,
+                "reported_color_capability": {
+                  "rgb": true,
+                  "white": false,
+                  "cct": false
+                },
+                "effect_id": 0,
+                "palette_id": 0,
+                "speed": 128,
+                "intensity": 128,
+                "grouping": 1,
+                "spacing": 0,
+                "offset": 0,
+                "reverse": false,
+                "mirror": false,
+                "selected": true,
+                "name": "Segment 0"
+              },
+              {
+                "id": 2,
+                "start": 30,
+                "stop": 60,
+                "on": false,
+                "brightness": 77,
+                "effective_brightness": 0,
+                "colors": [
+                  [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  [
+                    0,
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                ],
+                "color_channels": 4,
+                "reported_color_capability": {
+                  "rgb": true,
+                  "white": true,
+                  "cct": false
+                },
+                "effect_id": 0,
+                "palette_id": 0,
+                "speed": 128,
+                "intensity": 128,
+                "grouping": 1,
+                "spacing": 0,
+                "offset": 0,
+                "reverse": false,
+                "mirror": false,
+                "selected": true,
+                "name": "Segment 2"
+              },
+              {
+                "id": 5,
+                "start": 60,
+                "stop": 90,
+                "on": true,
+                "brightness": 255,
+                "effective_brightness": 255,
+                "colors": [
+                  [
+                    255,
+                    160,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ]
+                ],
+                "color_channels": 3,
+                "reported_color_capability": {
+                  "rgb": true,
+                  "white": false,
+                  "cct": false
+                },
+                "effect_id": 0,
+                "palette_id": 0,
+                "speed": 128,
+                "intensity": 128,
+                "grouping": 1,
+                "spacing": 0,
+                "offset": 0,
+                "reverse": false,
+                "mirror": false,
+                "selected": true,
+                "name": "Wall"
+              }
+            ]
+          },
+          "raw": {
+            "state": {
+              "on": true,
+              "bri": 128,
+              "transition": 7,
+              "ps": -1,
+              "pl": -1,
+              "mainseg": 0,
+              "seg": [
+                {
+                  "id": 0,
+                  "start": 0,
+                  "stop": 30,
+                  "len": 30,
+                  "grp": 1,
+                  "spc": 0,
+                  "of": 0,
+                  "on": true,
+                  "frz": false,
+                  "bri": 255,
+                  "cct": 127,
+                  "col": [
+                    [
+                      255,
+                      160,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  ],
+                  "fx": 0,
+                  "sx": 128,
+                  "ix": 128,
+                  "pal": 0,
+                  "sel": true,
+                  "rev": false,
+                  "mi": false,
+                  "n": "Segment 0"
+                },
+                {
+                  "id": 2,
+                  "start": 30,
+                  "stop": 60,
+                  "len": 30,
+                  "grp": 1,
+                  "spc": 0,
+                  "of": 0,
+                  "on": false,
+                  "frz": false,
+                  "bri": 77,
+                  "cct": 127,
+                  "col": [
+                    [
+                      1,
+                      2,
+                      3,
+                      4
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  ],
+                  "fx": 0,
+                  "sx": 128,
+                  "ix": 128,
+                  "pal": 0,
+                  "sel": true,
+                  "rev": false,
+                  "mi": false,
+                  "n": "Segment 2"
+                },
+                {
+                  "id": 5,
+                  "start": 60,
+                  "stop": 90,
+                  "len": 30,
+                  "grp": 1,
+                  "spc": 0,
+                  "of": 0,
+                  "on": true,
+                  "frz": false,
+                  "bri": 255,
+                  "cct": 127,
+                  "col": [
+                    [
+                      255,
+                      160,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0,
+                      0
+                    ]
+                  ],
+                  "fx": 0,
+                  "sx": 128,
+                  "ix": 128,
+                  "pal": 0,
+                  "sel": true,
+                  "rev": false,
+                  "mi": false,
+                  "n": "Wall"
+                }
+              ]
+            },
+            "info": {
+              "ver": "0.15.1",
+              "vid": 2510010,
+              "cn": "Synthetic",
+              "brand": "WLED",
+              "product": "FOSS",
+              "arch": "esp32",
+              "name": "Example",
+              "wifi": {
+                "rssi": -50,
+                "signal": 80
+              },
+              "leds": {
+                "count": 90,
+                "maxseg": 32,
+                "lc": 3,
+                "seglc": [
+                  1,
+                  3,
+                  1
+                ]
+              },
+              "fxcount": 4,
+              "palcount": 3
+            },
+            "redacted_info_keys": [
+              "mac",
+              "ip",
+              "wifi.bssid"
+            ]
+          },
+          "diagnostics": {
+            "server_version": "0.1.0",
+            "unknown_capabilities": []
+          }
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "unknown_device": {
+      "request": {
+        "device_id": "nope"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "wled_get_state",
+        "device_id": null,
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {},
+        "warnings": [],
+        "error": {
+          "code": "UNKNOWN_DEVICE",
+          "message": "Unknown configured device ID.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Read the configured device explicitly; never replay the write."
+        }
+      }
+    }
+  }
+}

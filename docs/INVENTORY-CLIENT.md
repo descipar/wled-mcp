@@ -25,7 +25,7 @@ limited to 64 KiB; absolute path and CLI-over-environment rules are unchanged.
 | read_retries | 1 | 0 or 1 |
 | max_request_bytes | 65536 | 128–1048576 |
 | max_response_bytes | 2097152 | 128–8388608 |
-| catalog_cache_seconds | 300 | 0–86400; retained cache-policy configuration for #5 |
+| catalog_cache_seconds | 300 | 0–86400; TTL of the effect/palette catalog cache (0 disables) |
 
 `backups.retain_per_device` defaults to 20 (1–1000), carried by the shared backup
 handle; it does not implement snapshot retention yet. `features.raw_state_patch`
@@ -40,7 +40,7 @@ that all 256 probes finish within 10 seconds.
 The maintained SDK dependency graph already uses HTTPX2 2.16.0; this project now
 declares that dependency directly. One client uses verified TLS, `trust_env=false`,
 no redirects and a pool of 16 connections/8 keepalive connections. Internal
-endpoint identifiers allow only info/state/effects/palettes/presets reads and a
+endpoint identifiers allow only info/state/effects/palettes/fxdata/presets reads and a
 fixed state POST. No public tool accepts a host, URL, endpoint or raw state body.
 Only transient connect/read/protocol transport errors and timeouts may receive
 one safe read retry; statuses, parse/size/type errors are not retried. Writes have
@@ -69,7 +69,10 @@ Locks cover preparation through verification; different controllers progress
 independently. Cancellation releases locks; if it occurs after dispatch no result
 can be promised and the write must be treated as potentially applied. Resource
 shutdown closes the client once. One worker/process is required; separate
-processes and external WLED clients do not share these locks. The metadata cache
-and backup handle are shared references, not implemented freshness/durability.
+processes and external WLED clients do not share these locks. The catalog cache
+(`metadata_cache`, issue #5; see [TOOL-CONTRACT](TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5))
+and backup handle are shared references; the backup handle is not implemented durability.
+Client failures now name the fixed resource label and numeric HTTP status in their
+message (never body, URL or exception text).
 Actual HTTP sessions, authentication, Host/Origin handling and lifecycle remain
 #14; its transport selector still fails before listening. Hardware is unverified.
