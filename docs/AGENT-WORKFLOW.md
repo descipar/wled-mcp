@@ -1,19 +1,22 @@
 # Repository agents and human-in-the-loop workflow
 
-This repository includes real Codex custom-agent definitions, not executable
-WLED functionality. An active Codex session runs them. No autonomous daemon,
+This repository maintains shared role sources and complete native definitions for
+Codex and Claude Code, not executable WLED functionality. An active client session
+runs them. No autonomous daemon,
 GitHub webhook, scheduled job or separate API application is installed.
 
 ## Files and runtime
 
 | File | Responsibility |
 | --- | --- |
-| [.codex/agents/wled_requirements.toml](../.codex/agents/wled_requirements.toml) | Requirements and acceptance packet |
-| [.codex/agents/wled_implementer.toml](../.codex/agents/wled_implementer.toml) | Scoped implementation and development tests |
-| [.codex/agents/wled_reviewer.toml](../.codex/agents/wled_reviewer.toml) | Independent tests/review of a fixed candidate |
-| [.codex/agents/wled_completion.toml](../.codex/agents/wled_completion.toml) | Evidenced issue checklist/state reconciliation after verified merge |
-| [.codex/agents/wled_coordinator.toml](../.codex/agents/wled_coordinator.toml) | Reusable coordinator instructions |
-| [.codex/config.toml](../.codex/config.toml) | Enable agents, cap concurrent child sessions at three |
+| [agents/requirements.md](../agents/requirements.md) | Requirements and acceptance packet |
+| [agents/implementer.md](../agents/implementer.md) | Scoped implementation and development tests |
+| [agents/reviewer.md](../agents/reviewer.md) | Independent tests/review of a fixed candidate |
+| [agents/completion.md](../agents/completion.md) | Evidenced issue checklist/state reconciliation after verified merge |
+| [agents/coordinator.md](../agents/coordinator.md) | Main-session coordinator instructions |
+| [Shared-source maintenance](../agents/README.md) | Source format, deterministic sync, drift and failure policy |
+| [Codex config](../.codex/config.toml) | Enable Codex agents, cap concurrent child sessions at three |
+| [Claude entrypoint](../CLAUDE.md) | Import the same AGENTS.md rules into Claude Code |
 | [Packet template](agent-workflow/packet.template.md) | Requirements, scope authorization, dependencies and ownership |
 | [Implementation template](agent-workflow/implementation.template.md) | Candidate SHA and actual validation |
 | [Review template](agent-workflow/review.template.md) | Independent findings, coverage and commit-specific verdict |
@@ -22,25 +25,35 @@ GitHub webhook, scheduled job or separate API application is installed.
 | [Issue decision records](decisions/README.md) | Issue-specific answers and supersession history |
 | [Decision template](agent-workflow/decision.template.md) | Source, authority, scope, conditions and propagation |
 
-Codex documents project-scoped custom agents under `.codex/agents/`, with `name`,
-`description` and `developer_instructions`. Models, reasoning settings, provider,
-MCP connections and permissions are inherited here: this setup pins none of them.
-Role instructions are behavioral guidance, not OS-level read-only enforcement.
-The project's config must be loaded/trusted under the client's normal mechanism;
-managed/session policy can disable agents or restrict tools.
+Edit only the five sources under `agents/`. `python scripts/sync_agents.py`
+generates full prompts in `.codex/agents/*.toml` (`name`, `description`,
+`developer_instructions`) and `.claude/agents/*.md` (YAML identity/description,
+Markdown prompt). These are checked-in generated adapters, not independently
+maintained copies or pointer-only roles. `--check` detects drift without writing.
+Python 3.11+ standard library suffices; source CRLF is normalized to LF, and the
+existing Git attributes keep adapter checkouts at LF. See the maintenance guide
+for input validation, preserved unrelated files and nontransactional batch failures.
 
-Source, checked 2026-11-04: [official Codex subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+Models, reasoning, providers, MCP, tools and permissions remain inherited from
+each client/session; the adapters add no overrides. Client trust/loading and
+managed/session policy still apply. Role text is guidance, not OS enforcement.
+Claude's [documented `@AGENTS.md` import](https://code.claude.com/docs/en/memory#import-additional-files)
+keeps the project rules shared even on versions without direct AGENTS.md support.
+Client registration formats: [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents),
+[Claude Code subagents](https://code.claude.com/docs/en/sub-agents), checked 2026-11-04.
+Reload/restart as required by the installed client; availability of these files
+does not prove that the active runtime discovered the definitions.
 
-## Start from a normal Codex session
+## Start from a normal Codex or Claude Code session
 
-Open this checkout in Codex. One sentence starts the defined issue workflow:
+Open this checkout in either client. One sentence starts the same issue workflow:
 
 ```text
 Implement issue #2 and follow the defined workflow.
 ```
 
 AGENTS.md routes issue implementation to this workflow by default. The main
-session reads the coordinator role, retrieves the current issue/dependencies,
+session reads `agents/coordinator.md`, retrieves the current issue/dependencies,
 derives the stage, delegates requirements/implementation/review and presents the
 reviewed PR for the human merge decision. The user does not need to repeat role
 names, file paths, test steps, stage or existing merge rules in every request.
@@ -70,10 +83,12 @@ change physical devices or publish packages. Those boundaries are defined here,
 not extra wording the user must append to the kickoff sentence.
 
 The primary session is the coordinator so it can talk directly to the human.
-Reading its role file is explicit guidance, not a claim that a root-session
-`--agent` command exists. Delegate to named roles when the active client supports
+Reading the shared coordinator source is explicit main-session guidance, independent
+of any client-specific root-agent flag. Delegate to named roles when the client supports
 selection. If a client's delegation tools cannot select custom names, explicitly
-load/pass the corresponding role instructions and disclose that fallback. If
+load/pass the complete corresponding `agents/*.md` instructions and disclose that
+fallback; do not claim native definition loading. Claude subagents need the bounded
+packet and decisions in their handoff rather than assumed prior chat history. If
 subagents are unavailable, provide a resumable packet and state the limitation;
 do not claim an independent review occurred in a single context.
 
@@ -226,12 +241,17 @@ single reviewed issue before adding that infrastructure.
 
 ```bash
 python scripts/check_agent_setup.py
+python scripts/sync_agents.py --check
+python -m unittest discover -s tests -p "test_sync_agents.py"
 ```
 
-The checker parses TOML, verifies role names/required fields and local document
-references, and rejects accidental model/provider/permission overrides. It does
+The checker parses Codex TOML, validates shared source metadata and exact generated
+parity for both native formats, checks the Claude import and local references,
+and rejects accidental model/provider/permission overrides. Tooling tests exercise
+format fidelity, Unicode/escaping, CRLF, drift/no-op writes, invalid-input preflight,
+preservation and write failures. These checks do
 not run an LLM, prove client discovery or exercise the full human approval loop.
-Actual delegation needs an authorized live Codex session with the relevant tools.
+Actual delegation needs an authorized live client session with the relevant tools.
 Record such an end-to-end run separately; do not label static checks as agent
 runtime acceptance or product/hardware evidence.
 
@@ -243,3 +263,9 @@ the named roles. Those initial setup checks did not exercise model delegation.
 an issue-2 contract/documentation run with independent review at candidate
 `eae0e7ef4b83f458b43658044123a28ccd8a60a9`; its full review report was a local run
 artifact. This is distinct from runtime, hardware or live completion-role evidence.
+
+For shared-role setup, local Codex 0.166.0 and Claude Code 2.1.150 were inspected
+without model launches. Version/help output does not establish native role
+discovery. In particular, `claude agents` on that version manages live sessions;
+its JSON output is not a custom-definition inventory. Native discovery and live
+Claude workflow behavior require separate evidence; Agent Teams are not required.

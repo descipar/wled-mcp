@@ -22,6 +22,9 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 ## First work session
 
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
+   Both clients use the [shared roles](../agents/README.md); the main session reads
+   [coordinator.md](../agents/coordinator.md). Maintain source roles, regenerate
+   adapters and check drift as described there before depending on edited roles.
 2. Confirm scope from the new user instruction. Distinguish implementation, installation, hub deployment and hardware writes.
 3. Read the issue-2 [contract](TOOL-CONTRACT.md), [scoped decisions](decisions/issue-2.md) and [synthetic examples](../examples/contracts/README.md). Preserve existing omitted state, explicitly default new IDs, verify firmware representability and persistently verify saves. Recheck the pinned source profile against observed firmware; source review is not hardware acceptance. Supplied-state save and restore execution remain deferred Should work.
 4. Bootstrap one package with `--transport stdio|streamable-http`, default listener-free stdio, pinned uvx launch, locked dependencies and meaningful mocks. Test real stdio and loopback Streamable HTTP clients. Implement the independent HTTP service in #14 using the same tool/domain graph and process-wide per-device locks.
