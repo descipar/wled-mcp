@@ -39,6 +39,8 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                     "wled_get_state",
                     "wled_get_effects",
                     "wled_get_palettes",
+                    "wled_set_state",
+                    "wled_patch_segments",
                 ]
                 assert tools[0].input_schema["additionalProperties"] is False
                 result = await client.call_tool("wled_list_devices", {})

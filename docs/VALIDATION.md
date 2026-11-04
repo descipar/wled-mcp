@@ -143,6 +143,40 @@ not from a controller; H01/H02 (real device facts, comparison with the WLED UI a
 MCPHub) are not performed. OPS-04 is only partially covered (server version, unknown
 capabilities, safe errors). No issue acceptance box that needs hardware evidence is claimed from mocks.
 
+## Issue #6 implementation evidence
+
+Candidate under review (mock transport only; no LAN/device access; H04/H05 remain
+pending). 2026-11-04, Windows/Python 3.13.2, MCP SDK 2.3.0, HTTPX2 2.16.0. Commands
+run from the repository root with `UV_CACHE_DIR=.uv-cache`, `UV_PYTHON_DOWNLOADS=never`:
+
+| Command | Result |
+| --- | --- |
+| `uv sync --locked` | up to date (44 packages) |
+| `uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py` | All checks passed |
+| `uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py` | 26 files already formatted |
+| `uv run --frozen mypy` | Success: no issues found in 13 source files (strict) |
+| `uv run --frozen python scripts/check_agent_setup.py` | valid; `python scripts/sync_agents.py --check`: synchronized |
+| `uv run --frozen python scripts/check_lock.py` | Lock/export consistency: PASS |
+| `uv run --frozen pytest` | 219 passed with the pre-existing wall-clock-sensitive `test_one_total_deadline_and_bounded_read_retry` deselected; 26 new tests in `tests/test_patches.py` |
+
+Known flake (unchanged by #6): `test_one_total_deadline_and_bounded_read_retry`
+in `tests/test_inventory_client.py` remains wall-clock sensitive on this Windows
+host, as documented under issue #5's evidence.
+
+| Criterion | Executed evidence (all in `tests/test_patches.py` unless noted) |
+| --- | --- |
+| C2-01, T04 | master patch rules: off-master + positive brightness payload excludes `on`; explicit `on=False` sends only `{on:false}`; reject `on=true, brightness=0` and `brightness=0` with resolved `on=true`; turning on requires an explicit positive brightness when remembered is zero; persistent `transition` is never in the payload |
+| C2-05, T04 | `transition_ms` -> `tt` conversion verified for `0`, `50`, `149`, `150`, `65500` (0/1/1/2/655); 1-49 rejected; transition-only request rejected before POST; `transition_ms` out of range caught by request schema |
+| C2-03/04, T06 | RGB-only with 4 channels or RGBW with 3 channels -> `VALIDATION_ERROR`; unknown per-segment capability for a color change -> `UNSUPPORTED_CAPABILITY`; unknown patch target -> `VALIDATION_ERROR`; patch without a mutable field -> `VALIDATION_ERROR`; range change requires both `start`/`stop`; range change introducing overlap with an untouched active segment -> `VALIDATION_ERROR`; `effect_id` beyond catalog range -> `VALIDATION_ERROR`; unknown device -> `UNKNOWN_DEVICE` with zero HTTP |
+| C2-06, T07 | dry-run plan lists exact update IDs, empty create/remove IDs and all preserved IDs; payload shows only the sent fields; zero POSTs; actual invocation under the per-device lock revalidates and rejects a plan invalidated by a live state change |
+| C2-10, T08/T09 | ACK alone with mismatching readback -> `application=unknown, verification=mismatch, ok=false, VERIFICATION_MISMATCH`; normalized off with remembered brightness unchanged is accepted; dispatched POST timeout + unavailable readback -> `WRITE_OUTCOME_UNKNOWN`, exactly one POST, never replayed |
+| MULTI-01, T10 | two concurrent patches on the same device serialize through the per-device lock while a patch on a different device progresses in parallel; both complete with one POST each |
+
+Remaining limits: hardware acceptance (H04/H05) is not authorized in this round
+and not run; mock-only POST handlers model profile 0 behavior per the pinned
+source (`docs/SOURCES.md#issue-2-contract-evidence`) and `ISSUE-6-DEC-002`. No
+issue acceptance box that requires hardware evidence is claimed from mocks.
+
 ## Evidence template
 
 ```text

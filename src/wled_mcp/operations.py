@@ -11,8 +11,18 @@ from wled_mcp import __version__
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.models import Outcome
+from wled_mcp.patches import (
+    MasterPlan,
+    PatchSegmentsRequest,
+    SegmentsPlan,
+    SetStateRequest,
+    build_segment_patch_plan,
+    build_set_state_plan,
+    matches_segments,
+    matches_set_state,
+)
 from wled_mcp.readmodels import Collector, as_dict, normalize_state, redact_info
-from wled_mcp.resources import Resources
+from wled_mcp.resources import OperationContext, Resources
 from wled_mcp.server import Operation
 
 
@@ -36,6 +46,15 @@ READ_ONLY = ToolAnnotations(
     read_only_hint=True,
     destructive_hint=False,
     idempotent_hint=True,
+    open_world_hint=False,
+)
+
+MUTATION = ToolAnnotations(
+    # Typed mutations are explicit state changes; they are not snapshot/preset
+    # destructive. Annotations are hints only, not an authorization barrier.
+    read_only_hint=False,
+    destructive_hint=False,
+    idempotent_hint=False,
     open_world_hint=False,
 )
 
@@ -182,6 +201,204 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
     )
 
 
+async def _read_state_and_info(
+    context: OperationContext,
+) -> tuple[
+    dict[str, JsonValue],
+    dict[str, JsonValue],
+    dict[str, JsonValue],
+    dict[str, JsonValue],
+    list[str],
+]:
+    """Fresh ``/json/state`` + ``/json/info`` read under the active lock + deadline."""
+    state = await context.read(Endpoint.STATE)
+    info = await context.read(Endpoint.INFO)
+    collector = Collector()
+    view, capabilities, _firmware, _unknown = normalize_state(state, info, collector)
+    return view, capabilities, as_dict(info), as_dict(state), collector.result()
+
+
+def _dry_run_outcome(
+    operation: str, device_id: str, data: dict[str, JsonValue], warnings: list[str]
+) -> Outcome:
+    return Outcome(
+        ok=True,
+        operation=operation,
+        device_id=device_id,
+        dry_run=True,
+        application="not_attempted",
+        verification="not_requested",
+        data=data,
+        warnings=warnings,
+    )
+
+
+def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
+    """Master and segment patch tools. Both share the per-device write/verify lock."""
+
+    async def set_state(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_set_state"
+        request = SetStateRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    (
+                        state_view,
+                        _capabilities,
+                        _info,
+                        _raw_state,
+                        warnings,
+                    ) = await _read_state_and_info(context)
+                plan = build_set_state_plan(request, state_view)
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {
+                    "plan": plan.public,
+                    "payload": plan.payload,
+                    "postconditions": plan.postconditions,
+                },
+                warnings,
+            )
+
+        plan_box: dict[str, MasterPlan] = {}
+
+        async def prepare(context: OperationContext) -> dict[str, JsonValue]:
+            state_view, _capabilities, _info, _raw_state, _warnings = await _read_state_and_info(
+                context
+            )
+            plan_box["plan"] = build_set_state_plan(request, state_view)
+            return plan_box["plan"].payload
+
+        def matches(state: JsonValue) -> bool:
+            plan = plan_box.get("plan")
+            return plan is not None and matches_set_state(plan, state)
+
+        outcome = await resources.write_verified(device_id, name, prepare, matches)
+        return _enrich_outcome_with_plan(outcome, plan_box.get("plan"))
+
+    async def patch_segments(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_patch_segments"
+        request = PatchSegmentsRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    (
+                        state_view,
+                        capabilities,
+                        raw_info,
+                        raw_state,
+                        warnings,
+                    ) = await _read_state_and_info(context)
+                plan = build_segment_patch_plan(
+                    request, state_view, capabilities, raw_info, raw_state
+                )
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {
+                    "plan": plan.public,
+                    "payload": plan.payload,
+                    "postconditions": plan.postconditions,
+                },
+                warnings,
+            )
+
+        plan_box: dict[str, SegmentsPlan] = {}
+
+        async def prepare(context: OperationContext) -> dict[str, JsonValue]:
+            state_view, capabilities, raw_info, raw_state, _warnings = await _read_state_and_info(
+                context
+            )
+            plan_box["plan"] = build_segment_patch_plan(
+                request, state_view, capabilities, raw_info, raw_state
+            )
+            return plan_box["plan"].payload
+
+        def matches(state: JsonValue) -> bool:
+            plan = plan_box.get("plan")
+            return plan is not None and matches_segments(plan.expectations, state)
+
+        outcome = await resources.write_verified(device_id, name, prepare, matches)
+        return _enrich_segments_outcome(outcome, plan_box.get("plan"))
+
+    return (
+        Operation(
+            name="wled_set_state",
+            description=(
+                "Apply a typed master patch: optional on/brightness/transition_ms. "
+                "Omitted fields remain unchanged. Transition is a one-call tt (ms) "
+                "that does not touch persistent 'transition'. dry_run performs "
+                "bounded reads only and returns the resolved plan."
+            ),
+            request_model=SetStateRequest,
+            execute=set_state,
+            annotations=MUTATION,
+        ),
+        Operation(
+            name="wled_patch_segments",
+            description=(
+                "Patch one or more existing active segments by explicit ID. Omitted "
+                "fields and unrelated segments are preserved. No segment creation or "
+                "removal. dry_run performs bounded reads only and returns the plan."
+            ),
+            request_model=PatchSegmentsRequest,
+            execute=patch_segments,
+            annotations=MUTATION,
+        ),
+    )
+
+
+def _translate_pre_dispatch(name: str, device_id: str, failure: ClientFailure) -> Outcome:
+    """Pre-dispatch failures map to the shared not_attempted/not_requested envelope."""
+    return Outcome(
+        ok=False,
+        operation=name,
+        device_id=device_id,
+        application="not_attempted",
+        verification="not_requested",
+        error=failure.error,
+    )
+
+
+def _enrich_outcome_with_plan(outcome: Outcome, plan: MasterPlan | None) -> Outcome:
+    if plan is None:
+        return outcome
+    extra: dict[str, JsonValue] = {
+        "plan": plan.public,
+        "postconditions": plan.postconditions,
+    }
+    merged = {**outcome.data, **extra}
+    return outcome.model_copy(update={"data": merged})
+
+
+def _enrich_segments_outcome(outcome: Outcome, plan: SegmentsPlan | None) -> Outcome:
+    if plan is None:
+        return outcome
+    extra: dict[str, JsonValue] = {
+        "plan": plan.public,
+        "postconditions": plan.postconditions,
+    }
+    merged = {**outcome.data, **extra}
+    return outcome.model_copy(update={"data": merged})
+
+
 def build_operations(resources: Resources) -> tuple[Operation, ...]:
     async def list_devices(arguments: dict[str, Any]) -> Outcome:
         entries: list[JsonValue] = [
@@ -247,4 +464,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
             ),
         ),
         *_build_read_operations(resources),
+        *_build_write_operations(resources),
     )
