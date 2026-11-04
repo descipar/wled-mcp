@@ -1,0 +1,253 @@
+{
+  "kind": "synthetic_contract_case",
+  "acceptance": [
+    "C2-02",
+    "C2-03",
+    "C2-04",
+    "C2-06",
+    "C2-10"
+  ],
+  "scenarios": [
+    "T05",
+    "T06",
+    "T07",
+    "T09"
+  ],
+  "profile": {
+    "reference": "wled-0.15.1-source-profile",
+    "led_count": 60,
+    "max_segments": 16,
+    "allocated_slot_count": 6,
+    "next_allocatable_id": 6,
+    "range_capability": "validated uniform RGB-only fixture",
+    "exact_id_single_object_delete": true,
+    "main_segment_redirect": true
+  },
+  "before": {
+    "active_segment_ids": [
+      0,
+      2,
+      5
+    ],
+    "segments": [
+      {
+        "id": 0,
+        "start": 0,
+        "stop": 10
+      },
+      {
+        "id": 2,
+        "start": 10,
+        "stop": 20,
+        "on": true,
+        "brightness": 180,
+        "effective_brightness": 180,
+        "colors": [
+          [
+            255,
+            80,
+            0
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ]
+        ],
+        "effect_id": 1,
+        "palette_id": 0,
+        "speed": 90,
+        "intensity": 70,
+        "name": "Edge"
+      },
+      {
+        "id": 5,
+        "start": 20,
+        "stop": 30
+      }
+    ],
+    "main_segment_id": 0
+  },
+  "request": {
+    "device_id": "desk",
+    "segments": [
+      {
+        "id": 2,
+        "start": 0,
+        "stop": 30
+      },
+      {
+        "id": 6,
+        "start": 30,
+        "stop": 60,
+        "colors": [
+          [
+            0,
+            0,
+            255
+          ]
+        ]
+      }
+    ],
+    "dry_run": true
+  },
+  "expected": {
+    "schema_version": 1,
+    "ok": true,
+    "operation": "replace_layout",
+    "device_id": "desk",
+    "dry_run": true,
+    "application": "not_attempted",
+    "verification": "not_requested",
+    "data": {
+      "plan": {
+        "update_segment_ids": [
+          2
+        ],
+        "create_segment_ids": [
+          6
+        ],
+        "remove_segment_ids": [
+          0,
+          5
+        ],
+        "main_segment_id": 2,
+        "resolved_segments": [
+          {
+            "id": 2,
+            "start": 0,
+            "stop": 30,
+            "on": true,
+            "brightness": 180,
+            "effective_brightness": 180,
+            "colors": [
+              [
+                255,
+                80,
+                0
+              ],
+              [
+                1,
+                2,
+                3
+              ],
+              [
+                4,
+                5,
+                6
+              ]
+            ],
+            "effect_id": 1,
+            "palette_id": 0,
+            "speed": 90,
+            "intensity": 70,
+            "name": "Edge"
+          },
+          {
+            "id": 6,
+            "start": 30,
+            "stop": 60,
+            "on": true,
+            "brightness": 255,
+            "effective_brightness": 255,
+            "colors": [
+              [
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "effect_id": 0,
+            "palette_id": 0,
+            "speed": 128,
+            "intensity": 128,
+            "grouping": 1,
+            "spacing": 0,
+            "offset": 0,
+            "reverse": false,
+            "mirror": false,
+            "selected": false,
+            "name": ""
+          }
+        ],
+        "targeted_compensation": [
+          {
+            "id": 2,
+            "name": "Edge"
+          }
+        ],
+        "steps": [
+          "Redirect main ID to 2 using the validated profile.",
+          "Remove ID 0 via a single-object seg payload; verify.",
+          "Remove ID 5 via a single-object seg payload; verify.",
+          "Move ID 2 to [0,30), preserving omitted fields and name; verify.",
+          "Create next allocated ID 6 at [30,60) with explicit defaults; verify."
+        ]
+      },
+      "postconditions": [
+        "No writes occur during this dry run.",
+        "After a separately executed successful plan, active IDs are exactly 2 and 6.",
+        "Existing ID 2 preserves colors, name, power, brightness, effect, speed, intensity and other omitted fields.",
+        "No gap fillers or fixed deletion tail; no bulk purge.",
+        "On any uncertain dispatched step stop, report completed/remaining steps, do not replay or continue."
+      ]
+    },
+    "warnings": [],
+    "error": null
+  },
+  "rejected_request": {
+    "device_id": "desk",
+    "segments": [
+      {
+        "id": 2,
+        "start": 0,
+        "stop": 30
+      },
+      {
+        "id": 8,
+        "start": 30,
+        "stop": 60,
+        "colors": [
+          [
+            0,
+            0,
+            255
+          ]
+        ]
+      }
+    ]
+  },
+  "rejected_outcome": {
+    "schema_version": 1,
+    "ok": false,
+    "operation": "replace_layout",
+    "device_id": "desk",
+    "dry_run": false,
+    "application": "not_attempted",
+    "verification": "not_requested",
+    "data": {},
+    "warnings": [],
+    "error": {
+      "code": "UNSUPPORTED_CAPABILITY",
+      "message": "New ID 8 cannot be allocated as requested; the known next slot is 6.",
+      "read_retryable": false,
+      "write_retryable": false,
+      "reconciliation": "Choose representable IDs or inspect the current layout; no write was sent."
+    }
+  }
+}

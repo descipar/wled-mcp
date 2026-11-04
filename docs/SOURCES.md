@@ -18,6 +18,28 @@ Reviewed 2026-11-04. Sources inform implementation; proposals in this repository
 | [MCPHub repository](https://github.com/samanhappy/mcphub) | Hub entry/integration behavior; actual installed version must be checked |
 | [Stage-2 marketplace research](MARKETPLACE.md) | Primary catalog/registry sources, observed submission paths and publication limitations, checked 2026-11-04 |
 
+## Issue-2 contract evidence
+
+Checked 2026-11-04. WLED tag `v0.15.1` resolves to immutable commit
+`4f3992b4dc57c888b53d9576c894a278e03e4cfc` (GitHub commit API). This is a source
+reference profile, not the latest-version claim or observed installed firmware.
+
+| Pinned evidence | Contract consequence |
+| --- | --- |
+| [json.cpp, segment allocation/name handling](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L16) | New IDs append; geometry changes can clear omitted names. Require representability and targeted preservation compensation. |
+| [json.cpp, deletion handling](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L358) | Array deletion can purge/renumber; single-object ID removal follows a different path. Exact-ID multi-step planning needs adapter tests. |
+| [json.cpp, power and transition](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L291) and [serialization](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L526) | Master power/brightness are coupled; readback reports remembered brightness. Temporary transition uses 100 ms units. |
+| [presets.cpp, save controls](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L200) and [capture](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L15) | Persistent IDs 1–250, temporary 255, key 0 initializer; 32-byte name payload; current-state capture is asynchronous. |
+
+Live fields are processed before preset save in the reviewed API. The custom-command
+storage branch does not establish a safe general supplied-state save/restore path;
+those Should operations remain deferred. Server defaults, conservative RGB/RGBW
+validation and result semantics are original design choices. No firmware code was
+copied. [MCP transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)
+and [tool result](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+rules inform the protected stateless design; a compatible SDK and protocol execution
+are still downstream work.
+
 ## Reviewed alternatives
 
 | Project | Observed state | Why not adopted automatically |

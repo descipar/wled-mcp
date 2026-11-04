@@ -2,7 +2,7 @@
 
 Specification and implementation backlog for a standalone WLED MCP server with MCPHub integration.
 
-**Status, 2026-11-04:** planning and handoff only. There is no implementation, installable package, deployed server, or validated hardware compatibility yet. Repository creation and issue creation were requested; installing software or changing lighting was not requested.
+**Status, 2026-11-04:** issue #2 has a concrete v1 design contract and synthetic examples prepared for review. There is no runtime implementation, installable package, deployed server, or validated hardware compatibility yet. See the [contract decisions](docs/decisions/issue-2.md) and [acceptance traceability](docs/VALIDATION.md).
 
 The repository also includes [Codex role definitions and a human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation and independent review. These run inside an active Codex session; no autonomous background service or WLED backlog run is started by checking them out.
 
@@ -29,7 +29,8 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | File | Purpose |
 | --- | --- |
 | [Requirements](docs/REQUIREMENTS.md) | Context, scope, identifiable requirements, priorities, unresolved inputs |
-| [Tool contract](docs/TOOL-CONTRACT.md) | Proposed tools, parameters, result format, mutation semantics |
+| [Tool contract](docs/TOOL-CONTRACT.md) | V1 design: tools, parameters, result format and mutation semantics |
+| [Contract examples](examples/contracts/README.md) | Synthetic patch/layout/preset/error cases and snapshot format |
 | [Architecture](docs/ARCHITECTURE.md) | Components, runtime, configuration, design decisions |
 | [Deployment](docs/DEPLOYMENT.md) | Proposed persistent MCPHub integration, update and rollback procedure |
 | [Validation](docs/VALIDATION.md) | Meaningful automated checks, opt-in hardware checks, release criteria |
@@ -47,7 +48,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 
 ## Development status
 
-No bootstrap commands are claimed to work yet. The first implementation issue must add packaging, dependency locking, the console entry point, and reproducible development commands. Tools and configuration in these documents are the proposed v1 contract, not a description of existing executable behavior.
+No bootstrap commands are claimed to work yet. The first implementation issue must add packaging, dependency locking, the console entry point, and reproducible development commands. The v1 contract and configuration describe required future behavior, not an existing executable API. Technical choices remain agent design decisions, distinct from confirmed human scope.
 
 ## Boundaries
 
@@ -59,7 +60,7 @@ No bootstrap commands are claimed to work yet. The first implementation issue mu
 
 Repository: https://github.com/descipar/wled-mcp
 
-Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with thirteen child issues covering contract, both transports, implementation, validation, integration and optional scope. Start implementation with [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2).
+Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with thirteen child issues covering contract, both transports, implementation, validation, integration and optional scope. Review [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2) before downstream packaging/runtime work; a document change does not close the live issue.
 
 Future public/product work has its own [stage-2 tracker #15](https://github.com/descipar/wled-mcp/issues/15), with ten child issues (#16–#25), all labeled `stage:2`. These do not silently expand stage-1 acceptance.
 

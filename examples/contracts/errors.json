@@ -1,0 +1,103 @@
+{
+  "kind": "synthetic_contract_case",
+  "acceptance": [
+    "C2-05",
+    "C2-09",
+    "C2-10"
+  ],
+  "scenarios": [
+    "T06",
+    "T08",
+    "T09",
+    "T12",
+    "T13",
+    "T14",
+    "T18"
+  ],
+  "cases": [
+    {
+      "name": "unknown_write",
+      "request": {
+        "device_id": "desk",
+        "on": false
+      },
+      "observations": [
+        "POST may have reached the device before connection reset.",
+        "Bounded readback unavailable."
+      ],
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "set_state",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "unknown",
+        "verification": "unknown",
+        "data": {},
+        "warnings": [],
+        "error": {
+          "code": "WRITE_OUTCOME_UNKNOWN",
+          "message": "The write may have applied; readback did not establish the outcome.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Read current state before deciding on any explicit new mutation."
+        }
+      },
+      "mcp_isError": true
+    },
+    {
+      "name": "readable_mismatch_after_timeout",
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "set_state",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "unknown",
+        "verification": "mismatch",
+        "data": {
+          "observed": {
+            "on": true
+          }
+        },
+        "warnings": [],
+        "error": {
+          "code": "VERIFICATION_MISMATCH",
+          "message": "Requested off state was not observed at the deadline; earlier application remains possible.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Inspect current state and competing controllers; do not blindly replay."
+        }
+      },
+      "mcp_isError": true
+    },
+    {
+      "name": "backup_failure",
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "delete_preset",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {},
+        "warnings": [],
+        "error": {
+          "code": "BACKUP_FAILED",
+          "message": "A durable validated snapshot could not be created; no delete was sent.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Repair the configured data path before an explicitly requested new attempt."
+        }
+      },
+      "mcp_isError": true
+    }
+  ],
+  "validation_assertions": [
+    "1-49 transition_ms is rejected; 149 maps to 100 and 150 maps to 200; 65500 maps to 655 wire units.",
+    "Transition-only request fails; persistent transition is not written.",
+    "All replacement overlap, duplicate IDs, invalid colors and unknown required range capability fail with zero POSTs.",
+    "MCP structuredContent equals JSON parsed from the text fallback; isError equals not ok."
+  ]
+}
