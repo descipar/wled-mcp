@@ -13,6 +13,8 @@ Reviewed 2026-11-04. Sources inform implementation; proposals in this repository
 | [WLED source](https://github.com/wled/WLED) | Verify firmware-dependent behavior against matching release code |
 | [Official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) | Protocol/runtime implementation; choose and lock a compatible version |
 | [MCP tools specification, 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) | Tool schemas/results/errors and annotations; implementation negotiates supported protocol via SDK |
+| [MCP transports specification, 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports) | stdio and Streamable HTTP, endpoint handling, Origin checks, sessions and disconnect semantics |
+| [uv tool execution](https://docs.astral.sh/uv/guides/tools/) | uvx launch, pinned source/artifact selection and isolated environment behavior |
 | [MCPHub repository](https://github.com/samanhappy/mcphub) | Hub entry/integration behavior; actual installed version must be checked |
 
 ## Reviewed alternatives

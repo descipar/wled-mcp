@@ -22,10 +22,10 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
 2. Confirm scope from the new user instruction. Distinguish implementation, installation, hub deployment and hardware writes.
 3. Finalize patch-versus-replacement missing-field behavior and preset-save semantics in the contract issue. Read official WLED API documentation for the observed firmware; do not infer behavior solely from the reviewed candidate projects.
-4. Bootstrap a package with a working console command, locked dependencies, meaningful mocks and an actual stdio integration test.
+4. Bootstrap one package with `--transport stdio|streamable-http`, default listener-free stdio, pinned uvx launch, locked dependencies and meaningful mocks. Test real stdio and loopback Streamable HTTP clients. Implement the independent HTTP service in #14 using the same tool/domain graph and process-wide per-device locks.
 5. Implement named inventory/client/reads, then typed controls, layouts and persistent presets following dependency order.
 6. Keep the optional raw tool out of the default surface until its allowlist and non-bypass behavior are defined; defer Should work explicitly if necessary.
-7. Prepare deployment artifacts and instructions, then perform authorized read-only hub validation. Ask for missing device inputs only when they are actually needed.
+7. Prepare both HTTP-service/Docker and uvx/stdio deployment artifacts/instructions, then perform authorized read-only hub validation. Protect the HTTP endpoint independently of hub authorization. Record which mode was actually deployed; ask for missing device inputs only when needed.
 8. Update issues with evidence, not just “done”; link PRs and note unrun physical checks.
 
 ## Questions to resolve at the appropriate point
@@ -33,6 +33,7 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 - Which controllers and meaningful aliases, URLs, firmware and LED capabilities should be included?
 - Is there a suitable device/range and unused preset slot for physical validation?
 - Does the actual container runtime already provide compatible Python/uv and the required persistent mounts?
+- For HTTP deployment, which private service address/network, Host/Origin allowlist and runtime credential source should be used? Both HTTP and stdio are confirmed v1 scope; only deployment details remain open.
 - Are CCT, 2D matrix, playlist editing or timers concrete needs? These are not inferred Must features.
 - Is code reuse or eventual publication desired, and under what license? No license was selected in planning.
 

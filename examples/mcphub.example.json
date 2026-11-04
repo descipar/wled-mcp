@@ -1,8 +1,13 @@
 {
   "mcpServers": {
     "wled": {
-      "command": "/REPLACE_WITH_PERSISTENT_RUNTIME/bin/wled-mcp",
+      "command": "uvx",
       "args": [
+        "--from",
+        "/app/binaries/wled-mcp/REPLACE_WITH_VERSIONED_WHEEL.whl",
+        "wled-mcp",
+        "--transport",
+        "stdio",
         "--config",
         "/app/data/wled-mcp/config/devices.toml",
         "--data-dir",

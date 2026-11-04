@@ -5,7 +5,8 @@
 ```mermaid
 flowchart LR
   A[Agent clients] --> H[Existing MCPHub]
-  H -->|stdio MCP| M[MCP tool adapter]
+  H -->|stdio or Streamable HTTP| M[MCP tool adapter]
+  X[Other authorized MCP clients] -->|Streamable HTTP| M
   M --> V[Validation and domain operations]
   V --> I[Configured device inventory]
   V --> L[Per-device write lock]
@@ -27,7 +28,7 @@ src/wled_mcp/
   backups.py      # atomic preset snapshots and retention
 tests/
   unit/
-  integration/    # mocked HTTP and real stdio protocol, no LAN
+  integration/    # mocked WLED HTTP, real stdio and loopback MCP HTTP, no LAN
   fixtures/       # sanitized synthetic WLED responses
 ```
 
@@ -41,7 +42,8 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 | Documentation and issue backlog before implementation | Confirmed | Current assignment ends with an actionable handoff |
 | Python, async HTTP, official MCP SDK | Proposed | Fits existing hub ecosystem and small adapter scope; choose maintained compatible versions at bootstrap |
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |
-| stdio only for v1 | Proposed | Hub already provides remote access/authentication; avoids another service and OAuth stack |
+| Streamable HTTP plus stdio in v1 | Confirmed scope update | Independent service mode plus client-managed uvx mode; identical tools and domain layer |
+| One HTTP worker, SDK-managed sessions/stateless strategy | Proposed baseline | Shared process-wide per-device locks protect concurrent clients; finalize lifecycle and endpoint access in #2/#14 |
 | Explicit named inventory | Proposed | Predictable target selection; avoids Docker multicast/mDNS assumptions |
 | No arbitrary caller-supplied hosts | Proposed | Limits tool targeting to the configured installation and removes accidental host selection |
 | Separate segment patch and layout replacement | Proposed core contract | Prevents stale fields and unintended deletion; finalize missing-field behavior before code |
@@ -56,6 +58,10 @@ See [example inventory](../examples/devices.example.toml). Configuration path is
 Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`/`WLED_MCP_DATA_DIR`; absent values cause an actionable startup failure rather than guessing a household file. Do not embed actual URLs or credentials in source. HTTP(S) root URLs may use explicit ports. Disable redirects by default; do not follow a configured controller to an arbitrary host. Avoid implicit proxy environment routing for LAN calls unless deliberately configured.
 
 ## Device operations
+
+Build the same tool/domain graph for either explicitly selected transport. In HTTP mode create shared resources once per process, not per request/session; all sessions share the same device locks and backup store. Use the maintained SDK for `/mcp`, protocol negotiation and session handling. One worker is the v1 baseline; multiple worker processes need cross-process coordination before they can provide equivalent write guarantees.
+
+CLI stdio is the default and opens no listener; `--transport streamable-http` starts the independent service with explicit bind/port options. HTTP defaults to loopback. Private container-network binding, Host/Origin allowlists, runtime credential injection and optional authenticated proxy termination are deployment configuration. Protect the endpoint independently of the hub, without inventing a new OAuth product. Prefer SDK-supported stateless request handling if compatible with required tools; document the selected lifecycle and test reconnect/shutdown without mutation replay.
 
 Reuse one managed async HTTP client with bounded connections, close it on process exit, and use operation deadlines. Reads can use a single bounded retry for transient transport failures; parse errors and invalid requests are not retry candidates. Writes are never automatically retried.
 
@@ -75,4 +81,4 @@ At first inventory capture, document observed firmware/API variants and supporte
 
 ## Resource and dependency policy
 
-No database, web UI or extra daemon. Measure rather than promise Pi memory/latency. Lock dependencies, retain package build metadata, and keep runtime reproducible. Revisit this decision if a maintained WLED client library demonstrably reduces complexity; evaluate its version support and license before adding it.
+HTTP mode runs one independent service; stdio mode is client-managed. No database, web UI or additional supporting daemon is required. Measure rather than promise Pi memory/latency in each mode. Lock dependencies, retain package build metadata, and keep runtime reproducible. Revisit this decision if a maintained WLED client library demonstrably reduces complexity; evaluate its version support and license before adding it.

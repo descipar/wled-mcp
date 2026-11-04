@@ -23,16 +23,20 @@ Current result: **not run — no implementation exists**. The following are futu
 | T15 | Mocked HTTP redirect, HTML response, malformed JSON, huge response, missing capabilities and connection reset return actionable bounded errors | READ-01, REL-01, OPS-03 |
 | T16 | Build a wheel and start the installed console command in a clean environment using pinned dependencies; README command matches reality | OPS-02 |
 | T17 | If optional raw tool is enabled, reject endpoints, hosts, persistence keys, layout deletion/replacement and unallowlisted fields that bypass typed rules | ADV-01 |
+| T18 | Real SDK client initializes and lists/calls tools through Streamable HTTP at `/mcp`; schemas and structured/text/error outcomes match stdio | MCP-01–02, OPS-05 |
+| T19 | Concurrent HTTP clients share one per-device write/verify lock while other devices progress; no session-local resource duplication or false multi-worker guarantees | MCP-04, MULTI-01 |
+| T20 | Missing/invalid credentials and disallowed Host/Origin reject before device operations; credentials do not leak; explicit HTTP binding and listener-free stdio defaults work | MCP-03, OPS-03 |
+| T21 | HTTP reconnect/disconnect, chosen session lifecycle and graceful shutdown do not replay writes; installed service/uvx entry points support explicit transport selection | MCP-04, REL-02, OPS-05 |
 
-CI should run on supported Python versions and a Linux environment, with lint/type checking proportional to the implementation. Protocol tests must run the actual console entry point, catching the missing-main class of issue observed in a candidate project. Build/dependency errors must not be hidden by mocks.
+CI should run on supported Python versions and a Linux environment, with lint/type checking proportional to the implementation. Protocol tests must run the actual console entry point, catching the missing-main class of issue observed in a candidate project. HTTP tests use ephemeral loopback ports and mocked WLED transport, not LAN devices. Build/dependency errors must not be hidden by mocks. T18–T21 are required alongside T01–T16; T17 remains conditional on the optional raw tool.
 
 ## Read-only hardware checks
 
 H01: Record selected device alias, firmware, LED count, RGB/RGBW/CCT and segment capabilities from real responses. Sanitize any committed fixture.
 
-H02: Read state/catalogs/presets from the actual hub container execution context, then through MCPHub. Compare observed IDs/names and capability interpretation with the WLED UI. No discovery scan or state write is needed.
+H02: Read state/catalogs/presets from the actual WLED-MCP execution context, then through MCPHub. In HTTP mode this is the independent service/container; in stdio mode it is the hub-managed process. Verify actual hub-to-service authentication/connectivity when HTTP is exercised. Compare observed IDs/names and capability interpretation with the WLED UI. No discovery scan or state write is needed.
 
-H03: Start/restart the server entry, record startup and idle memory, confirm logs/protocol separation, verify persistence paths. Hub/container recreation is a distinct operational check and must be recorded as pending if not performed.
+H03: Start/restart the independent HTTP service or stdio entry as appropriate, record mode/startup/idle memory, confirm diagnostics/protocol separation and verify persistent paths. Record HTTP reconnect and liveness behavior when used. Hub/container recreation is a distinct operational check and must be recorded as pending if not performed. Evidence from one deployed mode does not claim the other was deployed; both need automated protocol coverage.
 
 ## Opt-in physical write checks
 
@@ -51,6 +55,7 @@ H07: Observe an offline/unreachable device using an already unavailable target o
 ```text
 Date / operator / source commit:
 Package / Python / SDK / hub runtime:
+Transport mode / endpoint or uvx artifact / service lifecycle:
 Sanitized device and firmware / relevant capabilities:
 Scenario IDs run:
 Before state and snapshot references (local, no secrets):

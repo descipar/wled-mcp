@@ -8,6 +8,8 @@ Private specification and implementation backlog for a WLED MCP server used thro
 
 Let an agent inspect and control several WLED controllers by meaningful names, create and modify segment layouts, and manage presets through clear MCP tools. Reuse WLED's built-in effects rather than building an animation engine. Keep operation lightweight enough for the existing Raspberry Pi hub.
 
+**Confirmed transport scope:** support Streamable HTTP as an independent service and stdio for client-managed launch via `uvx`. Both modes expose the same tools. This supersedes the initial stdio-only proposal; [issue #14](https://github.com/descipar/wled-mcp/issues/14) tracks HTTP implementation.
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md).
@@ -29,7 +31,8 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Sources](docs/SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual home-network configuration |
-| [Hub example](examples/mcphub.example.json) | Proposed stdio entry with separate arguments and placeholder paths |
+| [Stdio hub example](examples/mcphub.example.json) | Proposed uvx entry with separate arguments and placeholder artifact path |
+| [HTTP hub example](examples/mcphub.http.example.json) | Proposed Streamable HTTP URL and placeholder service credential |
 
 ## Development status
 
@@ -45,4 +48,4 @@ No bootstrap commands are claimed to work yet. The first implementation issue mu
 
 Repository: https://github.com/descipar/wled-mcp
 
-Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with twelve child issues covering contract, implementation, validation, integration and optional scope. Start implementation with [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2).
+Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with thirteen child issues covering contract, both transports, implementation, validation, integration and optional scope. Start implementation with [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2).

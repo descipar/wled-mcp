@@ -4,6 +4,9 @@ This document is a design contract, not an implemented API. Names may change onl
 
 ## Shared conventions
 
+- The same tools, input/output schemas and domain outcomes are exposed over stdio and Streamable HTTP. Select transport at startup; transport does not change device behavior or overwrite rules. `/mcp` is the independent service endpoint; stdio is client-managed via uvx. Both are required v1 modes.
+- HTTP requests/sessions share process-wide device coordination. Transport disconnects do not imply a write was cancelled, and reconnect must not replay mutations. Authentication/Host/Origin rejection occurs before any device action and is distinct from tool-domain errors.
+
 - Device-targeted tools require a configured `device_id`; no caller-supplied host or URL.
 - Unknown properties and null for nonnullable fields are rejected. Missing optional fields mean unchanged, never zero or false. No schema-inserted default for a patchable light value.
 - Human-facing brightness is 0–255 in v1. Transition input is `transition_ms`; the adapter documents WLED conversion, rounds deterministically to supported units and reports the effective value. If a request cannot be represented meaningfully, reject it rather than silently changing units.

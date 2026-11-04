@@ -15,7 +15,8 @@
 - Implement the documented distinction between patching selected segments and replacing the complete layout. Omitted fields are not reset requests.
 - Validate a complete request before sending a write. Treat a timed-out write as possibly applied; do not retry it blindly.
 - No silent preset overwrite, delete, arbitrary endpoint forwarding, device discovery scan, or configuration migration. Explicit requested operations can run without adding an interactive approval mechanism inside the plugin.
-- Authentication and user authorization belong to the MCP host/hub. Tool annotations are useful hints, not an execution barrier.
+- Support both confirmed v1 transports: an independent Streamable HTTP service and client-managed stdio via uvx, sharing the same domain operations and tool contract.
+- User authorization belongs to the MCP host/client. The independent HTTP endpoint also needs its own configured access protection and Host/Origin checks; hub authentication does not protect direct service access. Tool annotations are useful hints, not an execution barrier.
 - Keep stdout reserved for stdio MCP. Diagnostics go to stderr and must omit secrets.
 - Do not install a candidate upstream server as part of implementing this project. Upstream code reuse requires license review and preserved notices.
 

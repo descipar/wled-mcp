@@ -16,5 +16,6 @@ runtime/
 data/
 backups/
 captures/
+secrets/
 devices.toml
 *.log
