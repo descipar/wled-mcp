@@ -56,3 +56,20 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   Cache freshness/snapshots/HTTP lifecycle remain #5/#8/#14.
 - Affected: T10/logical T19 and CLI/resources/tests. Supersession: none.
 - Propagation: coordinator receives IDs with candidate for reviewer handoff.
+
+## ISSUE-4-DEC-005 — T19/MCP-04 acceptance scoped to the logical foundation
+
+- Status: active for issue #4 acceptance only.
+- Authority/source: actual human answer in the current session, 2026-11-05, to
+  the question whether #4 may be treated as satisfied by the logical foundation
+  with actual HTTP T19 tracked in #14; no chat permalink exists.
+- Scope: issue #4, its sentence "Acceptance includes T19 and requirement
+  MCP-04". Not a general rule for other issues.
+- Decision: the merged logical foundation (one process-owned resource graph,
+  per-device locks, independent devices, single close; ISSUE-4-DEC-004) counts as
+  #4's T19/MCP-04 acceptance. Actual concurrent Streamable HTTP client evidence
+  (T19) is proven in #14.
+- Rationale supplied: none beyond the choice itself.
+- Affected: #4 completion, T19, #14. Supersedes: none; narrows ISSUE-4-DEC-004's
+  condition for acceptance purposes only. Does not waive T19 itself for #14.
+- Propagation: coordinator passes this ID to the completion role.
