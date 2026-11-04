@@ -62,7 +62,7 @@ command forwarding or implicit playlist editing.
 ## Read tools: state and catalogs (implemented in #5)
 
 Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions
-[ISSUE-5-DEC-001–006](decisions/issue-5.md). Inputs are strict (unknown fields and
+[ISSUE-5-DEC-001–008](decisions/issue-5.md). Inputs are strict (unknown fields and
 non-boolean `refresh` rejected). All three are read-only, idempotent, closed-world and
 return `application=not_attempted`, `verification=not_requested`, `dry_run=false`.
 Failures use existing error codes only, with `ok=false` and empty `data`; messages name
@@ -87,7 +87,8 @@ build_id,product,brand,arch}` (null if absent; only `ver` is required), `capabil
   `active_playlist_id` (`-1` becomes `null`), `main_segment` and `segments`. Segments are
   identified by their explicit `id`, never by array position, and carry `start`, `stop`,
   `on`, `brightness`, `effective_brightness` (`brightness` if the segment is on, else 0;
-  master power is separate), `colors`, `color_channels`, `reported_color_capability`,
+  master power is separate; the pinned firmware reports segment `bri` as 255 when its
+  opacity is 0, so such a segment shows 255 even while on), `colors`, `color_channels`, `reported_color_capability`,
   `effect_id`, `palette_id`, `speed`, `intensity` and, when present, `grouping`,
   `spacing`, `offset`, `reverse`, `mirror`, `selected`, `name`; missing values are null.
 - `device_wide_color{scope,rgb,white,cct}` is the firmware aggregate (`info.leds.lc`),
