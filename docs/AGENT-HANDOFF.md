@@ -21,6 +21,12 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 
 ## First work session
 
+Issue #3 bootstrap commands exist in [DEVELOPMENT.md](DEVELOPMENT.md).
+Read [its decisions](decisions/issue-3.md) before extending configuration/tools.
+The production registry is empty; HTTP fails before listening pending #14.
+Continue with #4 inventory/client. Fixture uncertainty is result-schema evidence,
+not evidence of an implemented WLED write/verification state machine.
+
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
    Both clients use the [shared roles](../agents/README.md); the main session reads
    [coordinator.md](../agents/coordinator.md). Maintain source roles, regenerate

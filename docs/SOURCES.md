@@ -1,5 +1,18 @@
 # Sources and prior research
 
+## Issue-3 bootstrap evidence
+
+Checked 2026-11-04: [official SDK release 2.3.0](https://github.com/modelcontextprotocol/python-sdk/releases/tag/v2.3.0),
+[official SDK docs](https://py.sdk.modelcontextprotocol.io/),
+[PyPI SDK metadata](https://pypi.org/pypi/mcp/2.3.0/json) and installed package
+source establish the selected maintained SDK/API. PyPI reports MIT and Python
+>=3.10; the bootstrap deliberately supports/tests Python 3.13 only. SDK 2.3.0
+supports current automatic and legacy initialization paths; both are exercised.
+[uv tools documentation](https://docs.astral.sh/uv/concepts/tools/) and installed
+uv/uvx 0.11.14 help establish isolated tool environments and constraint flags.
+Installed wheel and uvx versions are independently compared with the lock export.
+These are packaging/protocol facts, not firmware compatibility evidence.
+
 Reviewed 2026-11-04. Sources inform implementation; proposals in this repository are original design choices and are not claims that the upstream projects implement this contract. Recheck source behavior and dependency versions during implementation.
 
 ## Primary references

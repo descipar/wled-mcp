@@ -20,3 +20,7 @@ secrets/
 .agent-runs/
 devices.toml
 *.log
+.uv-cache/
+.uv-tools/
+.uv-python/
+.artifacts/

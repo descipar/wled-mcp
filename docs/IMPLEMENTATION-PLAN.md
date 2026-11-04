@@ -1,6 +1,6 @@
 # Stage-1 implementation plan and GitHub backlog
 
-Status, 2026-11-04: issue #2 has a scoped contract candidate and synthetic examples; runtime implementation has not started. Live GitHub state and commit-specific review take precedence over this document. Documentation delivery does not close issues or establish hardware acceptance.
+Status, 2026-11-04: #2 is merged through PR #33. #3 adds an installed stdio bootstrap with locked dependencies and synthetic protocol checks. Device tools and protected HTTP service remain downstream work. Live GitHub state and commit-specific review take precedence; bootstrap evidence does not establish complete dual-mode or hardware acceptance.
 
 ## Delivery tracker
 
