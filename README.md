@@ -38,7 +38,7 @@ No bootstrap commands are claimed to work yet. The first implementation issue mu
 ## Boundaries
 
 - No cloud account, public endpoint, web interface, or MQTT broker required for v1.
-- Home Assistant remains available. Direct WLED access adds detailed layout and preset authoring; routine light control overlaps intentionally.
+- The server controls WLED directly through its API and works independently of other home-automation systems.
 - Device inventory, firmware versions, topology, RGBW/CCT/2D needs, and test-device availability are still unknown.
 - Repository remains private. A distribution license has not been selected; upstream code has not been copied.
 - GitHub issues track implementation status. This repository documents the contract and decisions; neither an unchecked issue nor a planning paragraph proves completion.

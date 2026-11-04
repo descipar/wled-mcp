@@ -14,7 +14,7 @@ Priorities: **Must** = required for the proposed first usable release; **Should*
 
 MCPHub runs on `serviceplasma`, previously inspected as a Raspberry Pi 4 with approximately 4 GB RAM, using Docker Compose. The known installation uses persistent `/app/data` and `/app/binaries` mounts; actual deployment configuration must be rechecked before integration. This is historical environment context, not a live deployment guarantee.
 
-Several agent clients can use the hub. A Home Assistant MCP integration already exists. Native HA WLED support covers ordinary lights, effects, palettes, speed/intensity, and activation of existing presets. The direct server is justified by detailed segment layout editing, preset authoring, and direct inspection without depending on HA entity abstractions.
+Several agent clients can use the hub. This server connects directly to WLED controllers and exposes their capabilities through a consistent MCP interface: device inspection, lighting controls, segment layout editing and preset management. It operates independently of other home-automation systems. Feature scope is determined by WLED capabilities and this project's requirements.
 
 Primary user: a household owner asking an agent for lighting changes. Secondary user: the implementing/maintaining agent, who needs stable contracts, helpful errors, reproducible installation, and a narrow operational footprint.
 
@@ -63,7 +63,7 @@ Primary user: a household owner asking an agent for lighting changes. Secondary 
 
 ### Multi-device behavior and advanced operations
 
-- **MULTI-01 Must — Independent outcomes.** Different devices can be used by separate tool calls without global serialization. Multi-device orchestration belongs initially to the agent: results are per controller, and no synchronized or all-or-nothing behavior is promised. Within one server process serialize a device's write/verify sequence; document limits across multiple server processes and external HA/WLED clients.
+- **MULTI-01 Must — Independent outcomes.** Different devices can be used by separate tool calls without global serialization. Multi-device orchestration belongs initially to the agent: results are per controller, and no synchronized or all-or-nothing behavior is promised. Within one server process serialize a device's write/verify sequence; document limits across multiple server processes and other WLED API clients.
 - **ADV-01 Should — Restricted raw state patch.** Provide an advanced state patch only if typed tools leave a demonstrated gap. Accept a JSON object, not a JSON-encoded string. Restrict target to the configured controller's state API, reject unknown fields by default and recursive excessive payloads, and block hardware/network/security/firmware settings. A raw patch cannot bypass preset overwrite, backup, delete or layout replacement rules. Default disabled. A documented allowlist is required before enabling it.
 - **ADV-02 Later — Configuration management.** Timer editing, firmware updates, Wi-Fi changes, reboot, hardware pin/bus configuration, factory reset, filesystem uploads and arbitrary URL forwarding are outside v1.
 
@@ -73,7 +73,7 @@ Primary user: a household owner asking an agent for lighting changes. Secondary 
 - **MCP-02 Must — Machine-readable results.** Return structured, stable result/error objects plus a compact text fallback. Tool execution failures set MCP `isError` appropriately; do not bury failures in an apparently successful string. Protocol errors and expected device/tool errors remain distinct. Preserve valid structured results for partial or uncertain outcomes.
 - **REL-01 Must — Bounded I/O.** Proposed defaults: 3-second connection timeout, 10-second overall device-operation deadline, at most one bounded retry for safe reads, and maximum response/payload sizes. Final defaults are configurable and documented. A tool deadline must include verification and retries rather than multiplying unbounded per-stage timeouts.
 - **REL-02 Must — Uncertain writes.** After a response timeout/reset, report that a write may have applied. Attempt bounded readback when possible, but never label a mismatch as proof the command was not previously applied. No automatic write replay, including preset allocation. Distinguish successful, failed, and indeterminate application/persistence.
-- **REL-03 Must — Coexistence.** Preserve unknown fields in backups and untouched state. Never read-modify-write the whole config to change a single light value. Document that the WLED UI, HA, playlists, timers, realtime senders and other agents may change state concurrently. Verification can report interference; do not continually fight another controller.
+- **REL-03 Must — Coexistence.** Preserve unknown fields in backups and untouched state. Never read-modify-write the whole config to change a single light value. Document that the WLED UI, other API clients, playlists, timers, realtime senders and other agents may change state concurrently. Verification can report interference; do not continually fight another controller.
 - **OPS-01 Must — Lightweight runtime.** Python-based stdio process in the existing hub is the proposed architecture. No mandatory new always-on container, database, browser UI, cloud service or mDNS dependency. Measure idle memory/startup time on the target Pi and record results; no unmeasured resource claim is an acceptance result.
 - **OPS-02 Must — Reproducible delivery.** Version the package, pin/lock resolved dependencies, document console start, persist application/data paths across hub recreation, and provide update/rollback instructions. Runtime bootstrap must not depend on a developer's editable checkout or unpinned `latest` resolution.
 - **OPS-03 Must — Logs and privacy.** Stdout carries MCP only; stderr carries bounded logs. Avoid logging credentials, full configuration dumps or unsanitized HTTP bodies. Real devices, secret-bearing backups and runtime files are excluded from Git. Never expose a new network listener as an incidental dependency.
@@ -82,7 +82,7 @@ Primary user: a household owner asking an agent for lighting changes. Secondary 
 
 ## 6. Explicit non-goals
 
-No independent automation scheduler, cloud remote access, OAuth server, graphics editor, public package publishing, replacement of HA, or guarantee of simultaneous multi-controller frames. No blanket “supports all WLED versions/features” claim. No automatic reconfiguration of the existing hub or device firmware as a prerequisite.
+No independent automation scheduler, cloud remote access, OAuth server, graphics editor, public package publishing, or guarantee of simultaneous multi-controller frames. No blanket “supports all WLED versions/features” claim. No automatic reconfiguration of the existing hub or device firmware as a prerequisite.
 
 ## 7. Open inputs and defaults
 

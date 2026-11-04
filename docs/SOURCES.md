@@ -11,7 +11,6 @@ Reviewed 2026-11-04. Sources inform implementation; proposals in this repository
 | [WLED segments](https://kno.wled.ge/features/segments/) | Segment concepts and device limits |
 | [WLED effects](https://kno.wled.ge/features/effects/) | Built-in effect behavior and metadata context |
 | [WLED source](https://github.com/wled/WLED) | Verify firmware-dependent behavior against matching release code |
-| [Home Assistant WLED integration](https://www.home-assistant.io/integrations/wled/) | Existing functionality and overlap; its compatibility floor is not this server's compatibility guarantee |
 | [Official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) | Protocol/runtime implementation; choose and lock a compatible version |
 | [MCP tools specification, 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) | Tool schemas/results/errors and annotations; implementation negotiates supported protocol via SDK |
 | [MCPHub repository](https://github.com/samanhappy/mcphub) | Hub entry/integration behavior; actual installed version must be checked |

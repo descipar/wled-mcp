@@ -15,7 +15,7 @@ Current result: **not run — no implementation exists**. The following are futu
 | T07 | Dry runs perform no POST, no backup writes and no slot reservation; plans clearly distinguish patch and replace | SEG-04 |
 | T08 | HTTP success with mismatching readback is a verification failure; ignored writes and unsupported features are visible | SEG-04, MCP-02 |
 | T09 | Timeout after a possible write returns unknown outcome; no POST retry; read retry/deadlines remain bounded | REL-01–02 |
-| T10 | Two writes to one device cannot interleave with readback; different-device calls can progress; tests do not claim to serialize HA | MULTI-01, REL-03 |
+| T10 | Two writes to one device cannot interleave with readback; different-device calls can progress; tests do not claim to serialize other WLED API clients | MULTI-01, REL-03 |
 | T11 | Existing preset ID without overwrite fails; free allocation checks collisions; unknown fields and playlist type survive read/backup | PRE-01–02, PLAY-01 |
 | T12 | Backup failure prevents overwrite/delete; atomic snapshot and retention never delete unrelated files; restore validates target and snapshot | PRE-04 |
 | T13 | Delayed preset persistence is observed with a bounded poll; uncertain save/delete is not replayed | PRE-05, REL-02 |
@@ -40,7 +40,7 @@ Choose an explicitly authorized device and test ranges/slots first. Record the p
 
 H04: Change power/brightness/color and one effect's speed/intensity; verify state and visible behavior. Restore original configuration where supported.
 
-H05: Patch one selected segment, confirm unrelated segments remain unchanged; replace with an agreed small layout, verify stale IDs removed, restore original layout. Account for timers, HA, playlists or realtime inputs if verification is affected; never disable them silently.
+H05: Patch one selected segment, confirm unrelated segments remain unchanged; replace with an agreed small layout, verify stale IDs removed, restore original layout. Account for timers, other API clients, playlists or realtime inputs if verification is affected; never disable them silently.
 
 H06: Save to an agreed unused persistent preset ID, activate, read back, test explicit overwrite with snapshot, then delete the test slot. Test explicit restoration of its saved contents if authorized. Confirm persistent data, not just the current live effect.
 
