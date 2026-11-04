@@ -21,6 +21,12 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 
 ## First work session
 
+Issue #3 bootstrap commands exist in [DEVELOPMENT.md](DEVELOPMENT.md).
+Read [its decisions](decisions/issue-3.md) before extending configuration/tools.
+The production registry is empty; HTTP fails before listening pending #14.
+Continue with #4 inventory/client. Fixture uncertainty is result-schema evidence,
+not evidence of an implemented WLED write/verification state machine.
+
 1. Read the documents and current issue bodies/comments; check for changes since this handoff.
 2. Confirm scope from the new user instruction. Distinguish implementation, installation, hub deployment and hardware writes.
 3. Read the issue-2 [contract](TOOL-CONTRACT.md), [scoped decisions](decisions/issue-2.md) and [synthetic examples](../examples/contracts/README.md). Preserve existing omitted state, explicitly default new IDs, verify firmware representability and persistently verify saves. Recheck the pinned source profile against observed firmware; source review is not hardware acceptance. Supplied-state save and restore execution remain deferred Should work.

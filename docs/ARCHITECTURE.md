@@ -2,6 +2,13 @@
 
 ## Components
 
+Issue #3 implements the bootstrap using Python 3.13 and official MCP SDK 2.3.0.
+`server.create_server` is the common explicit operation factory;
+`models.Outcome` is transport-independent. The default registry is empty.
+[Issue-3 decisions](decisions/issue-3.md) record narrow configuration and safe
+HTTP staging; [development commands](DEVELOPMENT.md) describe locked build and
+installed-wheel/uvx checks. The graph below describes downstream implementation.
+
 ```mermaid
 flowchart LR
   A[Agent clients] --> H[Existing MCPHub]

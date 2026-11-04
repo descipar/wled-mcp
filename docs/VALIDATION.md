@@ -1,6 +1,8 @@
 # Validation and acceptance plan
 
-Current runtime result: **not run — no runtime implementation exists**. Issue #2 adds a concrete design contract and synthetic JSON examples, checked for document/example consistency only. The following T/H scenarios remain future acceptance, not executed test results.
+Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. Full HTTP T18–T21 and hardware H checks remain pending.
+
+Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
 ## Automated checks, without hardware
 
