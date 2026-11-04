@@ -87,13 +87,25 @@ async def test_registry_order_annotations_and_strict_models(tmp_path):
             "wled_get_state",
             "wled_get_effects",
             "wled_get_palettes",
+            "wled_set_state",
+            "wled_patch_segments",
         ]
         assert operations[0].execute.__closure__[0].cell_contents is resources
         assert len(operations[0].execute.__closure__) == 1
+        read_only_names = {
+            "wled_list_devices",
+            "wled_get_state",
+            "wled_get_effects",
+            "wled_get_palettes",
+        }
         for operation in operations[1:]:
             hints = operation.annotations
-            assert (hints.read_only_hint, hints.destructive_hint) == (True, False)
-            assert (hints.idempotent_hint, hints.open_world_hint) == (True, False)
+            if operation.name in read_only_names:
+                assert (hints.read_only_hint, hints.destructive_hint) == (True, False)
+                assert (hints.idempotent_hint, hints.open_world_hint) == (True, False)
+            else:
+                assert (hints.read_only_hint, hints.destructive_hint) == (False, False)
+                assert (hints.idempotent_hint, hints.open_world_hint) == (False, False)
             schema = operation.request_model.model_json_schema()
             assert schema["additionalProperties"] is False
     for bad in ({"device_id": "desk", "host": "http://x.invalid"}, {"device_id": 1}, {}):
@@ -774,13 +786,27 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                 "wled_get_state",
                 "wled_get_effects",
                 "wled_get_palettes",
+                "wled_set_state",
+                "wled_patch_segments",
             ]
+            read_only_names = {
+                "wled_list_devices",
+                "wled_get_state",
+                "wled_get_effects",
+                "wled_get_palettes",
+            }
             for tool in listed:
                 assert tool.input_schema["additionalProperties"] is False
-                assert tool.annotations.read_only_hint is True
-                assert tool.annotations.destructive_hint is False
-                assert tool.annotations.idempotent_hint is True
-                assert tool.annotations.open_world_hint is False
+                if tool.name in read_only_names:
+                    assert tool.annotations.read_only_hint is True
+                    assert tool.annotations.destructive_hint is False
+                    assert tool.annotations.idempotent_hint is True
+                    assert tool.annotations.open_world_hint is False
+                else:
+                    assert tool.annotations.read_only_hint is False
+                    assert tool.annotations.destructive_hint is False
+                    assert tool.annotations.idempotent_hint is False
+                    assert tool.annotations.open_world_hint is False
                 assert tool.output_schema["additionalProperties"] is False
             schema = {t.name: t.input_schema for t in listed}
             assert schema["wled_get_effects"]["properties"]["refresh"]["type"] == "boolean"
