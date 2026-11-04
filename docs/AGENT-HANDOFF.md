@@ -6,6 +6,8 @@
 
 This is a ready-to-use future prompt, not an instruction that implementation has already been commissioned in the original documentation chat.
 
+For a later stage-2 assignment, also read [STAGE-2.md](STAGE-2.md), [MARKETPLACE.md](MARKETPLACE.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). Keep Launch requirements and optional product features distinct. Public artifacts/submission drafts must be concrete and reviewable before the final release decision; do not publish from a planning instruction.
+
 ## Checkout
 
 ```bash

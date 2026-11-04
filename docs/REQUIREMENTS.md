@@ -2,6 +2,8 @@
 
 Version: 0.2, 2026-11-04. State: proposed implementation baseline with confirmed dual-transport scope, prepared for agent handoff.
 
+This document defines **stage 1**. Future public-release and product requirements use `S2-` IDs in [STAGE-2.md](STAGE-2.md) and separate tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Stage-2 direction does not change current private visibility or silently add release-publication requirements to stage 1.
+
 ## 1. Authority and meaning of priorities
 
 **Confirmed:** Kai wants a self-developed WLED MCP option assessed and a detailed, private GitHub project prepared so a later agent can check it out and implement it. Documentation and actionable GitHub issues are required. The existing home MCPHub is the intended integration context. No implementation, installation, or hardware mutation was requested in this assignment.

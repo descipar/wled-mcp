@@ -10,6 +10,8 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 
 **Confirmed transport scope:** support Streamable HTTP as an independent service and stdio for client-managed launch via `uvx`. Both modes expose the same tools. This supersedes the initial stdio-only proposal; [issue #14](https://github.com/descipar/wled-mcp/issues/14) tracks HTTP implementation.
 
+**Stage 2:** plan a reusable public project with additional WLED workflows, distributable releases and MCPHub marketplace discovery. See the [stage-2 roadmap](docs/STAGE-2.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). The repository remains private; public release and external submissions have not been performed.
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md).
@@ -30,6 +32,8 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Implementation plan](docs/IMPLEMENTATION-PLAN.md) | Issue order, dependency graph, requirement traceability |
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Sources](docs/SOURCES.md) | Official references, reviewed alternatives, license boundaries |
+| [Stage 2](docs/STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
+| [Marketplace plan](docs/MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
 | [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual home-network configuration |
 | [Stdio hub example](examples/mcphub.example.json) | Proposed uvx entry with separate arguments and placeholder artifact path |
 | [HTTP hub example](examples/mcphub.http.example.json) | Proposed Streamable HTTP URL and placeholder service credential |
@@ -49,3 +53,5 @@ No bootstrap commands are claimed to work yet. The first implementation issue mu
 Repository: https://github.com/descipar/wled-mcp
 
 Backlog: [delivery tracker #1](https://github.com/descipar/wled-mcp/issues/1), with thirteen child issues covering contract, both transports, implementation, validation, integration and optional scope. Start implementation with [contract decisions #2](https://github.com/descipar/wled-mcp/issues/2).
+
+Future public/product work has its own [stage-2 tracker #15](https://github.com/descipar/wled-mcp/issues/15), with ten child issues (#16–#25), all labeled `stage:2`. These do not silently expand stage-1 acceptance.

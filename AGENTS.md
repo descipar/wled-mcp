@@ -5,6 +5,7 @@
 - This is the standalone `descipar/wled-mcp` repository. Inspect `git status`, remotes, and existing changes before editing. Do not initialize Git in the surrounding DIY directory.
 - Discuss work with Kai in German. Keep committed documentation, code identifiers, issue text, and PR descriptions in English unless asked otherwise.
 - Start with README.md and docs/AGENT-HANDOFF.md. Use GitHub issues and requirement IDs for scope and progress.
+- Stage 1 is tracked by #1; future product/public-release work is tracked separately by #15 and docs/STAGE-2.md. Prepare public-ready artifacts and listing drafts when commissioned, but do not infer a visibility change, license choice, package publication or external submission from the roadmap alone.
 - Define scope from WLED capabilities and this project's requirements. Do not make features conditional on what a separate home-automation integration already provides.
 - The original assignment created specifications and a backlog only. A later implementation instruction authorizes code work; it does not implicitly authorize deployment to the home hub or physical lighting changes. Follow the actual later instruction and do not ask again for actions already authorized.
 
