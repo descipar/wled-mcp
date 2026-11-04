@@ -48,7 +48,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 
 ## Development status
 
-The bootstrap has locked development/build/runtime dependencies and installed-wheel/uvx checks. Follow [DEVELOPMENT.md](docs/DEVELOPMENT.md). Use [bootstrap.toml](examples/bootstrap.toml) with `devices = []`; the full inventory example remains proposed for #4. Device tools and full HTTP lifecycle remain future work.
+The package has locked development/build/runtime dependencies and installed-wheel/uvx checks. Follow [DEVELOPMENT.md](docs/DEVELOPMENT.md). Use [bootstrap.toml](examples/bootstrap.toml) for an empty inventory or the executable synthetic [inventory example](examples/devices.example.toml) for configured listing/probes. State/control tools and full HTTP lifecycle remain future work.
 
 ## Boundaries
 

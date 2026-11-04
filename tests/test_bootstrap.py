@@ -64,6 +64,31 @@ def test_paths_and_precedence(startup):
             load_config(config_path, data_dir, {})
 
 
+def test_deep_toml_fails_safely_in_loader_and_console(startup):
+    config, data = startup
+    config.write_text(
+        "schema_version=1\ndevices=[]\nx=" + "[" * 1500 + '"synthetic-secret"' + "]" * 1500,
+        encoding="utf-8",
+    )
+    assert config.stat().st_size < 65536
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(config), str(data), {})
+    assert "synthetic-secret" not in str(caught.value)
+    result = subprocess.run(
+        [str(CONSOLE), "--config", str(config), "--data-dir", str(data)],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "Startup configuration error:" in result.stderr
+    assert "synthetic-secret" not in result.stderr
+    assert "Traceback" not in result.stderr
+    assert "RecursionError" not in result.stderr
+    assert set(data.iterdir()) == {config}
+
+
 @pytest.mark.parametrize(
     "args", [[], ["--unknown", "synthetic-secret"], ["--transport", "synthetic-secret"]]
 )

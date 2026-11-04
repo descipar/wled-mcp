@@ -146,7 +146,7 @@ def load_config(
             raise ConfigurationError("Configuration exceeds the 64 KiB limit.")
         parsed = tomllib.loads(content.decode("utf-8"))
         validated = InventoryConfig.model_validate(parsed)
-    except (OSError, ValueError, UnicodeError, ValidationError) as exc:
+    except (OSError, ValueError, UnicodeError, ValidationError, RecursionError) as exc:
         if isinstance(exc, ConfigurationError):
             raise
         raise ConfigurationError(
