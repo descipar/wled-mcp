@@ -86,3 +86,19 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   Unavailable effect slots are the literal `RSVD`.
 - Conditions: revalidate on other firmware versions or real device output.
 - Affected: C5-01/02/03.
+
+## ISSUE-5-DEC-009 — Helper-level evidence accepted for ambiguous-name criterion
+
+- Status: active for issue #5 acceptance only.
+- Authority/source: actual human answer in the current session, 2026-11-04, to
+  the question how the unmet criterion "ambiguous names return candidate matches"
+  should be treated; no chat permalink exists.
+- Scope: issue #5, the single acceptance item "Noncontiguous effect/palette IDs
+  remain unchanged; ambiguous names return candidate matches". Not a general rule.
+- Decision: the tested internal resolver (`AMBIGUOUS_NAME` with bounded
+  candidates, ISSUE-5-DEC-005) is accepted as sufficient evidence for that item.
+  Public name resolution through setters remains work for #6.
+- Rationale supplied: none beyond the choice itself.
+- Affected: C5-03/04, completion of #5. Supersedes: none; refines DEC-005's
+  deferral for acceptance purposes only. Does not waive H01/H02 or other items.
+- Propagation: coordinator passes this ID to the completion role.
