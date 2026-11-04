@@ -1,0 +1,27 @@
+name: Implementation task
+description: Implement a scoped part of the WLED MCP contract
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Problem and scope
+      description: Link requirement IDs and relevant design documents.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and decisions
+      description: Link blocking issues and identify proposed versus confirmed decisions.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: State observable results and relevant T/H scenario IDs.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Validation evidence and remaining limits
+      description: Record checks actually performed; keep unrun hardware checks explicit.

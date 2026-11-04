@@ -1,0 +1,20 @@
+name: Bug report
+description: Report an observed WLED MCP behavior
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Expected and observed behavior
+      description: Include sanitized reproduction steps and relevant requirement IDs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Package commit/version, Python, hub context, firmware and relevant LED capabilities. No secrets or real network inventory.
+  - type: textarea
+    id: state
+    attributes:
+      label: Side effects and reconciliation
+      description: Did a write possibly apply? Record readback/restoration evidence; do not blindly replay uncertain writes.

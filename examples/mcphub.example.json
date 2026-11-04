@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "wled": {
+      "command": "/REPLACE_WITH_PERSISTENT_RUNTIME/bin/wled-mcp",
+      "args": [
+        "--config",
+        "/app/data/wled-mcp/config/devices.toml",
+        "--data-dir",
+        "/app/data/wled-mcp"
+      ]
+    }
+  }
+}

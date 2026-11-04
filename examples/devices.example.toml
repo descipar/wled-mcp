@@ -1,0 +1,24 @@
+# Proposed schema; synthetic documentation example, not yet executable config.
+schema_version = 1
+
+[http]
+connect_timeout_seconds = 3
+operation_timeout_seconds = 10
+read_retries = 1
+catalog_cache_seconds = 300
+
+[backups]
+retain_per_device = 20
+
+[features]
+raw_state_patch = false
+
+[[devices]]
+id = "desk"
+name = "Example desk strip"
+base_url = "http://wled-desk.example.invalid"
+
+[[devices]]
+id = "shelf"
+name = "Example shelf strip"
+base_url = "http://wled-shelf.example.invalid"
