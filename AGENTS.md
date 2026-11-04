@@ -6,6 +6,7 @@
 - Discuss work with the user in German. Keep committed documentation, code identifiers, issue text, and PR descriptions in English unless asked otherwise.
 - Keep documentation and issues impersonal: use neutral roles and synthetic examples. Do not include personal names, private hostnames or details of an individual installation unless explicitly requested. Actual repository/issue URLs remain valid project references.
 - Start with README.md and docs/AGENT-HANDOFF.md. Use GitHub issues and requirement IDs for scope and progress.
+- For an explicitly requested agent workflow, follow docs/AGENT-WORKFLOW.md and the project-scoped role definitions in .codex/agents/. The primary session coordinates; delegate only within the actual user-authorized issue scope. Do not start product implementation merely because agent setup files exist.
 - Stage 1 is tracked by #1; future product/public-release work is tracked separately by #15 and docs/STAGE-2.md. Prepare public-ready artifacts and listing drafts when commissioned, but do not infer a visibility change, license choice, package publication or external submission from the roadmap alone.
 - The five additional usability features are stage 3, tracked by #26 and docs/STAGE-3.md. They do not block stage-2 publication; do not merge the stages' acceptance criteria implicitly.
 - Define scope from WLED capabilities and this project's requirements. Do not make features conditional on what a separate home-automation integration already provides.

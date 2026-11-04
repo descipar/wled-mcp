@@ -1,0 +1,5 @@
+# Project-local orchestration only. Models, providers, credentials and permissions
+# remain inherited from the user's Codex session.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 3
