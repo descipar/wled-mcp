@@ -64,3 +64,25 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Decision: remove `mac`, `ip` and `wifi.bssid` from `raw.info`, listing removed
   keys. Applies to runtime output, separate from commit privacy (DEC-005).
 - Affected: C5-01.
+
+## ISSUE-5-DEC-007 — Reads use the per-device lock
+
+- Status/authority: active agent technical baseline; not human-confirmed.
+- Source: implementer handoff for #5 (refines packet P1).
+- Decision: read tools run through the per-device operation (lock plus one
+  deadline). Reads on one device serialize and cannot interleave with a future
+  write workflow; different devices stay independent; concurrent catalog misses
+  are single-flight. `refreshed` means the caller requested a cache bypass;
+  `source` states where the data came from.
+- Affected: C5-06/09, T02.
+
+## ISSUE-5-DEC-008 — Capability source in firmware output
+
+- Status/authority: active agent observation from the pinned v0.15.1 source
+  ([SOURCES.md](../SOURCES.md)); not verified on hardware.
+- Decision: aggregate capability comes from `info.leds.lc`, per-segment
+  capability from `info.leds.seglc` aligned by position only when its length
+  equals the segment list. Bits RGB=1, W=2, CCT=4; RGB-only is `(lc & 7) == 1`.
+  Unavailable effect slots are the literal `RSVD`.
+- Conditions: revalidate on other firmware versions or real device output.
+- Affected: C5-01/02/03.
