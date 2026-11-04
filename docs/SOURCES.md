@@ -78,6 +78,26 @@ timeouts do not provide one logical-operation deadline; an outer AnyIO deadline
 bounds the complete operation. WLED endpoints follow the existing official JSON
 API sources. No upstream WLED server implementation was copied.
 
+## Issue-5 state/catalog evidence
+
+Checked 2026-11-04 against the same pinned tag `v0.15.1`, commit
+`4f3992b4dc57c888b53d9576c894a278e03e4cfc` (raw `wled00/json.cpp`, `FX.cpp`,
+`FX_fcn.cpp`, `const.h`). Facts used by the read tools; none is hardware evidence:
+
+| Pinned fact | Consequence |
+| --- | --- |
+| `serializeModeNames` skips only empty entries; unused effect slots hold the literal `"RSVD"` (`_data_RESERVED`, filled by `setupEffectData`) and are emitted | Catalog ID = array index; `RSVD` flagged as placeholder for effects |
+| Names are cut at `@`; `serializeModeData` emits the text after `@` (or `""`) for the same non-empty entries, in mode order | `/json/fxdata` is a string array parallel to `/json/eff`; exposed raw, attached by index only on equal length, never parsed |
+| `/json/pal` serves the static `JSON_palette_names` array; `getPaletteCount()` is `13 + gradient palettes + customPalettes.size()` | Custom palettes are not in `/json/pal`; a `palcount` difference is a warning only |
+| `serializeInfo`: `leds.count`, `leds.maxseg`, `leds.lc` (OR of active segment capabilities) and `leds.seglc` (array, one entry per active segment, in order) are nested under `leds`; `ver`, `vid`, `fxcount`, `palcount`, `mac`, `ip` are top-level; `bssid` is under `wifi` | Capability facts read from `info.leds`; the packet's "info `lc`" refers to `info.leds.lc` |
+| Capability bits `SEG_CAPABILITY_RGB=0x01`, `_W=0x02`, `_CCT=0x04` (`const.h`) | `lc`/`seglc` decoded as rgb/white/cct; RGB-only means `(lc & 7) == 1` |
+| `serializeSegment` emits `id,start,stop,len,grp,spc,of,on,frz,bri,cct,n,col,fx,sx,ix,pal,sel,rev,mi`; no per-segment `lc` or `seglc`; `bri` is `255` when opacity is 0 | Per-segment capability only via `info.leds.seglc` (aligned by position in the state segment list) |
+| `serializeState`: `ps` is `-1` without a preset, `pl` is `currentPlaylist`, `transition` is in 100 ms units, `bri` is the remembered brightness, `mainseg` is the main segment ID | Normalization of preset/playlist/transition/brightness |
+
+Not verified: behavior of other firmware versions or forks, a real controller's output,
+whether `pl` is exactly `-1` when no playlist runs on every build (the read tool maps
+`-1` to null and passes other integers through). No firmware code was copied.
+
 ## Licensing
 
 No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.

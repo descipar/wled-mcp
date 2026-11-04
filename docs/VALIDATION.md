@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. Full HTTP T18–T21 and hardware H checks remain pending.
+Issue #5 (read-only state/catalog tools) is validated with mocks only; see [its evidence](#issue-5-implementation-evidence). Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. Full HTTP T18–T21 and hardware H checks remain pending.
 
 Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
@@ -101,6 +101,47 @@ Internal mocked writes do not establish firmware/domain-control acceptance.
 Logical session closures do not establish running HTTP T18–T21 acceptance. Full
 state/catalog tools, protected HTTP, snapshots, deployment and hardware remain
 pending. Hardware results are not inferred from mocks or package checks.
+
+## Issue #5 implementation evidence
+
+Candidate under review (mock transport only; no LAN/device access; H01/H02 remain
+pending). 2026-11-04, Windows/Python 3.13.2, MCP SDK 2.3.0, HTTPX2 2.16.0. Commands
+run from the repository root with `UV_CACHE_DIR=.uv-cache`, `UV_PYTHON_DOWNLOADS=never`:
+
+| Command | Result |
+| --- | --- |
+| `uv sync --locked` | up to date (43 packages) |
+| `uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py` | All checks passed |
+| `uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py` | 23 files already formatted |
+| `uv run --frozen mypy` | Success: no issues found in 12 source files (strict) |
+| `uv run --frozen python scripts/check_agent_setup.py` | valid; `python scripts/sync_agents.py --check`: synchronized |
+| `uv run --frozen python scripts/check_lock.py` | Lock/export consistency: PASS |
+| `uv run --frozen pytest` | 194 passed (three consecutive full runs; 100 of them new in `tests/test_state_catalogs.py`, including the stdio subprocess test) |
+| `uv run --frozen python scripts/check_distribution.py` | Wheel/clean install/uvx: PASS; 30 exact runtime versions verified, four tools listed |
+
+Known flake: the pre-existing #4 test `test_one_total_deadline_and_bounded_read_retry`
+(`tests/test_inventory_client.py`) is wall-clock sensitive (40 ms sleep inside a 50 ms
+deadline). It failed intermittently on this Windows host, also on the unmodified base
+(three of three stashed runs), and passed in the final runs above. It was not changed.
+
+| Criterion | Executed evidence (all in `tests/test_state_catalogs.py` unless noted) |
+| --- | --- |
+| C5-01, T02/T03 | full-fixture state: normalized fields, raw state/info retained, firmware facts, capabilities null (not false) with `unknown_capabilities`; examples `state.json`/`catalogs.json` validate as envelopes |
+| C5-02 | noncontiguous segment IDs 0/2/5 addressed by `id`; off master with nonzero `bri` gives effective 0; segment `on=false` keeps `bri`; zero white trimmed only with per-segment RGB-only proof, nonzero/white-capable/unknown/mismatched evidence not trimmed, raw kept |
+| C5-03 | IDs equal array indexes with gaps, `RSVD` placeholders, numeric/Unicode/duplicate/case-variant names and an empty list; count mismatch warns |
+| C5-04 | resolver: exact, trimmed case-folded, ambiguity with bounded candidates (10 of 40), blank/unknown/placeholder never matched |
+| C5-05 | fxdata 404/HTML/reset/timeout/non-string/object/oversize/length mismatch give `ok=true`, intact names, `metadata=unavailable`, one warning; success attaches by index; fxdata never creates names; hanging fxdata respects the deadline |
+| C5-06 | miss/hit (one info read, no catalog request), age/source, expiry at exactly TTL, `refresh`, failed refresh keeps the entry, no stale fallback, `ver`/`vid` change, TTL 0, per device and kind isolation, concurrent misses, shared cache identity (`tests/test_resource_boundaries.py`) |
+| C5-07 | two consecutive state reads see changed mock data; request counts assert no state/info caching |
+| C5-08/T15 | redirect, HTML, malformed JSON, oversize, gzip, NaN, wrong shape, reset, timeout, HTTP 500 on every read endpoint: stable codes, no body/URL/`synthetic-secret`, message carries resource label and numeric status |
+| C5-09/T02 | reset/timeout/503 device fails while another succeeds (concurrently); no request to unselected devices; unknown ID makes no HTTP |
+| C5-10/T14 | real stdio subprocess (`tests/state_fixture.py`): four tools, `additionalProperties=false`, annotations, envelope equals JSON text, `isError == !ok` for success/domain failure, integer `refresh` and unknown field rejected |
+
+Remaining limits: the firmware facts used (placeholder serialization, `leds.lc`/`seglc`,
+fxdata layout) come from reading the pinned source ([SOURCES.md](SOURCES.md#issue-5-statecatalog-evidence)),
+not from a controller; H01/H02 (real device facts, comparison with the WLED UI and
+MCPHub) are not performed. OPS-04 is only partially covered (server version, unknown
+capabilities, safe errors). No issue acceptance box that needs hardware evidence is claimed from mocks.
 
 ## Evidence template
 

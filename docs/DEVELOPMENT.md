@@ -2,7 +2,7 @@
 
 Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
-The production registry contains `wled_list_devices`. HTTP selection exits 2 before listening
+The production registry contains `wled_list_devices`, `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (the three read tools from #5; no setters). HTTP selection exits 2 before listening
 pending authenticated service support in #14. Full dual-mode acceptance is pending.
 
 ## Checks and build
