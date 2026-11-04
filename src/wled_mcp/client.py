@@ -19,7 +19,13 @@ class Endpoint(Enum):
     STATE = "/json/state"
     EFFECTS = "/json/eff"
     PALETTES = "/json/pal"
+    FXDATA = "/json/fxdata"
     PRESETS = "/presets.json"
+
+    @property
+    def label(self) -> str:
+        """Fixed, safe resource label for diagnostics (never a URL)."""
+        return self.name.lower()
 
 
 class ClientFailure(Exception):
@@ -126,6 +132,7 @@ class WLEDClient:
     async def _request(
         self, device: Device, endpoint: Endpoint, deadline: Deadline, body: bytes | None
     ) -> JsonValue:
+        label = endpoint.label
         remaining = deadline.remaining()
         timeout = httpx.Timeout(
             remaining, connect=min(remaining, self.settings.connect_timeout_seconds)
@@ -141,7 +148,9 @@ class WLEDClient:
                 ) as response:
                     if response.status_code != 200:
                         raise ClientFailure(
-                            "INVALID_RESPONSE", "Device returned an unexpected HTTP status."
+                            "INVALID_RESPONSE",
+                            f"Device returned unexpected HTTP status {response.status_code} "
+                            f"for {label}.",
                         )
                     media = (
                         response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
@@ -149,13 +158,14 @@ class WLEDClient:
                     encoding = response.headers.get("content-encoding", "identity").lower()
                     if media != "application/json" or encoding not in {"", "identity"}:
                         raise ClientFailure(
-                            "INVALID_RESPONSE", "Expected uncompressed JSON response."
+                            "INVALID_RESPONSE", f"Expected uncompressed JSON response for {label}."
                         )
                     content = bytearray()
                     async for chunk in response.aiter_bytes():
                         if len(content) + len(chunk) > self.settings.max_response_bytes:
                             raise ClientFailure(
-                                "INVALID_RESPONSE", "Device response exceeds size limit."
+                                "INVALID_RESPONSE",
+                                f"Device response for {label} exceeds size limit.",
                             )
                         content.extend(chunk)
                     value: object = json.loads(content.decode("utf-8"))
@@ -171,12 +181,16 @@ class WLEDClient:
         except ClientFailure:
             raise
         except (TimeoutError, httpx.TimeoutException):
-            raise ClientFailure("TIMEOUT", "Device request timed out.", retryable=True) from None
+            raise ClientFailure(
+                "TIMEOUT", f"Device request for {label} timed out.", retryable=True
+            ) from None
         except (httpx.ConnectError, httpx.ReadError, httpx.RemoteProtocolError):
             raise ClientFailure(
-                "UNREACHABLE", "Device connection failed.", retryable=True
+                "UNREACHABLE", f"Device connection for {label} failed.", retryable=True
             ) from None
         except httpx.HTTPError:
-            raise ClientFailure("UNREACHABLE", "Device request failed.") from None
+            raise ClientFailure("UNREACHABLE", f"Device request for {label} failed.") from None
         except (ValueError, UnicodeError, RecursionError):
-            raise ClientFailure("INVALID_RESPONSE", "Device returned invalid JSON data.") from None
+            raise ClientFailure(
+                "INVALID_RESPONSE", f"Device returned invalid JSON data for {label}."
+            ) from None

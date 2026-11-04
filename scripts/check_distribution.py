@@ -34,7 +34,12 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert client.server_info.name == "wled-mcp"
                 assert client.server_info.version == "0.1.0"
                 tools = (await client.list_tools()).tools
-                assert [tool.name for tool in tools] == ["wled_list_devices"]
+                assert [tool.name for tool in tools] == [
+                    "wled_list_devices",
+                    "wled_get_state",
+                    "wled_get_effects",
+                    "wled_get_palettes",
+                ]
                 assert tools[0].input_schema["additionalProperties"] is False
                 result = await client.call_tool("wled_list_devices", {})
                 assert result.structured_content is not None

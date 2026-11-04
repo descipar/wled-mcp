@@ -9,6 +9,7 @@ import anyio
 import httpx2 as httpx
 from pydantic import JsonValue
 
+from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, StartupConfig
 from wled_mcp.models import DomainError, Outcome
@@ -33,14 +34,19 @@ class OperationContext:
 
 class Resources:
     def __init__(
-        self, config: StartupConfig, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        config: StartupConfig,
+        transport: httpx.AsyncBaseTransport | None = None,
+        clock: Clock | None = None,
     ) -> None:
         self.config = config
+        self.clock = clock if clock is not None else Clock()
         self.inventory = config.devices
         self._devices = {device.id: device for device in self.inventory}
         self.client = WLEDClient(config.http, transport)
         self.locks = {device.id: anyio.Lock() for device in self.inventory}
-        self.metadata_cache: dict[str, JsonValue] = {}
+        # One shared effect/palette catalog cache (issue #5); never holds state/info.
+        self.metadata_cache = CatalogCache(config.http.catalog_cache_seconds, self.clock)
         self.backups = BackupHandle(config.data_dir / "backups", config.backups.retain_per_device)
 
     async def __aenter__(self) -> "Resources":
