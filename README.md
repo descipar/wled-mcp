@@ -1,6 +1,6 @@
 # WLED MCP
 
-Private specification and implementation backlog for a WLED MCP server used through Kai's existing MCPHub.
+Specification and implementation backlog for a standalone WLED MCP server with MCPHub integration.
 
 **Status, 2026-11-04:** planning and handoff only. There is no implementation, installable package, deployed server, or validated hardware compatibility yet. Repository creation and issue creation were requested; installing software or changing lighting was not requested.
 

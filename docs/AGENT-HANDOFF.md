@@ -47,4 +47,4 @@ Do not block mocked implementation on access to the home network. Do not fabrica
 - Requirements-to-test traceability, passing automated checks and relevant fixtures.
 - Clear tool behavior for patch/replace, backups, persistence, concurrency and uncertain writes.
 - Reproducible hub integration and rollback instructions with concrete paths chosen from observed runtime facts.
-- Updated issue status, validation evidence and a concise German handoff to Kai stating what works, what was tested and what remains unverified.
+- Updated issue status, validation evidence and a concise German handoff to the user stating what works, what was tested and what remains unverified.

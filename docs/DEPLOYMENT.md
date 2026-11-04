@@ -13,9 +13,9 @@ Both modes are required v1 scope and use the same package/tools. Streamable HTTP
 
 The default console mode is stdio and opens no listener. HTTP is selected with `--transport streamable-http`, configurable bind/port, one worker and SDK-managed lifecycle. Bind defaults to loopback; a separate container service explicitly binds its private container interface and restricts Host/Origin appropriately. Do not use the deprecated SSE-only transport.
 
-## Known target context
+## Deployment context
 
-MCPHub is currently documented in the separate maintenance project as a Docker Compose deployment on `serviceplasma`. Its historical mounts expose `/app/data` and `/app/binaries`. Recheck mounts, CPU architecture, installed Python/uv, network access, hub entry schema and lifecycle before choosing concrete paths. A separate HTTP container does not inherit the hub's mounts or Python runtime: define its own persistent config/data and network membership. Do not recreate or restart the entire hub just to test documentation.
+For a Docker Compose deployment, inspect mounts, CPU architecture, installed Python/uv, network access, hub entry schema and lifecycle before choosing concrete paths. The `/app/data` and `/app/binaries` locations below are proposed container paths; they must be mapped explicitly for the selected installation. A separate HTTP container does not inherit the hub's mounts or Python runtime: define its own persistent config/data and network membership. Do not recreate or restart the entire hub just to test documentation.
 
 Proposed deployment directories:
 

@@ -6,7 +6,7 @@ This document defines **stage 1**. Future public-release and product requirement
 
 ## 1. Authority and meaning of priorities
 
-**Confirmed:** Kai wants a self-developed WLED MCP option assessed and a detailed, private GitHub project prepared so a later agent can check it out and implement it. Documentation and actionable GitHub issues are required. The existing home MCPHub is the intended integration context. No implementation, installation, or hardware mutation was requested in this assignment.
+**Confirmed:** prepare a detailed, private GitHub project for a standalone WLED MCP server so a later agent can check it out and implement it. Documentation and actionable GitHub issues are required. MCPHub is the initial integration target. This assignment covers planning, without implementation, installation or hardware mutation.
 
 **Confirmed scope update:** v1 supports both Streamable HTTP for independent service operation and stdio for client-managed launch via uvx. Both expose identical WLED tools and domain behavior. The original stdio-only transport proposal is superseded. Updating this scope/backlog does not commission runtime implementation or deployment.
 
@@ -16,7 +16,7 @@ Priorities: **Must** = required for the proposed first usable release; **Should*
 
 ## 2. Context and intended users
 
-MCPHub runs on `serviceplasma`, previously inspected as a Raspberry Pi 4 with approximately 4 GB RAM, using Docker Compose. The known installation uses persistent `/app/data` and `/app/binaries` mounts; actual deployment configuration must be rechecked before integration. This is historical environment context, not a live deployment guarantee.
+Target deployments include self-hosted MCPHub instances on small Linux hosts using Docker Compose. Persistent `/app/data` and `/app/binaries` paths in examples are proposed container locations, not details of a particular user's installation. Inspect the actual runtime, architecture and mounts during deployment.
 
 Several agent clients can use the hub. This server connects directly to WLED controllers and exposes their capabilities through a consistent MCP interface: device inspection, lighting controls, segment layout editing and preset management. It operates independently of other home-automation systems. Feature scope is determined by WLED capabilities and this project's requirements.
 

@@ -33,7 +33,7 @@ The MCPM guide contains older CLI examples; validate the current schema/tools in
 ## Proposed identities and artifacts
 
 - Repository: currently private `descipar/wled-mcp`; later public visibility is a separate release decision.
-- Registry namespace candidate: `io.github.descipar/wled-mcp`, subject to authenticated ownership and current naming rules.
+- Registry namespace placeholder: `io.github.<publisher>/wled-mcp`; choose the publishing identity and verify ownership/current naming rules before preparing actual release metadata.
 - PyPI distribution and OCI repository names: decide/check before release; repository name alone proves neither ownership nor availability. PyPI `wled-mcp` returned 404 during this research, which reserves nothing and does not establish a final name.
 - Console command can remain `wled-mcp` even if a distinct distribution name is needed; use uvx `--from` explicitly where names differ.
 - Build wheel/sdist and versioned amd64/arm64 OCI artifacts first, then test clean install. Use immutable version/digest references in release metadata, and document user-driven updates.

@@ -38,7 +38,7 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 
 | Decision | Status | Rationale / consequence |
 | --- | --- | --- |
-| Independent private repository | Confirmed | Requested by Kai; remains private |
+| Independent private repository | Confirmed | Requested by the project owner; remains private |
 | Documentation and issue backlog before implementation | Confirmed | Current assignment ends with an actionable handoff |
 | Python, async HTTP, official MCP SDK | Proposed | Fits existing hub ecosystem and small adapter scope; choose maintained compatible versions at bootstrap |
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |

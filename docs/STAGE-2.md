@@ -4,7 +4,7 @@ Planning baseline: 2026-11-04. Tracker: [#15](https://github.com/descipar/wled-m
 
 ## Intent and authority
 
-Kai's confirmed direction is to make the project publicly available eventually and have it discoverable in MCPHub's marketplace. This stage plans what an independent user needs and which WLED features should follow the first working release. It does not change repository visibility, select a license, publish packages/images, reserve names or submit external listings now.
+The confirmed direction is to make the project publicly available eventually and have it discoverable in MCPHub's marketplace. This stage plans what an independent user needs and which WLED features should follow the first working release. It does not change repository visibility, select a license, publish packages/images, reserve names or submit external listings now.
 
 “Public release” means a maintained release of this project. It does not mean endorsement or ownership by the WLED project, the MCP organization or MCPHub. Metadata must represent actual authorship accurately.
 
@@ -102,7 +102,7 @@ Preparing workflows and artifacts is authorized planning/implementation work onl
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Proposed namespace `io.github.descipar/wled-mcp` remains a candidate until checked/authenticated. The registry stores metadata, not executable artifacts. |
+| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.<publisher>/wled-mcp` as a documentation placeholder until the publishing identity is chosen and authenticated. The registry stores metadata, not executable artifacts. |
 | S2-MARKET-02 | Launch | Prepare the separate MCPHub local-catalog/MCPM entry path and, if desired, hosted MCPHub directory submission. Match current schemas, required runtime/config inputs, English descriptions and honest author status. Track drafted/submitted/accepted/visible/install-tested independently; admission and propagation are not guaranteed by our code. |
 | S2-MARKET-03 | Launch | Test a fresh MCPHub installation using metadata-generated uvx configuration and separate self-hosted HTTP instructions. No private source access, real home URLs, fake remote endpoints, developer paths or committed secrets. Package listing does not publish a central WLED service; show how users supply their own controllers and endpoint. |
 
