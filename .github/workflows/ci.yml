@@ -1,0 +1,36 @@
+name: bootstrap checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python: ["3.13"]
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - run: uv sync --locked
+      - run: uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py
+      - run: uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py
+      - run: uv run --frozen mypy
+      - run: uv run --frozen python scripts/check_agent_setup.py
+      - run: uv run --frozen python scripts/check_lock.py
+      - run: uv run --frozen pytest
+      - run: uv run --frozen python scripts/check_distribution.py
+      - run: git diff --exit-code
