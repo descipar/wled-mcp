@@ -31,7 +31,7 @@ Source, checked 2026-11-04: [official Codex subagent documentation](https://lear
 Open this checkout in Codex. Use this kickoff prompt for a requirements-only run:
 
 ```text
-Act as the primary coordinator for WLED MCP issue #2, stage 1.
+Act as the primary coordinator for WLED MCP issue #2.
 Read AGENTS.md, docs/AGENT-WORKFLOW.md and the developer_instructions in
 .codex/agents/wled_coordinator.toml as task guidance.
 Delegate requirements analysis to wled_requirements.
@@ -41,14 +41,27 @@ Prepare a work packet only; do not implement or merge anything yet.
 When implementation is actually desired, use an explicit scope such as:
 
 ```text
-Coordinate implementation of issue #2, stage 1, within its existing scope.
+Coordinate implementation of issue #2 within its existing scope.
 Use the repository workflow and roles: wled_requirements, wled_implementer and
 wled_reviewer. Resolve material contract questions with me; perform routine
 implementation and mocked tests autonomously. Present the reviewed PR for my
 merge decision. Do not deploy, change physical devices or publish packages.
 ```
 
-Substitute the issue/stage deliberately; these examples are not implementation
+Only the issue identifier is needed; the coordinator derives stage context from
+current labels, parent/ancestor trackers and the repository roadmap. Record that
+evidence in the packet. Ask only for conflicting relevant metadata or genuinely
+unclear scope, not for an unambiguous stage. Tooling issues outside the product
+roadmap can be recorded as cross-stage without blocking otherwise clear work.
+
+A minimal implementation kickoff is:
+
+```text
+Implement issue #2 using the repository agent workflow.
+Present the independently reviewed PR for my merge decision.
+```
+
+Substitute the issue deliberately; these examples are not implementation
 authorization from merely reading this file. Already accepted scope decisions
 remain valid and should not be requested again without a material change.
 
@@ -75,7 +88,8 @@ flowchart TD
   G -->|Explicit merge decision| H[DONE after merge verification]
 ```
 
-1. Read current issue/comments, stage, dependencies, docs and repository changes.
+1. Read current issue/comments, dependencies, docs and repository changes; derive
+   stage context from labels/ancestor tracker/roadmap rather than user input.
 2. Requirements agent creates a bounded packet. It identifies behavior decisions,
    not arbitrary additional approval gates. Reuse the human's accepted scope.
 3. Implementer owns one branch/checkout and adds meaningful tests with changes.

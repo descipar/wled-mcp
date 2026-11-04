@@ -1,6 +1,7 @@
 # Work packet
 
-- Issue / stage:
+- Issue:
+- Derived stage / evidence (label, ancestor tracker or roadmap; agent fills this):
 - Goal and observable behavior:
 - Requirement IDs / acceptance scenario IDs:
 - Requirements reference (full commit SHA; document paths; any uncommitted patch hash):

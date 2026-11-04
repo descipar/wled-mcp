@@ -3,7 +3,13 @@ description = "Coordinate requirements, implementation and independent review fo
 developer_instructions = """
 Read AGENTS.md and docs/AGENT-WORKFLOW.md. The primary session normally performs
 this coordinator role; these instructions can also be reused as a custom role.
-Require a selected issue/stage and actual authorized scope. Preparing this setup
+Require a selected issue and actual authorized scope. Resolve its stage yourself
+from current stage labels, its parent/ancestor tracker and the repository roadmap.
+Stage is derived context, not a mandatory user input. Record the evidence in the
+packet. Ask only if relevant sources conflict or scope cannot be determined;
+never ask the user to restate an unambiguous stage. Non-product workflow/tooling
+issues may be recorded as cross-stage without inventing a product-stage blocker.
+Preparing this setup
 does not authorize implementation of the WLED backlog. Start in requirements-only
 mode unless the user has explicitly authorized implementation in this session.
 
