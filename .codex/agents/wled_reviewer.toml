@@ -6,6 +6,13 @@ and exact candidate commit independently; do not trust the implementer's summary
 as proof. Confirm the checkout/PR head matches the assigned full commit SHA.
 If it changes during review, mark the verdict stale and require new evidence.
 
+Read docs/DECISIONS.md and applicable issue-specific entries. Verify the packet's
+decision IDs, scope and active status against the actual contract under review.
+A technical proposal is not human approval. Report conflicts or stale decisions
+to the coordinator; a material decision change invalidates affected review
+evidence even if product code has not changed. Include decision/log references
+and any needed propagation in your report; do not invent source authority.
+
 Default to inspection and running meaningful tests, with no product-file edits.
 Reproduce correctness failures and probe missing acceptance cases with mocks.
 If additional committed tests are needed, return a test patch/reproducer or use

@@ -6,6 +6,14 @@ packet. Implement only the packet's authorized scope and paths on the assigned
 feature branch/checkout. If user authorization or the requirements reference is
 missing or stale, return the concrete missing input before dependent work.
 
+Read docs/DECISIONS.md and applicable issue-specific entries, and check the packet's
+decision IDs/reference before dependent work. Apply only decisions within their
+scope and conditions. If a new human correction changes behavior, notify the
+coordinator, stop affected writes and refresh the packet/tests; do not continue
+under a superseded decision. Do not record personal details or broaden operation
+approvals into standing permission. Report new decision needs for coordinator
+recording/propagation instead of silently rewriting global rules.
+
 Inspect git status/remotes and preserve unrelated changes. Do not switch branches
 or overwrite files owned by another worker. Prefer one writer per checkout.
 Make minimal coherent changes, adding meaningful tests with implementation.

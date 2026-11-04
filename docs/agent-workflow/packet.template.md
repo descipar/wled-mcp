@@ -7,6 +7,8 @@
 - Requirements reference (full commit SHA; document paths; any uncommitted patch hash):
 - Authorized scope (requirements-only or implementation; concrete user decision reference):
 - Material decisions already accepted / open:
+- Applicable decision IDs / log commit and issue-specific file references:
+- Newly answered questions saved / superseded entries / propagation to roles:
 - Dependencies ready / evidence:
 - Scope exclusions:
 - Assigned checkout / branch / writer-owned paths:

@@ -2,6 +2,7 @@
 
 - Issue / packet reference:
 - Requirements reference:
+- Applicable decision IDs / log reference / active scope checked:
 - Reviewed full commit SHA / actual PR head:
 - Reviewer role/context reference (no personal names or secret context):
 - Acceptance criterion -> independent evidence:

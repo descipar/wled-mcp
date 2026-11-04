@@ -32,7 +32,7 @@ def check(root: Path) -> list[str]:
             if path.stem != name:
                 errors.append(f"{path.name}: filename must match role name")
         instructions = data.get("developer_instructions")
-        for token in ("AGENTS.md", "docs/AGENT-WORKFLOW.md"):
+        for token in ("AGENTS.md", "docs/AGENT-WORKFLOW.md", "docs/DECISIONS.md"):
             if not isinstance(instructions, str) or token not in instructions:
                 errors.append(f"{path.name}: missing workflow reference {token}")
     if found != expected:
@@ -51,6 +51,9 @@ def check(root: Path) -> list[str]:
         errors.append(f"project config: {exc}")
     required = [
         root / "docs/AGENT-WORKFLOW.md",
+        root / "docs/DECISIONS.md",
+        root / "docs/decisions/README.md",
+        root / "docs/agent-workflow/decision.template.md",
         root / "docs/agent-workflow/packet.template.md",
         root / "docs/agent-workflow/implementation.template.md",
         root / "docs/agent-workflow/review.template.md",

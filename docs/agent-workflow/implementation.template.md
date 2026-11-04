@@ -3,6 +3,7 @@
 - Issue / packet reference:
 - Branch / candidate full commit SHA:
 - Requirements reference used:
+- Applicable decision IDs / log reference / any changed decisions reconciled:
 - Behavior changed / files changed:
 - Acceptance criterion -> test or evidence:
 - Commands actually run / results:

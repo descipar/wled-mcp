@@ -16,6 +16,9 @@ GitHub webhook, scheduled job or separate API application is installed.
 | [Packet template](agent-workflow/packet.template.md) | Requirements, scope authorization, dependencies and ownership |
 | [Implementation template](agent-workflow/implementation.template.md) | Candidate SHA and actual validation |
 | [Review template](agent-workflow/review.template.md) | Independent findings, coverage and commit-specific verdict |
+| [Shared decision log](DECISIONS.md) | Durable scoped decisions checked before repeated questions |
+| [Issue decision records](decisions/README.md) | Issue-specific answers and supersession history |
+| [Decision template](agent-workflow/decision.template.md) | Source, authority, scope, conditions and propagation |
 
 Codex documents project-scoped custom agents under `.codex/agents/`, with `name`,
 `description` and `developer_instructions`. Models, reasoning settings, provider,
@@ -126,6 +129,30 @@ A human decision must come from a real user instruction or human review/comment;
 agents must not fabricate approval comments, checkbox completion or identity.
 An issue edit that changes the accepted behavior requires rechecking the packet.
 Reviewing a different head cannot close the current implementation task.
+
+## Learning from human answers
+
+The workflow uses versioned project decisions rather than assumed automatic model
+memory. All roles read [DECISIONS.md](DECISIONS.md) and relevant issue records at
+startup/resume and before questions. The coordinator saves clear new answers,
+records their source and narrow applicability, and explicitly forwards changed
+decisions to the other roles. The full recording/lookup protocol is in the log.
+
+Issue-specific answers stay scoped to the issue; general project/workflow rules
+require an actual general decision or existing governing rule. Proposed or
+ambiguous answers remain proposed/unresolved. Current human corrections supersede
+older entries with a history link. Personal details and raw transcripts are not
+copied into versioned records.
+
+Routine recording within the current authorized workflow does not need another
+confirmation for each entry. Material uncertainty about what the human decided
+still needs clarification. A bounded merge/hardware/release permission cannot be
+reused for a different candidate or a future operation merely because it is logged.
+
+Decision updates travel with packet/requirements references. If they change
+behavior, freeze dependent work and refresh relevant tests and review. Agents
+must not claim that shared files alone updated another agent's active context,
+or that a decision will survive a future session when it was never saved.
 
 ## Enforcement boundary and future automation
 

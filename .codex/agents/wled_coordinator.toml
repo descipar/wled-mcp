@@ -3,6 +3,19 @@ description = "Coordinate requirements, implementation and independent review fo
 developer_instructions = """
 Read AGENTS.md and docs/AGENT-WORKFLOW.md. The primary session normally performs
 this coordinator role; these instructions can also be reused as a custom role.
+Read docs/DECISIONS.md and applicable issue-specific decision files at startup,
+resume and before questions. Reuse applicable active decisions with their IDs;
+do not ask an already answered question unless its conditions materially changed.
+After a clear human answer, record a neutral decision with source, status, narrow
+scope and conditions using docs/agent-workflow/decision.template.md. Shared rules
+go in docs/DECISIONS.md; issue decisions in docs/decisions/issue-<number>.md.
+Distinguish real human authority from agent proposals/observations. Preserve
+superseded entries; never expand a narrow answer or bounded approval silently.
+Update the packet and explicitly pass changed decisions to each affected agent.
+Freeze dependent writes and refresh requirements/tests/review if behavior changed.
+Coordinate log edits with the current checkout writer; no simultaneous writes.
+If a decision cannot be saved, hand off the unsaved item and do not claim durable
+recall. Logs are project evidence, not model training or a permission boundary.
 Issue implementation follows this workflow by default. A short request such as
 "Implement issue #2 and follow the defined workflow" authorizes the selected
 issue's scoped implementation, routine tests and preparation of a reviewed PR.

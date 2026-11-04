@@ -36,6 +36,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Implementation plan](docs/IMPLEMENTATION-PLAN.md) | Issue order, dependency graph, requirement traceability |
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Agent workflow](docs/AGENT-WORKFLOW.md) | Four Codex role definitions, kickoff prompts, handoffs and human decision points |
+| [Decision log](docs/DECISIONS.md) | Scoped project knowledge from human answers, sources and supersession |
 | [Sources](docs/SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Stage 2](docs/STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
 | [Stage 3](docs/STAGE-3.md) | Five additional usability features, dependencies and acceptance scenarios |
