@@ -4,7 +4,7 @@ Specification and implementation backlog for a standalone WLED MCP server with M
 
 **Status, 2026-11-04:** issue #2 has a concrete v1 design contract and synthetic examples prepared for review. There is no runtime implementation, installable package, deployed server, or validated hardware compatibility yet. See the [contract decisions](docs/decisions/issue-2.md) and [acceptance traceability](docs/VALIDATION.md).
 
-The repository also includes [Codex role definitions and a human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation and independent review. These run inside an active Codex session; no autonomous background service or WLED backlog run is started by checking them out.
+The repository also includes [Codex role definitions and a human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation, independent review and post-merge issue completion. These run inside an active or resumed Codex session; no autonomous background service or WLED backlog run is started by checking them out.
 
 ## Goal
 
@@ -36,7 +36,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Validation](docs/VALIDATION.md) | Meaningful automated checks, opt-in hardware checks, release criteria |
 | [Implementation plan](docs/IMPLEMENTATION-PLAN.md) | Issue order, dependency graph, requirement traceability |
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
-| [Agent workflow](docs/AGENT-WORKFLOW.md) | Four Codex role definitions, kickoff prompts, handoffs and human decision points |
+| [Agent workflow](docs/AGENT-WORKFLOW.md) | Five Codex role definitions, kickoff prompts, handoffs, human merge and evidenced issue completion |
 | [Decision log](docs/DECISIONS.md) | Scoped project knowledge from human answers, sources and supersession |
 | [Sources](docs/SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Stage 2](docs/STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |

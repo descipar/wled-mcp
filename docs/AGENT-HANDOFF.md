@@ -29,6 +29,11 @@ Authenticate with the agent's existing authorized GitHub mechanism. Do not paste
 6. Keep the optional raw tool out of the default surface until its allowlist and non-bypass behavior are defined; defer Should work explicitly if necessary.
 7. Prepare both HTTP-service/Docker and uvx/stdio deployment artifacts/instructions, then perform authorized read-only hub validation. Protect the HTTP endpoint independently of hub authorization. Record which mode was actually deployed; ask for missing device inputs only when needed.
 8. Update issues with evidence, not just “done”; link PRs and note unrun physical checks.
+9. After the human-authorized merge is verified, the coordinator delegates to
+   `wled_completion` using the [completion handoff](agent-workflow/completion.template.md).
+   It checks evidenced acceptance items and closes only fully satisfied current
+   issue scope. Preserve pending hardware/release criteria. This requires an
+   active/resumed session; if the session ends first, save the resumable handoff.
 
 ## Questions to resolve at the appropriate point
 
