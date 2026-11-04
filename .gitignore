@@ -17,5 +17,6 @@ data/
 backups/
 captures/
 secrets/
+.agent-runs/
 devices.toml
 *.log
