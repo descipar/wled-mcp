@@ -1,4 +1,4 @@
-# Proposed schema; synthetic documentation example, not yet executable config.
+# Executable synthetic inventory; startup/listing without probe performs no HTTP.
 schema_version = 1
 
 [http]

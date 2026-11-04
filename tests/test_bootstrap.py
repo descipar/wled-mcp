@@ -124,7 +124,10 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
                 assert client.protocol_version == (
                     "2025-11-25" if mode == "legacy" else "2026-07-28"
                 )
-                assert (await client.list_tools()).tools == []
+                tools = (await client.list_tools()).tools
+                assert [tool.name for tool in tools] == ["wled_list_devices"]
+                result = await client.call_tool("wled_list_devices", {})
+                assert result.structured_content["data"] == {"devices": []}
 
     anyio.run(exercise)
     assert set(data.iterdir()) == {config}
@@ -218,7 +221,7 @@ def test_stdout_is_only_protocol_and_clean_eof(startup):
         process.stdout.close()
         process.stderr.close()
     assert responses[1]["result"]["serverInfo"]["name"] == "wled-mcp"
-    assert responses[2]["result"]["tools"] == []
+    assert [tool["name"] for tool in responses[2]["result"]["tools"]] == ["wled_list_devices"]
     assert responses[3]["error"]["code"] == -32601
     assert responses[4]["error"]["code"] == -32602
 

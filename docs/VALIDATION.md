@@ -80,6 +80,28 @@ H06: Save to an agreed unused persistent preset ID, activate, read back, test ex
 
 H07: Observe an offline/unreachable device using an already unavailable target or approved test method; do not unplug production devices or change networking merely to create a failure. Simulated transport tests can remain the evidence for otherwise disruptive scenarios.
 
+## Issue #4 implementation evidence
+
+2026-11-04, Windows/Python 3.13.2, MCP SDK 2.3.0, HTTPX2 2.16.0: 80 tests passed,
+including the 24 inherited bootstrap checks. Ruff, strict mypy (10 source/script
+files), lock/export consistency and static agent setup passed. Offline wheel,
+noneditable clean installation and uvx checks passed with 30 exact active runtime
+versions verified; installed stdio lists/calls the inventory tool. No LAN/device
+requests were made. Independent review and remote CI are recorded per candidate.
+
+| Criteria | Executed evidence |
+| --- | --- |
+| C4-01/02, T01/T02 | strict config/URL/settings and duplicate rejection, immutable inventory, zero-HTTP default list, real stdio schemas/result parity |
+| C4-03/04/05, T02/T15 | independent probes, bounded eight-worker fan-out, fixed endpoints, redirect/proxy policy, actual stream limit/closure, malformed/HTML/UTF-8/compressed/NaN responses |
+| C4-06/07, T09 | one read deadline/retry, write timeout/reset/slow dispatch with reserved readback, match/mismatch/unavailable, one POST, invalid/oversize/expired preparation sends nothing |
+| C4-08/09, T10/logical T19 | event-synchronized same-device lock through readback, independent device progress, cancellation release, lock wait deadline, shared client/cache/backup/lock identity and one close |
+| C4-10, T14/T16 regressions | safe secret-marker errors, stdout framing, schema/error parity, locked wheel/clean-install/uvx version checks |
+
+Internal mocked writes do not establish firmware/domain-control acceptance.
+Logical session closures do not establish running HTTP T18–T21 acceptance. Full
+state/catalog tools, protected HTTP, snapshots, deployment and hardware remain
+pending. Hardware results are not inferred from mocks or package checks.
+
 ## Evidence template
 
 ```text

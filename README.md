@@ -2,7 +2,7 @@
 
 Specification and implementation backlog for a standalone WLED MCP server with MCPHub integration.
 
-**Status, 2026-11-04:** version 0.1.0 is an installable Python 3.13 stdio bootstrap. The production tool list is empty pending inventory/read implementation. Explicit HTTP selection fails before listening until protected service support in #14. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md) and [validation](docs/VALIDATION.md).
+**Status, 2026-11-04:** version 0.1.0 provides an installable Python 3.13 stdio server with validated inventory and `wled_list_devices`. Listing is network-free by default; explicit probes use bounded reads of configured devices. A shared internal HTTP/deadline/lock foundation supports later operations. HTTP service selection still fails before listening until #14. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md), [inventory behavior](docs/INVENTORY-CLIENT.md) and [validation](docs/VALIDATION.md).
 
 The repository also includes [Codex role definitions and a human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation and independent review. These run inside an active Codex session; no autonomous background service or WLED backlog run is started by checking them out.
 

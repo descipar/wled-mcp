@@ -1,5 +1,10 @@
 # V1 MCP tool contract
 
+Implementation status: #4 exposes only `wled_list_devices` from this table. Its
+network-free default, bounded explicit probes and internal client foundations are
+described in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). Remaining tools and the
+protected HTTP service are design requirements, not executable behavior yet.
+
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their
 authority are in [the issue decisions](decisions/issue-2.md). Requirement IDs refer

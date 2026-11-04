@@ -2,7 +2,7 @@
 
 Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
-The default production registry is empty. HTTP selection exits 2 before listening
+The production registry contains `wled_list_devices`. HTTP selection exits 2 before listening
 pending authenticated service support in #14. Full dual-mode acceptance is pending.
 
 ## Checks and build
@@ -48,8 +48,9 @@ The lockfile separately retains dependency artifact hashes.
 ## Private local wheel launch
 
 Use `examples/bootstrap.toml`: `schema_version = 1` and `devices = []`.
-Other tables and nonempty inventory are explicitly rejected until #4. The full
-inventory example remains proposed. CLI configuration/data paths override
+For configured devices use the executable synthetic `examples/devices.example.toml`.
+See [inventory/client limits](INVENTORY-CLIENT.md) for supported settings and probes.
+CLI configuration/data paths override
 `WLED_MCP_CONFIG`/`WLED_MCP_DATA_DIR`; paths must be absolute and the data directory
 must exist. Startup reads configuration without probing devices or creating files.
 
