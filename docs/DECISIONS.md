@@ -50,6 +50,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-004 | Stage 3 | Named zones, temporary signals, static previews, lighting explanations and effect-property search belong to stage 3 and do not block stage-2 publication. | Confirmed human stage assignment, roadmap discussion, 2026-11-04; [stage-3 roadmap](STAGE-3.md), [tracker #26](https://github.com/descipar/wled-mcp/issues/26) |
 | DEC-005 | Project documentation / issues | Use neutral roles and synthetic examples. Exclude personal names, private hostnames and installation-specific personal context unless explicitly requested. | Existing governing [AGENTS.md](../AGENTS.md) rule, recorded 2026-11-04 |
 | DEC-006 | Workflow | Add an agent responsible for completing issue checklists after merge. | Confirmed human instruction, post-merge workflow discussion, 2026-11-04; [issue #34](https://github.com/descipar/wled-mcp/issues/34) |
+| DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -81,6 +82,31 @@ can explicitly amend them.
   implementer and reviewer; its recording is not evidence of a live completion run.
 - Revalidation: changed scope, missing acceptance evidence or a different candidate
   requires reassessment; no bounded operation approval becomes standing authority.
+
+### DEC-007 — Shared Claude Code and Codex roles
+
+- Status: active workflow intent; the changed candidate requires refreshed
+  independent review and the normal human merge decision.
+- Authority/source: human request in the current project conversation on
+  2026-11-04 to rewrite the agents so Claude and Codex share definitions. No
+  source-message permalink is available; [issue #37](https://github.com/descipar/wled-mcp/issues/37)
+  records the implementation scope.
+- Scope/decision: maintain common role definitions for both clients, preserving
+  the existing issue workflow including independent review and DEC-006 completion.
+  Provider-neutral source files, generated native adapters and their exact format
+  are technical implementation choices, not individually human-confirmed details.
+- Conditions: client configuration remains separate where native formats differ;
+  do not force models, providers, credentials, permissions or MCP connections.
+  This does not authorize product work, model launches, merge, deployment,
+  device writes, publication or closing unrelated issues.
+- Rationale supplied: shared agents for the two clients; no further rationale
+  supplied. Supersedes no earlier human decision.
+- Affected: CA-01–06, the five role definitions and client adapters, setup tooling,
+  project instructions and workflow docs; PM-01–06 remain in force. The coordinator
+  propagates DEC-007 with the packet to requirements, implementation and review.
+- Revalidation: edits invalidate the prior PR #35 candidate review. Structural
+  fidelity, native client discovery and actual model behavior require distinct
+  evidence; generated files alone do not prove an end-to-end run.
 
 ## Still unresolved
 

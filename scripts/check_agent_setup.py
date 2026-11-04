@@ -1,15 +1,25 @@
 """Validate repository agent definitions without launching models or network calls."""
 
-from pathlib import Path
 import re
 import sys
 import tomllib
+from pathlib import Path
+
+from sync_agents import SOURCE_STEMS, sync
 
 
 def check(root: Path) -> list[str]:
     errors: list[str] = []
+    try:
+        for relative in sync(root, check=True):
+            errors.append(f"generated adapter drift: {relative}; run python scripts/sync_agents.py")
+    except (OSError, ValueError, UnicodeError) as exc:
+        errors.append(f"shared role sources: {exc}")
     expected = {
-        "wled_coordinator", "wled_requirements", "wled_implementer", "wled_reviewer",
+        "wled_coordinator",
+        "wled_requirements",
+        "wled_implementer",
+        "wled_reviewer",
         "wled_completion",
     }
     found: set[str] = set()
@@ -47,10 +57,15 @@ def check(root: Path) -> list[str]:
             or type(agents.get("enabled")) is not bool
             or type(agents.get("max_concurrent_threads_per_session")) is not int
         ):
-            errors.append("project config must only enable agents and cap child concurrency at three")
+            errors.append(
+                "project config must only enable agents and cap child concurrency at three"
+            )
     except (OSError, tomllib.TOMLDecodeError) as exc:
         errors.append(f"project config: {exc}")
     required = [
+        root / "AGENTS.md",
+        root / "CLAUDE.md",
+        root / "agents/README.md",
         root / "docs/AGENT-WORKFLOW.md",
         root / "docs/DECISIONS.md",
         root / "docs/decisions/README.md",
@@ -60,6 +75,8 @@ def check(root: Path) -> list[str]:
         root / "docs/agent-workflow/review.template.md",
         root / "docs/agent-workflow/completion.template.md",
     ]
+    required.extend(root / "agents" / f"{stem}.md" for stem in SOURCE_STEMS)
+    required.extend(root / ".claude/agents" / f"wled_{stem}.md" for stem in SOURCE_STEMS)
     for path in required:
         if not path.is_file():
             errors.append(f"missing {path.relative_to(root)}")
@@ -70,6 +87,11 @@ def check(root: Path) -> list[str]:
             local = target.split("#", 1)[0]
             if local and not (path.parent / local).is_file():
                 errors.append(f"{path.name}: missing local reference {local}")
+    try:
+        if (root / "CLAUDE.md").read_text(encoding="utf-8").strip() != "@AGENTS.md":
+            errors.append("CLAUDE.md must import the shared AGENTS.md without duplicated rules")
+    except OSError as exc:
+        errors.append(f"Claude entrypoint: {exc}")
     return errors
 
 
@@ -79,5 +101,5 @@ if __name__ == "__main__":
         print(f"ERROR: {failure}", file=sys.stderr)
     if failures:
         raise SystemExit(1)
-    print("Agent setup valid: five roles, inherited session settings, workflow references present.")
+    print("Agent setup valid: five shared roles, synchronized adapters, inherited settings.")
     print("Static validation only; no model, network, product or hardware run performed.")
