@@ -42,6 +42,7 @@ class FakeWLED:
         mainseg: int = 0,
         lc: int | Any = 1,
         seglc: list[int] | None | str = "auto",
+        name_buffer: int = 32,
     ) -> None:
         active = (
             segments
@@ -52,6 +53,7 @@ class FakeWLED:
         self.slots: list[dict[str, Any]] = [inactive_slot(i) for i in range(size)]
         for seg in active:
             self.slots[seg["id"]] = copy.deepcopy(seg)
+        self.name_buffer = name_buffer  # firmware name buffer in bytes (ESP8266 32, ESP32 64)
         self.led_count = led_count
         self.maxseg = maxseg
         self.mainseg = mainseg
@@ -175,7 +177,7 @@ class FakeWLED:
             for index, color in enumerate(obj["col"][:3]):
                 slot["col"][index] = list(color) + [0] * (4 - len(color))
         if "n" in obj:
-            slot["n"] = obj["n"][:32]
+            slot["n"] = obj["n"].encode()[: self.name_buffer].decode(errors="ignore")
         for key in ("fx", "sx", "ix", "pal", "frz", "sel", "rev", "mi"):
             if key in obj:
                 slot[key] = obj[key]

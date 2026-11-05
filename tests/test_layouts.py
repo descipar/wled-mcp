@@ -468,15 +468,46 @@ async def test_T06_invalid_requests_send_no_post(tmp_path, segments, code):
 
 
 @pytest.mark.anyio
-async def test_T06_name_at_byte_limit_is_accepted(tmp_path):
+async def test_T06_name_of_32_characters_is_accepted_by_validation(tmp_path):
+    """Validation counts characters (aligned with #6); the firmware byte buffer is a limit."""
     fake = fixture_fake()
     async with open_resources(tmp_path, fake) as resources:
         result = await replace(
             resources,
-            [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 16}],
+            [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 32}],
             dry_run=True,
         )
     assert result.ok, result.error
+    assert fake.posts == []  # the dry run does not warn about the firmware byte buffer
+
+
+@pytest.mark.anyio
+async def test_T06_multibyte_name_over_firmware_buffer_is_reported_as_mismatch(tmp_path):
+    """32 two-byte characters pass validation but exceed a 32-byte firmware buffer: the
+    firmware truncates silently and the final readback reports VERIFICATION_MISMATCH."""
+    fake = fixture_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 32}])
+    assert result.error is not None and result.error.code == "VERIFICATION_MISMATCH"
+    assert by_id(fake)[0]["n"] == "ä" * 16  # truncated to the 32-byte buffer
+
+
+@pytest.mark.anyio
+async def test_T06_grouping_256_on_new_id_wraps_and_keeps_earlier_removals_applied(tmp_path):
+    fake = fixture_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(
+            resources,
+            [
+                {"id": 0, "start": 0, "stop": 10},
+                {"id": 1, "start": 10, "stop": 20, "colors": BLUE, "grouping": 256},
+            ],
+        )
+    assert result.error is not None and result.error.code == "VERIFICATION_MISMATCH"
+    assert (result.application, result.verification) == ("applied", "mismatch")
+    assert result.data["completed_steps"] >= 2  # earlier removals stay applied
+    assert sorted(by_id(fake)) == [0, 1]
+    assert by_id(fake)[1]["grp"] == 1  # 256 wrapped by the firmware uint8_t argument
 
 
 @pytest.mark.anyio

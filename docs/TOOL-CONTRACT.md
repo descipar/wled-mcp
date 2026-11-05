@@ -171,8 +171,8 @@ are mutually exclusive; ambiguous names return candidates. Brightness/speed/
 intensity are integers 0â€“255; effects/palettes must exist in target catalogs.
 Should fields: `grouping`, `spacing`, `offset`, `reverse`, `mirror`, `selected`,
 `name`. If exposed, grouping is positive, spacing nonnegative (both within known
-firmware limits), offset is 0 <= offset < resulting physical range length (no
-implicit wrap), and names respect the profile's UTF-8 byte limit (no truncation).
+firmware limits; `wled_replace_layout` is an exception, see [Layout replacement](#layout-replacement-implemented-in-7)), offset is 0 <= offset < resulting physical range length (no
+implicit wrap), and names respect the profile's UTF-8 byte limit (no truncation; for `wled_replace_layout` the #7 section overrides this, consistent with #6).
 Unsupported fields/capabilities fail explicitly. CCT/2D/pixel streaming are separate
 extensions; preservation of an existing unexposed field does not expose its setter.
 
@@ -246,7 +246,7 @@ these are acceptance targets, not firmware execution evidence.
 
 Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus the REL-01/02
 uncertain-write rules and the MCP-02 envelope); decisions
-[ISSUE-7-DEC-001–005](decisions/issue-7.md). Evidence is mock-only and source-derived
+[ISSUE-7-DEC-001–006](decisions/issue-7.md). Evidence is mock-only and source-derived
 ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 has not run.
 
 **`wled_replace_layout(device_id, segments, dry_run=false)`**. Strict input
@@ -255,13 +255,22 @@ uncertain-write rules and the MCP-02 envelope); decisions
 `intensity`, `grouping` (>= 1), `spacing` (>= 0), `offset`, `reverse`, `mirror`,
 `selected`, `name` (at most 32 characters). ISSUE-7-DEC-002 says #7 follows #6 wherever
 #6 defines handling; with [ISSUE-7-DEC-006](decisions/issue-7.md) (human decision B,
-resolving ISSUE-7-OPEN-001) these limits and the `bri` handling are aligned with
-`wled_patch_segments`: no extra byte limit, no extra 255 bound, and `bri` is sent as
-#6 sends it (no resolved `on` is added; an explicit `on` is sent). Known limits shared
-with #6: a name longer than the firmware buffer (32 bytes ESP8266, 64 ESP32, counted in
-bytes) is truncated silently; `grouping`/`spacing` above 255 wrap in the firmware
-`uint8_t` arguments; and `bri > 0` sent without `on` may switch an off segment on, which
-the final readback reports as `VERIFICATION_MISMATCH` instead of hiding it.
+resolving ISSUE-7-OPEN-001) the name limit and grouping/spacing bounds are aligned with
+`wled_patch_segments`: no extra byte limit and no extra 255 bound. `bri` is sent as #6
+sends it (no resolved `on` is added; an explicit `on` is sent); this covers only how
+`bri` is sent. The brightness validation of #7 follows the general power/brightness
+contract and differs from #6: `brightness=0` without an explicit `on=false` on an ON
+segment, and `on=true` with `brightness=0`, are rejected (#6 accepts them).
+
+Known firmware limits shared with #6 (this section overrides the general "within known
+firmware limits" and "no truncation" wording above for this tool): a name longer than
+the firmware buffer (32 bytes ESP8266, 64 ESP32, counted in bytes) is truncated
+silently; `grouping`/`spacing` above 255 wrap in the firmware `uint8_t` arguments; and
+`bri > 0` sent without `on` may switch an off segment on (an explicit `on=false` stays
+off). The plan and the dry run do not warn about these. The tool-level outcome is
+the same for all three: the final readback reports `VERIFICATION_MISMATCH`
+(`applied`/`mismatch`) instead of hiding the difference, and earlier destructive steps
+(removals, `mainseg` redirect) remain applied and are not rolled back.
 Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
 only; authorization belongs to the host).
 

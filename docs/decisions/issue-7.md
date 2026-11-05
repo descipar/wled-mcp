@@ -129,6 +129,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Supersedes / superseded by: resolves ISSUE-7-OPEN-001; partially supersedes
   ISSUE-7-DEC-005 (see there).
 - Propagated to: implementation handoff `.agent-runs/issue-7/implementation.md`.
+- Clarification note (coordinator reading, not a separate human answer): "bri handling
+  as #6" covers only how `bri` is sent. The brightness=0 rejections of #7
+  (`brightness=0` without explicit `on=false` on an ON segment; `on=true` with
+  `brightness=0`) follow the general power/brightness contract, stay in force and differ
+  from #6, which accepts them.
 - Revalidation / next action: known limits shared with #6, documented in
   TOOL-CONTRACT.md: names longer than the firmware buffer (32 bytes ESP8266, 64
   ESP32; multibyte characters count as several bytes) are truncated silently by the
