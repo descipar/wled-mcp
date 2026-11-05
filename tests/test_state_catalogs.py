@@ -89,6 +89,7 @@ async def test_registry_order_annotations_and_strict_models(tmp_path):
             "wled_get_palettes",
             "wled_set_state",
             "wled_patch_segments",
+            "wled_replace_layout",
         ]
         assert operations[0].execute.__closure__[0].cell_contents is resources
         assert len(operations[0].execute.__closure__) == 1
@@ -104,7 +105,8 @@ async def test_registry_order_annotations_and_strict_models(tmp_path):
                 assert (hints.read_only_hint, hints.destructive_hint) == (True, False)
                 assert (hints.idempotent_hint, hints.open_world_hint) == (True, False)
             else:
-                assert (hints.read_only_hint, hints.destructive_hint) == (False, False)
+                destructive = operation.name == "wled_replace_layout"
+                assert (hints.read_only_hint, hints.destructive_hint) == (False, destructive)
                 assert (hints.idempotent_hint, hints.open_world_hint) == (False, False)
             schema = operation.request_model.model_json_schema()
             assert schema["additionalProperties"] is False
@@ -788,6 +790,7 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                 "wled_get_palettes",
                 "wled_set_state",
                 "wled_patch_segments",
+                "wled_replace_layout",
             ]
             read_only_names = {
                 "wled_list_devices",
@@ -804,7 +807,7 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                     assert tool.annotations.open_world_hint is False
                 else:
                     assert tool.annotations.read_only_hint is False
-                    assert tool.annotations.destructive_hint is False
+                    assert tool.annotations.destructive_hint is (tool.name == "wled_replace_layout")
                     assert tool.annotations.idempotent_hint is False
                     assert tool.annotations.open_world_hint is False
                 assert tool.output_schema["additionalProperties"] is False

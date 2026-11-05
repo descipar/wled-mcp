@@ -37,3 +37,52 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Rationale supplied: none beyond the choice itself.
 - Affected: SEG-05, T05–T08 field coverage, TOOL-CONTRACT.md. Supersession: none.
 - Propagation: coordinator passes this ID with the packet to later roles.
+
+## ISSUE-7-DEC-003 — Step order and allocation bound (agent technical baseline)
+
+- Status: proposed agent baseline for issue #7; NOT human-confirmed. Review point for
+  the reviewer and the human merge decision.
+- Authority/source: implementer proposals PD-1, PD-2, PD-4 of the requirements packet,
+  recorded with the implementation (2026-11-05).
+- Scope/decision: the sequence is [main redirect when its target is already active],
+  exact single-object removals ascending, updates/creates chosen so no step overlaps a
+  segment still at an old range (creates strictly ascending), [main redirect after the
+  creation of a new target]. The main segment moves only when the old main is not part of
+  the desired layout, to the lowest desired ID. A new ID `n` is accepted iff
+  `n <= max(active)+1`, chained ascending; the bound is a lower bound of the slot count
+  because the single-object path never purges. A range cycle is rejected, never solved
+  with a temporary segment.
+- Conditions: pinned v0.15.1 source evidence only (docs/SOURCES.md#issue-7-layout-evidence);
+  no hardware evidence; revisit when H05 or another firmware profile is evidenced.
+- Affected: SEG-02, T05/T09, replace.json. Supersession: none.
+
+## ISSUE-7-DEC-004 — Range-capability evidence for new ranges (agent technical baseline)
+
+- Status: proposed agent baseline for issue #7; NOT human-confirmed.
+- Authority/source: implementer proposal PD-3 (2026-11-05).
+- Scope/decision: colors for a new range are accepted only under profile-0 uniform
+  RGB-only evidence: `info.leds.lc` has `(lc & 7) == CAP_RGB` and `info.leds.seglc` is
+  absent or aligned with the segment list with every entry RGB-only. Three channels only;
+  four channels, any white/CCT bit, a missing or non-integer `lc` or misaligned `seglc`
+  give `UNSUPPORTED_CAPABILITY`. Moved existing ranges use their own `seglc` entry
+  (RGB-only accepted, four channels refused). A coverage-based rule would reject the
+  repository's own replace case (new ID 6 outside the old coverage) and is not used.
+- Conditions: on a mixed-bus device active segments may not cover the new range; this is a
+  documented profile-0 assumption (ISSUE-6-DEC-002/-003 semantics).
+- Affected: SEG-03, T06. Supersession: none.
+
+## ISSUE-7-DEC-005 — Smaller technical limits and no-op behavior (agent technical baseline)
+
+- Status: proposed agent baseline for issue #7; NOT human-confirmed.
+- Authority/source: implementer proposals PD-5 to PD-8, PD-11, PD-12 (2026-11-05).
+- Scope/decision: grouping 1-255 and spacing 0-255 (pinned `uint8_t` arguments); `name` at
+  most 32 UTF-8 bytes (stricter than the 32-character cap of #6, which is unchanged);
+  existing IDs without a difference get no POST and an entirely unchanged request is an
+  `ok` no-op (`not_attempted`, zero POSTs); reused inactive slots are forced to the
+  documented defaults plus `frz=false` and unexposed inherited state is only reported;
+  effect/palette are IDs only (as #6); `wled_replace_layout` carries
+  `destructive_hint=true`; the resolved `on` is sent with every `bri` because the firmware
+  turns an off segment on when `bri>0` is sent alone.
+- Conditions: none beyond ISSUE-7-DEC-002 (CCT, 2D and pixel streaming stay out of scope).
+- Affected: SEG-05, TOOL-CONTRACT.md, T06/T07. Supersession: none.
+

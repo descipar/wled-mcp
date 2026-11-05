@@ -92,6 +92,309 @@
         }
       },
       "mcp_isError": true
+    },
+    {
+      "name": "replace_layout_partial_application",
+      "request": {
+        "device_id": "desk",
+        "segments": [
+          {
+            "id": 2,
+            "start": 0,
+            "stop": 30
+          },
+          {
+            "id": 6,
+            "start": 30,
+            "stop": 60,
+            "colors": [
+              [
+                0,
+                0,
+                255
+              ]
+            ]
+          }
+        ]
+      },
+      "observations": [
+        "Steps 1-2 verified; an external writer added ID 4 right after the POST of step 3, so step 3 (remove ID 5) failed its layout check.",
+        "The sequence stopped: later steps were not dispatched and no corrective or replayed write was sent."
+      ],
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "wled_replace_layout",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "applied",
+        "verification": "mismatch",
+        "data": {
+          "steps_report": [
+            {
+              "index": 0,
+              "action": "set_main",
+              "id": null,
+              "status": "verified"
+            },
+            {
+              "index": 1,
+              "action": "remove",
+              "id": 0,
+              "status": "verified"
+            },
+            {
+              "index": 2,
+              "action": "remove",
+              "id": 5,
+              "status": "failed"
+            },
+            {
+              "index": 3,
+              "action": "update",
+              "id": 2,
+              "status": "not_dispatched"
+            },
+            {
+              "index": 4,
+              "action": "create",
+              "id": 6,
+              "status": "not_dispatched"
+            }
+          ],
+          "completed_steps": 2,
+          "remaining_steps": [
+            {
+              "index": 2,
+              "action": "remove",
+              "id": 5
+            },
+            {
+              "index": 3,
+              "action": "update",
+              "id": 2
+            },
+            {
+              "index": 4,
+              "action": "create",
+              "id": 6
+            }
+          ],
+          "observed": {
+            "active": [
+              {
+                "id": 2,
+                "start": 10,
+                "stop": 20
+              },
+              {
+                "id": 4,
+                "start": 40,
+                "stop": 50
+              }
+            ],
+            "mainseg": 2
+          },
+          "no_replay": true,
+          "plan": {
+            "update_segment_ids": [
+              2
+            ],
+            "create_segment_ids": [
+              6
+            ],
+            "remove_segment_ids": [
+              0,
+              5
+            ],
+            "unchanged_segment_ids": [],
+            "main_segment_id": 2,
+            "main_segment": {
+              "current": 0,
+              "target": 2,
+              "changed": true,
+              "step": 0
+            },
+            "resolved_segments": [
+              {
+                "id": 2,
+                "start": 0,
+                "stop": 30,
+                "on": true,
+                "brightness": 180,
+                "effective_brightness": 180,
+                "colors": [
+                  [
+                    255,
+                    80,
+                    0
+                  ],
+                  [
+                    1,
+                    2,
+                    3
+                  ],
+                  [
+                    4,
+                    5,
+                    6
+                  ]
+                ],
+                "color_channels": 3,
+                "name": "Edge",
+                "effect_id": 1,
+                "palette_id": 0,
+                "speed": 90,
+                "intensity": 70,
+                "grouping": 1,
+                "spacing": 0,
+                "offset": 0,
+                "reverse": false,
+                "mirror": false,
+                "selected": true
+              },
+              {
+                "id": 6,
+                "start": 30,
+                "stop": 60,
+                "on": true,
+                "brightness": 255,
+                "effective_brightness": 255,
+                "colors": [
+                  [
+                    0,
+                    0,
+                    255
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
+                  ]
+                ],
+                "color_channels": 3,
+                "name": "",
+                "effect_id": 0,
+                "palette_id": 0,
+                "speed": 128,
+                "intensity": 128,
+                "grouping": 1,
+                "spacing": 0,
+                "offset": 0,
+                "reverse": false,
+                "mirror": false,
+                "selected": false
+              }
+            ],
+            "targeted_compensation": [
+              {
+                "id": 2,
+                "name": "Edge"
+              }
+            ],
+            "steps": [
+              "Redirect main ID to 2 using the validated profile.",
+              "Remove ID 0 via a single-object seg payload; verify.",
+              "Remove ID 5 via a single-object seg payload; verify.",
+              "Move ID 2 to [0,30), preserving omitted fields; verify.",
+              "Create ID 6 at [30,60) with explicit defaults; verify."
+            ],
+            "step_actions": [
+              "set_main",
+              "remove",
+              "remove",
+              "update",
+              "create"
+            ],
+            "step_payloads": [
+              {
+                "mainseg": 2
+              },
+              {
+                "seg": {
+                  "id": 0,
+                  "stop": 0
+                }
+              },
+              {
+                "seg": {
+                  "id": 5,
+                  "stop": 0
+                }
+              },
+              {
+                "seg": {
+                  "id": 2,
+                  "start": 0,
+                  "stop": 30,
+                  "n": "Edge"
+                }
+              },
+              {
+                "seg": {
+                  "id": 6,
+                  "start": 30,
+                  "stop": 60,
+                  "on": true,
+                  "bri": 255,
+                  "col": [
+                    [
+                      0,
+                      0,
+                      255
+                    ],
+                    [
+                      0,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      0
+                    ]
+                  ],
+                  "frz": false,
+                  "n": "",
+                  "fx": 0,
+                  "pal": 0,
+                  "sx": 128,
+                  "ix": 128,
+                  "grp": 1,
+                  "spc": 0,
+                  "of": 0,
+                  "rev": false,
+                  "mi": false,
+                  "sel": false
+                }
+              }
+            ],
+            "warnings": [],
+            "noop": false
+          },
+          "postconditions": [
+            "No writes occur during a dry run; a live call re-reads and re-plans under the lock.",
+            "After a successful live call the active IDs are exactly [2, 6] with the requested ranges.",
+            "Omitted fields of existing IDs are preserved; new IDs receive the contract defaults.",
+            "No gap fillers, fixed deletion tail, bulk purge, renumbering or master-state change.",
+            "On any uncertain or mismatching step the sequence stops: completed and remaining steps are reported, nothing is replayed, rolled back or corrected."
+          ]
+        },
+        "warnings": [],
+        "error": {
+          "code": "VERIFICATION_MISMATCH",
+          "message": "Readback did not match the planned postcondition.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Inspect state explicitly; do not replay the write."
+        }
+      },
+      "mcp_isError": true
     }
   ],
   "validation_assertions": [

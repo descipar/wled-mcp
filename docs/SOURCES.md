@@ -98,6 +98,27 @@ Not verified: behavior of other firmware versions or forks, a real controller's 
 whether `pl` is exactly `-1` when no playlist runs on every build (the read tool maps
 `-1` to null and passes other integers through). No firmware code was copied.
 
+## Issue-7 layout evidence
+
+Read 2026-11-05 from the same pinned tag `v0.15.1`, commit
+`4f3992b4dc57c888b53d9576c894a278e03e4cfc` (`wled00/json.cpp`, `FX_fcn.cpp`, `FX.h`,
+`const.h`). Source evidence only, not hardware evidence; the stateful test fake models
+exactly these facts:
+
+| Pinned fact | Consequence |
+| --- | --- |
+| `deserializeSegment`: `stop = elem["stop"] \| -1`; `setGeometry` with `i2 <= i1` sets `stop = 0`; `isActive()` is `stop > start`; a geometry change without `n` clears the name; removing the main slot resets main to 0 | Removal payload `{"seg":{"id":N,"stop":0}}`; name resend after a geometry change |
+| A removed slot stays in the segment vector; `serializeState` emits active segments only; `purgeSegments()` runs only on the ARRAY path when `getSegmentsNum() > 3 && deleted >= getSegmentsNum()/2` | One single-object POST per removal, never an array |
+| `id >= getSegmentsNum()` appends one segment at the end and re-assigns the ID; `stop <= 0` there is ignored; `id >= getMaxSegments()` returns false | New ID `n` is exact only if `n <=` slot count; observable lower bound is `max(active)+1` |
+| A reused inactive slot keeps old runtime state (colors, effect, `frz`, `cct`, c1-c3, o1-o3, ...); only sent fields change; `grp`/`spc` are `uint8_t` (grp 0 becomes 1); `setGeometry` restarts the effect | Explicit defaults plus `frz=false`; unexposed state only warned about; grouping/spacing limits |
+| Explicit `of` is reduced modulo length; an unsent `of` is clamped to `len-1` after shrinking; names are truncated to the build limit (64 ESP32, 32 ESP8266) | Reject clamping moves without explicit offset; 32-byte name limit |
+| `bri` sent and > 0 sets opacity and ON; a later `on` key overrides; `on:true` with `bri:0` stays ON; `bri:0` without `on` turns the segment off | `on=true` with `brightness=0` rejected; resolved `on` accompanies a sent `bri` |
+| `mainseg` is processed before `seg`; `setMainSegmentId(n)` accepts only `n < segment slots` (may be inactive) else resets to 0 | Main redirect before removals when the target is active, after creation otherwise |
+| `serializeSegment` emits `n` only when a name exists | Missing `n` is the empty name |
+
+Not verified: any real device, other firmware versions, `lc` semantics on mixed bus types
+beyond ISSUE-5-DEC-008. No firmware code was copied.
+
 ## Issue-14 HTTP service evidence
 
 Observed 2026-11-05 by inspecting the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools (no repository changes): the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID, and opens a stream for a GET that offers `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These observations motivate [ISSUE-14-DEC-002 to -004](decisions/issue-14.md) and are re-pinned by tests, not assumed.

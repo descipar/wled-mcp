@@ -3,8 +3,11 @@
 Implementation status: #4 exposes `wled_list_devices`; #5 adds the read-only
 `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (see
 [Read tools](#read-tools-state-and-catalogs-implemented-in-5)). Inventory and client
-foundations are in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). Setters, presets and
-the protected HTTP service are design requirements, not executable behavior yet.
+foundations are in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). #6 adds `wled_set_state`
+and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
+[Layout replacement](#layout-replacement-implemented-in-7)); #14 adds the protected HTTP
+service. Presets, snapshots and the remaining tools are design requirements, not
+executable behavior yet.
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their
@@ -238,6 +241,96 @@ uncertain step makes application `unknown`. Intermediate light output is visible
 and external clients can race. The [replacement fixture](../examples/contracts/replace.json)
 includes a representable noncontiguous layout and a rejected sparse-new-ID request;
 these are acceptance targets, not firmware execution evidence.
+
+## Layout replacement (implemented in #7)
+
+Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus the REL-01/02
+uncertain-write rules and the MCP-02 envelope); decisions
+[ISSUE-7-DEC-001–005](decisions/issue-7.md). Evidence is mock-only and source-derived
+([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 has not run.
+
+**`wled_replace_layout(device_id, segments, dry_run=false)`**. Strict input
+(`segments`: 1-64 entries, unknown fields rejected). Each entry needs `id`, `start`,
+`stop`; optional: `on`, `brightness`, `colors`, `effect_id`, `palette_id`, `speed`,
+`intensity`, `grouping` (1-255), `spacing` (0-255), `offset`, `reverse`, `mirror`,
+`selected`, `name` (at most 32 UTF-8 bytes, no truncation). The Should options follow
+ISSUE-7-DEC-002 and #6 handling. Limits stricter than the generic text above come from
+the pinned `uint8_t` geometry arguments and the smaller (ESP8266) name buffer.
+Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
+only; authorization belongs to the host).
+
+Deferred (not part of #7, no setter is exposed; existing values are preserved):
+CCT (`cct`), 2D geometry and matrix fields, pixel streaming (`i`), `rpt`, freeze setter,
+`c1`-`c3`, `o1`-`o3`, `si`, `set`, `m12`, effect/palette *name* forms and
+`AMBIGUOUS_NAME` for segments (both #6 and #7 take IDs only; name resolution is not part
+of either acceptance list), presets/snapshots and master `on`/`bri`/transition.
+
+Planning (one fresh read of state and info under the per-device lock and one deadline;
+identical for dry run and live call; an earlier dry run is never a reservation):
+
+1. Classify: `existing` = desired and active, `new` = desired and not active (including
+   reused inactive slots), `stale` = active and not desired (exact set difference, any
+   size, any gaps; no constant cleanup count).
+2. Validate the whole request before the first POST (unique IDs, `id < maxseg`,
+   `0 <= start < stop <= led_count`, no overlap in the desired layout, effect/palette IDs
+   inside the catalogs, offset `0 <= offset < length`, name bytes, `on=true` with
+   `brightness=0` and `brightness=0` without an explicit `on=false` rejected, color
+   widths). New IDs need explicit `colors`. Channel evidence for a new range is the
+   profile-0 uniform RGB-only rule (`leds.lc` is RGB-only and `leds.seglc` is absent or
+   aligned and RGB-only); otherwise `UNSUPPORTED_CAPABILITY`, and four channels for a new
+   or moved range are refused the same way. Existing unchanged ranges follow
+   ISSUE-6-DEC-003. A shrinking move whose preserved offset the firmware would clamp is
+   rejected unless `offset` is supplied; an unrepresentable preserved `name`/`offset` is
+   `UNSUPPORTED_CAPABILITY`.
+3. Allocation: new ID `n` is accepted if `n <= B`, where `B` starts at
+   `max(active IDs)+1` and becomes `max(B, n+1)` after each accepted new ID; IDs below the
+   first bound are reused inactive slots. Otherwise `UNSUPPORTED_CAPABILITY` ("New ID 8
+   cannot be allocated as requested; the known next slot is 6."). The bound is a lower
+   bound of the slot count because the single-object path never purges slots.
+4. Ordered single-object steps: optional main-ID redirect, exact removals ascending
+   (`{"seg":{"id":X,"stop":0}}`), then updates and creates chosen so that no step overlaps
+   a segment still at an old range (creates strictly ascending). A range cycle that would
+   need a temporary segment is rejected, never solved with a filler. When the old main ID
+   is stale the main segment moves to the lowest desired ID: before the removals if that
+   ID is active, after its creation otherwise (with a plan warning, because the firmware
+   resets main to 0 on that removal).
+5. Update steps send only fields that differ from the fresh read, `start`/`stop` only
+   for a geometry change, plus targeted compensation shown in the plan: the existing name
+   is resent after a geometry change, and the resolved `on` accompanies a sent `bri`
+   (the firmware would otherwise switch an off segment on). Existing IDs without any
+   difference get no POST (`unchanged_segment_ids`); a request that changes nothing is
+   a no-op: `ok=true`, `application=not_attempted`, `verification=not_requested`, one
+   warning, zero POSTs. Create steps send every public field explicitly (defaults table
+   above) and `frz=false`; other unexposed inherited state of reused slots cannot be
+   observed or reset and is reported as warning `inherited_unexposed_state`.
+
+`data.plan` (dry run and live): `update_segment_ids`, `create_segment_ids`,
+`remove_segment_ids`, `unchanged_segment_ids`, `main_segment_id`, `main_segment{current,
+target,changed,step}`, `resolved_segments` (every public field plus `color_channels`),
+`targeted_compensation`, `steps` (text), `step_actions` and `step_payloads` (the exact
+bodies), `warnings`, `noop`; plus `data.postconditions`. A dry run performs bounded
+reads only and returns `ok=true`, `application=not_attempted`, no POST, no file write.
+
+Execution: per step exactly one POST attempt and one bounded readback (ACK content is
+never proof). A step is verified when the active ID/range set equals the expected
+intermediate layout and the sent fields match (leading color slots, missing name equals
+empty, `bri=0` means segment off). After the last step the final check requires exactly
+the desired IDs and ranges, all requested and resolved-default fields, preserved fields of
+existing IDs and the planned main ID. `data.steps_report` lists `{index, action, id,
+status}` (`verified|failed|uncertain|not_dispatched`). Success is `applied/verified`.
+Stop rules: a possibly dispatched POST that raised stops the sequence (it is accepted as
+success only for the last step with a matching final state); a POST followed by a
+differing readback is `failed`; unreadable state is `uncertain`; no replay, rollback,
+corrective write or further (especially removal) step follows. Mapping: unreadable ->
+`unknown/unknown` + `WRITE_OUTCOME_UNKNOWN`; readable but differing after an uncertain or
+first step -> `unknown/mismatch` + `VERIFICATION_MISMATCH`; later verified steps then a
+failed step or a failed final check -> `applied/mismatch` + `VERIFICATION_MISMATCH`; budget
+exhausted before a step -> `TIMEOUT` (`applied/mismatch` if earlier steps were proven,
+else `not_attempted`). These failures carry `completed_steps`, `remaining_steps`,
+`observed` (active `{id,start,stop}` and `mainseg` of the last read) and `no_replay`.
+Failures before the first POST have empty `data`. The per-device lock is held for the
+whole sequence. See [errors.json](../examples/contracts/errors.json) for a partial
+application and [replace.json](../examples/contracts/replace.json).
 
 ## Persistent presets
 

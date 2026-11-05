@@ -19,7 +19,7 @@
     "max_segments": 16,
     "allocated_slot_count": 6,
     "next_allocatable_id": 6,
-    "range_capability": "validated uniform RGB-only fixture",
+    "range_capability": "uniform RGB-only (lc=1, seglc aligned) in the stateful mock",
     "exact_id_single_object_delete": true,
     "main_segment_redirect": true
   },
@@ -99,7 +99,7 @@
   "expected": {
     "schema_version": 1,
     "ok": true,
-    "operation": "replace_layout",
+    "operation": "wled_replace_layout",
     "device_id": "desk",
     "dry_run": true,
     "application": "not_attempted",
@@ -116,7 +116,14 @@
           0,
           5
         ],
+        "unchanged_segment_ids": [],
         "main_segment_id": 2,
+        "main_segment": {
+          "current": 0,
+          "target": 2,
+          "changed": true,
+          "step": 0
+        },
         "resolved_segments": [
           {
             "id": 2,
@@ -142,11 +149,18 @@
                 6
               ]
             ],
+            "color_channels": 3,
+            "name": "Edge",
             "effect_id": 1,
             "palette_id": 0,
             "speed": 90,
             "intensity": 70,
-            "name": "Edge"
+            "grouping": 1,
+            "spacing": 0,
+            "offset": 0,
+            "reverse": false,
+            "mirror": false,
+            "selected": true
           },
           {
             "id": 6,
@@ -172,6 +186,8 @@
                 0
               ]
             ],
+            "color_channels": 3,
+            "name": "",
             "effect_id": 0,
             "palette_id": 0,
             "speed": 128,
@@ -181,8 +197,7 @@
             "offset": 0,
             "reverse": false,
             "mirror": false,
-            "selected": false,
-            "name": ""
+            "selected": false
           }
         ],
         "targeted_compensation": [
@@ -195,16 +210,88 @@
           "Redirect main ID to 2 using the validated profile.",
           "Remove ID 0 via a single-object seg payload; verify.",
           "Remove ID 5 via a single-object seg payload; verify.",
-          "Move ID 2 to [0,30), preserving omitted fields and name; verify.",
-          "Create next allocated ID 6 at [30,60) with explicit defaults; verify."
-        ]
+          "Move ID 2 to [0,30), preserving omitted fields; verify.",
+          "Create ID 6 at [30,60) with explicit defaults; verify."
+        ],
+        "step_actions": [
+          "set_main",
+          "remove",
+          "remove",
+          "update",
+          "create"
+        ],
+        "step_payloads": [
+          {
+            "mainseg": 2
+          },
+          {
+            "seg": {
+              "id": 0,
+              "stop": 0
+            }
+          },
+          {
+            "seg": {
+              "id": 5,
+              "stop": 0
+            }
+          },
+          {
+            "seg": {
+              "id": 2,
+              "start": 0,
+              "stop": 30,
+              "n": "Edge"
+            }
+          },
+          {
+            "seg": {
+              "id": 6,
+              "start": 30,
+              "stop": 60,
+              "on": true,
+              "bri": 255,
+              "col": [
+                [
+                  0,
+                  0,
+                  255
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "frz": false,
+              "n": "",
+              "fx": 0,
+              "pal": 0,
+              "sx": 128,
+              "ix": 128,
+              "grp": 1,
+              "spc": 0,
+              "of": 0,
+              "rev": false,
+              "mi": false,
+              "sel": false
+            }
+          }
+        ],
+        "warnings": [],
+        "noop": false
       },
       "postconditions": [
-        "No writes occur during this dry run.",
-        "After a separately executed successful plan, active IDs are exactly 2 and 6.",
-        "Existing ID 2 preserves colors, name, power, brightness, effect, speed, intensity and other omitted fields.",
-        "No gap fillers or fixed deletion tail; no bulk purge.",
-        "On any uncertain dispatched step stop, report completed/remaining steps, do not replay or continue."
+        "No writes occur during a dry run; a live call re-reads and re-plans under the lock.",
+        "After a successful live call the active IDs are exactly [2, 6] with the requested ranges.",
+        "Omitted fields of existing IDs are preserved; new IDs receive the contract defaults.",
+        "No gap fillers, fixed deletion tail, bulk purge, renumbering or master-state change.",
+        "On any uncertain or mismatching step the sequence stops: completed and remaining steps are reported, nothing is replayed, rolled back or corrected."
       ]
     },
     "warnings": [],
@@ -235,7 +322,7 @@
   "rejected_outcome": {
     "schema_version": 1,
     "ok": false,
-    "operation": "replace_layout",
+    "operation": "wled_replace_layout",
     "device_id": "desk",
     "dry_run": false,
     "application": "not_attempted",
@@ -247,7 +334,7 @@
       "message": "New ID 8 cannot be allocated as requested; the known next slot is 6.",
       "read_retryable": false,
       "write_retryable": false,
-      "reconciliation": "Choose representable IDs or inspect the current layout; no write was sent."
+      "reconciliation": "Read the configured device explicitly; never replay the write."
     }
   }
 }
