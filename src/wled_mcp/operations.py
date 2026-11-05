@@ -1,6 +1,7 @@
 """Public inventory operation; all sessions close over the same resource graph."""
 
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any
 
 import anyio
@@ -8,6 +9,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from wled_mcp import __version__
+from wled_mcp.backups import Firmware
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
@@ -22,8 +24,34 @@ from wled_mcp.patches import (
     matches_segments,
     matches_set_state,
 )
-from wled_mcp.readmodels import Collector, as_dict, normalize_state, redact_info
-from wled_mcp.resources import OperationContext, Resources, SequencePlan
+from wled_mcp.presets import (
+    ActivatePresetRequest,
+    CaptureReference,
+    DeletePresetRequest,
+    GetPresetRequest,
+    ListPresetsRequest,
+    PresetStore,
+    SavePresetRequest,
+    capture_reference,
+    classify,
+    compare_capture,
+    entry_name,
+    interference,
+    json_equal,
+    lowest_free,
+    parse_store,
+    playlist_members,
+    referencing_playlists,
+    unsafe_playlist_members,
+)
+from wled_mcp.readmodels import (
+    Collector,
+    as_dict,
+    normalize_state,
+    read_identity,
+    redact_info,
+)
+from wled_mcp.resources import OperationContext, PolledWrite, Resources, SequencePlan, Verdict
 from wled_mcp.server import Operation
 
 
@@ -448,6 +476,605 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
     )
 
 
+# ------------------------------------------------------------------ preset tools (#9)
+
+CAPTURE_WARNING = (
+    "Capture is asynchronous and not an atomic photograph of the strip; external changes "
+    "can race with the save."
+)
+ACTIVATION_NOOP_WARNING = (
+    "The firmware ignores re-selecting the preset that is already active, so a verified "
+    "result cannot prove that this call re-applied it."
+)
+PRESET_RECONCILE = (
+    "Read the presets with wled_list_presets or wled_get_preset before any new attempt; "
+    "do not replay the write."
+)
+
+
+def _preset_failure(code: Any, message: str, reconciliation: str) -> ClientFailure:
+    return ClientFailure(code, message, reconciliation=reconciliation)
+
+
+def _not_found() -> ClientFailure:
+    return _preset_failure(
+        "PRESET_NOT_FOUND",
+        "No preset is stored under this ID.",
+        "List the stored presets with wled_list_presets before choosing an ID.",
+    )
+
+
+def _firmware(info: JsonValue) -> Firmware:
+    identity = read_identity(info)
+    return Firmware(identity.version, identity.build_id)
+
+
+async def _read_store(context: OperationContext) -> PresetStore:
+    return parse_store(as_dict(await context.read(Endpoint.PRESETS)))
+
+
+def _entry_summary(identifier: int, entry: JsonValue) -> dict[str, JsonValue]:
+    kind, malformed = classify(entry)
+    item: dict[str, JsonValue] = {"id": identifier, "name": entry_name(entry), "type": kind}
+    if malformed:
+        item["malformed"] = True
+    return item
+
+
+def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
+    """Persistent preset tools. Every call holds the per-device lock and one deadline;
+    stored data is always read fresh, never cached."""
+
+    def device_data(device_id: str) -> dict[str, JsonValue]:
+        device = resources.resolve(device_id)
+        return {"id": device.id, "name": device.name}
+
+    def store_warnings(store: PresetStore) -> list[str]:
+        if not store.malformed_keys:
+            return []
+        return [f"{store.malformed_keys} unrecognized key(s) in the preset store were skipped."]
+
+    async def read_view(name: str, device_id: str) -> tuple[PresetStore, str] | Outcome:
+        try:
+            async with resources.operation(device_id) as context:
+                store = await _read_store(context)
+                read_at = resources.clock.now().isoformat()
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+        return store, read_at
+
+    async def list_presets(arguments: dict[str, Any]) -> Outcome:
+        name, device_id = "wled_list_presets", arguments["device_id"]
+        viewed = await read_view(name, device_id)
+        if isinstance(viewed, Outcome):
+            return viewed
+        store, read_at = viewed
+        presets: list[JsonValue] = [_entry_summary(i, e) for i, e in store.entries.items()]
+        data: dict[str, JsonValue] = {
+            "device": device_data(device_id),
+            "freshness": {"source": "device", "read_at": read_at},
+            "presets": presets,
+            "count": len(presets),
+        }
+        return _read_success(name, device_id, data, store_warnings(store))
+
+    async def get_preset(arguments: dict[str, Any]) -> Outcome:
+        name, device_id, preset_id = (
+            "wled_get_preset",
+            arguments["device_id"],
+            arguments["preset_id"],
+        )
+        viewed = await read_view(name, device_id)
+        if isinstance(viewed, Outcome):
+            return viewed
+        store, read_at = viewed
+        entry = store.entries.get(preset_id)
+        if entry is None:
+            return _read_failure(resources, name, device_id, _not_found())
+        summary = _entry_summary(preset_id, entry)
+        data: dict[str, JsonValue] = {
+            "device": device_data(device_id),
+            "freshness": {"source": "device", "read_at": read_at},
+            "preset_id": preset_id,
+            "name": summary["name"],
+            "type": summary["type"],
+            "preset": entry,
+        }
+        if summary.get("malformed"):
+            data["malformed"] = True
+        return _read_success(name, device_id, data, store_warnings(store))
+
+    # ------------------------------------------------------------ activation
+
+    @dataclass
+    class ActivationPlan:
+        kind: str
+        members: list[int]
+        before_ps: int | None
+        before_pl: int | None
+        warnings: list[str]
+
+    async def plan_activation(
+        context: OperationContext, request: ActivatePresetRequest
+    ) -> ActivationPlan:
+        store = await _read_store(context)
+        entry = store.entries.get(request.preset_id)
+        if entry is None:
+            raise _not_found()
+        kind, _malformed = classify(entry)
+        members: list[int] = []
+        if kind == "playlist":
+            members = playlist_members(entry)
+            bad = unsafe_playlist_members(store, members)
+            if bad:
+                raise _preset_failure(
+                    "UNSUPPORTED_CAPABILITY",
+                    "The playlist references presets that are missing or not plain state "
+                    f"presets (IDs {bad[:20]}); it is not activated.",
+                    "Inspect the playlist and its members with wled_get_preset.",
+                )
+        elif kind != "state":
+            raise _preset_failure(
+                "UNSUPPORTED_CAPABILITY",
+                f"A preset of type '{kind}' is not activated by this server.",
+                "Inspect it with wled_get_preset; only state presets and playlists of "
+                "state presets can be activated.",
+            )
+        state = as_dict(await context.read(Endpoint.STATE))
+        ps, pl = state.get("ps"), state.get("pl")
+        before_ps = ps if type(ps) is int else None
+        before_pl = pl if type(pl) is int else None
+        warnings = list(store_warnings(store))
+        already = (
+            before_pl == request.preset_id if kind == "playlist" else before_ps == request.preset_id
+        )
+        if already:
+            warnings.append(ACTIVATION_NOOP_WARNING)
+        return ActivationPlan(kind, members, before_ps, before_pl, warnings)
+
+    def activation_verdict(
+        request: ActivatePresetRequest, plan: ActivationPlan, value: JsonValue
+    ) -> Verdict:
+        state = as_dict(value)
+        ps, pl = state.get("ps"), state.get("pl")
+        now_ps = ps if type(ps) is int else None
+        now_pl = pl if type(pl) is int else None
+        matched = (now_pl if plan.kind == "playlist" else now_ps) == request.preset_id
+        observed: JsonValue = {
+            "active_preset_id": now_ps if now_ps is not None and now_ps > 0 else None,
+            "active_playlist_id": now_pl if now_pl is not None and now_pl > 0 else None,
+        }
+        return Verdict(
+            matched=matched,
+            observed=observed,
+            unchanged=(now_ps, now_pl) == (plan.before_ps, plan.before_pl),
+        )
+
+    async def activate_preset(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_activate_preset"
+        request = ActivatePresetRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+        payload: dict[str, JsonValue] = {"ps": request.preset_id}
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    plan = await plan_activation(context, request)
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {
+                    "plan": {
+                        "preset_id": request.preset_id,
+                        "type": plan.kind,
+                        "member_ids": list(plan.members),
+                        "writes_storage": False,
+                    },
+                    "payload": payload,
+                    "postconditions": [
+                        "state.pl equals the playlist ID"
+                        if plan.kind == "playlist"
+                        else "state.ps equals the preset ID"
+                    ],
+                },
+                plan.warnings,
+            )
+        box: dict[str, ActivationPlan] = {}
+
+        async def prepare(context: OperationContext) -> PolledWrite:
+            plan = box["plan"] = await plan_activation(context, request)
+            return PolledWrite(
+                endpoint=Endpoint.STATE,
+                payload=payload,
+                evaluate=lambda value: activation_verdict(request, plan, value),
+                data={"preset_id": request.preset_id, "type": plan.kind},
+                reconciliation=(
+                    "Read the state with wled_get_state before any new attempt; "
+                    "do not replay the write."
+                ),
+            )
+
+        outcome = await resources.write_polled(device_id, name, prepare)
+        planned = box.get("plan")
+        if planned is None or not planned.warnings:
+            return outcome
+        return outcome.model_copy(update={"warnings": [*planned.warnings, *outcome.warnings]})
+
+    # ------------------------------------------------------------------ save
+
+    @dataclass
+    class SavePlan:
+        preset_id: int
+        allocated: bool
+        existing: dict[str, JsonValue] | None
+        existing_type: str | None
+        reference: CaptureReference
+        firmware: Firmware
+        pre_store: PresetStore
+        warnings: list[str]
+
+    async def plan_save(
+        context: OperationContext, request: SavePresetRequest, *, dry_run: bool
+    ) -> SavePlan:
+        store = await _read_store(context)
+        store.require_wellformed()
+        existing: dict[str, JsonValue] | None = None
+        existing_type: str | None = None
+        warnings: list[str] = []
+        if request.preset_id is None:
+            chosen = lowest_free(store)
+            if chosen is None:
+                raise _preset_failure(
+                    "PRESET_CONFLICT",
+                    "No free persistent preset ID (1-250) is available; nothing was written.",
+                    "Delete a preset explicitly or choose an occupied ID with overwrite=true.",
+                )
+            preset_id, allocated = chosen, True
+        else:
+            preset_id, allocated = request.preset_id, False
+            current = store.entries.get(preset_id)
+            if current is not None:
+                if not request.overwrite:
+                    raise _preset_failure(
+                        "PRESET_CONFLICT",
+                        "The preset ID is occupied; overwrite=true is required to replace it.",
+                        "Inspect it with wled_get_preset, then repeat with overwrite=true or "
+                        "omit preset_id to use a free ID.",
+                    )
+                existing_type, malformed = classify(current)
+                if malformed or not isinstance(current, dict):
+                    raise _preset_failure(
+                        "VALIDATION_ERROR",
+                        "The existing entry is not a JSON object and cannot be snapshotted.",
+                        "Inspect it with wled_get_preset; it is not overwritten.",
+                    )
+                if existing_type == "playlist":
+                    raise _preset_failure(
+                        "UNSUPPORTED_CAPABILITY",
+                        "Replacing a playlist is not supported.",
+                        "Inspect it with wled_get_preset; delete it explicitly and save to a "
+                        "free ID if replacement is intended.",
+                    )
+                if existing_type != "state":
+                    warnings.append(
+                        f"The existing '{existing_type}' entry is replaced by a state preset."
+                    )
+                existing = current
+        state_raw = await context.read(Endpoint.STATE)
+        info_raw = await context.read(Endpoint.INFO)
+        collector = Collector()
+        normalize_state(state_raw, info_raw, collector)  # validates the live state shape
+        warnings.extend(collector.result())
+        firmware = _firmware(info_raw)
+        reference = capture_reference(as_dict(state_raw))
+        pre_store = store
+        if not dry_run:
+            if existing is not None:
+                await context.backup_preset(preset_id, existing, firmware)
+            fresh = await _read_store(context)
+            fresh.require_wellformed()
+            current_entry = fresh.entries.get(preset_id)
+            if existing is None and current_entry is not None:
+                raise _preset_failure(
+                    "PRESET_CONFLICT",
+                    "The preset ID was occupied by another client after planning; "
+                    "no alternative ID was chosen and nothing was written.",
+                    "Read the presets and request a new save explicitly.",
+                )
+            if existing is not None and not json_equal(current_entry, existing):
+                raise _preset_failure(
+                    "PRESET_CONFLICT",
+                    "The preset changed after it was snapshotted; nothing was written.",
+                    "Read the preset again; the snapshot taken for the earlier state is kept.",
+                )
+            pre_store = fresh
+        return SavePlan(
+            preset_id, allocated, existing, existing_type, reference, firmware, pre_store, warnings
+        )
+
+    def save_verdict(request: SavePresetRequest, plan: SavePlan, value: JsonValue) -> Verdict:
+        store = parse_store(as_dict(value))
+        entry = store.entries.get(plan.preset_id)
+        before = plan.existing
+        changed = interference(plan.pre_store, store, plan.preset_id)
+        if entry is None:
+            return Verdict(
+                matched=False,
+                observed=None,
+                unchanged=before is None,
+                differences=("entry",),
+                interference=tuple(changed),
+            )
+        differences = compare_capture(entry, request.name, plan.reference)
+        return Verdict(
+            matched=not differences,
+            observed=entry,
+            unchanged=before is not None and json_equal(entry, before),
+            differences=tuple(differences),
+            interference=tuple(changed),
+            warnings=(CAPTURE_WARNING,),
+            data={"preset": entry, "type": classify(entry)[0]},
+        )
+
+    def save_postconditions(request: SavePresetRequest, plan: SavePlan) -> list[JsonValue]:
+        return [
+            f"/presets.json entry {plan.preset_id} has name equal to the requested name",
+            "entry master fields and every active segment match the pre-dispatch capture",
+            "unrelated entries are unchanged (differences are reported as interference)",
+        ]
+
+    async def save_preset(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_save_preset"
+        request = SavePresetRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    plan = await plan_save(context, request, dry_run=True)
+                advisory = (
+                    await anyio.to_thread.run_sync(resources.backups.plan_backup, device_id)
+                    if plan.existing is not None
+                    else {"backup_required": False}
+                )
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            payload = save_payload(request, plan.preset_id)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {
+                    "plan": {
+                        "preset_id": plan.preset_id,
+                        "allocated": plan.allocated,
+                        "will_overwrite": plan.existing is not None,
+                        "existing_type": plan.existing_type,
+                        "capture": plan.reference.summary(),
+                        **advisory,
+                    },
+                    "payload": payload,
+                    "postconditions": save_postconditions(request, plan),
+                },
+                [*plan.warnings, CAPTURE_WARNING],
+            )
+        box: dict[str, SavePlan] = {}
+
+        async def prepare(context: OperationContext) -> PolledWrite:
+            plan = box["plan"] = await plan_save(context, request, dry_run=False)
+            return PolledWrite(
+                endpoint=Endpoint.PRESETS,
+                payload=save_payload(request, plan.preset_id),
+                evaluate=lambda value: save_verdict(request, plan, value),
+                data={
+                    "preset_id": plan.preset_id,
+                    "name": request.name,
+                    "allocated": plan.allocated,
+                    "overwrote": plan.existing is not None,
+                },
+                reconciliation=PRESET_RECONCILE,
+            )
+
+        outcome = await resources.write_polled(device_id, name, prepare)
+        planned = box.get("plan")
+        if planned is None or not planned.warnings:
+            return outcome
+        return outcome.model_copy(update={"warnings": [*planned.warnings, *outcome.warnings]})
+
+    def save_payload(request: SavePresetRequest, preset_id: int) -> dict[str, JsonValue]:
+        # Storage controls only: no on/bri/seg/ps, so nothing is applied to the strip.
+        return {"psave": preset_id, "n": request.name, "ib": True, "sb": True, "sc": False}
+
+    # ---------------------------------------------------------------- delete
+
+    @dataclass
+    class DeletePlan:
+        existing: dict[str, JsonValue]
+        existing_type: str
+        pre_store: PresetStore
+        warnings: list[str]
+
+    async def plan_delete(
+        context: OperationContext, request: DeletePresetRequest, *, dry_run: bool
+    ) -> DeletePlan:
+        store = await _read_store(context)
+        store.require_wellformed()
+        current = store.entries.get(request.preset_id)
+        if current is None:
+            raise _not_found()
+        kind, malformed = classify(current)
+        if malformed or not isinstance(current, dict):
+            raise _preset_failure(
+                "VALIDATION_ERROR",
+                "The entry is not a JSON object and cannot be snapshotted; it is not deleted.",
+                "Inspect it with wled_get_preset.",
+            )
+        state_raw = await context.read(Endpoint.STATE)
+        info_raw = await context.read(Endpoint.INFO)
+        collector = Collector()
+        normalize_state(state_raw, info_raw, collector)
+        firmware = _firmware(info_raw)
+        warnings = collector.result()
+        users = referencing_playlists(store, request.preset_id)
+        if users:
+            warnings.append(f"Playlist(s) {users[:20]} reference this preset; they are not edited.")
+        if as_dict(state_raw).get("ps") == request.preset_id:
+            warnings.append("The preset is the currently active preset marker (state.ps).")
+        pre_store = store
+        if not dry_run:
+            await context.backup_preset(request.preset_id, current, firmware)
+            fresh = await _read_store(context)
+            fresh.require_wellformed()
+            if not json_equal(fresh.entries.get(request.preset_id), current):
+                raise _preset_failure(
+                    "PRESET_CONFLICT",
+                    "The preset changed after it was snapshotted; nothing was deleted.",
+                    "Read the preset again; the snapshot taken for the earlier state is kept.",
+                )
+            pre_store = fresh
+        return DeletePlan(current, kind, pre_store, warnings)
+
+    def delete_verdict(request: DeletePresetRequest, plan: DeletePlan, value: JsonValue) -> Verdict:
+        store = parse_store(as_dict(value))
+        entry = store.entries.get(request.preset_id)
+        changed = interference(plan.pre_store, store, request.preset_id)
+        if entry is None:
+            return Verdict(matched=True, interference=tuple(changed))
+        return Verdict(
+            matched=False,
+            observed=entry,
+            unchanged=json_equal(entry, plan.existing),
+            differences=("entry",),
+            interference=tuple(changed),
+        )
+
+    async def delete_preset(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_delete_preset"
+        request = DeletePresetRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+        payload: dict[str, JsonValue] = {"pdel": request.preset_id}
+        postconditions: list[JsonValue] = [
+            f"/presets.json has no entry (absent, null or empty) for ID {request.preset_id}",
+            "unrelated entries are unchanged (differences are reported as interference)",
+        ]
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    plan = await plan_delete(context, request, dry_run=True)
+                advisory = await anyio.to_thread.run_sync(resources.backups.plan_backup, device_id)
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {
+                    "plan": {
+                        "preset_id": request.preset_id,
+                        "existing_type": plan.existing_type,
+                        **advisory,
+                    },
+                    "payload": payload,
+                    "postconditions": postconditions,
+                },
+                plan.warnings,
+            )
+        box: dict[str, DeletePlan] = {}
+
+        async def prepare(context: OperationContext) -> PolledWrite:
+            plan = box["plan"] = await plan_delete(context, request, dry_run=False)
+            return PolledWrite(
+                endpoint=Endpoint.PRESETS,
+                payload=payload,
+                evaluate=lambda value: delete_verdict(request, plan, value),
+                data={"preset_id": request.preset_id, "deleted_type": plan.existing_type},
+                reconciliation=PRESET_RECONCILE,
+            )
+
+        outcome = await resources.write_polled(device_id, name, prepare)
+        planned = box.get("plan")
+        if planned is None or not planned.warnings:
+            return outcome
+        return outcome.model_copy(update={"warnings": [*planned.warnings, *outcome.warnings]})
+
+    return (
+        Operation(
+            name="wled_list_presets",
+            description=(
+                "List the persistent presets (IDs 1-250) of one configured device with ID, "
+                "name and type (state, playlist, api-command or unknown). Empty slots and "
+                "reserved IDs are omitted. Always read fresh from the device, never cached. "
+                "Read-only."
+            ),
+            request_model=ListPresetsRequest,
+            execute=list_presets,
+            annotations=READ_ONLY,
+        ),
+        Operation(
+            name="wled_get_preset",
+            description=(
+                "Read one stored preset exactly as the device holds it, with its type. The "
+                "object may contain stored commands; it is returned to the caller unchanged. "
+                "PRESET_NOT_FOUND for an empty slot. Always fresh. Read-only."
+            ),
+            request_model=GetPresetRequest,
+            execute=get_preset,
+            annotations=READ_ONLY,
+        ),
+        Operation(
+            name="wled_activate_preset",
+            description=(
+                "Activate an existing state preset or a playlist made only of state presets. "
+                "Changes the live output and may interrupt current playback; never writes "
+                "storage. API-command and unknown entries are refused. Verified by bounded "
+                "state readback. dry_run performs bounded reads only."
+            ),
+            request_model=ActivatePresetRequest,
+            execute=activate_preset,
+            annotations=MUTATION,
+        ),
+        Operation(
+            name="wled_save_preset",
+            description=(
+                "Save the CURRENT live state under a name (at most 32 UTF-8 bytes) into the "
+                "lowest free persistent ID, or into an explicit preset_id. Replacing an "
+                "occupied ID needs overwrite=true and takes a durable snapshot first; "
+                "playlists are never replaced. Sends storage controls only (no state fields), "
+                "so nothing is applied or activated, but firmware side effects of saving "
+                "are not verified. Outcome is decided by bounded /presets.json polling; an "
+                "uncertain outcome is never replayed. No supplied-state input exists. "
+                "dry_run performs bounded reads only."
+            ),
+            request_model=SavePresetRequest,
+            execute=save_preset,
+            annotations=DESTRUCTIVE,
+        ),
+        Operation(
+            name="wled_delete_preset",
+            description=(
+                "Delete exactly one stored preset (any type) after a durable snapshot. "
+                "Referencing playlists and the active-preset marker are not edited; a "
+                "warning names them. Outcome is decided by bounded /presets.json polling "
+                "for absence; an uncertain outcome is never replayed. dry_run performs "
+                "bounded reads only."
+            ),
+            request_model=DeletePresetRequest,
+            execute=delete_preset,
+            annotations=DESTRUCTIVE,
+        ),
+    )
+
+
 def _translate_pre_dispatch(name: str, device_id: str, failure: ClientFailure) -> Outcome:
     """Pre-dispatch failures map to the shared not_attempted/not_requested envelope."""
     return Outcome(
@@ -548,4 +1175,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         *_build_read_operations(resources),
         *_build_write_operations(resources),
+        *_build_preset_operations(resources),
     )

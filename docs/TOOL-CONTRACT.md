@@ -6,8 +6,10 @@ Implementation status: #4 exposes `wled_list_devices`; #5 adds the read-only
 foundations are in [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md). #6 adds `wled_set_state`
 and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
 [Layout replacement](#layout-replacement-implemented-in-7)); #14 adds the protected HTTP
-service. Presets, snapshots and the remaining tools are design requirements, not
-executable behavior yet.
+service; #9 adds the five persistent-preset tools (see
+[Persistent presets, implementation](#persistent-presets-implemented-in-9)).
+`wled_restore_preset` and `wled_patch_raw_state` remain design requirements, not
+executable behavior. Hardware acceptance of the preset tools (H06) is pending.
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their
@@ -399,17 +401,110 @@ Activation verifies supported state/playlist acceptance through bounded readback
 playlist identity/status replaces invariant frame equality. Missing acceptance
 observability gives uncertainty, and saved contents stay unchanged.
 
-PRE-03 supplied-state save remains a capability-gated Should deferred to #13:
+PRE-03 supplied-state save remains a capability-gated Should deferred to #13 and is not
+part of #9 (ISSUE-9-DEC-001):
 no proven no-live-output route in the reviewed source, no implicit apply/save/
 restore workaround. Restore execution is also deferred until a safe single-entry
 storage adapter exists; do not upload a whole filesystem or execute stored commands
 as a shortcut.
 
+### Persistent presets, implemented in #9
+
+Decisions: [ISSUE-9-DEC-001](decisions/issue-9.md), ISSUE-8-DEC-001 to -003. Evidence:
+mock-only (T11-T13); the firmware facts are pinned in
+[SOURCES.md](SOURCES.md#issue-9-preset-evidence) and are not hardware evidence.
+
+Inputs are strict (`extra=forbid`, booleans are not integers). `preset_id` is an
+integer 1-250. `wled_save_preset(name, preset_id=None, overwrite=false)`: `overwrite=true`
+without `preset_id` is rejected before any device access; there is no `state` input.
+Names follow the rules above and are never trimmed or truncated.
+
+Entry types (positive evidence only, `type` in list/get):
+
+| Type | Recognized as | Activation |
+| --- | --- | --- |
+| `state` | object without any stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `playlist`, `live`, `time`, `bootps`) and at least one of `on`, `bri`, `seg`, `mainseg`, `transition` | yes |
+| `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other control key | yes, if every member exists and is itself a `state` entry |
+| `api-command` | object with a string-valued `win` key | `UNSUPPORTED_CAPABILITY` |
+| `unknown` | any other object (also objects with control keys) | `UNSUPPORTED_CAPABILITY` |
+
+A nonempty non-object entry is `unknown` with `malformed=true`: listed and readable,
+but neither overwritten nor deleted (it cannot be snapshotted; `VALIDATION_ERROR`).
+Store keys that are not canonical decimal IDs 0-255 are skipped by list/get with a
+count warning; save and delete then fail closed with `INVALID_RESPONSE` and zero
+POSTs.
+
+- `wled_list_presets`/`wled_get_preset` (read-only): fresh GET of `/presets.json` per
+  call (`Cache-Control: no-cache`), under the device lock and one deadline.
+  List data: `device`, `freshness`, `presets` (`id`, `name|null`, `type`, optional
+  `malformed`) ascending by ID, `count`. Get data adds the exact `preset` object.
+  An empty slot is `PRESET_NOT_FOUND`.
+- `wled_activate_preset`: one POST `{"ps": id}`, never any storage control; verified
+  by bounded `/json/state` polling (`ps == id`, for a playlist `pl == id`). The
+  firmware applies the preset in its main loop and ignores re-selecting the preset
+  that is already active, so an already-active preset adds a warning (a verified
+  result then cannot prove re-application). Activation changes live output, may
+  interrupt current playback and clears/moves the active markers.
+- `wled_save_preset`: inside the device lock: read store, choose the lowest free ID
+  (or validate the explicit one), read state and info for the capture reference, take
+  the snapshot if an occupied ID is replaced, recheck the destination, then exactly
+  one POST `{"psave": id, "n": name, "ib": true, "sb": true, "sc": false}`. A
+  destination that was free but is occupied at the recheck is `PRESET_CONFLICT`
+  (no second allocation); an occupied one that no longer equals the snapshotted
+  object is `PRESET_CONFLICT` (the snapshot is kept). Overwrite of an occupied `state`,
+  `api-command` or `unknown` object needs `overwrite=true` and warns when the entry
+  type changes; a `playlist` is never replaced (`UNSUPPORTED_CAPABILITY`, no
+  snapshot, no POST). A free explicit ID with `overwrite=true` is accepted and
+  takes no snapshot (`data.overwrote=false`).
+- `wled_delete_preset`: snapshot of any occupied object entry (state, playlist,
+  api-command, unknown), recheck equality, one POST `{"pdel": id}`, verified by
+  absence (key removed, `null` or `{}`). Referencing playlists and the active-preset
+  marker are named in warnings and not edited.
+
+Verification polls the persistent file every 100 ms (default) under the one 10 second
+deadline, reserving at most one second for readback. The save compares name `n`,
+master `on`, `bri`, `transition`, `mainseg` and, per active live segment, `id`,
+`start`, `stop`, `on`, `bri`, `col`, `fx`, `sx`, `ix`, `pal`, `n`, `grp`, `spc`, `of`,
+`rev`, `mi`, `sel` against the pre-dispatch state; inactive-slot markers
+(`{"stop": 0}`) are ignored and the set of stored segment IDs must equal the live
+set. Any difference at the deadline is `VERIFICATION_MISMATCH` (`unknown/mismatch`)
+with `data.observed` (observed entry) and `data.differences` (field names, bounded).
+A match is success with the standing warning that capture is asynchronous and not an
+atomic photograph. Unrelated entries that differ from the pre-dispatch reading are
+`data.interference` plus a warning (outcome stays verified, no corrective write).
+A failed POST whose target stays unchanged is `WRITE_OUTCOME_UNKNOWN` (cannot be told
+from an unapplied write); unreadable readback at the deadline is
+`WRITE_OUTCOME_UNKNOWN`; a verified postcondition after a failed POST succeeds with a
+transport warning. The POST is never repeated. Every post-dispatch result carries
+`data.preset_id`, `name`/`deleted_type` and, when a snapshot was taken,
+`data.backup_id` plus prune warnings, so a caller reconciles by reading before any
+new attempt; a new call is a new invocation and may allocate the same still-unpersisted
+ID. Pre-dispatch failures (conflict, unsupported, not found, validation, exhausted ID
+space `PRESET_CONFLICT`, `BACKUP_FAILED`, read failures) are `not_attempted` with
+zero POSTs.
+
+Dry runs (`dry_run=true`) perform bounded reads only: zero POSTs, no snapshot, no
+directory, no prune. Data: `plan`, `payload`, `postconditions`; a plan is not a
+reservation.
+
+Annotations (hints only): list/get read-only; activate non-destructive mutation;
+save and delete `destructive_hint=true`, not idempotent, closed world.
+
+Documented residual limits: other clients can change the preset file between the
+final recheck and the firmware's asynchronous write, and `/presets.json` has no
+transaction or compare-and-set, so a replaced entry may differ from the snapshotted
+one in that window (the snapshot still holds the object that was read last); whether
+saving moves the active-preset marker or briefly suspends the strip is not verified;
+duplicate JSON keys in the store collapse to the last value; a store beyond the 2 MiB
+response bound fails closed. `wled_get_preset` returns stored commands to the
+authorized caller verbatim.
+
 ## Snapshot and explicit restoration
 
 Implemented in #8 as a store plus a `Resources` seam; restoration execution stays
-deferred (ISSUE-8-DEC-001) and **no tool is registered** for it. No production tool
-calls the store yet: #9 wires preset overwrite/delete. The tool list is unchanged.
+deferred (ISSUE-8-DEC-001) and **no tool is registered** for it. `wled_save_preset`
+(overwrite) and `wled_delete_preset` call the store through `OperationContext.
+backup_preset` (#9).
 
 Format 1 contains exactly `format_version`, opaque server-generated `backup_id`,
 configured `device_id`, `preset_id` (1-250), `firmware` identity (`version`, optional
@@ -441,14 +536,14 @@ temp/final file this call created and raises `BACKUP_FAILED` with a message free
 paths and payloads; earlier snapshots stay intact. Leftover `.tmp` files are ignored.
 
 Ordering for destructive preset operations (the `OperationContext.backup_preset`
-seam): inside the device lock, read the preset fresh, validate the whole request,
+seam, used by `wled_save_preset` overwrite and `wled_delete_preset`): inside the device lock, read the preset fresh, validate the whole request,
 snapshot the exact object, recheck the prior object (changed => `PRESET_CONFLICT`),
 then POST. A raised `BACKUP_FAILED` happens in the prepare step, so `application=
 not_attempted` and nothing is sent. The store does no device I/O; the caller supplies
 the object. The result `data.backup_id` names the newest snapshot of the operation
-and is kept even when the write later fails or is uncertain (only `write_verified`
-carries `backup_id` and prune warnings; `write_sequence_verified` does not, which #9
-must handle if it uses a sequence); there is no automatic
+and is kept even when the write later fails or is uncertain (`write_verified` and the
+preset routine `write_polled` carry `backup_id` and prune warnings;
+`write_sequence_verified` does not and is not used for snapshots); there is no automatic
 rollback, restoration or resend (REL-02). Dry-run reports `backup_required` and an
 advisory writability flag without creating directories, temp files or pruning.
 
@@ -476,13 +571,14 @@ not restore evidence.
 
 Manual restoration procedure (execution deferred; nothing here is automated, and
 the manual route itself is untested on hardware). `plan_restore` is a library helper
-only: no tool or CLI exposes the store until #9, and it needs a `prior_backup_id`
+only: no tool or CLI exposes restoration planning, and it needs a `prior_backup_id`
 that already exists in the store when the destination is occupied.
 1. Read the snapshot file in the backups directory and verify `device_id`, firmware
    `version` and `preset_id` against the target controller.
 2. Before changing anything, copy the destination's current entry from the
-   controller's `/presets.json` verbatim into a file outside Git (the store cannot
-   snapshot it by hand-made means until #9 adds a tool that calls it). If the
+   controller's `/presets.json` verbatim into a file outside Git (`wled_get_preset`
+   returns the exact object; `wled_save_preset` with `overwrite=true` and
+   `wled_delete_preset` snapshot automatically, but no tool restores). If the
    destination is empty, note that instead.
 3. Enter exactly the one `preset` object for the target ID through the WLED UI or
    API. This is unproven: the reviewed sources do not show a single-entry write

@@ -90,6 +90,11 @@ async def test_registry_order_annotations_and_strict_models(tmp_path):
             "wled_set_state",
             "wled_patch_segments",
             "wled_replace_layout",
+            "wled_list_presets",
+            "wled_get_preset",
+            "wled_activate_preset",
+            "wled_save_preset",
+            "wled_delete_preset",
         ]
         assert operations[0].execute.__closure__[0].cell_contents is resources
         assert len(operations[0].execute.__closure__) == 1
@@ -98,14 +103,17 @@ async def test_registry_order_annotations_and_strict_models(tmp_path):
             "wled_get_state",
             "wled_get_effects",
             "wled_get_palettes",
+            "wled_list_presets",
+            "wled_get_preset",
         }
+        destructive_names = {"wled_replace_layout", "wled_save_preset", "wled_delete_preset"}
         for operation in operations[1:]:
             hints = operation.annotations
             if operation.name in read_only_names:
                 assert (hints.read_only_hint, hints.destructive_hint) == (True, False)
                 assert (hints.idempotent_hint, hints.open_world_hint) == (True, False)
             else:
-                destructive = operation.name == "wled_replace_layout"
+                destructive = operation.name in destructive_names
                 assert (hints.read_only_hint, hints.destructive_hint) == (False, destructive)
                 assert (hints.idempotent_hint, hints.open_world_hint) == (False, False)
             schema = operation.request_model.model_json_schema()
@@ -791,13 +799,21 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                 "wled_set_state",
                 "wled_patch_segments",
                 "wled_replace_layout",
+                "wled_list_presets",
+                "wled_get_preset",
+                "wled_activate_preset",
+                "wled_save_preset",
+                "wled_delete_preset",
             ]
             read_only_names = {
                 "wled_list_devices",
                 "wled_get_state",
                 "wled_get_effects",
                 "wled_get_palettes",
+                "wled_list_presets",
+                "wled_get_preset",
             }
+            destructive_names = {"wled_replace_layout", "wled_save_preset", "wled_delete_preset"}
             for tool in listed:
                 assert tool.input_schema["additionalProperties"] is False
                 if tool.name in read_only_names:
@@ -807,7 +823,7 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                     assert tool.annotations.open_world_hint is False
                 else:
                     assert tool.annotations.read_only_hint is False
-                    assert tool.annotations.destructive_hint is (tool.name == "wled_replace_layout")
+                    assert tool.annotations.destructive_hint is (tool.name in destructive_names)
                     assert tool.annotations.idempotent_hint is False
                     assert tool.annotations.open_world_hint is False
                 assert tool.output_schema["additionalProperties"] is False

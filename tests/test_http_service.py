@@ -42,6 +42,11 @@ TOOLS = [
     "wled_set_state",
     "wled_patch_segments",
     "wled_replace_layout",
+    "wled_list_presets",
+    "wled_get_preset",
+    "wled_activate_preset",
+    "wled_save_preset",
+    "wled_delete_preset",
 ]
 SYNTHETIC_SECRET = "synthetic-secret-never-return"
 

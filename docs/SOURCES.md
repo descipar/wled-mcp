@@ -119,6 +119,30 @@ exactly these facts:
 Not verified: any real device, other firmware versions, `lc` semantics on mixed bus types
 beyond ISSUE-5-DEC-008. No firmware code was copied.
 
+## Issue-9 preset evidence
+
+Read 2026-11-05 from the same pinned tag `v0.15.1`, commit
+`4f3992b4dc57c888b53d9576c894a278e03e4cfc` (`wled00/json.cpp`, `presets.cpp`, `file.cpp`,
+`playlist.cpp`). Source evidence only, not hardware evidence; the stateful test fake
+models exactly these facts and nothing beyond them. No firmware code was copied.
+
+| Pinned fact | Consequence |
+| --- | --- |
+| [`deserializeState`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L430): after all state keys, `psave` in 1-250 calls `savePreset(ps, nullptr, root)` and, right after, `pdel` in 1-250 calls `deletePreset(ps)`. Values outside 1-250 are ignored | Save is `{"psave": id, ...}`, delete is `{"pdel": id}`, both POSTed to `/json/state`; the ID range 1-250 is firmware-enforced |
+| [`deletePreset`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L279) writes an empty document with `writeObjectToFileUsingId`; [`writeObjectToFile`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/file.cpp#L265) treats null content as delete: the old object is overwritten with spaces (with its comma), so the key is no longer present. A dummy `"0":{}` object is kept so the first entry can be deleted ([file.cpp header](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/file.cpp#L23)) | Delete is evidenced as single-entry removal. After deletion the key is absent from `/presets.json`; absence by missing key, `null` or `{}` is accepted (PRE-01 rule). No whole-file upload or null-entry POST is used |
+| [`savePreset`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L217): `n` is copied with `strlcpy(..., 33)` (32 bytes); without an `o` key the save is deferred (`presetToSave`) and serialized later from the main loop by [`doSaveState`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L25) / `handlePresets`, which wraps it in `strip.suspend()`/`resume()`; `ib`, `sb`, `sc` select brightness/bounds/selected-only; a payload containing `o` or `playlist` is a different (API/playlist) save path | The save payload carries no `o`/`playlist`; persistence is asynchronous, hence bounded polling. The brief strip suspension while saving is source-evidenced but its visible effect is unverified |
+| `doSaveState` uses [`serializeState(forPreset=true, ib, sb, sc)`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L571): `on`, `bri` (remembered), `transition` (100 ms units), `mainseg`, then `seg` with one object per active slot (`id`, `start`, `stop`, `grp`, `spc`, `of`, `on`, `frz`, `bri`, `cct`, `set`, `n` (empty string if unnamed), `col`, `fx`, `sx`, `ix`, `pal`, `c1`-`c3`, `sel`, `rev`, `mi`, `o1`-`o3`, `si`, `m12`) and `{"stop": 0}` markers (no `id`) for inactive slots; then `n`, optional `ql`/`ledmap` | Capture comparison fields and the marker rule; unknown stored fields are preserved |
+| [`handlePresets`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L144): `applyPreset(id)` only sets `presetToApply`; the main loop reads the entry, applies it and sets `currentPreset` (reported as `ps`) when it changed state. The JSON `ps` branch ([json.cpp L455](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L455)) ignores an ID equal to `currentPreset`. `applyPreset` first calls `unloadPlaylist()` | Activation is asynchronous (bounded polling); re-selecting the active preset is a firmware no-op (warning); activating a state preset leaves `pl = -1` |
+| [`loadPlaylist`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/playlist.cpp#L56): reads `playlist.ps` (list of preset IDs, at most 100 used), `dur`, `transition`, `repeat`, `end`, `r`; sets `currentPlaylist = presetId` (reported as `pl`) | Playlist type = `playlist.ps` nonempty ID list; activation verifies `pl == id`; members are checked to be plain state entries |
+| `handlePresets` with a `win` key runs the stored HTTP API command string; `deserializeState` also acts on `psave`, `pdel`, `ps`, `pd`, `rb`, `live`, `time`, `bootps` and `playlist` | An entry with any of these keys is not a plain state preset; `win` with a string value classifies as `api-command`; everything else with control keys is `unknown` (never activated) |
+
+Not verified: the real file layout after deletion on hardware, flash timing, whether
+saving moves `ps` or visibly interrupts output, firmware other than v0.15.1, files
+beyond the client's 2 MiB response bound, and real playlist behavior. Residual race
+(documented in TOOL-CONTRACT): the preset file has no transaction or compare-and-set,
+so another client can write between the final recheck and the firmware's asynchronous
+write.
+
 ## Issue-14 HTTP service evidence
 
 Observed 2026-11-05 by inspecting the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools (no repository changes): the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID, and opens a stream for a GET that offers `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These observations motivate [ISSUE-14-DEC-002 to -004](decisions/issue-14.md) and are re-pinned by tests, not assumed.

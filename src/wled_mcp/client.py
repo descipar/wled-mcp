@@ -137,6 +137,15 @@ class WLEDClient:
             raise ClientFailure("VALIDATION_ERROR", "Invalid or oversized state request.") from None
         return await self._request(device, Endpoint.STATE, deadline, body)
 
+    @staticmethod
+    def _request_headers(endpoint: Endpoint, body: bytes | None) -> dict[str, str] | None:
+        if body is not None:
+            return {"Content-Type": "application/json"}
+        if endpoint is Endpoint.PRESETS:
+            # Persistent-file readbacks must never be answered from an intermediary cache.
+            return {"Cache-Control": "no-cache", "Pragma": "no-cache"}
+        return None
+
     async def _request(
         self, device: Device, endpoint: Endpoint, deadline: Deadline, body: bytes | None
     ) -> JsonValue:
@@ -151,7 +160,7 @@ class WLEDClient:
                     "GET" if body is None else "POST",
                     device.base_url + endpoint.value,
                     content=body,
-                    headers=None if body is None else {"Content-Type": "application/json"},
+                    headers=self._request_headers(endpoint, body),
                     timeout=timeout,
                 ) as response:
                     if response.status_code != 200:

@@ -636,15 +636,23 @@ async def test_same_device_serialized_distinct_ids_other_device_progresses(tmp_p
 
 
 @pytest.mark.anyio
-async def test_one_store_shared_and_no_preset_tools_registered(tmp_path):
+async def test_one_store_shared_with_preset_tools_and_no_restore_tool(tmp_path):
     async with Resources(config(tmp_path)) as resources:
         operations = build_operations(resources)
         assert resources.backups.retain_per_device == 20
         assert resources.backups.directory == tmp_path / "backups"
         assert not resources.backups.directory.exists()
-        names = [op.name if hasattr(op, "name") else op.__class__.__name__ for op in operations]
-        assert not any("restore" in str(n) or "preset" in str(n) for n in names)
-    assert Endpoint.PRESETS  # presets endpoint exists but #8 never reads it
+        names = [op.name for op in operations]
+        # #9 wires the real preset tools onto the one store; restoration stays deferred.
+        assert {
+            "wled_list_presets",
+            "wled_get_preset",
+            "wled_activate_preset",
+            "wled_save_preset",
+            "wled_delete_preset",
+        } <= set(names)
+        assert not any("restore" in name for name in names)
+    assert Endpoint.PRESETS
 
 
 def test_retention_setting_wired_from_config(tmp_path):
