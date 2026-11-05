@@ -159,6 +159,10 @@ can explicitly amend them.
   2026-11-05, issue #9 only, content decided by the main session): PRE-03/restore stay
   deferred, playlist overwrite rejected, type/activation rules, delete route evidence rule.
 
+- [ISSUE-53-DEC-001](decisions/issue-53.md) (delegated decision, 2026-11-05, issue #53
+  only, content decided by the coordinator): the stdio no-listener test allows only the
+  stdlib loopback socketpair of the asyncio self-pipe; no product change, no platform skip.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.
