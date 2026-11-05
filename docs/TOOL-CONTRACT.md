@@ -252,15 +252,16 @@ uncertain-write rules and the MCP-02 envelope); decisions
 **`wled_replace_layout(device_id, segments, dry_run=false)`**. Strict input
 (`segments`: 1-64 entries, unknown fields rejected). Each entry needs `id`, `start`,
 `stop`; optional: `on`, `brightness`, `colors`, `effect_id`, `palette_id`, `speed`,
-`intensity`, `grouping` (1-255), `spacing` (0-255), `offset`, `reverse`, `mirror`,
-`selected`, `name` (at most 32 UTF-8 bytes, no truncation). ISSUE-7-DEC-002 says #7
-follows #6 wherever #6 defines handling. #7 currently diverges from #6 in three points
-(unresolved, see the OPEN note in [decisions/issue-7.md](decisions/issue-7.md)): `name`
-is limited to 32 UTF-8 bytes (#6: 32 characters), `grouping` and `spacing` have an upper
-bound of 255 (#6: none), and a sent `bri` is accompanied by the resolved `on` (#6 sends
-`bri` alone). The divergences rest on the pinned `uint8_t` geometry arguments, the smaller
-(ESP8266) name buffer and the firmware turning an off segment on for `bri>0`; they are
-agent proposals, not human-confirmed.
+`intensity`, `grouping` (>= 1), `spacing` (>= 0), `offset`, `reverse`, `mirror`,
+`selected`, `name` (at most 32 characters). ISSUE-7-DEC-002 says #7 follows #6 wherever
+#6 defines handling; with [ISSUE-7-DEC-006](decisions/issue-7.md) (human decision B,
+resolving ISSUE-7-OPEN-001) these limits and the `bri` handling are aligned with
+`wled_patch_segments`: no extra byte limit, no extra 255 bound, and `bri` is sent as
+#6 sends it (no resolved `on` is added; an explicit `on` is sent). Known limits shared
+with #6: a name longer than the firmware buffer (32 bytes ESP8266, 64 ESP32, counted in
+bytes) is truncated silently; `grouping`/`spacing` above 255 wrap in the firmware
+`uint8_t` arguments; and `bri > 0` sent without `on` may switch an off segment on, which
+the final readback reports as `VERIFICATION_MISMATCH` instead of hiding it.
 Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
 only; authorization belongs to the host).
 
@@ -278,7 +279,7 @@ identical for dry run and live call; an earlier dry run is never a reservation):
    size, any gaps; no constant cleanup count).
 2. Validate the whole request before the first POST (unique IDs, `id < maxseg`,
    `0 <= start < stop <= led_count`, no overlap in the desired layout, effect/palette IDs
-   inside the catalogs, offset `0 <= offset < length`, name bytes, `on=true` with
+   inside the catalogs, offset `0 <= offset < length`, `on=true` with
    `brightness=0` and `brightness=0` without an explicit `on=false` rejected, color
    widths). New IDs need explicit `colors`. Channel evidence for a new range is the
    profile-0 uniform RGB-only rule (`leds.lc` is RGB-only and `leds.seglc` is absent or
@@ -301,8 +302,8 @@ identical for dry run and live call; an earlier dry run is never a reservation):
    resets main to 0 on that removal).
 5. Update steps send only fields that differ from the fresh read, `start`/`stop` only
    for a geometry change, plus targeted compensation shown in the plan: the existing name
-   is resent after a geometry change, and the resolved `on` accompanies a sent `bri`
-   (the firmware would otherwise switch an off segment on). Existing IDs without any
+   is resent after a geometry change. A sent `bri` is not accompanied by an extra `on`
+   (as #6; see the shared limits above). Existing IDs without any
    difference get no POST (`unchanged_segment_ids`); a request that changes nothing is
    a no-op: `ok=true`, `application=not_attempted`, `verification=not_requested`, one
    warning, zero POSTs. Create steps send every public field explicitly (defaults table

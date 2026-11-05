@@ -30,8 +30,6 @@ from wled_mcp.patches import (
 from wled_mcp.readmodels import as_dict
 from wled_mcp.resources import SequencePlan, WriteStep
 
-NAME_MAX_BYTES = 32  # conservative minimum of the 32 (ESP8266) / 64 (ESP32) build limits
-
 # ---------------------------------------------------------------------------- request
 
 
@@ -49,13 +47,13 @@ class LayoutSegment(BaseModel):
     palette_id: int | None = Field(default=None, ge=0)
     speed: int | None = Field(default=None, ge=0, le=255)
     intensity: int | None = Field(default=None, ge=0, le=255)
-    grouping: int | None = Field(default=None, ge=1, le=255)
-    spacing: int | None = Field(default=None, ge=0, le=255)
+    grouping: int | None = Field(default=None, ge=1)
+    spacing: int | None = Field(default=None, ge=0)
     offset: int | None = Field(default=None, ge=0)
     reverse: bool | None = None
     mirror: bool | None = None
     selected: bool | None = None
-    name: str | None = Field(default=None, max_length=64)
+    name: str | None = Field(default=None, max_length=32)
 
 
 class ReplaceLayoutRequest(BaseModel):
@@ -391,8 +389,6 @@ def build_layout_plan(
         if not 0 <= seg.start < seg.stop <= led_count:
             raise _fail(f"{ctx}range must satisfy 0 <= start < stop <= led_count.")
         length = seg.stop - seg.start
-        if seg.name is not None and len(seg.name.encode("utf-8")) > NAME_MAX_BYTES:
-            raise _fail(f"{ctx}name exceeds {NAME_MAX_BYTES} UTF-8 bytes.")
         if seg.offset is not None and not 0 <= seg.offset < length:
             raise _fail(f"{ctx}offset must satisfy 0 <= offset < segment length.")
         effect = seg.effect_id if seg.effect_id is not None else (0 if seg.id in new else None)
@@ -740,8 +736,9 @@ def _update_plan(
                     f"{ctx}the existing offset would be clamped by the firmware; "
                     "supply offset explicitly."
                 )
-    # Power and brightness. bri>0 turns the segment ON in the firmware unless an explicit
-    # on key accompanies it, so the resolved power is always sent together with bri.
+    # Power and brightness, handled as #6 does: bri is sent alone; an explicit on is sent
+    # only when requested. A positive bri on an off segment may turn it on in the firmware
+    # (known limit shared with #6); the final readback then reports a mismatch.
     cur_on = cur["on"]
     if seg.brightness is not None:
         if seg.brightness == 0:
@@ -750,13 +747,8 @@ def _update_plan(
                 payload["on"] = False
         elif cur["brightness"] != seg.brightness:
             payload["bri"] = seg.brightness
-            if resolved_on is None:
-                raise _unsupported(f"{ctx}unrepresentable preservation plan (power unknown).")
-            payload["on"] = resolved_on
-            if seg.on is None:
-                compensation.append({"id": seg.id, "on": resolved_on})
-    if seg.on is not None and seg.on != cur_on and "on" not in payload:
-        payload["on"] = seg.on
+    if seg.on is not None and "on" not in payload and (seg.on != cur_on or "bri" in payload):
+        payload["on"] = seg.on  # an explicit on accompanies a sent bri, as in #6
     if colors is not None:
         current_colors = cur["colors"]
         same = isinstance(current_colors, list) and current_colors[: len(colors)] == colors

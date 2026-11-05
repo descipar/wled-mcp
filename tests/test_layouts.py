@@ -321,14 +321,30 @@ async def test_T05_preserved_and_requested_fields_on_existing_ids(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_T05_brightness_does_not_switch_an_off_segment_on(tmp_path):
+async def test_T05_brightness_is_sent_alone_like_patch_and_firmware_power_flip_is_reported(
+    tmp_path,
+):
+    """Aligned with #6: bri is sent without an extra resolved on. The firmware turns an off
+    segment on for bri>0 (known limit shared with #6); the final readback reports it."""
     fake = FakeWLED([make_segment(0, 0, 10, on=False, bri=100)])
     async with open_resources(tmp_path, fake) as resources:
         result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50}])
+    assert fake.posts == [{"seg": {"id": 0, "bri": 50}}]
+    assert by_id(fake)[0]["on"] is True  # firmware side effect, modeled by the fake
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+    assert result.data["plan"]["targeted_compensation"] == []
+
+
+@pytest.mark.anyio
+async def test_T05_explicit_on_false_with_brightness_is_sent_as_requested(tmp_path):
+    fake = FakeWLED([make_segment(0, 0, 10, on=False, bri=100)])
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(
+            resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50, "on": False}]
+        )
     assert result.ok, result.error
     assert fake.posts == [{"seg": {"id": 0, "bri": 50, "on": False}}]
     assert by_id(fake)[0]["on"] is False
-    assert result.data["plan"]["targeted_compensation"] == [{"id": 0, "on": False}]
 
 
 @pytest.mark.anyio
@@ -419,16 +435,6 @@ def _rgbw_fake():
             [{"id": 0, "start": 0, "stop": 10, "offset": 10}],
             "VALIDATION_ERROR",
             id="offset-ge-length",
-        ),
-        pytest.param(
-            [{"id": 0, "start": 0, "stop": 10, "name": "x" * 33}],
-            "VALIDATION_ERROR",
-            id="name-33-ascii-bytes",
-        ),
-        pytest.param(
-            [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 17}],
-            "VALIDATION_ERROR",
-            id="name-17-two-byte-chars",
         ),
         pytest.param(
             [{"id": 0, "start": 0, "stop": 10, "on": True, "brightness": 0}],
@@ -584,8 +590,8 @@ def test_T06_schema_rejections():
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "host": "x"}]},
         {**base, "segments": [{"id": True, "start": 0, "stop": 10}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "grouping": 0}]},
-        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "grouping": 256}]},
-        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "spacing": 256}]},
+        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "spacing": -1}]},
+        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "name": "a" * 33}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "brightness": 256}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "on": 1}]},
         {**base, "segments": [{"start": 0, "stop": 10}]},
@@ -594,6 +600,12 @@ def test_T06_schema_rejections():
     ):
         with pytest.raises(ValidationError):
             ReplaceLayoutRequest.model_validate(bad)
+
+
+def test_T06_limits_align_with_patch_segments():
+    """#7 follows #6: 32-character name, no extra 255 cap on grouping/spacing."""
+    seg = {"id": 0, "start": 0, "stop": 10, "grouping": 1000, "spacing": 1000, "name": "ä" * 32}
+    ReplaceLayoutRequest.model_validate({"device_id": "desk", "segments": [seg]})
 
 
 @pytest.mark.anyio

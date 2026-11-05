@@ -197,7 +197,7 @@ the repository root with `UV_CACHE_DIR=.uv-cache`, `UV_PYTHON_DOWNLOADS=never`:
 | Criterion | Executed evidence (`tests/test_layouts.py`, fake in `tests/layout_support.py`) |
 | --- | --- |
 | C2-02, T05 (SEG-02) | fixture case sends exactly `mainseg:2`, remove 0, remove 5, update 2 (name resent), create 6 with all defaults and `frz:false`; final active IDs exactly {2,6}, preserved fields of ID 2; removal POST count equals `|old - desired|` for 1, 3, 9 and 20 noncontiguous stale IDs (no array payload, no filler, no purge); gap reuse and chained ascending creates; sparse chain and ID 8 rejected before any POST with the fixture message; blocked move waits for the segment in its way, no intermediate overlap after any POST; range swap cycle rejected; main handled for kept, stale (redirect first), all-new (redirect last, warning) and inactive main; no master keys in any payload |
-| C2-03/04, T06 (SEG-03, SEG-05) | 18 parametrized invalid requests plus RGBW, capability-evidence, missing `led_count`/`maxseg`, offset clamp, unrepresentable name and schema cases, each with zero POSTs and the expected code; late invalid entry leaves the device untouched; name at 32 bytes accepted, 33 ASCII and 17 two-byte rejected; unknown device zero HTTP |
+| C2-03/04, T06 (SEG-03, SEG-05) | 18 parametrized invalid requests plus RGBW, capability-evidence, missing `led_count`/`maxseg`, offset clamp, unrepresentable name and schema cases, each with zero POSTs and the expected code; late invalid entry leaves the device untouched; name at 32 characters accepted (also multibyte), 33 rejected by the schema, grouping/spacing without a 255 cap (aligned with #6); unknown device zero HTTP |
 | C2-06, T07 (SEG-04) | dry run: zero POSTs, no file created, plan keys/values; live POSTs equal the dry-run `step_payloads`; live call re-plans after a state change; unchanged request is an `ok` no-op with zero POSTs |
 | C2-10, T08 (MCP-02) | ACK with unchanged state -> `unknown/mismatch`; ignored `rev` -> mismatch with `observed`; normalized off accepted; off segment stays off when `brightness` is set; envelope JSON round-trip; annotations `destructive_hint=true` and `additionalProperties:false`; `examples/contracts/replace.json` and the `errors.json` partial case equal the actual output |
 | T09 (REL-01/02) | POST failure plus unreadable state at each step 0-4 -> `unknown/unknown` + `WRITE_OUTCOME_UNKNOWN`, exactly k+1 POSTs, later steps `not_dispatched`; failed POST with differing/matching readback; matching last step succeeds; external interference after a step and extra segment at the end -> mismatch with no corrective POST; deterministic budget exhaustion (shifted `anyio.current_time`, no sleep) stops after two verified steps with exactly two POSTs, `applied/mismatch` + `TIMEOUT`; a final-check mismatch with all five steps verified; a repeated call is a new invocation |
@@ -209,8 +209,13 @@ H05 is opt-in, later and not authorized in this round, so no hardware acceptance
 claimed. Before H05 capture `wled_get_state` output; restoring uses another
 `wled_replace_layout` (recreated IDs need explicit colors; unexposed state of reused slots
 cannot be restored). No stdio/HTTP result-parity case was added beyond the
-shared tool-list tests. The agent technical baselines are recorded as
-[ISSUE-7-DEC-003 to -005](decisions/issue-7.md) and are not human-confirmed.
+shared tool-list tests. ISSUE-7-OPEN-001 is resolved by the human decision
+[ISSUE-7-DEC-006](decisions/issue-7.md) (alignment with #6): the 32-character name,
+no 255 bounds and `bri` without an extra `on` are known limits shared with #6 (silent
+firmware name truncation, `uint8_t` wrap, an off segment switched on by `bri > 0`,
+reported as `VERIFICATION_MISMATCH`). The agent technical baselines
+[ISSUE-7-DEC-003 to -005](decisions/issue-7.md) remain proposals and are not
+human-confirmed.
 
 ## Issue #14 implementation evidence
 

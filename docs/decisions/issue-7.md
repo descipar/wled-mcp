@@ -84,21 +84,54 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   `destructive_hint=true`; the resolved `on` is sent with every `bri` because the firmware
   turns an off segment on when `bri>0` is sent alone.
 - Conditions: none beyond ISSUE-7-DEC-002 (CCT, 2D and pixel streaming stay out of scope).
-- Affected: SEG-05, TOOL-CONTRACT.md, T06/T07. Supersession: none.
+- Affected: SEG-05, TOOL-CONTRACT.md, T06/T07.
+- Supersession (partial): the name byte limit, the 255 bounds for grouping/spacing and
+  the resolved `on` sent with `bri` are superseded by
+  [ISSUE-7-DEC-006](#issue-7-dec-006--align-7-with-6-limits-and-bri-handling). The
+  remaining parts (no-op behavior, reused-slot defaults, ID-only effect/palette,
+  `destructive_hint`) are unchanged and still only proposed.
 
 
-## ISSUE-7-OPEN-001 — OPEN, needs human decision: divergences from #6 handling
+## ISSUE-7-OPEN-001 — RESOLVED by ISSUE-7-DEC-006: divergences from #6 handling
 
-- Status: unresolved. This is a question, not an approval; nothing here is
-  human-confirmed.
+- Status: resolved; superseded by
+  [ISSUE-7-DEC-006](#issue-7-dec-006--align-7-with-6-limits-and-bri-handling). The
+  original question is kept below for history.
 - Context: ISSUE-7-DEC-002 (human) says #7 follows #6 where #6 defines handling. The
-  current candidate diverges from #6 in three points: (1) `name` limit 32 UTF-8 bytes
+  earlier candidate diverged from #6 in three points: (1) `name` limit 32 UTF-8 bytes
   (#6: 32 characters); (2) `grouping`/`spacing` upper bound 255 (#6: no upper bound);
-  (3) the resolved `on` is sent alongside `bri` (#6 sends `bri` alone).
-- Also awaiting human confirmation: the agent baselines ISSUE-7-DEC-003, -004 and -005
-  above (all status "proposed", none confirmed).
-- Options: (A) accept the divergences for #7 and open a follow-up issue to align #6
-  (stricter name limit, 255 bounds, `on` with `bri`); (B) align #7 to #6 (character
-  limit, no upper bounds, `bri` without `on`), accepting the firmware risks described in
-  ISSUE-7-DEC-005 for those fields.
-- Behavior stays unchanged until the human answers; the coordinator records the answer.
+  (3) the resolved `on` was sent alongside `bri` (#6 sends `bri` alone).
+- Options were: (A) accept the divergences and open a follow-up to align #6; (B) align
+  #7 to #6. The human chose (B) in DEC-006.
+- Still open: ISSUE-7-DEC-003, -004 and -005 remain agent technical proposals, NOT
+  human-confirmed (pending review and the human merge decision).
+
+## ISSUE-7-DEC-006 — Align #7 with #6 limits and bri handling
+
+- ID: ISSUE-7-DEC-006
+- Recorded date: 2026-11-05
+- Status: active for issue #7 only.
+- Authority: human decision.
+- Source: the human chat message "B" in the current issue-7 workflow session,
+  2026-11-05, answering ISSUE-7-OPEN-001 (relayed by the coordinator); no permalink.
+- Scope: issue #7 / `wled_replace_layout` only. Not a project default and not a change
+  to #6.
+- Decision: option B. `wled_replace_layout` aligns with `wled_patch_segments` (#6):
+  `name` limit 32 characters, no extra upper bound for `grouping` (>= 1) and `spacing`
+  (>= 0), and `bri` is sent as #6 sends it (no extra resolved `on` alongside `bri`; an
+  explicit requested `on` is sent). Values the firmware cannot hold are not rejected by
+  #7 either.
+- Applicability / conditions: valid unless it breaks a hard requirement (SEG-02 new-ID
+  defaults, SEG-04 verification, firmware correctness); no such conflict was found. New
+  IDs still receive every default explicitly (including `on=true`).
+- Rationale supplied: none beyond the choice itself.
+- Affected: SEG-05, T05/T06, TOOL-CONTRACT.md, VALIDATION.md, `layouts.py`.
+- Supersedes / superseded by: resolves ISSUE-7-OPEN-001; partially supersedes
+  ISSUE-7-DEC-005 (see there).
+- Propagated to: implementation handoff `.agent-runs/issue-7/implementation.md`.
+- Revalidation / next action: known limits shared with #6, documented in
+  TOOL-CONTRACT.md: names longer than the firmware buffer (32 bytes ESP8266, 64
+  ESP32; multibyte characters count as several bytes) are truncated silently by the
+  firmware, grouping/spacing above 255 wrap in the firmware `uint8_t` arguments, and a
+  `bri > 0` sent without `on` may switch an off segment on (the final readback then
+  reports `VERIFICATION_MISMATCH` against the preserved `on=false`).

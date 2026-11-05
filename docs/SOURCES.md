@@ -111,8 +111,8 @@ exactly these facts:
 | A removed slot stays in the segment vector; `serializeState` emits active segments only; `purgeSegments()` runs only on the ARRAY path when `getSegmentsNum() > 3 && deleted >= getSegmentsNum()/2` | One single-object POST per removal, never an array |
 | `id >= getSegmentsNum()` appends one segment at the end and re-assigns the ID; `stop <= 0` there is ignored; `id >= getMaxSegments()` returns false | New ID `n` is exact only if `n <=` slot count; observable lower bound is `max(active)+1` |
 | A reused inactive slot keeps old runtime state (colors, effect, `frz`, `cct`, c1-c3, o1-o3, ...); only sent fields change; `grp`/`spc` are `uint8_t` (grp 0 becomes 1); `setGeometry` restarts the effect | Explicit defaults plus `frz=false`; unexposed state only warned about; grouping/spacing limits |
-| Explicit `of` is reduced modulo length; an unsent `of` is clamped to `len-1` after shrinking; names are truncated to the build limit (64 ESP32, 32 ESP8266) | Reject clamping moves without explicit offset; 32-byte name limit |
-| `bri` sent and > 0 sets opacity and ON; a later `on` key overrides; `on:true` with `bri:0` stays ON; `bri:0` without `on` turns the segment off | `on=true` with `brightness=0` rejected; resolved `on` accompanies a sent `bri` |
+| Explicit `of` is reduced modulo length; an unsent `of` is clamped to `len-1` after shrinking; names are truncated to the build limit (64 ESP32, 32 ESP8266) | Reject clamping moves without explicit offset; name limit 32 characters as #6 (firmware truncation is a shared limit) |
+| `bri` sent and > 0 sets opacity and ON; a later `on` key overrides; `on:true` with `bri:0` stays ON; `bri:0` without `on` turns the segment off | `on=true` with `brightness=0` rejected; `bri` sent as #6 does (no extra `on`; off segment may be switched on, reported by readback) |
 | `mainseg` is processed before `seg`; `setMainSegmentId(n)` accepts only `n < segment slots` (may be inactive) else resets to 0 | Main redirect before removals when the target is active, after creation otherwise |
 | `serializeSegment` emits `n` only when a name exists | Missing `n` is the empty name |
 

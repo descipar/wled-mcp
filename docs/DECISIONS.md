@@ -108,6 +108,14 @@ can explicitly amend them.
   fidelity, native client discovery and actual model behavior require distinct
   evidence; generated files alone do not prove an end-to-end run.
 
+## Issue-specific decisions (pointers)
+
+- [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
+  (human, 2026-11-05, issue #7 only): `wled_replace_layout` aligns with #6 for the
+  name limit, grouping/spacing bounds and `bri` handling; resolves ISSUE-7-OPEN-001.
+  It does not apply to other issues. ISSUE-7-DEC-003 to -005 are agent technical
+  proposals, not human-confirmed.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.
