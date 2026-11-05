@@ -188,10 +188,10 @@ and identically in a dry run. Evidence is the pinned v0.15.1 source
 | `name` | At most 32 UTF-8 bytes on every device (the firmware truncates by bytes; 32 is the build-independent minimum, the chip type does not prove a larger buffer), no U+0000. The input schema keeps `maxLength: 32` (characters) as a coarse bound. | Otherwise `VALIDATION_ERROR` naming the segment and the byte limit, zero POSTs |
 | `grouping` / `spacing` | 1-255 / 0-255 (firmware `uint8_t`); both input schemas advertise `maximum: 255` | 256 or more fails schema validation (`VALIDATION_ERROR`), zero HTTP |
 | `on=true` with `brightness=0` | Rejected (the firmware would end on) | `VALIDATION_ERROR`, zero POSTs |
-| `brightness=0`, `on` omitted | Accepted only when the segment is off (a new #7 ID counts as on); otherwise pass `on=false` explicitly | `VALIDATION_ERROR`, zero POSTs |
+| `brightness=0`, `on` omitted | Accepted only when the segment is reported off (a new #7 ID counts as on; an unreported current power also counts as not off); otherwise pass `on=false` explicitly | `VALIDATION_ERROR`, zero POSTs |
 | `brightness > 0`, `on` omitted, segment off | Targeted compensation: the resolved `on=false` is sent with `bri` and listed in `plan.targeted_compensation` as `{"id": N, "on": false}`; the segment stays off with the new remembered brightness | `applied/verified` |
 | `brightness > 0`, `on` omitted, segment on | `bri` is sent alone (no `on` added); the firmware keeps the segment on | `applied/verified` |
-| `brightness` with `on` omitted, current power not reported | The power effect cannot be predicted | `UNSUPPORTED_CAPABILITY`, zero POSTs (unrelated fields still work) |
+| `brightness > 0`, `on` omitted, current power not reported | The power effect cannot be predicted; pass `on` explicitly (`brightness=0` in this case follows the row above: `VALIDATION_ERROR`) | `UNSUPPORTED_CAPABILITY`, zero POSTs (unrelated fields still work) |
 
 Whenever a positive `bri` is sent, the readback also verifies the resolved `on`, so a
 power flip is a `VERIFICATION_MISMATCH`, never a silent success. For
