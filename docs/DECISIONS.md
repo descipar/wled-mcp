@@ -124,6 +124,13 @@ can explicitly amend them.
   `scripts/check_distribution.py` edit accepted, follow-up issue
   [#48](https://github.com/descipar/wled-mcp/issues/48) for the shared #6/#7 limits.
 
+- [ISSUE-8-DEC-001 and -002](decisions/issue-8.md) (human, 2026-11-05, issue #8 only):
+  restore execution deferred (no `wled_restore_preset`); #8 delivers the snapshot store
+  and `Resources` interface, #9 wires the real tools.
+- [ISSUE-8-DEC-003](decisions/issue-8.md) (delegated decision, 2026-11-05, issue #8 only,
+  content decided by the main session): layout/ID, envelope, compatibility, error codes,
+  retention, repo guard, fsync and backup-source defaults accepted.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

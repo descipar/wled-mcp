@@ -46,6 +46,14 @@ constraints pin its versions. Constraints do not enforce artifact hashes or
 authenticate the wheel; preserve a trusted wheel for private distribution.
 The lockfile separately retains dependency artifact hashes.
 
+## Snapshot store tests
+
+`tests/test_backups.py` covers the #8 snapshot store with pytest `tmp_path`, mock
+transports and no network, LAN or hardware access. Run it alone with
+`uv run --frozen pytest tests/test_backups.py`. Runtime backups live under the
+configured data directory (`backups/`, git-ignored; a test asserts they cannot be
+tracked). Never point tests at a real data directory.
+
 ## Streamable HTTP service and tests
 
 The HTTP service needs a bearer credential before it listens: set

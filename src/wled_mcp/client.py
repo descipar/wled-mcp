@@ -31,13 +31,21 @@ class Endpoint(Enum):
 class ClientFailure(Exception):
     """Transport-independent failure with no original body, URL or exception text."""
 
-    def __init__(self, code: ErrorCode, message: str, *, retryable: bool = False) -> None:
+    def __init__(
+        self,
+        code: ErrorCode,
+        message: str,
+        *,
+        retryable: bool = False,
+        reconciliation: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.error = DomainError(
             code=code,
             message=message,
             read_retryable=retryable,
-            reconciliation="Read the configured device explicitly; never replay the write.",
+            reconciliation=reconciliation
+            or "Read the configured device explicitly; never replay the write.",
         )
 
 

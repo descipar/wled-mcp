@@ -2,8 +2,8 @@
 
 Issue #4 implements one process-owned `Resources` graph: immutable configured
 inventory/settings, one managed async client, stable per-device locks, shared
-effect/palette catalog cache (`metadata_cache`, issue #5) and an inert backup-directory/
-retention handle. Tool factories close over the same graph; the CLI opens/serves/closes
+effect/palette catalog cache (`metadata_cache`, issue #5) and the snapshot store (issue #8,
+`backups.py`; per-device retention enforced, no production caller until #9). Tool factories close over the same graph; the CLI opens/serves/closes
 it in one async lifecycle. The [bounded client profile](INVENTORY-CLIENT.md) and
 [decisions](decisions/issue-4.md) are current implementation details.
 
@@ -100,9 +100,9 @@ Do not claim transactions. Other WLED API clients and another server process do 
 
 ## Backups
 
-Use the [version-1 snapshot envelope](TOOL-CONTRACT.md#snapshot-and-explicit-restoration), generated backup ID, UTC timestamp, configured device ID and relevant firmware/preset metadata. Single-entry restoration execution remains Should until a safe storage-only path is verified; exporting a snapshot is not a restoration test. Write a temporary file in the same directory, flush/close and atomically replace the destination; snapshot filenames derive from validated IDs, never unsanitized user names. Preserve unknown preset fields. Validate snapshots before considering backup successful.
+Use the [version-1 snapshot envelope](TOOL-CONTRACT.md#snapshot-and-explicit-restoration), generated backup ID, UTC timestamp, configured device ID and relevant firmware/preset metadata. Single-entry restoration execution remains Should until a safe storage-only path is verified; exporting a snapshot is not a restoration test. Layout `backups/<device_id>/<backup_id>.json`; write an exclusive same-directory temporary file, fsync, validate, publish without overwrite and best-effort fsync the directory (details in the contract); snapshot filenames derive from validated IDs, never unsanitized user names. Preserve unknown preset fields. Validate snapshots before considering backup successful.
 
-Proposed retention is 20 snapshots per controller, configurable; prune only valid older snapshot files in the resolved backup directory, only after a new snapshot is durable, and never remove the snapshot needed by the operation in progress. Data remains outside version control. If the path is not persistent/writable, destructive preset operations fail before touching WLED. Restore is explicit; a failed write does not trigger an automatic compensating mutation.
+Retention is 20 snapshots per controller, configurable; prune only valid older snapshot files in the resolved backup directory, only after a new snapshot is durable, and never remove the snapshot needed by the operation in progress. Data remains outside version control. If the path is not persistent/writable, destructive preset operations fail before touching WLED. Restore is explicit; a failed write does not trigger an automatic compensating mutation.
 
 ## Compatibility
 

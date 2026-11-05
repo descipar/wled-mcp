@@ -60,6 +60,23 @@ checks. SDK version selection, mocked/runtime protocol execution and hardware
 compatibility remain pending. PRE-03 and restore execution are explicitly deferred
 Should work; durable backup before destructive operations remains Must.
 
+## Issue #8 implementation evidence
+
+Mock/tmp_path only; no LAN, device or hardware access (H06 stays pending and
+separately authorized). Tests in `tests/test_backups.py` (executed claims are
+recorded in the PR, not here):
+
+| Criteria | Test coverage |
+| --- | --- |
+| T12 format/validation | round trip with unknown-field preservation, contract example, invalid envelope table, malformed bytes, size/duplicate-key/NaN, path/device ID safety, symlinks, destination mismatch |
+| T12 atomic durable write | single final file, fsync/publish ordering, injected fsync/link/mkdir/write/read-only faults, post-write validation, ID collision, leftover temp |
+| T12 retention | newest-N, tie-break, per-device isolation, prune only after durable snapshot, never deleting invalid/temp/foreign/symlink files, warning-only prune failure, config wiring |
+| T12/T11/T13 hook contract | synthetic destructive operation: backup failure gives zero POSTs, snapshot on disk before the POST, changed prior object gives zero POSTs, timeout keeps snapshot without resend |
+| T07, T10, OPS-03 | dry-run plan without filesystem change, same-device serialization, log content, file modes, Git ignore guard |
+| Restore deferral | read-only plan helper, exact device/firmware, occupied destination rules, no restore tool registered |
+
+Restoration execution and real preset tools remain pending (#9, #13/#18).
+
 ## Read-only hardware checks
 
 H01: Record selected device alias, firmware, LED count, RGB/RGBW/CCT and segment capabilities from real responses. Sanitize any committed fixture.
