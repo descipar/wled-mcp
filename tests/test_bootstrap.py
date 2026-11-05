@@ -136,6 +136,11 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
                     "wled_set_state",
                     "wled_patch_segments",
                     "wled_replace_layout",
+                    "wled_list_presets",
+                    "wled_get_preset",
+                    "wled_activate_preset",
+                    "wled_save_preset",
+                    "wled_delete_preset",
                 ]
                 result = await client.call_tool("wled_list_devices", {})
                 assert result.structured_content["data"] == {"devices": []}
@@ -240,6 +245,11 @@ def test_stdout_is_only_protocol_and_clean_eof(startup):
         "wled_set_state",
         "wled_patch_segments",
         "wled_replace_layout",
+        "wled_list_presets",
+        "wled_get_preset",
+        "wled_activate_preset",
+        "wled_save_preset",
+        "wled_delete_preset",
     ]
     assert responses[3]["error"]["code"] == -32601
     assert responses[4]["error"]["code"] == -32602

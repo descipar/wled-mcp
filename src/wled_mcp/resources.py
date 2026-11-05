@@ -47,6 +47,38 @@ class SequencePlan:
     observe: Callable[[JsonValue], JsonValue]
 
 
+@dataclass(frozen=True)
+class Verdict:
+    """One evaluation of a polled readback against a write's postcondition."""
+
+    matched: bool
+    observed: JsonValue = None
+    # The observed target is identical to its pre-dispatch value (no visible effect yet).
+    unchanged: bool = False
+    differences: tuple[str, ...] = ()
+    interference: tuple[int, ...] = ()
+    warnings: tuple[str, ...] = ()
+    data: dict[str, JsonValue] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class PolledWrite:
+    """One single-POST write whose outcome is decided only by bounded polled readback."""
+
+    endpoint: Endpoint
+    payload: dict[str, JsonValue]
+    evaluate: Callable[[JsonValue], Verdict]
+    data: dict[str, JsonValue]
+    reconciliation: str
+
+
+@dataclass
+class _PollRecord:
+    plan: PolledWrite | None = None
+    post_failed: bool = False
+    last: Verdict | None = None
+
+
 @dataclass
 class OperationContext:
     device: Device
@@ -59,7 +91,7 @@ class OperationContext:
     async def backup_preset(
         self, preset_id: int, preset: dict[str, JsonValue], firmware: Firmware
     ) -> BackupRecord:
-        """Seam for destructive preset operations (issue #9 wires the real tools).
+        """Snapshot seam used by the destructive preset tools (issue #9).
 
         Call inside the operation (device lock held) with a freshly read preset
         object, right before the POST. A raised BACKUP_FAILED in `prepare` aborts
@@ -97,6 +129,8 @@ class Resources:
         self.locks = {device.id: anyio.Lock() for device in self.inventory}
         # One shared effect/palette catalog cache (issue #5); never holds state/info.
         self.metadata_cache = CatalogCache(config.http.catalog_cache_seconds, self.clock)
+        # Poll interval for persistent-file/activation readbacks (tests shorten it).
+        self.poll_interval_seconds = 0.1
         self.backups = SnapshotStore(
             config.data_dir / "backups",
             config.backups.retain_per_device,
@@ -252,8 +286,8 @@ class Resources:
         or fails verification stops the sequence: no later (especially destructive)
         step is dispatched and nothing is rolled back or corrected. Unlike
         `write_verified`, this does not carry `backup_id` or prune warnings into the
-        outcome (segment/layout writes need no snapshot); #9 must add that if it
-        uses a sequence for preset operations.
+        outcome (segment/layout writes need no snapshot). The preset tools use
+        `write_polled`, which does carry them.
         """
         plan: SequencePlan | None = None
         statuses: list[str] = []
@@ -373,6 +407,171 @@ class Resources:
                     reconciliation="Correct the requested plan before writing.",
                 ),
             )
+
+    async def write_polled(
+        self,
+        device_id: str,
+        operation: str,
+        prepare: Callable[[OperationContext], Awaitable[PolledWrite]],
+    ) -> Outcome:
+        """Single-POST write decided only by bounded polled readback (issue #9).
+
+        `prepare` runs inside the device lock and the one operation deadline, validates
+        everything (including snapshot and collision recheck) and raises before dispatch
+        on any problem, so nothing is sent. After the single POST (never replayed) the
+        readback endpoint is polled until the postcondition holds or the deadline ends.
+        The last readable observation survives an expired deadline.
+        """
+        seen: list[OperationContext] = []
+        outcome = await self._write_polled(device_id, operation, prepare, seen)
+        records = seen[0].backup_records if seen else []
+        if not records:
+            return outcome
+        warnings = [w for record in records for w in record.warnings]
+        return outcome.model_copy(
+            update={
+                "data": {**outcome.data, "backup_id": records[-1].backup_id},
+                "warnings": [*outcome.warnings, *warnings],
+            }
+        )
+
+    async def _write_polled(
+        self,
+        device_id: str,
+        operation: str,
+        prepare: Callable[[OperationContext], Awaitable[PolledWrite]],
+        seen: list[OperationContext],
+    ) -> Outcome:
+        record = _PollRecord()
+        dispatched = False
+        try:
+            async with self.operation(device_id) as context:
+                seen.append(context)
+                plan = record.plan = await prepare(context)
+                body = self.client.encode_payload(plan.payload)
+                remaining = context.deadline.remaining()
+                if remaining < 0.02:
+                    raise ClientFailure(
+                        "TIMEOUT", "Insufficient remaining write/verification budget."
+                    )
+                reserve = min(1.0, remaining * 0.25)
+                dispatch_deadline = Deadline(context.deadline.expires - reserve)
+                dispatch_deadline.remaining()
+                dispatched = context.dispatched = True
+                try:
+                    await self.client.post_state(context.device, body, dispatch_deadline)
+                except ClientFailure:
+                    record.post_failed = True  # ACK/errors never establish the postcondition.
+                while True:
+                    try:
+                        value = await context.read(plan.endpoint)
+                    except ClientFailure:
+                        value = None  # unreadable poll; the last readable observation stays
+                    if isinstance(value, dict):  # anything else is an unreadable poll
+                        verdict = plan.evaluate(value)
+                        if verdict.matched:
+                            return self._polled_success(device_id, operation, plan, verdict, record)
+                        record.last = verdict
+                    # Raises TIMEOUT at the deadline; handled below with the last observation.
+                    await anyio.sleep(min(self.poll_interval_seconds, context.deadline.remaining()))
+        except ClientFailure as failure:
+            if dispatched:
+                return self._polled_uncertain(device_id, operation, record)
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="not_attempted",
+                verification="not_requested",
+                error=failure.error,
+            )
+        except Exception:
+            if dispatched:
+                return self._polled_uncertain(device_id, operation, record)
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="not_attempted",
+                verification="not_requested",
+                error=DomainError(
+                    code="VALIDATION_ERROR",
+                    message="Operation preparation failed.",
+                    reconciliation="Correct the requested plan before writing.",
+                ),
+            )
+
+    @staticmethod
+    def _polled_success(
+        device_id: str,
+        operation: str,
+        plan: PolledWrite,
+        verdict: Verdict,
+        record: _PollRecord,
+    ) -> Outcome:
+        data: dict[str, JsonValue] = {**plan.data, **verdict.data}
+        warnings = list(verdict.warnings)
+        if verdict.interference:
+            data["interference"] = list(verdict.interference)
+            warnings.append(
+                "Unrelated preset entries changed during the operation (IDs in data.interference);"
+                " they were reported, not corrected."
+            )
+        if record.post_failed:
+            warnings.append("Transport error during write; outcome reconciled by readback.")
+        return Outcome(
+            ok=True,
+            operation=operation,
+            device_id=device_id,
+            application="applied",
+            verification="verified",
+            data=data,
+            warnings=warnings,
+        )
+
+    @staticmethod
+    def _polled_uncertain(device_id: str, operation: str, record: _PollRecord) -> Outcome:
+        plan, last = record.plan, record.last
+        data: dict[str, JsonValue] = dict(plan.data) if plan is not None else {}
+        data["no_replay"] = True
+        reconciliation = (
+            plan.reconciliation
+            if plan is not None
+            else "Perform an explicit read; do not replay the write."
+        )
+        # A failed POST with the target still unchanged cannot be told from "not applied".
+        if last is not None and not (record.post_failed and last.unchanged):
+            data["observed"] = last.observed
+            if last.differences:
+                data["differences"] = list(last.differences)
+            if last.interference:
+                data["interference"] = list(last.interference)
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="unknown",
+                verification="mismatch",
+                data=data,
+                error=DomainError(
+                    code="VERIFICATION_MISMATCH",
+                    message="Readback did not match the requested postcondition.",
+                    reconciliation=reconciliation,
+                ),
+            )
+        return Outcome(
+            ok=False,
+            operation=operation,
+            device_id=device_id,
+            application="unknown",
+            verification="unknown",
+            data=data,
+            error=DomainError(
+                code="WRITE_OUTCOME_UNKNOWN",
+                message="Write outcome could not be verified.",
+                reconciliation=reconciliation,
+            ),
+        )
 
     @staticmethod
     def _sequence_outcome(

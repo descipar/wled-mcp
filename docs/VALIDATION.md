@@ -77,6 +77,29 @@ recorded in the PR, not here):
 
 Restoration execution and real preset tools remain pending (#9, #13/#18).
 
+## Issue #9 implementation evidence
+
+Mock/tmp_path only; no LAN, device or hardware access. H06 is not run and stays
+separately authorized and pending; nothing here is hardware acceptance. Tests in
+`tests/test_presets.py` with the stateful fake `tests/preset_support.py` (which models
+only the facts in SOURCES.md "Issue-9 preset evidence"); executed results are
+recorded in the PR, not here. PRE-03 stays deferred to #13 and is not covered.
+
+| Criteria | Test coverage |
+| --- | --- |
+| T11 list/read | types and unknown-field/order preservation, reserved/temporary/null/`{}` handling, malformed keys and non-object entries, fresh uncached GET per call, failure mapping without leaks |
+| T11 activation | state and playlist activation send only `{"ps": id}` and leave storage identical; api-command/unknown/control-key/unsafe-playlist entries refused with zero POSTs; deferred application polled; unobservable acceptance is a mismatch; already-active warning |
+| T11 allocation/save | lowest free ID with gaps, explicit free ID, occupied needs `overwrite=true`, exhausted ID space, malformed store fails closed, name validation (blank, control, 32 vs 33 bytes, multi-byte), no `state` input, storage-controls-only wire payload, collision recheck without reallocation, playlist replacement rejected, dry run read-only |
+| T12 | snapshot of the exact object on disk before the POST (overwrite and delete, every object entry type), backup failure gives zero POSTs, changed prior object conflicts and keeps the snapshot, free explicit ID takes no snapshot, non-object entry rejected, dry run creates no files |
+| T13/REL-02 | delayed persistence within the deadline, acknowledged-but-never-persisted save/delete is a mismatch, field-level capture differences, inactive-slot markers, interference warning, timed-out POST reconciled with warning, failed POST plus unchanged store or unreadable readback is unknown, exactly one POST in every case, a later call is a new invocation, same-device serialization with distinct IDs, other device progresses |
+| Evidence examples | `examples/contracts/presets.json` and the `backup_failure` case are actual tool output, reproduced by tests |
+
+C2-07 (ID range, occupancy, allocation, names) and C2-09 (backup before destructive
+writes) have mock evidence; C2-08 (persistent full-field verification) has mock
+evidence for save-current, deferred supplied-state stays with #13. Real flash-write
+timing, post-delete file layout, whether saving moves the active-preset marker, and
+real playlist behavior are not established by mocks.
+
 ## Read-only hardware checks
 
 H01: Record selected device alias, firmware, LED count, RGB/RGBW/CCT and segment capabilities from real responses. Sanitize any committed fixture.

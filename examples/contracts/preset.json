@@ -109,7 +109,7 @@
   "expected": {
     "schema_version": 1,
     "ok": true,
-    "operation": "save_preset",
+    "operation": "wled_save_preset",
     "device_id": "desk",
     "dry_run": false,
     "application": "applied",
@@ -205,7 +205,7 @@
   "collision_outcome": {
     "schema_version": 1,
     "ok": false,
-    "operation": "save_preset",
+    "operation": "wled_save_preset",
     "device_id": "desk",
     "dry_run": false,
     "application": "not_attempted",

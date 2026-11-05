@@ -1,0 +1,228 @@
+{
+  "kind": "actual_tool_output",
+  "note": "Actual wled_*_preset output against the stateful synthetic mock (tests/preset_support.py); reproduced by tests/test_presets.py. Not firmware or hardware observations.",
+  "persistent_store": {
+    "0": {},
+    "1": {
+      "n": "Existing",
+      "on": true,
+      "bri": 80
+    },
+    "2": {
+      "vendor_extension": {
+        "opaque": true
+      }
+    },
+    "3": null,
+    "4": {
+      "playlist": {
+        "ps": [
+          1
+        ],
+        "dur": [
+          100
+        ],
+        "repeat": 0
+      },
+      "on": true,
+      "n": "Cycle"
+    }
+  },
+  "cases": {
+    "list": {
+      "request": {
+        "device_id": "desk"
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_list_presets",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "freshness": {
+            "source": "device",
+            "read_at": "2026-01-01T00:16:40+00:00"
+          },
+          "presets": [
+            {
+              "id": 1,
+              "name": "Existing",
+              "type": "state"
+            },
+            {
+              "id": 2,
+              "name": null,
+              "type": "unknown"
+            },
+            {
+              "id": 4,
+              "name": "Cycle",
+              "type": "playlist"
+            }
+          ],
+          "count": 3
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "get_unknown_entry": {
+      "request": {
+        "device_id": "desk",
+        "preset_id": 2
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_get_preset",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "device": {
+            "id": "desk",
+            "name": "Example desk"
+          },
+          "freshness": {
+            "source": "device",
+            "read_at": "2026-01-01T00:16:40+00:00"
+          },
+          "preset_id": 2,
+          "name": null,
+          "type": "unknown",
+          "preset": {
+            "vendor_extension": {
+              "opaque": true
+            }
+          }
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "get_empty_slot": {
+      "request": {
+        "device_id": "desk",
+        "preset_id": 3
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "wled_get_preset",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {},
+        "warnings": [],
+        "error": {
+          "code": "PRESET_NOT_FOUND",
+          "message": "No preset is stored under this ID.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "List the stored presets with wled_list_presets before choosing an ID."
+        }
+      }
+    },
+    "save_occupied_without_overwrite": {
+      "request": {
+        "device_id": "desk",
+        "name": "Evening",
+        "preset_id": 1
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": false,
+        "operation": "wled_save_preset",
+        "device_id": "desk",
+        "dry_run": false,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {},
+        "warnings": [],
+        "error": {
+          "code": "PRESET_CONFLICT",
+          "message": "The preset ID is occupied; overwrite=true is required to replace it.",
+          "read_retryable": false,
+          "write_retryable": false,
+          "reconciliation": "Inspect it with wled_get_preset, then repeat with overwrite=true or omit preset_id to use a free ID."
+        }
+      }
+    },
+    "activate_playlist_dry_run": {
+      "request": {
+        "device_id": "desk",
+        "preset_id": 4,
+        "dry_run": true
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_activate_preset",
+        "device_id": "desk",
+        "dry_run": true,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "plan": {
+            "preset_id": 4,
+            "type": "playlist",
+            "member_ids": [
+              1
+            ],
+            "writes_storage": false
+          },
+          "payload": {
+            "ps": 4
+          },
+          "postconditions": [
+            "state.pl equals the playlist ID"
+          ]
+        },
+        "warnings": [],
+        "error": null
+      }
+    },
+    "delete_dry_run": {
+      "request": {
+        "device_id": "desk",
+        "preset_id": 2,
+        "dry_run": true
+      },
+      "expected": {
+        "schema_version": 1,
+        "ok": true,
+        "operation": "wled_delete_preset",
+        "device_id": "desk",
+        "dry_run": true,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "data": {
+          "plan": {
+            "preset_id": 2,
+            "existing_type": "unknown",
+            "backup_required": true,
+            "backup_storage_writable": true
+          },
+          "payload": {
+            "pdel": 2
+          },
+          "postconditions": [
+            "/presets.json has no entry (absent, null or empty) for ID 2",
+            "unrelated entries are unchanged (differences are reported as interference)"
+          ]
+        },
+        "warnings": [],
+        "error": null
+      }
+    }
+  }
+}

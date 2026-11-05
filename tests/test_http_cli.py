@@ -297,7 +297,7 @@ def test_console_serves_http_and_shuts_down_cleanly(tmp_path, source):
                         )
                         async with Client(transport, mode=mode, read_timeout_seconds=10) as client:
                             tools = (await client.list_tools()).tools
-                            assert len(tools) == 7
+                            assert len(tools) == 12
                             result = await client.call_tool("wled_list_devices", {})
                             assert result.structured_content["data"] == {"devices": []}
 
@@ -372,7 +372,7 @@ async def test_http_and_stdio_expose_identical_tool_descriptors(tmp_path):
                 )
                 async with Client(transport, mode="legacy", read_timeout_seconds=10) as over_http:
                     http_tools = (await over_http.list_tools()).tools
-    assert len(stdio_tools) == 7
+    assert len(stdio_tools) == 12
 
     def dump(tools: list[Any]) -> str:
         return json.dumps([t.model_dump(mode="json") for t in tools], sort_keys=True)

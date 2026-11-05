@@ -76,7 +76,7 @@
       "expected": {
         "schema_version": 1,
         "ok": false,
-        "operation": "delete_preset",
+        "operation": "wled_delete_preset",
         "device_id": "desk",
         "dry_run": false,
         "application": "not_attempted",
@@ -85,7 +85,7 @@
         "warnings": [],
         "error": {
           "code": "BACKUP_FAILED",
-          "message": "A durable validated snapshot could not be created; no delete was sent.",
+          "message": "Preset snapshot could not be stored durably; no write was sent.",
           "read_retryable": false,
           "write_retryable": false,
           "reconciliation": "Repair the configured data path before an explicitly requested new attempt."

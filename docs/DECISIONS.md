@@ -131,6 +131,10 @@ can explicitly amend them.
   content decided by the main session): layout/ID, envelope, compatibility, error codes,
   retention, repo guard, fsync and backup-source defaults accepted.
 
+- [ISSUE-9-DEC-001](decisions/issue-9.md) (delegated decision relayed by the main session,
+  2026-11-05, issue #9 only, content decided by the main session): PRE-03/restore stay
+  deferred, playlist overwrite rejected, type/activation rules, delete route evidence rule.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

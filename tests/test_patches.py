@@ -80,6 +80,11 @@ async def test_registry_includes_write_tools_with_mutation_annotations(tmp_path)
             "wled_set_state",
             "wled_patch_segments",
             "wled_replace_layout",
+            "wled_list_presets",
+            "wled_get_preset",
+            "wled_activate_preset",
+            "wled_save_preset",
+            "wled_delete_preset",
         ]
         for op in operations[4:6]:
             hints = op.annotations

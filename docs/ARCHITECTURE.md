@@ -3,7 +3,8 @@
 Issue #4 implements one process-owned `Resources` graph: immutable configured
 inventory/settings, one managed async client, stable per-device locks, shared
 effect/palette catalog cache (`metadata_cache`, issue #5) and the snapshot store (issue #8,
-`backups.py`; per-device retention enforced, no production caller until #9). Tool factories close over the same graph; the CLI opens/serves/closes
+`backups.py`; per-device retention enforced) and the five persistent-preset tools (issue #9: `presets.py` pure
+store parsing/classification/capture comparison, `Resources.write_polled` for the single-POST polled-readback write). Tool factories close over the same graph; the CLI opens/serves/closes
 it in one async lifecycle. The [bounded client profile](INVENTORY-CLIENT.md) and
 [decisions](decisions/issue-4.md) are current implementation details.
 
@@ -47,6 +48,7 @@ src/wled_mcp/
   client.py       # bounded HTTP calls; no domain decisions
   models.py       # typed requests, capabilities, outcomes
   operations.py   # patch/replace/preset workflows
+  presets.py      # preset requests, store parsing/classification, capture comparison (pure)
   backups.py      # atomic preset snapshots and retention
 tests/
   unit/
