@@ -1,0 +1,14 @@
+# Synthetic template for the read-only H01/H02 quick path (docs/HARDWARE-QUICKPATH.md).
+# Copy to runtime/h01-h02/devices.toml (git-ignored) and replace the placeholder
+# with the one explicitly selected test device. Never commit real addresses.
+schema_version = 1
+
+[http]
+connect_timeout_seconds = 3
+operation_timeout_seconds = 10
+read_retries = 1
+
+[[devices]]
+id = "testdev"
+name = "H01/H02 test device"
+base_url = "http://wled-test.example.invalid"
