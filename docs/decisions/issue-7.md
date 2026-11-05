@@ -40,10 +40,13 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 
 ## ISSUE-7-DEC-003 — Step order and allocation bound (agent technical baseline)
 
-- Status: proposed agent baseline for issue #7; NOT human-confirmed. Review point for
-  the reviewer and the human merge decision.
-- Authority/source: implementer proposals PD-1, PD-2, PD-4 of the requirements packet,
-  recorded with the implementation (2026-11-05).
+- Status: active for issue #7 only, accepted by delegated decision (2026-11-05). History:
+  proposed agent baseline (implementer proposals PD-1, PD-2, PD-4 of the requirements
+  packet, recorded with the implementation, 2026-11-05; then NOT human-confirmed).
+- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Resolution: accepted as is. Rationale: conservative and fail-closed (no temporary segment,
+  no bulk purge, cycles rejected). Revisit with H05 hardware evidence or stage-2 #19
+  (advanced/2D layouts).
 - Scope/decision: the sequence is [main redirect when its target is already active],
   exact single-object removals ascending, updates/creates chosen so no step overlaps a
   segment still at an old range (creates strictly ascending), [main redirect after the
@@ -58,8 +61,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 
 ## ISSUE-7-DEC-004 — Range-capability evidence for new ranges (agent technical baseline)
 
-- Status: proposed agent baseline for issue #7; NOT human-confirmed.
-- Authority/source: implementer proposal PD-3 (2026-11-05).
+- Status: active for issue #7 only, accepted by delegated decision (2026-11-05). History:
+  proposed agent baseline (implementer proposal PD-3, 2026-11-05; then NOT human-confirmed).
+- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Resolution: accepted as is. Rationale: profile-0 uniform RGB-only evidence, otherwise
+  `UNSUPPORTED_CAPABILITY`; stage-2 #19 (CCT/white) extends it deliberately.
 - Scope/decision: colors for a new range are accepted only under profile-0 uniform
   RGB-only evidence: `info.leds.lc` has `(lc & 7) == CAP_RGB` and `info.leds.seglc` is
   absent or aligned with the segment list with every entry RGB-only. Three channels only;
@@ -73,8 +79,14 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 
 ## ISSUE-7-DEC-005 — Smaller technical limits and no-op behavior (agent technical baseline)
 
-- Status: proposed agent baseline for issue #7; NOT human-confirmed.
-- Authority/source: implementer proposals PD-5 to PD-8, PD-11, PD-12 (2026-11-05).
+- Status: active for issue #7 only, accepted by delegated decision (2026-11-05) only for the
+  parts compatible with ISSUE-7-DEC-006. History: proposed agent baseline (implementer
+  proposals PD-5 to PD-8, PD-11, PD-12, 2026-11-05; then NOT human-confirmed).
+- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Resolution: accepted: no-op behavior (unchanged IDs get no POST; a fully unchanged request is
+  `ok` with zero POSTs), reused inactive slots forced to documented defaults, effect/palette
+  as IDs only, `destructive_hint=true`. The three points superseded by ISSUE-7-DEC-006
+  (name 32 characters, no 255 bounds, `bri` handling as #6) stay as in #6.
 - Scope/decision: grouping 1-255 and spacing 0-255 (pinned `uint8_t` arguments); `name` at
   most 32 UTF-8 bytes (stricter than the 32-character cap of #6, which is unchanged);
   existing IDs without a difference get no POST and an entirely unchanged request is an
@@ -89,7 +101,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   the resolved `on` sent with `bri` are superseded by
   [ISSUE-7-DEC-006](#issue-7-dec-006--align-7-with-6-limits-and-bri-handling). The
   remaining parts (no-op behavior, reused-slot defaults, ID-only effect/palette,
-  `destructive_hint`) are unchanged and still only proposed.
+  `destructive_hint`) are unchanged and accepted by delegated decision (see Resolution).
 
 
 ## ISSUE-7-OPEN-001 — RESOLVED by ISSUE-7-DEC-006: divergences from #6 handling
@@ -103,8 +115,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   (3) the resolved `on` was sent alongside `bri` (#6 sends `bri` alone).
 - Options were: (A) accept the divergences and open a follow-up to align #6; (B) align
   #7 to #6. The human chose (B) in DEC-006.
-- Still open: ISSUE-7-DEC-003, -004 and -005 remain agent technical proposals, NOT
-  human-confirmed (pending review and the human merge decision).
+- Later: ISSUE-7-DEC-003, -004 and -005 were accepted by delegated decision (2026-11-05,
+  see there).
 
 ## ISSUE-7-DEC-006 — Align #7 with #6 limits and bri handling
 
@@ -129,7 +141,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Supersedes / superseded by: resolves ISSUE-7-OPEN-001; partially supersedes
   ISSUE-7-DEC-005 (see there).
 - Propagated to: implementation handoff `.agent-runs/issue-7/implementation.md`.
-- Clarification note (coordinator reading, not a separate human answer): "bri handling
+- Clarification note (originally a coordinator reading; confirmed by
+  [ISSUE-7-DEC-007](#issue-7-dec-007--narrow-reading-of-dec-006-confirmed)): "bri handling
   as #6" covers only how `bri` is sent. The brightness=0 rejections of #7
   (`brightness=0` without explicit `on=false` on an ON segment; `on=true` with
   `brightness=0`) follow the general power/brightness contract, stay in force and differ
@@ -140,3 +153,37 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   firmware, grouping/spacing above 255 wrap in the firmware `uint8_t` arguments, and a
   `bri > 0` sent without `on` may switch an off segment on (the final readback then
   reports `VERIFICATION_MISMATCH` against the preserved `on=false`).
+
+## ISSUE-7-DEC-007 — Narrow reading of DEC-006 confirmed
+
+- Status: active for issue #7 only (2026-11-05).
+- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Decision: confirmed. #7 shares the `bri` sending behavior with #6 but keeps its stricter
+  validation: it rejects `brightness=0` without `on=false` on an enabled segment, and `on=true`
+  with `brightness=0`. Rationale: fails early before any write, consistent with the general
+  contract; full parity would import a known #6 defect (`on:true` + `bri:0`).
+- Affected: ISSUE-7-DEC-006 clarification note, TOOL-CONTRACT.md. Supersession: none.
+
+## ISSUE-7-DEC-008 — check_distribution.py edit accepted
+
+- Status: active for issue #7 only (2026-11-05).
+- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Decision: the `scripts/check_distribution.py` edit (tool list and count), outside the
+  packet path list, is accepted as a necessary mechanical consequence of adding a tool.
+- Supersession: none.
+
+## ISSUE-7-DEC-009 — Follow-up issue for shared #6/#7 limits
+
+- Status: active for issue #7 only (2026-11-05).
+- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Decision: a follow-up issue for the shared #6/#7 firmware limits (name truncation,
+  grouping/spacing `uint8_t` wrap, `bri > 0` switching an off segment on) and the #6
+  `on:true` + `bri:0` defect is decided. It was created by the main session as
+  [#48](https://github.com/descipar/wled-mcp/issues/48); the implementer created or edited
+  no issue.
+- Supersession: none.
+
+## Still open for issue #7
+
+- The human merge decision (PR #47 stays Draft).
+- Hardware evidence (H05) and any firmware profile other than the pinned one.

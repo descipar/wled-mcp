@@ -5,7 +5,8 @@ one fresh normalized ``/json/state`` view plus the raw info/state payloads and r
 an explicit ordered sequence of single-object ``seg`` POSTs together with the readback
 check of every step and an exact final check.
 
-Technical baseline (agent proposals, ``ISSUE-7-DEC-003``..``-005`` in docs/decisions/issue-7.md):
+Technical baseline (accepted by delegated decision, ``ISSUE-7-DEC-003``..``-005``,
+docs/decisions/issue-7.md):
 profile 0 (pinned WLED v0.15.1 source), exact stale removal with one ``stop: 0`` POST per
 ID (never an array payload, which could purge/renumber slots), no filler segments, no
 temporary segment, creates only in ascending ID order within the observable allocation

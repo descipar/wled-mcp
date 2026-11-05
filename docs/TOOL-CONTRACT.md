@@ -260,7 +260,9 @@ resolving ISSUE-7-OPEN-001) the name limit and grouping/spacing bounds are align
 sends it (no resolved `on` is added; an explicit `on` is sent); this covers only how
 `bri` is sent. The brightness validation of #7 follows the general power/brightness
 contract and differs from #6: `brightness=0` without an explicit `on=false` on an ON
-segment, and `on=true` with `brightness=0`, are rejected (#6 accepts them).
+segment, and `on=true` with `brightness=0`, are rejected (#6 accepts them). This reading is
+confirmed by delegated decision ISSUE-7-DEC-007; the shared firmware limits and the #6
+`on:true` + `bri:0` defect are tracked in follow-up issue #48.
 
 Known firmware limits shared with #6 (this section overrides the general "within known
 firmware limits" and "no truncation" wording above for this tool): a name longer than

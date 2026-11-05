@@ -214,8 +214,10 @@ shared tool-list tests. ISSUE-7-OPEN-001 is resolved by the human decision
 no 255 bounds and `bri` without an extra `on` are known limits shared with #6 (silent
 firmware name truncation, `uint8_t` wrap, an off segment switched on by `bri > 0`,
 reported as `VERIFICATION_MISMATCH`). The agent technical baselines
-[ISSUE-7-DEC-003 to -005](decisions/issue-7.md) remain proposals and are not
-human-confirmed.
+[ISSUE-7-DEC-003 to -005](decisions/issue-7.md) are accepted by delegated decision
+(issue #7 only; decided by the main session under the human's delegation, not personally
+dictated by the human). The narrow `brightness=0` reading (DEC-007) and the follow-up
+issue #48 for the shared #6/#7 limits are recorded the same way.
 
 ## Issue #14 implementation evidence
 
