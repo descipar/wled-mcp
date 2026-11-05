@@ -86,3 +86,19 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Conditions: none beyond ISSUE-7-DEC-002 (CCT, 2D and pixel streaming stay out of scope).
 - Affected: SEG-05, TOOL-CONTRACT.md, T06/T07. Supersession: none.
 
+
+## ISSUE-7-OPEN-001 — OPEN, needs human decision: divergences from #6 handling
+
+- Status: unresolved. This is a question, not an approval; nothing here is
+  human-confirmed.
+- Context: ISSUE-7-DEC-002 (human) says #7 follows #6 where #6 defines handling. The
+  current candidate diverges from #6 in three points: (1) `name` limit 32 UTF-8 bytes
+  (#6: 32 characters); (2) `grouping`/`spacing` upper bound 255 (#6: no upper bound);
+  (3) the resolved `on` is sent alongside `bri` (#6 sends `bri` alone).
+- Also awaiting human confirmation: the agent baselines ISSUE-7-DEC-003, -004 and -005
+  above (all status "proposed", none confirmed).
+- Options: (A) accept the divergences for #7 and open a follow-up issue to align #6
+  (stricter name limit, 255 bounds, `on` with `bri`); (B) align #7 to #6 (character
+  limit, no upper bounds, `bri` without `on`), accepting the firmware risks described in
+  ISSUE-7-DEC-005 for those fields.
+- Behavior stays unchanged until the human answers; the coordinator records the answer.

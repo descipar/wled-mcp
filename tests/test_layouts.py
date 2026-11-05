@@ -15,7 +15,7 @@ import pytest
 from pydantic import ValidationError
 
 from tests.layout_support import FakeWLED, inactive_slot
-from tests.state_catalog_support import FakeClock, make_segment
+from tests.state_catalog_support import make_segment
 from tests.test_inventory_client import config, device
 from wled_mcp.layouts import ReplaceLayoutRequest
 from wled_mcp.operations import build_operations
@@ -832,7 +832,7 @@ async def test_T09_external_interference_is_reported_never_corrected(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_T09_final_state_with_extra_segment_is_a_mismatch(tmp_path):
+async def test_T09_interference_during_the_only_step_is_unknown_mismatch(tmp_path):
     fake = fixture_fake()
 
     def interfere(device: FakeWLED) -> None:
@@ -853,31 +853,61 @@ async def test_T09_final_state_with_extra_segment_is_a_mismatch(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_T09_budget_exhaustion_stops_before_dispatch(tmp_path):
+async def test_T09_budget_exhaustion_stops_before_dispatch(tmp_path, monkeypatch):
+    """Deterministic: the clock jumps once step 2 (index 1) was dispatched, so the pre-dispatch
+    budget check of the next step fails without any wall-clock sleep."""
     fake = fixture_fake()
-    clock = FakeClock()
+    offset = {"value": 0.0}
+    real_time = anyio.current_time
+    monkeypatch.setattr(anyio, "current_time", lambda: real_time() + offset["value"])
 
-    async def slow_read():
-        await anyio.sleep(0.12)
+    def jump_after_second_post():
+        if len(fake.posts) == 2:
+            offset["value"] = 9.99  # operation timeout is 10 s: about 0.01 s remain
 
-    # Every readback consumes most of the budget; the sequence must stop before a dispatch.
-    fake.read_hook = slow_read
+    fake.read_hook = jump_after_second_post
     async with open_resources(
-        tmp_path, fake, clock=clock.clock(), operation_timeout_seconds=0.5, read_retries=0
+        tmp_path, fake, operation_timeout_seconds=10, read_retries=0
     ) as resources:
         result = await replace(
             resources,
             [{"id": 2, "start": 0, "stop": 30}, {"id": 6, "start": 30, "stop": 60, "colors": BLUE}],
         )
-    assert not result.ok
-    assert result.error.code in {"TIMEOUT", "WRITE_OUTCOME_UNKNOWN", "VERIFICATION_MISMATCH"}
-    assert len(fake.posts) < 5
-    if result.error.code == "TIMEOUT":
-        statuses = [s["status"] for s in result.data.get("steps_report", [])]
-        assert "not_dispatched" in statuses or not statuses
-        assert result.application in {"applied", "not_attempted"}
-    # never replayed: every POST body is distinct
-    assert len({json.dumps(p, sort_keys=True) for p in fake.posts}) == len(fake.posts)
+    assert len(fake.posts) == 2  # exactly the dispatched steps; nothing after the budget ended
+    assert result.error.code == "TIMEOUT"
+    assert (result.application, result.verification) == ("applied", "mismatch")
+    assert result.error.write_retryable is False
+    statuses = [s["status"] for s in result.data["steps_report"]]
+    assert statuses == [
+        "verified",
+        "verified",
+        "not_dispatched",
+        "not_dispatched",
+        "not_dispatched",
+    ]
+    assert result.data["completed_steps"] == 2
+    assert len({json.dumps(p, sort_keys=True) for p in fake.posts}) == 2  # no replay
+
+
+@pytest.mark.anyio
+async def test_T09_final_check_mismatch_after_all_steps_verified(tmp_path):
+    """Interference on a preserved field of an untouched ID during the last step: every step
+    verifies, only the final check against the full desired layout fails."""
+    fake = fixture_fake()
+
+    def interfere(device: FakeWLED) -> None:
+        device.slots[2]["fx"] = 0  # ID 2 is preserved, not among the last step's fields
+
+    fake.interference = {4: interfere}
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(
+            resources,
+            [{"id": 2, "start": 0, "stop": 30}, {"id": 6, "start": 30, "stop": 60, "colors": BLUE}],
+        )
+    assert [s["status"] for s in result.data["steps_report"]] == ["verified"] * 5
+    assert (result.application, result.verification) == ("applied", "mismatch")
+    assert result.error.code == "VERIFICATION_MISMATCH"
+    assert len(fake.posts) == 5
 
 
 @pytest.mark.anyio

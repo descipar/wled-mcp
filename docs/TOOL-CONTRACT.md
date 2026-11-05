@@ -253,9 +253,14 @@ uncertain-write rules and the MCP-02 envelope); decisions
 (`segments`: 1-64 entries, unknown fields rejected). Each entry needs `id`, `start`,
 `stop`; optional: `on`, `brightness`, `colors`, `effect_id`, `palette_id`, `speed`,
 `intensity`, `grouping` (1-255), `spacing` (0-255), `offset`, `reverse`, `mirror`,
-`selected`, `name` (at most 32 UTF-8 bytes, no truncation). The Should options follow
-ISSUE-7-DEC-002 and #6 handling. Limits stricter than the generic text above come from
-the pinned `uint8_t` geometry arguments and the smaller (ESP8266) name buffer.
+`selected`, `name` (at most 32 UTF-8 bytes, no truncation). ISSUE-7-DEC-002 says #7
+follows #6 wherever #6 defines handling. #7 currently diverges from #6 in three points
+(unresolved, see the OPEN note in [decisions/issue-7.md](decisions/issue-7.md)): `name`
+is limited to 32 UTF-8 bytes (#6: 32 characters), `grouping` and `spacing` have an upper
+bound of 255 (#6: none), and a sent `bri` is accompanied by the resolved `on` (#6 sends
+`bri` alone). The divergences rest on the pinned `uint8_t` geometry arguments, the smaller
+(ESP8266) name buffer and the firmware turning an off segment on for `bri>0`; they are
+agent proposals, not human-confirmed.
 Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
 only; authorization belongs to the host).
 
@@ -322,12 +327,16 @@ Stop rules: a possibly dispatched POST that raised stops the sequence (it is acc
 success only for the last step with a matching final state); a POST followed by a
 differing readback is `failed`; unreadable state is `uncertain`; no replay, rollback,
 corrective write or further (especially removal) step follows. Mapping: unreadable ->
-`unknown/unknown` + `WRITE_OUTCOME_UNKNOWN`; readable but differing after an uncertain or
+`unknown/unknown` + `WRITE_OUTCOME_UNKNOWN` (also when the POST raised and the readback is
+readable but matches the pre-write state, because the outcome cannot be told apart from an
+unapplied write); readable but differing after an uncertain or
 first step -> `unknown/mismatch` + `VERIFICATION_MISMATCH`; later verified steps then a
 failed step or a failed final check -> `applied/mismatch` + `VERIFICATION_MISMATCH`; budget
 exhausted before a step -> `TIMEOUT` (`applied/mismatch` if earlier steps were proven,
 else `not_attempted`). These failures carry `completed_steps`, `remaining_steps`,
 `observed` (active `{id,start,stop}` and `mainseg` of the last read) and `no_replay`.
+A `failed` step listed in `remaining_steps` may nevertheless have its own effect (fully
+or partly) applied; only `observed` reflects the device, so inspect it before any new call.
 Failures before the first POST have empty `data`. The per-device lock is held for the
 whole sequence. See [errors.json](../examples/contracts/errors.json) for a partial
 application and [replace.json](../examples/contracts/replace.json).
