@@ -1,6 +1,6 @@
 # Proposed deployment and operations
 
-**Planning only. No command in this document has deployed this server.** Commands are illustrative until packaging exists and paths/runtime are checked.
+**Planning only. No command in this document has deployed this server.** Commands are illustrative; paths, runtime and the HTTP service configuration must be checked on the actual installation.
 
 ## Two supported modes
 
@@ -12,6 +12,27 @@ Both modes are required v1 scope and use the same package/tools. Streamable HTTP
 | stdio via uvx | MCPHub/client | Command plus separate arguments, `--transport stdio` | Hub/client-managed subprocess |
 
 The default console mode is stdio and opens no listener. HTTP is selected with `--transport streamable-http`, configurable bind/port, one worker and SDK-managed lifecycle. Bind defaults to loopback; a separate container service explicitly binds its private container interface and restricts Host/Origin appropriately. Do not use the deprecated SSE-only transport.
+
+## Streamable HTTP service configuration
+
+The service exists as of the #14 candidate; it has not been deployed anywhere. Use synthetic placeholders below and adapt them to the actual installation.
+
+```text
+wled-mcp --config /app/data/wled-mcp/config/devices.toml --data-dir /app/data/wled-mcp \
+  --transport streamable-http --host 0.0.0.0 --port 8000 \
+  --allowed-host wled-mcp:8000 --http-token-file /run/secrets/wled_mcp_http_token
+```
+
+- Endpoint: fixed path `/mcp`; one worker; process-local locks do not coordinate a second process or worker against the same controllers.
+- Credential: exactly one of `WLED_MCP_HTTP_TOKEN` or `--http-token-file` (absolute path, at most 1 KiB, read once at startup; rotate by restarting). 32 to 512 printable ASCII characters. The file must be readable only by the service user; permission modes are not enforced. Never pass the value as a CLI argument. A missing, conflicting or invalid credential exits 2 before listening.
+- Bind and allowlists: the default is `127.0.0.1:8000` with allowed hosts `127.0.0.1:8000` and `localhost:8000`. A different host or port, including a wildcard bind such as `0.0.0.0` for a private container interface, requires explicit `--allowed-host` entries naming the authority clients use (exact, case-insensitive, no implicit default-port equivalence). `--allowed-origin` is empty by default; requests without Origin are accepted when authenticated. An authenticating proxy must forward the original authority in `Host` and be listed explicitly; forwarded headers are never trusted and no proxy trust option exists.
+- Rejections: wrong Host/Origin 403, missing or wrong credential 401, other path 404, any method except POST 405, body over 256 KiB 413, all before any tool or device work.
+- Sessions: none. Responses carry no `Mcp-Session-Id`; a stale ID is ignored; reconnecting clients start new invocations and the service never replays a write. A client that disconnects during a call does not cancel it; verification and lock release continue.
+- Shutdown: SIGTERM/SIGINT stop admission, drain in-flight calls for up to the configured operation timeout plus 2 s (at most 122 s), close shared resources once and exit 0. Size the supervisor's stop grace period above that. A forced kill leaves a possibly applied write uncertain and it is never resumed.
+- Liveness without device access: there is no unauthenticated health route. Use a TCP connect check or an authenticated JSON-RPC `ping`. Neither contacts a device.
+- Logging: diagnostics go to stderr only (stdout stays unused); the credential, supplied Host/Origin values, bodies and device URLs are not logged. Rejection events log a fixed class only and a flood can produce noise. There is no rate limiting or lockout; credential strength is the control for a private network, and plain HTTP is only for a trusted isolated network.
+
+Resource measurements to collect on the actual target (none are claimed yet): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.
 
 ## Deployment context
 

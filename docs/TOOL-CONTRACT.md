@@ -366,21 +366,31 @@ graph. Validate configuration before serving without probing/writing controllers
 stdio opens no listener, reserves stdout for MCP and uses sanitized stderr logs.
 HTTP-only credentials are not required for stdio.
 
-HTTP uses `/mcp`, default `--host 127.0.0.1 --port 8000`, one worker. Other binds
-are explicit. Repeated `--allowed-host` values are exact authorities (host and
+HTTP uses the fixed path `/mcp`, default `--host 127.0.0.1 --port 8000`, one worker
+and no `--workers` option. Other binds are explicit; a changed host or port (also a
+wildcard bind) needs at least one `--allowed-host`, which replaces the defaults.
+HTTP-only options together with stdio are rejected at startup (exit 2). Repeated `--allowed-host` values are exact authorities (host and
 optional port); defaults are `127.0.0.1:8000` and `localhost:8000`. Changed bind/port
 requires matching explicit configuration. `--allowed-origin` values are exact
 absolute origins (scheme/host/port, no path); default empty rejects supplied
 browser Origins. Authenticated requests without Origin are allowed. Reject
 malformed/disallowed Host/Origin as 403 before device actions, including supplied
-invalid Origin when credentials are absent. No wildcard/unchecked forwarded trust.
+invalid Origin when credentials are absent. No wildcard/unchecked forwarded trust:
+the guard answers 403 itself (the SDK's own Host check would answer 421 and runs
+only after authentication), compares exactly and case-insensitively without implied
+default-port equivalence, and never consults `X-Forwarded-*`/`Forwarded`. Entries
+accept no wildcard, path or userinfo; at most 16 entries of 255 characters.
 
 Direct auth is mandatory even on loopback and every method. Configure exactly one
 nonempty bearer source: runtime `WLED_MCP_HTTP_TOKEN` or protected file path
 `--http-token-file`; reject missing/conflicting/invalid configuration before
 listening. No token CLI value, committed secret or credential logging; compare
-secrets safely. After Host/Origin checks, missing/invalid bearer gives 401 before
-tool/device execution. Equivalent authenticated proxy requires explicit trust,
+secrets safely (constant time over digests). After Host/Origin checks,
+missing/invalid bearer gives 401 with `WWW-Authenticate: Bearer` and a fixed body
+before tool/device execution, then an unknown path gives 404. The credential is
+32 to 512 printable ASCII characters without whitespace; a file is absolute, at most
+1 KiB, read once at startup (rotation is a restart). Exactly one `Authorization`
+header with the `Bearer` scheme is accepted; there is no attempt rate limiting. Equivalent authenticated proxy requires explicit trust,
 protected upstream reachability and no unauthenticated bypass. Plain HTTP is for
 trusted private networks; HTTPS for untrusted links. Hub auth does not protect
 direct service access; a shared credential is not per-user permission. No OAuth
@@ -389,8 +399,12 @@ server is introduced.
 Use SDK stateless Streamable HTTP with JSON responses: no session-ID allocation,
 event replay store, background jobs or server-initiated streams. Initialization/
 version negotiation still apply. Accepted notifications get protocol 202; requests
-get JSON responses; GET without offered stream and unsupported session DELETE
-return 405. Apply access checks to these methods too. Invalid protocol versions,
+get JSON responses; every non-POST method (GET even when an event stream is
+offered, DELETE, PUT, PATCH, OPTIONS, HEAD) returns 405 with `Allow: POST` after
+the access checks, because the stateless SDK would otherwise open a stream for GET.
+A stale `Mcp-Session-Id` is ignored and none is ever issued, so session expiry is
+vacuous. Request bodies are limited to 256 KiB (413, SDK); the unauthenticated
+peer's body is never read. Invalid protocol versions,
 media types/methods use SDK transport/protocol errors rather than tool envelopes.
 #3 locks a compatible SDK; #14 proves actual SDK client behavior, not REST or legacy
 SSE substitution.
@@ -401,13 +415,15 @@ resources. Disconnect is not cancellation: continue bounded verification after
 dispatch where possible and release locks safely; never requeue. Reconnect does
 not replay mutations. A resubmission is a new invocation; JSON-RPC IDs are not
 durable deduplication tokens, and exactly-once execution is not promised.
-Shutdown stops admission, drains in-flight work within existing operation
-deadlines (bounded by the maximum configured deadline), closes shared resources
-and exits. Forced interruption leaves possibly applied writes uncertain, never
+Shutdown (SIGINT/SIGTERM, SIGBREAK on Windows) stops admission, drains in-flight work within existing operation
+deadlines (graceful timeout is the configured operation timeout rounded up plus
+2 s), closes shared resources and exits 0; a second SIGINT forces exit. There is no
+unauthenticated health route: liveness is a TCP connect or an authenticated `ping`
+or `tools/list` POST, neither of which touches a device. Forced interruption leaves possibly applied writes uncertain, never
 resumed on restart. Multiple workers require cross-process coordination and are
 outside this baseline.
 
-Ownership: #14 implements HTTP/access/lifecycle; #10 verifies MCP-03/MCP-04/OPS-05
+Ownership: #14 implements HTTP/access/lifecycle ([decisions](decisions/issue-14.md)); #10 verifies MCP-03/MCP-04/OPS-05
 and T18â€“T21; #11 records actual integration/deployment evidence for the selected
 mode. Both modes need automated parity coverage. #2 establishes no deployment or
 hardware acceptance.
