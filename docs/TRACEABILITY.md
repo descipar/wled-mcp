@@ -15,12 +15,16 @@ integration, resource measurements and update/rollback to
 [#11](https://github.com/descipar/wled-mcp/issues/11).
 
 `scripts/check_traceability.py` (run by `tests/test_traceability.py` in ordinary CI)
-rejects a Must requirement without a row, a duplicate row, a row or scenario without an
-existing `tests/test_*.py::test_*` or file-level `scripts/...` reference, an unmapped
-T-scenario, any hardware/deployment cell other than `pending: ...` or
-`not applicable: ...`, and outcome claims in those cells or in scenario notes. A group
-reference such as `test_T05_*` means every test in that file whose name starts with
-that stem; a bare test file, a non-test name or a catch-all `test_*` is not evidence.
+rejects a Must requirement without a row, a duplicate row, an unmapped T-scenario, any
+hardware/deployment cell other than `pending: ...` or `not applicable: ...`, and
+outcome claims (verified, tested, checked, accepted, observed, OK, ...) in those cells,
+the scenario status or notes; neutral wording such as "to be done" or "not yet tested"
+is allowed. An Evidence cell may only list comma-separated backtick references to an
+existing test function `tests/test_*.py::test_<name>`, a test group such as
+`test_T05_*` or `test_T05_replace_*` (every test whose name starts with that stem), or a
+file directly inside `scripts/` (`.py`) or `.github/workflows/` (`.yml`). A bare test
+file, a non-test name, a catch-all `test_*`, a path leaving its directory or free text
+is not evidence.
 
 ## Must requirements
 

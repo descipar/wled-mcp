@@ -205,6 +205,131 @@ def test_outcome_claim_in_scenario_notes_fails(tmp_path, note):
     assert any(p.startswith("T02: notes must not claim an outcome") for p in found)
 
 
+# ----------------------------------------------------------------- review round 2
+
+
+def with_reference(reference: str) -> str:
+    original = row(MATRIX, "READ-02")
+    mutated = original.replace("| T03 | `", f"| T03 | {reference}, `", 1)
+    assert mutated != original
+    return MATRIX.replace(original, mutated)
+
+
+def with_hardware_cell(cell: str) -> str:
+    original = row(MATRIX, "SEG-02")
+    mutated = original.replace("pending: H05 (#12)", cell)
+    assert mutated != original
+    return MATRIX.replace(original, mutated)
+
+
+def with_note(note: str) -> str:
+    original = row(MATRIX, "T02")
+    mutated = original.replace("| |", f"| {note} |")
+    assert mutated != original
+    return MATRIX.replace(original, mutated)
+
+
+@pytest.mark.parametrize(
+    "reference",
+    [
+        "`scripts/../pyproject.toml`",
+        "`scripts/../tests/test_patches.py`",
+        "`.github/../pyproject.toml`",
+        "`.github/workflows/../../pyproject.toml`",
+        "`scripts/sub/check_lock.py`",
+        "`scripts/check_lock.txt`",
+        "`.github/CODEOWNERS`",
+    ],
+)
+def test_file_reference_cannot_escape_its_directory(tmp_path, reference):
+    found = problems_from_copy(tmp_path, with_reference(reference))
+    assert any(
+        p.startswith("READ-02:") and "must be scripts/<name>.py or .github/workflows/" in p
+        for p in found
+    ), found
+
+
+@pytest.mark.parametrize(
+    ("evidence_cell", "expected"),
+    [
+        ("`tests/test_layouts.py::test_T05_main_id_handling` verified on hardware", "only list"),
+        ("see `tests/test_layouts.py::test_T05_main_id_handling`", "only list"),
+        ("`tests/test_layouts.py::test_T05_main_id_handling`, tested on H05", "only list"),
+        ("` tests/test_layouts.py::test_T05_main_id_handling`", "malformed evidence reference"),
+        ("`tests/test_layouts.py::test_T05_main_id_handling `", "malformed evidence reference"),
+    ],
+)
+def test_evidence_cell_holds_only_references(tmp_path, evidence_cell, expected):
+    original = row(MATRIX, "SEG-02")
+    cells = original.split(" | ")
+    cells[2] = evidence_cell
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, " | ".join(cells)))
+    assert any(p.startswith("SEG-02:") and expected in p for p in found), found
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "pending: tested on H05 (#12)",
+        "pending: H05 checked (#12)",
+        "pending: H05 accepted (#12)",
+        "pending: H05 observed (#12)",
+        "not applicable: observed correct",
+        "not applicable: demonstrated on the bench",
+    ],
+)
+def test_further_outcome_claims_in_hardware_cells_fail(tmp_path, cell):
+    found = problems_from_copy(tmp_path, with_hardware_cell(cell))
+    assert any(p.startswith("SEG-02: hardware/deployment cell must not claim") for p in found)
+
+
+@pytest.mark.parametrize("note", ["Tested on the hub.", "Checked with H05.", "Accepted."])
+def test_further_outcome_claims_in_notes_fail(tmp_path, note):
+    found = problems_from_copy(tmp_path, with_note(note))
+    assert any(p.startswith("T02: notes must not claim an outcome") for p in found)
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "pending: complete H05 checklist (#12)",
+        "pending: H05 to be done (#12)",
+        "pending: not yet tested on hardware (#12)",
+        "pending: verify and restore the layout with H05 (#12)",
+        "not applicable: will be checked by #12 if hardware becomes available",
+    ],
+)
+def test_neutral_future_wording_in_hardware_cells_is_accepted(tmp_path, cell):
+    assert problems_from_copy(tmp_path, with_hardware_cell(cell)) == []
+
+
+@pytest.mark.parametrize("note", ["To be done in #12.", "Complete the H05 checklist later."])
+def test_neutral_future_wording_in_notes_is_accepted(tmp_path, note):
+    assert problems_from_copy(tmp_path, with_note(note)) == []
+
+
+@pytest.mark.parametrize(
+    "reference",
+    [
+        "`tests/test_layouts.py::test_T05_preserved_*`",
+        "`tests/test_layouts.py::test_T09_failed_post_*`",
+        "`tests/test_patches.py::test_52_off_master_*`",
+        "`scripts/check_lock.py`",
+        "`.github/workflows/ci.yml`",
+    ],
+)
+def test_narrow_group_wildcards_and_contained_files_are_accepted(tmp_path, reference):
+    assert problems_from_copy(tmp_path, with_reference(reference)) == []
+
+
+@pytest.mark.parametrize(
+    "reference", ["`tests/test_layouts.py::test_*`", "`tests/test_layouts.py::test_T*`"]
+)
+def test_catch_all_wildcards_stay_rejected(tmp_path, reference):
+    found = problems_from_copy(tmp_path, with_reference(reference))
+    assert any("wildcard must be a test group stem" in p for p in found)
+
+
 def test_console_script_fails_on_a_synthetic_defective_copy(tmp_path):
     copy = tmp_path / "TRACEABILITY.md"
     copy.write_text(MATRIX.replace(row(MATRIX, "MCP-03") + "\n", ""), encoding="utf-8")

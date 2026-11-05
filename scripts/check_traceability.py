@@ -1,15 +1,26 @@
 """Keep docs/TRACEABILITY.md honest against docs/REQUIREMENTS.md and the test tree.
 
 Fails when a Must requirement has no row, a row or scenario ID appears twice, a row
-has no automated reference, a reference is malformed or names a missing file or test
-function (found with ``ast``, nothing is imported), a scenario T01-T21 is unmapped, a
-hardware/deployment cell claims more than ``pending: ...`` or ``not applicable: ...``,
-or the matrix claims a result.
+has no automated reference, an Evidence cell holds anything but references, a reference
+is malformed or names a missing file or test function (found with ``ast``, nothing is
+imported), a scenario T01-T21 is unmapped, a hardware/deployment cell is not
+``pending: ...`` or ``not applicable: ...``, or the matrix claims an outcome or result.
 
-Reference forms: ``tests/test_<x>.py::test_<name>`` names one test function;
-``tests/test_<x>.py::test_<group>_*`` names every test whose name starts with a group
-stem such as ``test_T05_`` or ``test_48_``. ``scripts/<x>.py`` and ``.github/...``
-references are file-level only.
+Evidence cells (structural rule): only backtick references separated by commas; no
+free text, no leading/trailing whitespace inside the backticks. Reference forms:
+
+- ``tests/test_<x>.py::test_<name>``: one test function;
+- ``tests/test_<x>.py::test_<group>_*``: every test starting with a group stem of at
+  least one ``<word>_`` part after ``test_`` (``test_T05_*``, ``test_T05_replace_*``);
+  ``test_*`` and ``test_T*`` are catch-alls and rejected;
+- ``scripts/<name>.py`` and ``.github/workflows/<name>.yml|yaml``: file-level only,
+  directly inside that directory (no ``..`` or other path escape).
+
+Claim rule: hardware/deployment cells, the scenario status and scenario notes must not
+assert an outcome (verified, confirmed, tested, checked, accepted, observed, OK, green,
+done, ...). Neutral future or negated wording is allowed when the claim word directly
+follows ``be``/``not``/``yet`` (``to be done``, ``not yet tested``); base verbs such as
+``complete`` or ``verify`` are not claims. "pass" wording is rejected anywhere.
 
 Standard library only; exit code 0 on success, 1 with findings on stderr.
 """
@@ -24,19 +35,27 @@ import sys
 from pathlib import Path
 
 MUST = re.compile(r"^- \*\*([A-Z]+-\d{2}) Must\b", re.M)
-SPAN = re.compile(r"`([^`]*)`")
+ITEM = re.compile(r"`([^`]*)`")
 EVIDENCE_PREFIXES = ("tests/", "scripts/", ".github/")
-TEST_FILE = re.compile(r"^tests/(?:[\w-]+/)*test_\w+\.py$")
+TEST_FILE = re.compile(r"^tests/(?:[A-Za-z0-9_-]+/)*test_\w+\.py$")
+SCRIPT_FILE = re.compile(r"^scripts/[A-Za-z0-9_-]+\.py$")
+WORKFLOW_FILE = re.compile(r"^\.github/workflows/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.ya?ml$")
 TEST_NAME = re.compile(r"^test_\w+$")
-TEST_GROUP = re.compile(r"^test_[A-Za-z0-9]{2,}_\*$")  # e.g. test_T05_*, test_48_*
+# One or more "<word>_" parts after "test_": test_T05_*, test_48_*, test_T05_replace_*.
+TEST_GROUP = re.compile(r"^test_(?:[A-Za-z0-9]{2,}_)(?:[A-Za-z0-9]+_)*\*$")
 SCENARIOS = [f"T{number:02d}" for number in range(1, 22)]
 NOT_APPLICABLE = re.compile(r"^not applicable: \S")
 HARDWARE_CELL = re.compile(r"^(pending: \S.*|not applicable: \S.*)$")
 RESULT_CLAIM = re.compile(r"\b(pass|passes|passed|passing)\b", re.I)
-# Hardware/deployment cells and scenario notes must not claim an outcome.
+# Assertive outcome words (past participles and outcome adjectives). A word directly
+# after "be", "not" or "yet" is neutral future/negated wording ("to be done").
 OUTCOME_CLAIM = re.compile(
-    r"\b(verified|confirmed|succeeded|successful(?:ly)?|success|ok|green|validated|"
-    r"done|completed?|works|worked|proven)\b",
+    r"(?<!\bbe )(?<!\bnot )(?<!\byet )\b("
+    r"verified|verifies|confirmed|confirms|succeeded|succeeds|successful(?:ly)?|success|"
+    r"validated|tested|checked|accepted|observed|proven|proved|demonstrated|"
+    r"done|completed|works|worked|ok|okay|green|correct|"
+    r"pass|passes|passed|passing"
+    r")\b",
     re.I,
 )
 
@@ -100,8 +119,14 @@ def check_reference(span: str, root: Path, label: str) -> list[str]:
             return [f"{label}: referenced name is not a test function: {span}"]
     elif function:
         return [f"{label}: scripts/ and .github/ references are file-level only: {span}"]
+    elif not (SCRIPT_FILE.match(relative) or WORKFLOW_FILE.match(relative)):
+        return [
+            f"{label}: file reference must be scripts/<name>.py or "
+            f".github/workflows/<name>.yml: {span}"
+        ]
     path = root / relative
-    if not path.is_file():
+    base = (root / relative.split("/")[0]).resolve()
+    if not path.resolve().is_relative_to(base) or not path.is_file():
         return [f"{label}: referenced file does not exist: {relative}"]
     if not function:
         return []
@@ -115,12 +140,23 @@ def check_reference(span: str, root: Path, label: str) -> list[str]:
 
 
 def check_references(cell: str, root: Path, label: str) -> list[str]:
-    spans = [span for span in SPAN.findall(cell) if span.startswith(EVIDENCE_PREFIXES)]
-    if not spans:
-        return [f"{label}: no automated evidence reference"]
+    """Structural rule: the cell is only comma-separated backtick references."""
     problems: list[str] = []
-    for span in spans:
-        problems += check_reference(span, root, label)
+    valid = 0
+    for item in (part.strip() for part in cell.split(",")) if cell.strip() else ():
+        match = ITEM.fullmatch(item)
+        if match is None:
+            problems.append(f"{label}: evidence cell may only list backtick references: {item!r}")
+            continue
+        span = match.group(1)
+        if span != span.strip() or not span.startswith(EVIDENCE_PREFIXES):
+            problems.append(f"{label}: malformed evidence reference: {item}")
+            continue
+        found = check_reference(span, root, label)
+        problems += found
+        valid += not found
+    if valid == 0:
+        problems.append(f"{label}: no automated evidence reference")
     return problems
 
 
@@ -165,6 +201,7 @@ def check_texts(requirements: str, traceability: str, root: Path) -> list[str]:
         if len(mapped) != 3:
             problems.append(f"{scenario}: expected Status, Evidence and Notes cells")
             continue
+        problems += check_claims(mapped[0], scenario, "status")
         problems += check_claims(mapped[2], scenario, "notes")
         if scenario == "T17" and NOT_APPLICABLE.match(mapped[0]):
             continue
