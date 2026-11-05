@@ -27,7 +27,8 @@ Calls only `wled_list_devices(probe=true)`, `wled_get_state`, `wled_get_effects`
 - H02: effect and palette IDs/names (including high IDs and reserved entries),
   segment list/bounds/on/bri/colors, and `lc`/`seglc` capability interpretation match
   the UI. Run `wled_get_effects` once with `refresh=true` and observe freshness.
-- Presets cannot be read until #9; the preset part of H02 stays pending.
+- Presets can be read with `wled_list_presets`/`wled_get_preset` (#9, mock-tested); the
+  preset part of H02 stays pending until it is actually run.
 
 ## Record
 

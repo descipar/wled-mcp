@@ -4,7 +4,9 @@ Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
 The production registry contains `wled_list_devices`, the three read tools from #5, `wled_set_state` and `wled_patch_segments` (#6) and `wled_replace_layout` (#7) and the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9; mock-tested, H06 pending). `--transport streamable-http` starts the
 authenticated stateless HTTP service from #14 (see below); its software evidence is
-mock/loopback only and full dual-mode acceptance (#10/#11) is pending.
+mock/loopback only; deployment and hub integration of both modes (#11) are pending.
+[TRACEABILITY.md](TRACEABILITY.md) maps requirements and T01–T21 to the automated
+evidence; `tests/test_traceability.py` runs `scripts/check_traceability.py` in CI.
 
 ## Checks and build
 
@@ -14,8 +16,8 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py
-uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py
+uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -73,7 +75,9 @@ explicit `--allowed-host host[:port]`. HTTP-only options with stdio exit 2.
 ephemeral ports, use a mocked or synthetic loopback device and never contact a LAN
 device; the POSIX signal tests are skipped on Windows (the in-process shutdown tests
 run everywhere). The distribution check also starts the installed console over HTTP
-on a loopback port and stops it with a signal. Run just these tests with
+on a loopback port, stops it with a signal and restarts it once on the same port and
+data directory. `tests/test_acceptance_parity.py` drives the installed console over
+stdio and HTTP against a synthetic `127.0.0.1` device. Run just these tests with
 `uv run --frozen pytest tests/test_http_service.py tests/test_http_cli.py`.
 
 ## Private local wheel launch
@@ -107,5 +111,6 @@ EOF closes the process. `--help`/`--version` need no configuration paths.
 No outbound project license is selected and no package is published. Official
 SDK package metadata declares MIT; dependencies retain their own notices and
 license metadata. This does not license this repository or complete a distribution
-license review. No upstream WLED server code was copied. T18–T21, device tools,
-deployment, resource measurements and hardware evidence remain pending.
+license review. No upstream WLED server code was copied. T18–T21 and the device tools
+are covered by mock/loopback tests; deployment, resource measurements and hardware
+evidence remain pending.
