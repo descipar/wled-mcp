@@ -2,25 +2,19 @@
 
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Literal
+from dataclasses import dataclass, field
+from functools import partial
+from typing import Any, Literal
 
 import anyio
 import httpx2 as httpx
 from pydantic import JsonValue
 
+from wled_mcp.backups import BackupRecord, Firmware, RestorePlan, Snapshot, SnapshotStore
 from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, StartupConfig
 from wled_mcp.models import DomainError, Outcome
-
-
-@dataclass(frozen=True)
-class BackupHandle:
-    directory: Path
-    retain_per_device: int
-
 
 SequenceKind = Literal[
     "success",
@@ -58,6 +52,27 @@ class OperationContext:
     client: WLEDClient
     deadline: Deadline
     dispatched: bool = False
+    store: SnapshotStore | None = None
+    backup_records: list[BackupRecord] = field(default_factory=list)
+
+    async def backup_preset(
+        self, preset_id: int, preset: dict[str, JsonValue], firmware: Firmware
+    ) -> BackupRecord:
+        """Seam for destructive preset operations (issue #9 wires the real tools).
+
+        Call inside the operation (device lock held) with a freshly read preset
+        object, right before the POST. A raised BACKUP_FAILED in `prepare` aborts
+        before any dispatch. The snapshot is kept even if the write later fails.
+        """
+        if self.store is None:
+            raise ClientFailure("BACKUP_FAILED", "Snapshot storage is not available.")
+        # Shielded: a cancelled call must not leave a half-promoted snapshot.
+        with anyio.CancelScope(shield=True):
+            record = await anyio.to_thread.run_sync(
+                partial(self.store.backup_preset, self.device.id, preset_id, preset, firmware)
+            )
+        self.backup_records.append(record)
+        return record
 
     async def read(self, endpoint: Endpoint) -> JsonValue:
         return await self.client.read(self.device, endpoint, self.deadline)
@@ -78,7 +93,11 @@ class Resources:
         self.locks = {device.id: anyio.Lock() for device in self.inventory}
         # One shared effect/palette catalog cache (issue #5); never holds state/info.
         self.metadata_cache = CatalogCache(config.http.catalog_cache_seconds, self.clock)
-        self.backups = BackupHandle(config.data_dir / "backups", config.backups.retain_per_device)
+        self.backups = SnapshotStore(
+            config.data_dir / "backups",
+            config.backups.retain_per_device,
+            lambda: self.clock.now(),
+        )
 
     async def __aenter__(self) -> "Resources":
         return self
@@ -100,9 +119,21 @@ class Resources:
         try:
             with anyio.fail_after(deadline.remaining()):
                 async with self.locks[device_id]:
-                    yield OperationContext(device, self.client, deadline)
+                    yield OperationContext(device, self.client, deadline, store=self.backups)
         except TimeoutError:
             raise ClientFailure("TIMEOUT", "Operation deadline expired.", retryable=True) from None
+
+    async def load_snapshot(self, device_id: str, backup_id: str) -> Snapshot:
+        """Validated read of one snapshot; unknown devices fail before any filesystem access."""
+        self.resolve(device_id)
+        return await anyio.to_thread.run_sync(self.backups.load, device_id, backup_id)
+
+    async def plan_restore(self, device_id: str, backup_id: str, **facts: Any) -> RestorePlan:
+        """Read-only restoration plan from caller-supplied device facts (no device I/O)."""
+        self.resolve(device_id)
+        return await anyio.to_thread.run_sync(
+            partial(self.backups.plan_restore, device_id, backup_id, **facts)
+        )
 
     async def write_verified(
         self,
@@ -112,9 +143,31 @@ class Resources:
         matches: Callable[[JsonValue], bool],
     ) -> Outcome:
         """Internal foundation, not a public setter. Prepare validates a full future plan."""
+        seen: list[OperationContext] = []
+        outcome = await self._write_verified(device_id, operation, prepare, matches, seen)
+        records = seen[0].backup_records if seen else []
+        if not records:
+            return outcome
+        warnings = [w for record in records for w in record.warnings]
+        return outcome.model_copy(
+            update={
+                "data": {**outcome.data, "backup_id": records[-1].backup_id},
+                "warnings": [*outcome.warnings, *warnings],
+            }
+        )
+
+    async def _write_verified(
+        self,
+        device_id: str,
+        operation: str,
+        prepare: Callable[[OperationContext], Awaitable[dict[str, JsonValue]]],
+        matches: Callable[[JsonValue], bool],
+        seen: list[OperationContext],
+    ) -> Outcome:
         dispatched = False
         try:
             async with self.operation(device_id) as context:
+                seen.append(context)
                 payload = await prepare(context)
                 body = self.client.encode_payload(payload)
                 remaining = context.deadline.remaining()

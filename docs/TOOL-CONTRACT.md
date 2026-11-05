@@ -407,30 +407,79 @@ as a shortcut.
 
 ## Snapshot and explicit restoration
 
-Format 1 contains `format_version`, opaque server-generated `backup_id`, configured
-`device_id`, `preset_id`, `firmware` identity, UTC `created_at` and exact `preset`
-object. See [snapshot.json](../examples/contracts/snapshot.json). No integrity hash
-is defined in format 1: validation does not authenticate tampered local storage.
-Reject unknown envelope versions, malformed metadata, unsafe IDs, oversize or
-empty/nonobject preset payloads; preserve unknown object fields without executing them.
+Implemented in #8 as a store plus a `Resources` seam; restoration execution stays
+deferred (ISSUE-8-DEC-001) and **no tool is registered** for it. No production tool
+calls the store yet: #9 wires preset overwrite/delete. The tool list is unchanged.
 
-IDs resolve only inside the configured data directory; no caller paths/name-based
-filenames. Same-directory temporary write, flush/close, atomic replace and
-read/validation precede durable success; use supported filesystem durability
-primitives. Retain 20 valid snapshots per device by default, configurable. Prune
-only recognized older snapshots after new durable success, protecting the snapshot
-needed by this operation. Backup failure aborts destructive writes (`BACKUP_FAILED`).
-Dry-run reports required backup without filesystem mutation.
+Format 1 contains exactly `format_version`, opaque server-generated `backup_id`,
+configured `device_id`, `preset_id` (1-250), `firmware` identity (`version`, optional
+`build_id`), UTC `created_at` (`YYYY-MM-DDTHH:MM:SSZ`) and exact `preset` object.
+See [snapshot.json](../examples/contracts/snapshot.json). No integrity hash is
+defined: validation does not authenticate tampered local storage. No MAC, URL or
+credential is stored. Unknown top-level envelope keys are rejected (additions need a
+new format version); unknown fields inside `preset` are preserved verbatim and never
+executed. Rejected on read: unknown/boolean/string versions, malformed metadata,
+unsafe IDs, files over 1 MiB, non-UTF-8, duplicate JSON keys, NaN/Infinity, and
+empty or non-object `preset`. A snapshot whose envelope device, ID or timestamp
+disagrees with its path is invalid.
 
-Restore steps: inspect envelope/object, resolve source and explicit target, require
-matching device and supported firmware/profile (or a separately reviewed compatible
-path), recheck destination, require overwrite intent and prior snapshot if occupied,
-store exactly one object through a proven storage-only path, verify persistent
-object equality including unknown fields and no deliberate live-output change.
-No automatic rollback. Until implemented, the supported manual boundary is export/
-inspection and planning explicit single-entry restoration; actual restoration
-remains pending and untested. Activating a preset does not restore its storage.
-Bulk WLED UI restore may replace unrelated entries and is outside this workflow.
+Layout: `<data_dir>/backups/<device_id>/<backup_id>.json` (directories 0700, files
+0600). `backup_id` matches `b-<YYYYMMDD>T<HHMMSS>Z-<12 hex>`, generated from the UTC
+clock plus 48 random bits, never from preset names or caller text. The file is created
+exclusively and never overwrites; a collision regenerates the ID. IDs resolve only
+inside the data directory: no caller path, name or glob; symlinked files and device
+directories are never followed.
+
+Write sequence (`backup_preset`, blocking I/O run shielded from cancellation): same-
+directory temporary file created exclusively, write, flush, `fsync`, read back and
+validate, publish by hard link (never overwrite), directory `fsync`, re-read and
+validate the final file. The directory `fsync` is best effort: skipped on Windows and
+tolerated where unsupported, so durability there is weaker. Any failure removes the
+temp/final file this call created and raises `BACKUP_FAILED` with a message free of
+paths and payloads; earlier snapshots stay intact. Leftover `.tmp` files are ignored.
+
+Ordering for destructive preset operations (the `OperationContext.backup_preset`
+seam): inside the device lock, read the preset fresh, validate the whole request,
+snapshot the exact object, recheck the prior object (changed => `PRESET_CONFLICT`),
+then POST. A raised `BACKUP_FAILED` happens in the prepare step, so `application=
+not_attempted` and nothing is sent. The store does no device I/O; the caller supplies
+the object. The result `data.backup_id` names the newest snapshot of the operation
+and is kept even when the write later fails or is uncertain; there is no automatic
+rollback, restoration or resend (REL-02). Dry-run reports `backup_required` and an
+advisory writability flag without creating directories, temp files or pruning.
+
+Retention: default 20 valid snapshots per device (`backups.retain_per_device`,
+1-1000). Only after the new snapshot is durable, the oldest valid recognized
+snapshots beyond the limit are deleted, ordered by (`created_at`, `backup_id`); the
+new snapshot is never deleted. Invalid, temporary, foreign-named, symlink and other
+devices' files are never deleted nor counted. Prune failure is a warning on the
+result, never a failure of the operation. Listing/pruning examines at most 10,000
+directory entries.
+
+Errors (no new codes): `BACKUP_FAILED` for storage/durability/read failure,
+`VALIDATION_ERROR` for malformed or unsafe IDs, corrupt, unknown-version or
+mismatched-device snapshots and unrepresentable preset objects, `PRESET_NOT_FOUND`
+for a well-formed missing `backup_id`, `UNSUPPORTED_CAPABILITY` when the firmware
+version differs for restoration planning. `UNKNOWN_DEVICE` is raised before any
+filesystem access.
+
+Restoration planning (`SnapshotStore.plan_restore`, read-only, no device I/O, no
+writes): requires the exact `device_id` and the exact firmware `version`; a target
+preset ID differing from the snapshot's must be passed explicitly. An occupied
+destination requires overwrite intent and a valid prior snapshot of that destination.
+The plan states `execution: deferred` and the manual steps below. A plan or export is
+not restore evidence.
+
+Manual restoration procedure (execution deferred; nothing here is automated):
+1. Read the snapshot file in the backups directory and verify `device_id`, firmware
+   `version` and `preset_id` against the target controller.
+2. Read the destination with `wled_get_preset` once #9 exists, or read `/presets.json`.
+   If occupied, take a new snapshot of it first and keep its `backup_id`.
+3. Store exactly the one `preset` object by hand through a verified single-entry
+   mechanism (WLED UI or API). Never upload or bulk-restore a whole presets file;
+   activating a preset does not restore its storage; do not execute stored commands.
+4. Read `/presets.json` back and compare the stored entry with the snapshot,
+   unknown fields included. After a timeout, read first; do not retry blindly.
 
 ## Results and errors
 

@@ -27,8 +27,8 @@ limited to 64 KiB; absolute path and CLI-over-environment rules are unchanged.
 | max_response_bytes | 2097152 | 128–8388608 |
 | catalog_cache_seconds | 300 | 0–86400; TTL of the effect/palette catalog cache (0 disables) |
 
-`backups.retain_per_device` defaults to 20 (1–1000), carried by the shared backup
-handle; it does not implement snapshot retention yet. `features.raw_state_patch`
+`backups.retain_per_device` defaults to 20 (1–1000), enforced by the shared snapshot
+store (#8) after each durable snapshot. `features.raw_state_patch`
 accepts only false. All numeric settings reject booleans. Probe fan-out uses at
 most eight workers, with one deadline per device including its retry; the complete
 call is bounded by `ceil(device_count / 8) * operation_timeout_seconds` plus local
@@ -71,7 +71,7 @@ can be promised and the write must be treated as potentially applied. Resource
 shutdown closes the client once. One worker/process is required; separate
 processes and external WLED clients do not share these locks. The catalog cache
 (`metadata_cache`, issue #5; see [TOOL-CONTRACT](TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5))
-and backup handle are shared references; the backup handle is not implemented durability.
+and snapshot store (`resources.backups`, #8) are shared references; the store creates no directory until the first snapshot.
 Client failures now name the fixed resource label and numeric HTTP status in their
 message (never body, URL or exception text).
 Actual HTTP sessions, authentication, Host/Origin handling and lifecycle remain
