@@ -136,7 +136,8 @@
         ],
         "preserve_segment_ids": [
           0
-        ]
+        ],
+        "targeted_compensation": []
       },
       "postconditions": [
         "No device POST or filesystem mutation occurs.",
