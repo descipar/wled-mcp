@@ -26,6 +26,9 @@ Read [its decisions](decisions/issue-3.md) before extending configuration/tools.
 Issue #4 adds validated inventory, `wled_list_devices`, a bounded HTTP client and
 shared process resources. Read [inventory/client behavior](INVENTORY-CLIENT.md)
 and [issue-4 decisions](decisions/issue-4.md). Continue with #5 read/catalog tools;
+Issue #7 candidate adds `wled_replace_layout` (exact stale removal as ordered single-object
+steps with per-step readback; [contract](TOOL-CONTRACT.md#layout-replacement-implemented-in-7),
+[decisions](decisions/issue-7.md); mock-tested, H05 not run).
 Issue #14 adds the HTTP service ([decisions](decisions/issue-14.md)). Internal mocked write/reconciliation
 tests do not establish actual WLED domain-control or hardware acceptance.
 

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 from wled_mcp import __version__
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
+from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
 from wled_mcp.models import Outcome
 from wled_mcp.patches import (
     MasterPlan,
@@ -22,7 +23,7 @@ from wled_mcp.patches import (
     matches_set_state,
 )
 from wled_mcp.readmodels import Collector, as_dict, normalize_state, redact_info
-from wled_mcp.resources import OperationContext, Resources
+from wled_mcp.resources import OperationContext, Resources, SequencePlan
 from wled_mcp.server import Operation
 
 
@@ -54,6 +55,15 @@ MUTATION = ToolAnnotations(
     # destructive. Annotations are hints only, not an authorization barrier.
     read_only_hint=False,
     destructive_hint=False,
+    idempotent_hint=False,
+    open_world_hint=False,
+)
+
+DESTRUCTIVE = ToolAnnotations(
+    # Replacing the layout discards every active segment that is not listed. The hint is
+    # advisory; authorization belongs to the MCP host/client.
+    read_only_hint=False,
+    destructive_hint=True,
     idempotent_hint=False,
     open_world_hint=False,
 )
@@ -338,6 +348,64 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
         outcome = await resources.write_verified(device_id, name, prepare, matches)
         return _enrich_segments_outcome(outcome, plan_box.get("plan"))
 
+    async def replace_layout(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_replace_layout"
+        request = ReplaceLayoutRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+
+        if request.dry_run:
+            try:
+                async with resources.operation(device_id) as context:
+                    (
+                        state_view,
+                        capabilities,
+                        raw_info,
+                        raw_state,
+                        warnings,
+                    ) = await _read_state_and_info(context)
+                plan = build_layout_plan(request, state_view, capabilities, raw_info, raw_state)
+            except ClientFailure as failure:
+                return _translate_pre_dispatch(name, device_id, failure)
+            return _dry_run_outcome(
+                name,
+                device_id,
+                {"plan": plan.public, "postconditions": plan.postconditions},
+                [*warnings, *plan.warnings],
+            )
+
+        plan_box: dict[str, LayoutPlan] = {}
+        read_warnings: list[str] = []
+
+        async def prepare(context: OperationContext) -> SequencePlan:
+            state_view, capabilities, raw_info, raw_state, warnings = await _read_state_and_info(
+                context
+            )
+            plan_box["plan"] = build_layout_plan(
+                request, state_view, capabilities, raw_info, raw_state
+            )
+            read_warnings.extend(warnings)
+            return plan_box["plan"].sequence
+
+        outcome = await resources.write_sequence_verified(device_id, name, prepare)
+        planned = plan_box.get("plan")
+        if planned is None or (not outcome.ok and outcome.application == "not_attempted"):
+            return outcome
+        plan = planned
+        return outcome.model_copy(
+            update={
+                "data": {
+                    **outcome.data,
+                    "plan": plan.public,
+                    "postconditions": plan.postconditions,
+                },
+                "warnings": [*read_warnings, *plan.warnings],
+            }
+        )
+
     return (
         Operation(
             name="wled_set_state",
@@ -361,6 +429,21 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
             request_model=PatchSegmentsRequest,
             execute=patch_segments,
             annotations=MUTATION,
+        ),
+        Operation(
+            name="wled_replace_layout",
+            description=(
+                "Replace the complete active segment layout. Every desired ID needs id, "
+                "start and stop; active IDs not listed are removed one by one (exact "
+                "single-segment removal, no filler segments, no bulk purge). Omitted fields "
+                "of existing IDs are preserved; new IDs need colors and receive documented "
+                "defaults. Master state is never changed. Each step is read back; an "
+                "uncertain or mismatching step stops the sequence without replay. dry_run "
+                "performs bounded reads only and returns the ordered plan."
+            ),
+            request_model=ReplaceLayoutRequest,
+            execute=replace_layout,
+            annotations=DESTRUCTIVE,
         ),
     )
 

@@ -2,7 +2,7 @@
 
 Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
-The production registry contains `wled_list_devices`, `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (the three read tools from #5; no setters). `--transport streamable-http` starts the
+The production registry contains `wled_list_devices`, the three read tools from #5, `wled_set_state` and `wled_patch_segments` (#6) and `wled_replace_layout` (#7). `--transport streamable-http` starts the
 authenticated stateless HTTP service from #14 (see below); its software evidence is
 mock/loopback only and full dual-mode acceptance (#10/#11) is pending.
 

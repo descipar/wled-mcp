@@ -41,6 +41,7 @@ TOOLS = [
     "wled_get_palettes",
     "wled_set_state",
     "wled_patch_segments",
+    "wled_replace_layout",
 ]
 SYNTHETIC_SECRET = "synthetic-secret-never-return"
 

@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import anyio
 import httpx2 as httpx
@@ -19,6 +20,36 @@ from wled_mcp.models import DomainError, Outcome
 class BackupHandle:
     directory: Path
     retain_per_device: int
+
+
+SequenceKind = Literal[
+    "success",
+    "final_mismatch",
+    "failed",
+    "stopped",
+    "uncertain_unreadable",
+    "uncertain_differs",
+    "uncertain_matching",
+]
+
+
+@dataclass(frozen=True)
+class WriteStep:
+    """One single-request write plus the readback check that proves it."""
+
+    action: str
+    segment_id: int | None
+    payload: dict[str, JsonValue]
+    matches: Callable[[JsonValue], bool]
+
+
+@dataclass(frozen=True)
+class SequencePlan:
+    """Ordered steps, an exact final check and a bounded observation summary."""
+
+    steps: tuple[WriteStep, ...]
+    final_matches: Callable[[JsonValue], bool]
+    observe: Callable[[JsonValue], JsonValue]
 
 
 @dataclass
@@ -152,6 +183,228 @@ class Resources:
                 ),
             )
 
+    async def write_sequence_verified(
+        self,
+        device_id: str,
+        operation: str,
+        prepare: Callable[[OperationContext], Awaitable[SequencePlan]],
+    ) -> Outcome:
+        """Multi-step write under ONE lock and deadline; every step is read back.
+
+        Exactly one POST attempt per step, never replayed. A step that is uncertain
+        or fails verification stops the sequence: no later (especially destructive)
+        step is dispatched and nothing is rolled back or corrected.
+        """
+        plan: SequencePlan | None = None
+        statuses: list[str] = []
+        in_flight: int | None = None
+        observed: JsonValue = None
+        try:
+            async with self.operation(device_id) as context:
+                plan = await prepare(context)
+                if not plan.steps:
+                    return Outcome(
+                        ok=True,
+                        operation=operation,
+                        device_id=device_id,
+                        application="not_attempted",
+                        verification="not_requested",
+                        data={"steps_report": [], "completed_steps": 0, "remaining_steps": []},
+                    )
+                bodies = [self.client.encode_payload(step.payload) for step in plan.steps]
+                last_state: JsonValue = None
+                total = len(plan.steps)
+                for index, step in enumerate(plan.steps):
+                    try:
+                        remaining = context.deadline.remaining()
+                        if remaining < 0.02:
+                            raise ClientFailure(
+                                "TIMEOUT", "Insufficient remaining write/verification budget."
+                            )
+                        reserve = min(1.0, remaining * 0.25)
+                        dispatch_deadline = Deadline(context.deadline.expires - reserve)
+                        dispatch_deadline.remaining()
+                    except ClientFailure as failure:
+                        return self._sequence_outcome(
+                            device_id, operation, plan, statuses, "stopped", observed, failure.error
+                        )
+                    context.dispatched = True
+                    in_flight = index
+                    post_failed = False
+                    try:
+                        await self.client.post_state(
+                            context.device, bodies[index], dispatch_deadline
+                        )
+                    except ClientFailure:
+                        post_failed = True  # ACK/errors never establish the postcondition.
+                    try:
+                        last_state = await context.read(Endpoint.STATE)
+                    except ClientFailure:
+                        statuses.append("uncertain")
+                        in_flight = None
+                        return self._sequence_outcome(
+                            device_id, operation, plan, statuses, "uncertain_unreadable", observed
+                        )
+                    observed = plan.observe(last_state)
+                    is_last = index == total - 1
+                    matched = step.matches(last_state)
+                    if post_failed:
+                        if matched and is_last and plan.final_matches(last_state):
+                            statuses.append("verified")
+                            in_flight = None
+                            break
+                        statuses.append("uncertain")
+                        in_flight = None
+                        kind: SequenceKind = (
+                            "uncertain_matching" if matched else "uncertain_differs"
+                        )
+                        return self._sequence_outcome(
+                            device_id, operation, plan, statuses, kind, observed
+                        )
+                    if not matched:
+                        statuses.append("failed")
+                        in_flight = None
+                        return self._sequence_outcome(
+                            device_id, operation, plan, statuses, "failed", observed
+                        )
+                    statuses.append("verified")
+                    in_flight = None
+                if not plan.final_matches(last_state):
+                    return self._sequence_outcome(
+                        device_id, operation, plan, statuses, "final_mismatch", observed
+                    )
+                return self._sequence_outcome(
+                    device_id, operation, plan, statuses, "success", observed, state=last_state
+                )
+        except ClientFailure as failure:
+            if plan is not None and context_dispatched(statuses, in_flight):
+                if in_flight is not None:
+                    statuses.append("uncertain")
+                    return self._sequence_outcome(
+                        device_id, operation, plan, statuses, "uncertain_unreadable", observed
+                    )
+                return self._sequence_outcome(
+                    device_id, operation, plan, statuses, "stopped", observed, failure.error
+                )
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="not_attempted",
+                verification="not_requested",
+                error=failure.error,
+            )
+        except Exception:
+            if plan is not None and context_dispatched(statuses, in_flight):
+                if in_flight is not None:
+                    statuses.append("uncertain")
+                return self._sequence_outcome(
+                    device_id, operation, plan, statuses, "uncertain_unreadable", observed
+                )
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="not_attempted",
+                verification="not_requested",
+                error=DomainError(
+                    code="VALIDATION_ERROR",
+                    message="Operation preparation failed.",
+                    reconciliation="Correct the requested plan before writing.",
+                ),
+            )
+
+    @staticmethod
+    def _sequence_outcome(
+        device_id: str,
+        operation: str,
+        plan: SequencePlan,
+        statuses: list[str],
+        kind: SequenceKind,
+        observed: JsonValue,
+        error: DomainError | None = None,
+        state: JsonValue = None,
+    ) -> Outcome:
+        report: list[JsonValue] = []
+        remaining: list[JsonValue] = []
+        for index, step in enumerate(plan.steps):
+            status = statuses[index] if index < len(statuses) else "not_dispatched"
+            entry: dict[str, JsonValue] = {
+                "index": index,
+                "action": step.action,
+                "id": step.segment_id,
+            }
+            report.append({**entry, "status": status})
+            if status != "verified":
+                remaining.append(entry)
+        verified = statuses.count("verified")
+        data: dict[str, JsonValue] = {
+            "steps_report": report,
+            "completed_steps": verified,
+            "remaining_steps": remaining,
+        }
+        if kind == "success":
+            data["state"] = state
+            return Outcome(
+                ok=True,
+                operation=operation,
+                device_id=device_id,
+                application="applied",
+                verification="verified",
+                data=data,
+            )
+        data["observed"] = observed
+        data["no_replay"] = True
+        mismatch = DomainError(
+            code="VERIFICATION_MISMATCH",
+            message="Readback did not match the planned postcondition.",
+            reconciliation="Inspect state explicitly; do not replay the write.",
+        )
+        if kind in ("final_mismatch", "failed"):
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="applied" if verified else "unknown",
+                verification="mismatch",
+                data=data,
+                error=mismatch,
+            )
+        if kind == "stopped":
+            assert error is not None
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="applied" if verified else "not_attempted",
+                verification="mismatch" if verified else "not_requested",
+                data=data if verified else {},
+                error=error,
+            )
+        if kind == "uncertain_differs":
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="unknown",
+                verification="mismatch",
+                data=data,
+                error=mismatch,
+            )
+        return Outcome(
+            ok=False,
+            operation=operation,
+            device_id=device_id,
+            application="unknown",
+            verification="unknown",
+            data=data,
+            error=DomainError(
+                code="WRITE_OUTCOME_UNKNOWN",
+                message="Write outcome could not be verified.",
+                reconciliation="Perform an explicit read; do not replay the write.",
+            ),
+        )
+
     @staticmethod
     def _uncertain(device_id: str, operation: str) -> Outcome:
         return Outcome(
@@ -166,3 +419,8 @@ class Resources:
                 reconciliation="Perform an explicit read; do not replay the write.",
             ),
         )
+
+
+def context_dispatched(statuses: list[str], in_flight: int | None) -> bool:
+    """True once any step of a sequence may have reached the device."""
+    return bool(statuses) or in_flight is not None

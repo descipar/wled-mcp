@@ -108,6 +108,22 @@ can explicitly amend them.
   fidelity, native client discovery and actual model behavior require distinct
   evidence; generated files alone do not prove an end-to-end run.
 
+## Issue-specific decisions (pointers)
+
+- [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
+  (human, 2026-11-05, issue #7 only): `wled_replace_layout` aligns with #6 for the
+  name limit, grouping/spacing bounds and `bri` handling; resolves ISSUE-7-OPEN-001.
+  It does not apply to other issues.
+- [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
+  #7 only): step order/allocation bound, range-capability evidence and no-op/limit
+  behavior accepted. The human delegated the choice to the main session; the content was
+  decided by the main session, not personally dictated by the human. Not generalized to
+  other issues or stages.
+- [ISSUE-7-DEC-007 to -009](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
+  #7 only, content decided by the main session): narrow reading of DEC-006 confirmed,
+  `scripts/check_distribution.py` edit accepted, follow-up issue
+  [#48](https://github.com/descipar/wled-mcp/issues/48) for the shared #6/#7 limits.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

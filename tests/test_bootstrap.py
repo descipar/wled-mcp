@@ -135,6 +135,7 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
                     "wled_get_palettes",
                     "wled_set_state",
                     "wled_patch_segments",
+                    "wled_replace_layout",
                 ]
                 result = await client.call_tool("wled_list_devices", {})
                 assert result.structured_content["data"] == {"devices": []}
@@ -238,6 +239,7 @@ def test_stdout_is_only_protocol_and_clean_eof(startup):
         "wled_get_palettes",
         "wled_set_state",
         "wled_patch_segments",
+        "wled_replace_layout",
     ]
     assert responses[3]["error"]["code"] == -32601
     assert responses[4]["error"]["code"] == -32602

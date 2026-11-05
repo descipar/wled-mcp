@@ -46,6 +46,7 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                     "wled_get_palettes",
                     "wled_set_state",
                     "wled_patch_segments",
+                    "wled_replace_layout",
                 ]
                 assert tools[0].input_schema["additionalProperties"] is False
                 result = await client.call_tool("wled_list_devices", {})
@@ -54,7 +55,7 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert not result.is_error
 
 
-TOOL_COUNT = 6
+TOOL_COUNT = 7
 
 
 async def http_exchange(port: int, token: str) -> None:

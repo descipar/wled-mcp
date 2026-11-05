@@ -79,8 +79,9 @@ async def test_registry_includes_write_tools_with_mutation_annotations(tmp_path)
             "wled_get_palettes",
             "wled_set_state",
             "wled_patch_segments",
+            "wled_replace_layout",
         ]
-        for op in operations[-2:]:
+        for op in operations[4:6]:
             hints = op.annotations
             assert hints.read_only_hint is False
             assert hints.destructive_hint is False
