@@ -20,6 +20,7 @@ from pathlib import Path
 from pydantic import JsonValue
 
 from wled_mcp.client import ClientFailure
+from wled_mcp.models import ErrorCode
 
 LOGGER = logging.getLogger("wled_mcp.backups")
 
@@ -42,12 +43,13 @@ _SAFE = {
     "BACKUP_FAILED": "Preset snapshot could not be stored durably; no write was sent.",
     "READ_FAILED": "Preset snapshot storage could not be read.",
 }
-_RECONCILE = "Fix the backup storage or the snapshot request; no device write was attempted."
+BACKUP_RECONCILE = "Repair the configured data path before an explicitly requested new attempt."
 
 
-def fail(code: str, message: str, retryable: bool = False) -> ClientFailure:
-    # ErrorCode is a closed Literal; callers pass literal codes only.
-    return ClientFailure(code, message, retryable=retryable)  # type: ignore[arg-type]
+def fail(code: ErrorCode, message: str, retryable: bool = False) -> ClientFailure:
+    # Nothing was written to the device on a backup failure, so no device read is needed.
+    reconciliation = BACKUP_RECONCILE if code == "BACKUP_FAILED" else None
+    return ClientFailure(code, message, retryable=retryable, reconciliation=reconciliation)
 
 
 @dataclass(frozen=True)
@@ -260,7 +262,11 @@ class SnapshotStore:
         if not _device_dir_ok(device_dir):
             raise fail("PRESET_NOT_FOUND", "No snapshot with this ID exists for the device.")
         try:
-            fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            if not stat.S_ISREG(path.lstat().st_mode):  # no FIFO/device/symlink/dir open
+                raise _invalid("Snapshot is not a readable regular file.")
+            # O_NONBLOCK: a file swapped for a FIFO after lstat must not hang under the lock.
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+            fd = os.open(path, flags)
         except FileNotFoundError:
             raise fail(
                 "PRESET_NOT_FOUND", "No snapshot with this ID exists for the device."
@@ -351,8 +357,12 @@ class SnapshotStore:
             preset,
         )
         try:
-            self.directory.mkdir(mode=0o700, exist_ok=True)
-            device_dir.mkdir(mode=0o700, exist_ok=True)
+            if not self.directory.exists():
+                self.directory.mkdir(mode=0o700)
+                self._fsync_directory(self.directory.parent)
+            if not device_dir.exists():
+                device_dir.mkdir(mode=0o700)
+                self._fsync_directory(self.directory)
         except OSError:
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"]) from None
         if not _device_dir_ok(device_dir):

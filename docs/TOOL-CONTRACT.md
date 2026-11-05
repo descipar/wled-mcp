@@ -427,8 +427,10 @@ Layout: `<data_dir>/backups/<device_id>/<backup_id>.json` (directories 0700, fil
 0600). `backup_id` matches `b-<YYYYMMDD>T<HHMMSS>Z-<12 hex>`, generated from the UTC
 clock plus 48 random bits, never from preset names or caller text. The file is created
 exclusively and never overwrites; a collision regenerates the ID. IDs resolve only
-inside the data directory: no caller path, name or glob; symlinked files and device
-directories are never followed.
+inside the data directory: no caller path, name or glob. Symlinked snapshot files and
+device directories are never followed; a symlinked `backups/` root itself is an
+operator choice and is followed. Non-regular files (FIFOs, devices) are rejected
+without being opened.
 
 Write sequence (`backup_preset`, blocking I/O run shielded from cancellation): same-
 directory temporary file created exclusively, write, flush, `fsync`, read back and
@@ -444,7 +446,9 @@ snapshot the exact object, recheck the prior object (changed => `PRESET_CONFLICT
 then POST. A raised `BACKUP_FAILED` happens in the prepare step, so `application=
 not_attempted` and nothing is sent. The store does no device I/O; the caller supplies
 the object. The result `data.backup_id` names the newest snapshot of the operation
-and is kept even when the write later fails or is uncertain; there is no automatic
+and is kept even when the write later fails or is uncertain (only `write_verified`
+carries `backup_id` and prune warnings; `write_sequence_verified` does not, which #9
+must handle if it uses a sequence); there is no automatic
 rollback, restoration or resend (REL-02). Dry-run reports `backup_required` and an
 advisory writability flag without creating directories, temp files or pruning.
 
@@ -470,16 +474,26 @@ destination requires overwrite intent and a valid prior snapshot of that destina
 The plan states `execution: deferred` and the manual steps below. A plan or export is
 not restore evidence.
 
-Manual restoration procedure (execution deferred; nothing here is automated):
+Manual restoration procedure (execution deferred; nothing here is automated, and
+the manual route itself is untested on hardware). `plan_restore` is a library helper
+only: no tool or CLI exposes the store until #9, and it needs a `prior_backup_id`
+that already exists in the store when the destination is occupied.
 1. Read the snapshot file in the backups directory and verify `device_id`, firmware
    `version` and `preset_id` against the target controller.
-2. Read the destination with `wled_get_preset` once #9 exists, or read `/presets.json`.
-   If occupied, take a new snapshot of it first and keep its `backup_id`.
-3. Store exactly the one `preset` object by hand through a verified single-entry
-   mechanism (WLED UI or API). Never upload or bulk-restore a whole presets file;
-   activating a preset does not restore its storage; do not execute stored commands.
+2. Before changing anything, copy the destination's current entry from the
+   controller's `/presets.json` verbatim into a file outside Git (the store cannot
+   snapshot it by hand-made means until #9 adds a tool that calls it). If the
+   destination is empty, note that instead.
+3. Enter exactly the one `preset` object for the target ID through the WLED UI or
+   API. This is unproven: the reviewed sources do not show a single-entry write
+   without possible live-output effect, nor that re-entry through the UI preserves
+   unknown fields. Never upload or bulk-restore a whole presets file; activating a
+   preset does not restore its storage; do not execute stored commands.
 4. Read `/presets.json` back and compare the stored entry with the snapshot,
-   unknown fields included. After a timeout, read first; do not retry blindly.
+   unknown fields included. If anything differs, treat the restoration as failed or
+   partial: do not retry blindly or re-enter repeatedly; keep the snapshot and the
+   step 2 copy, re-read the destination, and decide a correction explicitly. After a
+   timeout, read first.
 
 ## Results and errors
 

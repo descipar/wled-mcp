@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any, Literal
 
 import anyio
+import anyio.lowlevel
 import httpx2 as httpx
 from pydantic import JsonValue
 
@@ -72,6 +73,9 @@ class OperationContext:
                 partial(self.store.backup_preset, self.device.id, preset_id, preset, firmware)
             )
         self.backup_records.append(record)
+        # An outer cancellation that arrived during the shielded write aborts here,
+        # before any dispatch; the durable snapshot is kept.
+        await anyio.lowlevel.checkpoint()
         return record
 
     async def read(self, endpoint: Endpoint) -> JsonValue:
@@ -246,7 +250,10 @@ class Resources:
 
         Exactly one POST attempt per step, never replayed. A step that is uncertain
         or fails verification stops the sequence: no later (especially destructive)
-        step is dispatched and nothing is rolled back or corrected.
+        step is dispatched and nothing is rolled back or corrected. Unlike
+        `write_verified`, this does not carry `backup_id` or prune warnings into the
+        outcome (segment/layout writes need no snapshot); #9 must add that if it
+        uses a sequence for preset operations.
         """
         plan: SequencePlan | None = None
         statuses: list[str] = []

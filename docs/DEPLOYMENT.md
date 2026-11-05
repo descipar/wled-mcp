@@ -41,7 +41,7 @@ For a Docker Compose deployment, inspect mounts, CPU architecture, installed Pyt
 Proposed deployment directories:
 
 - `/app/data/wled-mcp/config/devices.toml`: local inventory, not in Git.
-- `/app/data/wled-mcp/backups/<device_id>/<backup_id>.json`: persistent preset snapshots (directories 0700, files 0600, created on first snapshot; never in Git). The service user needs write access; keep the volume persistent and back it up like other runtime data. To restore by hand see the manual procedure in [TOOL-CONTRACT](TOOL-CONTRACT.md#snapshot-and-explicit-restoration); restoration execution is not automated.
+- `/app/data/wled-mcp/backups/<device_id>/<backup_id>.json`: persistent preset snapshots (directories 0700, files 0600, created on first snapshot; never in Git). The service user needs write access; keep the volume persistent and back it up like other runtime data. To restore by hand see the manual procedure in [TOOL-CONTRACT](TOOL-CONTRACT.md#snapshot-and-explicit-restoration); restoration execution is not automated. Snapshots are published with a hard link, so a filesystem without hard-link support (some network or FAT volumes) makes every snapshot fail closed with `BACKUP_FAILED`; use a local or container volume that supports hard links.
 - `/app/data/wled-mcp/releases/<version>/`: versioned application artifact if suitable for the actual runtime.
 - A stable launcher/configured executable path that resolves an explicitly selected release and its locked environment.
 

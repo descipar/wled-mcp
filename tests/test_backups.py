@@ -231,15 +231,30 @@ def test_success_leaves_exactly_one_final_file_with_private_mode(tmp_path):
         assert stat.S_IMODE((store.directory / "desk").stat().st_mode) == 0o700
 
 
-def test_fsync_order_file_before_publish_and_directory_after(tmp_path, monkeypatch):
+def test_fsync_order_file_before_publish_and_directories_after(tmp_path, monkeypatch):
     store = make_store(tmp_path)
     events = []
     real_fsync, real_link = os.fsync, os.link
-    monkeypatch.setattr(os, "fsync", lambda fd: (events.append("fsync"), real_fsync(fd))[1])
+    monkeypatch.setattr(os, "fsync", lambda fd: (events.append("file"), real_fsync(fd))[1])
     monkeypatch.setattr(os, "link", lambda a, b: (events.append("publish"), real_link(a, b))[1])
+    monkeypatch.setattr(
+        backups_module.SnapshotStore,
+        "_fsync_directory",
+        staticmethod(lambda path: events.append(("dir", path.name))),
+    )
     store.backup_preset("desk", 5, PRESET, FIRMWARE)
-    expected = ["fsync", "publish"] + (["fsync"] if POSIX else [])
-    assert events == expected
+    # New directories are made durable in their parents before the file is written;
+    # the device directory is synced after publishing (a no-op inside on Windows).
+    assert events == [
+        ("dir", tmp_path.name),
+        ("dir", "backups"),
+        "file",
+        "publish",
+        ("dir", "desk"),
+    ]
+    events.clear()
+    store.backup_preset("desk", 5, PRESET, FIRMWARE)  # existing dirs: no parent syncs
+    assert events == ["file", "publish", ("dir", "desk")]
 
 
 @pytest.mark.parametrize("target", ["fsync", "link", "mkdir", "write"])
@@ -260,9 +275,21 @@ def test_write_faults_fail_closed_keep_old_snapshots_and_clean_temp(tmp_path, mo
         monkeypatch.setattr(Path, "mkdir", boom)
         before = []
     else:
-        monkeypatch.setattr(
-            backups_module.SnapshotStore, "_serialize", staticmethod(lambda *a: 1 / 0)
-        )
+
+        class FullDisk:
+            def __init__(self, fd):
+                self.fd = fd
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                os.close(self.fd)
+
+            def write(self, data):
+                raise OSError(28, "No space left on device")
+
+        monkeypatch.setattr(os, "fdopen", lambda fd, *a, **k: FullDisk(fd))
     with pytest.raises(ClientFailure) as caught:
         store.backup_preset("desk", 6, PRESET, FIRMWARE)
     assert caught.value.error.code == "BACKUP_FAILED"
@@ -658,3 +685,67 @@ def test_runtime_backups_cannot_enter_git():
         "examples/contracts/snapshot.json"
     ]
     assert sys.version_info >= (3, 11)
+
+
+# -- review round 1 --------------------------------------------------------------------
+
+
+def run_guarded(call, *args, timeout=5):
+    """Run call in a daemon thread; a hang (e.g. FIFO open) fails instead of blocking."""
+    import threading
+
+    box = {}
+
+    def target():
+        try:
+            box["result"] = call(*args)
+        except BaseException as error:  # noqa: BLE001
+            box["error"] = error
+
+    thread = threading.Thread(target=target, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    assert not thread.is_alive(), "call hung"
+    if "error" in box:
+        raise box["error"]
+    return box["result"]
+
+
+@pytest.mark.skipif(not POSIX, reason="needs os.mkfifo")
+def test_fifo_named_like_snapshot_never_hangs_load_list_or_backup(tmp_path):
+    store = make_store(tmp_path, retain=1)
+    (store.directory / "desk").mkdir(parents=True)
+    os.mkfifo(store.directory / "desk" / f"{GOOD_ID}.json")
+    with pytest.raises(ClientFailure) as caught:
+        run_guarded(store.load, "desk", GOOD_ID)
+    assert caught.value.error.code == "VALIDATION_ERROR"
+    assert run_guarded(store.list_snapshots, "desk").invalid_count == 1
+    record = run_guarded(store.backup_preset, "desk", 5, PRESET, FIRMWARE)
+    assert store.load("desk", record.backup_id)
+    assert stat.S_ISFIFO((store.directory / "desk" / f"{GOOD_ID}.json").lstat().st_mode)
+
+
+def test_backup_failed_reconciliation_matches_contract_example(tmp_path, monkeypatch):
+    example = json.loads((REPO / "examples/contracts/errors.json").read_text())
+    case = next(c for c in example["cases"] if c["name"] == "backup_failure")
+    store = make_store(tmp_path)
+    monkeypatch.setattr(os, "link", lambda a, b: (_ for _ in ()).throw(OSError(5, "io")))
+    with pytest.raises(ClientFailure) as caught:
+        store.backup_preset("desk", 5, PRESET, FIRMWARE)
+    assert caught.value.error.reconciliation == case["expected"]["error"]["reconciliation"]
+    assert "never replay the write" not in caught.value.error.reconciliation
+
+
+@pytest.mark.anyio
+async def test_outer_cancellation_after_shielded_backup_aborts_before_dispatch(tmp_path):
+    posts = []
+    async with Resources(config(tmp_path), preset_server(posts)) as resources:
+        async with resources.operation("desk") as context:
+            with anyio.CancelScope() as scope:
+                scope.cancel()
+                await context.backup_preset(5, PRESET, FIRMWARE)
+                posts.append("reached dispatch")  # must be skipped
+            assert scope.cancelled_caught
+            assert len(context.backup_records) == 1
+        assert posts == []
+        assert len(resources.backups.list_snapshots("desk").snapshots) == 1
