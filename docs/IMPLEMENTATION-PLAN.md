@@ -1,6 +1,6 @@
 # Stage-1 implementation plan and GitHub backlog
 
-Status, 2026-11-04: #2 is merged through PR #33. #3 supplies the installed stdio package; #4 adds validated inventory/list/probes and shared bounded-client resources; #5 (candidate, mock-tested, pending review/merge) adds read-only state/effect/palette tools with a firmware-aware catalog cache. Typed control tools (#6) and the protected HTTP service (#14) are merged; the #7 layout replacement is a mock-tested candidate (H05 not run). Live GitHub state and commit-specific review take precedence; mocked software checks do not establish hardware or full dual-mode acceptance.
+Status, 2026-11-04: #2 is merged through PR #33. #3 supplies the installed stdio package; #4 adds validated inventory/list/probes and shared bounded-client resources; #5 adds read-only state/effect/palette tools with a firmware-aware catalog cache. Typed control tools (#6), the protected HTTP service (#14), the #7 layout replacement (H05 not run), the #8 snapshot store and the #9 preset tools (H06 not run) are merged; #10 maps requirements to evidence in [TRACEABILITY.md](TRACEABILITY.md). Live GitHub state and commit-specific review take precedence; mocked software checks do not establish hardware or full dual-mode acceptance.
 
 ## Delivery tracker
 

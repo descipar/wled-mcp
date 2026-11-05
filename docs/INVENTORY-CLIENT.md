@@ -74,5 +74,5 @@ processes and external WLED clients do not share these locks. The catalog cache
 and snapshot store (`resources.backups`, #8) are shared references; the store creates no directory until the first snapshot.
 Client failures now name the fixed resource label and numeric HTTP status in their
 message (never body, URL or exception text).
-Actual HTTP sessions, authentication, Host/Origin handling and lifecycle remain
-#14; its transport selector still fails before listening. Hardware is unverified.
+HTTP authentication, Host/Origin handling and the stateless lifecycle are implemented
+by #14 (see [DEPLOYMENT.md](DEPLOYMENT.md)). Hardware is unverified.

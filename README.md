@@ -2,7 +2,7 @@
 
 Specification and implementation backlog for a standalone WLED MCP server with MCPHub integration.
 
-**Status, 2026-11-05:** version 0.1.0 provides an installable Python 3.13 stdio server with validated inventory, `wled_list_devices`, the read-only `wled_get_state`, `wled_get_effects` and `wled_get_palettes`, the typed `wled_set_state` and `wled_patch_segments` (#6) and, as an issue #7 candidate (mock-tested, hardware check H05 not run), `wled_replace_layout`, and, as an issue #9 candidate (mock-tested, hardware check H06 not run), the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` with a durable snapshot before overwrite/delete (no restore tool; supplied-state save stays deferred to #13). Listing is network-free by default; explicit probes and reads use bounded requests to configured devices; effect/palette catalogs have a firmware-aware cache. A shared internal HTTP/deadline/lock foundation supports later operations. The authenticated stateless Streamable HTTP service (`--transport streamable-http`, issue #14 candidate) shares the same tools and resource graph; it is validated with mocks and loopback only. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md), [inventory behavior](docs/INVENTORY-CLIENT.md) and [validation](docs/VALIDATION.md).
+**Status, 2026-11-05:** version 0.1.0 provides an installable Python 3.13 stdio server with validated inventory, `wled_list_devices`, the read-only `wled_get_state`, `wled_get_effects` and `wled_get_palettes`, the typed `wled_set_state` and `wled_patch_segments` (#6), `wled_replace_layout` (#7; mock-tested, hardware check H05 not run) and the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9; mock-tested, hardware check H06 not run) with a durable snapshot before overwrite/delete (no restore tool; supplied-state save stays deferred to #13). Listing is network-free by default; explicit probes and reads use bounded requests to configured devices; effect/palette catalogs have a firmware-aware cache. A shared internal HTTP/deadline/lock foundation supports later operations. The authenticated stateless Streamable HTTP service (`--transport streamable-http`, #14) shares the same tools and resource graph; it is validated with mocks and loopback only. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md), [inventory behavior](docs/INVENTORY-CLIENT.md), [validation](docs/VALIDATION.md) and [traceability](docs/TRACEABILITY.md).
 
 The repository also includes [shared Codex and Claude Code roles](agents/README.md) and a [human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation, independent review and post-merge issue completion. These run inside an active or resumed client session; no autonomous background service or WLED backlog run is started by checking them out.
 
@@ -34,6 +34,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Architecture](docs/ARCHITECTURE.md) | Components, runtime, configuration, design decisions |
 | [Deployment](docs/DEPLOYMENT.md) | Proposed persistent MCPHub integration, update and rollback procedure |
 | [Validation](docs/VALIDATION.md) | Meaningful automated checks, opt-in hardware checks, release criteria |
+| [Traceability](docs/TRACEABILITY.md) | Must requirement and T01–T21 to automated evidence; hardware/deployment gaps marked pending |
 | [Implementation plan](docs/IMPLEMENTATION-PLAN.md) | Issue order, dependency graph, requirement traceability |
 | [Agent handoff](docs/AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Agent workflow](docs/AGENT-WORKFLOW.md) | Five shared roles with native Codex/Claude adapters, handoffs, human merge and evidenced issue completion |
@@ -48,7 +49,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 
 ## Development status
 
-The package has locked development/build/runtime dependencies and installed-wheel/uvx checks. Follow [DEVELOPMENT.md](docs/DEVELOPMENT.md). Use [bootstrap.toml](examples/bootstrap.toml) for an empty inventory or the executable synthetic [inventory example](examples/devices.example.toml) for configured listing/probes. State/control tools and full HTTP lifecycle remain future work.
+The package has locked development/build/runtime dependencies and installed-wheel/uvx checks. Follow [DEVELOPMENT.md](docs/DEVELOPMENT.md). Use [bootstrap.toml](examples/bootstrap.toml) for an empty inventory or the executable synthetic [inventory example](examples/devices.example.toml) for configured listing/probes. State/control, layout and preset tools and the HTTP lifecycle are implemented and covered by mock/loopback tests mapped in [TRACEABILITY.md](docs/TRACEABILITY.md); deployment (#11) and hardware checks (#12) remain pending.
 
 ## Boundaries
 

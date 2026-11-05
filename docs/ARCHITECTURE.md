@@ -13,8 +13,8 @@ Issue #5 adds read-only state/catalog tools: `readmodels.py` (pure normalization
 optional fxdata, firmware-aware cache, internal name resolver) and three operations in
 `operations.py`. Reads take the per-device lock and one deadline; the injectable
 `Clock` lives on `Resources`. See [TOOL-CONTRACT](TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5)
-and [decisions](decisions/issue-5.md). Durable snapshots and actual multi-session HTTP
-handling remain #8 work; the HTTP service is implemented by the #14 candidate.
+and [decisions](decisions/issue-5.md). Durable snapshots are implemented by #8 and the
+multi-session HTTP service by #14.
 
 ## Components
 

@@ -171,6 +171,11 @@ can explicitly amend them.
   issue #55 only): the deadline/retry test uses controlled time instead of wall-clock
   sleeps; no product change.
 
+- [ISSUE-10-DEC-001](decisions/issue-10.md) (agent technical proposal accepted by the
+  coordinator, 2026-11-05, issue #10 only; not a human decision): traceability lives in
+  `docs/TRACEABILITY.md`, enforced by `scripts/check_traceability.py` through a pytest
+  test; hardware/deployment cells may only say `pending: ...` or `not applicable: ...`.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

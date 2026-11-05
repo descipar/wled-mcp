@@ -77,11 +77,14 @@ async def http_exchange(port: int, token: str) -> None:
                     assert result.structured_content["data"] == {"devices": []}
 
 
-def http_smoke(console: Path, args: list[str], cwd: Path, env: dict[str, str]) -> None:
-    """Installed console serves authenticated loopback HTTP and exits 0 on a stop signal."""
+def free_port() -> int:
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
-        port = int(probe.getsockname()[1])
+        return int(probe.getsockname()[1])
+
+
+def http_smoke(console: Path, args: list[str], cwd: Path, env: dict[str, str], port: int) -> None:
+    """Installed console serves authenticated loopback HTTP and exits 0 on a stop signal."""
     token = "synthetic-distribution-token-0123456789"
     flags = ["--transport", "streamable-http", "--port", str(port)]
     flags += ["--allowed-host", f"127.0.0.1:{port}"]
@@ -120,6 +123,17 @@ def http_smoke(console: Path, args: list[str], cwd: Path, env: dict[str, str]) -
             process.wait(timeout=10)
         process.stdout.close()
         process.stderr.close()
+
+
+def http_restart(console: Path, config: Path, data: Path, cwd: Path, env: dict[str, str]) -> None:
+    """Two consecutive start/exchange/stop cycles on one config and data directory."""
+    data.mkdir()
+    args = ["--config", str(config), "--data-dir", str(data)]
+    port = free_port()
+    for _cycle in range(2):  # restart on the same port, config and data directory
+        http_smoke(console, args, cwd, env, port)
+        leftovers = sorted(path.name for path in data.iterdir())
+        assert leftovers == [], f"HTTP start/stop left unexpected data files: {leftovers}"
 
 
 def main() -> None:
@@ -190,7 +204,7 @@ def main() -> None:
         config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
         args = ["--config", str(config), "--data-dir", str(outside)]
         anyio.run(handshake, str(console), args, outside, env)
-        http_smoke(console, args, outside, env)
+        http_restart(console, config, outside / "service-data", outside, env)
         uvx = [
             "uvx",
             "--isolated",
@@ -208,7 +222,8 @@ def main() -> None:
         assert run([*uvx, "wled-mcp", "--version"], outside, env) == "wled-mcp 0.1.0"
         anyio.run(handshake, uvx[0], [*uvx[1:], "wled-mcp", *args], outside, env)
     print(
-        f"Wheel/clean install/stdio/HTTP/uvx: PASS; {len(expected)} exact runtime versions verified"
+        "Wheel/clean install/stdio/HTTP restart/uvx: PASS; "
+        f"{len(expected)} exact runtime versions verified"
     )
 
 

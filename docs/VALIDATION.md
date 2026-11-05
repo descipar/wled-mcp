@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Issue #5 (read-only state/catalog tools) is validated with mocks only; see [its evidence](#issue-5-implementation-evidence). Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. HTTP T18–T21 software evidence is recorded in [the issue #14 section](#issue-14-implementation-evidence); hardware H checks remain pending.
+Requirement-to-evidence mapping: [TRACEABILITY.md](TRACEABILITY.md) links every Must requirement and T01–T21 to the automated tests and scripts that exercise them and keeps hardware/deployment evidence visibly pending; `scripts/check_traceability.py` enforces it in ordinary CI. The per-issue evidence sections below are historical per-candidate records: they state the results recorded for that candidate at that time and are not re-executed. Where they mention the wall-clock flake of `test_one_total_deadline_and_bounded_read_retry`, it is superseded by the controlled-time test from #55; the failing `test_stdio_ignores_ambient_http_token_and_binds_nothing` noted for #48/#52 is superseded by the socket guard from #53. Current results for the issue #10 candidate are in [its section](#issue-10-acceptance-evidence). Hardware checks H01–H07 remain pending.
 
 Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
@@ -56,8 +56,9 @@ cannot establish that an adapter implements these outcomes.
 
 MCP-03/MCP-04/OPS-05 map to #14 implementation, #10 T18–T21 acceptance, and #11
 integration/deployment evidence. H02/H03 remain separate authorized operational
-checks. SDK version selection, mocked/runtime protocol execution and hardware
-compatibility remain pending. PRE-03 and restore execution are explicitly deferred
+checks. The SDK version is selected (MCP SDK 2.3.0) and mocked/loopback protocol
+execution is automated (see [TRACEABILITY.md](TRACEABILITY.md)); hardware
+compatibility and deployment remain pending. PRE-03 and restore execution are explicitly deferred
 Should work; durable backup before destructive operations remains Must.
 
 ## Issue #8 implementation evidence
@@ -409,6 +410,41 @@ bypasses the wrappers (asyncio, anyio and uvicorn use `socket.socket` and
 it only creates the same transient loopback pair; Windows named pipes
 (`loop.start_serving_pipe`, `IocpProactor.connect_pipe`) are not sockets and are not
 guarded on either platform; macOS and Python versions other than 3.13 are not checked.
+
+## Issue #10 acceptance evidence
+
+Mapping: [TRACEABILITY.md](TRACEABILITY.md). Mock/loopback software evidence only: the
+new console tests start the installed `wled-mcp` console over stdio and Streamable HTTP
+against a synthetic device bound to `127.0.0.1`; no LAN device, deployment, hub or
+hardware check was involved, and no product code changed. 2026-11-05, Windows 11 /
+CPython 3.13.2, uv 0.11.14, MCP SDK 2.3.0, commands from the repository root:
+
+| Command | Result recorded for this candidate |
+| --- | --- |
+| `uv sync --locked` | ok |
+| `uv run --frozen ruff check ...` / `ruff format --check ...` (CI file list incl. `scripts/check_traceability.py`) | clean, 47 files formatted |
+| `uv run --frozen mypy` | no issues in 20 source files |
+| `uv run --frozen python scripts/check_agent_setup.py`; `python scripts/sync_agents.py --check` | valid; adapters synchronized |
+| `uv run --frozen python scripts/check_lock.py` | lock/export consistent |
+| `uv run --frozen pytest` | 653 passed, 9 skipped (POSIX-only signal, permission, symlink and FIFO tests) |
+| new test modules (`tests/test_acceptance_parity.py`, `tests/test_acceptance_verification.py`, `tests/test_traceability.py`), three consecutive runs | 77 passed each run |
+| `uv run --frozen python scripts/check_distribution.py` | wheel, clean install, stdio, two HTTP start/stop cycles on one port and data directory, uvx; 30 exact runtime versions |
+| `uv run --frozen python scripts/check_traceability.py` | 26 Must requirements and T01–T21 mapped |
+
+| Packet ID | Evidence |
+| --- | --- |
+| AC-10-01 | `test_text_fallback_equals_structured_and_is_error_equals_not_ok`, `test_device_requests_match_the_outcome_and_writes_are_never_replayed`, `test_stdio_and_http_return_identical_results`, `test_outcome_axes_for_mismatch_and_uncertain_writes`, `test_unknown_tool_is_a_protocol_error_on_both_transports`: read, verified write, two schema rejections, two domain rejections, unknown device, mismatch, uncertain write and unknown tool; only the state read's `freshness.read_at` timestamp is masked in the stdio/HTTP comparison |
+| AC-10-02 | `test_real_console_rejects_missing_credential_and_disallowed_host_before_device_work` (401, 401, 403; zero device requests) |
+| AC-10-03 | `test_default_http_binding_is_loopback_8000_with_exact_default_hosts`, `test_console_without_bind_options_selects_the_default_binding_and_binds_nothing` |
+| AC-10-04 | `tests/test_acceptance_verification.py` (two tolerance and two mismatch tests) |
+| AC-10-05 | `scripts/check_distribution.py` `http_restart` |
+| AC-10-06 | `test_stdio_hub_example_arguments_complete_a_handshake`, `test_documented_console_flags_exist_in_the_installed_console` and its extractor negative control |
+| AC-10-07/08 | `docs/TRACEABILITY.md`; `tests/test_traceability.py` (real documents plus synthetic negative controls on tmp copies) |
+
+Linux CI (3.13) is recorded from the pull request run, not here. Pending and not claimed:
+H01–H07 (#12), H02/H03, deployment, hub integration, resource measurements and
+update/rollback (#11), Windows signal delivery (the POSIX signal tests stay skipped on
+Windows), T17/raw state (#13) and restore execution (ISSUE-8-DEC-001).
 
 ## Evidence template
 
