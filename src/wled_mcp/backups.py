@@ -357,12 +357,15 @@ class SnapshotStore:
             preset,
         )
         try:
-            if not self.directory.exists():
-                self.directory.mkdir(mode=0o700)
-                self._fsync_directory(self.directory.parent)
-            if not device_dir.exists():
-                device_dir.mkdir(mode=0o700)
-                self._fsync_directory(self.directory)
+            # Concurrent first snapshots of different devices may race on `backups/`;
+            # an existing directory is fine (validated below). Sync the parent only
+            # when this call created the directory.
+            for directory in (self.directory, device_dir):
+                try:
+                    directory.mkdir(mode=0o700)
+                except FileExistsError:
+                    continue
+                self._fsync_directory(directory.parent)
         except OSError:
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"]) from None
         if not _device_dir_ok(device_dir):

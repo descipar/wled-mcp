@@ -749,3 +749,35 @@ async def test_outer_cancellation_after_shielded_backup_aborts_before_dispatch(t
             assert len(context.backup_records) == 1
         assert posts == []
         assert len(resources.backups.list_snapshots("desk").snapshots) == 1
+
+
+def test_concurrent_first_snapshots_of_two_devices_both_succeed(tmp_path, monkeypatch):
+    """Forced interleaving: both threads see no `backups/` before either creates it."""
+    import threading
+
+    store = make_store(tmp_path)
+    barrier = threading.Barrier(2, timeout=5)
+    real_mkdir = Path.mkdir
+
+    def racing_mkdir(self, *args, **kwargs):
+        if self == store.directory:
+            barrier.wait()  # both threads attempt the root mkdir together
+        return real_mkdir(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", racing_mkdir)
+    results, errors = {}, []
+
+    def worker(device_id):
+        try:
+            results[device_id] = store.backup_preset(device_id, 5, PRESET, FIRMWARE)
+        except BaseException as error:  # noqa: BLE001
+            errors.append(error)
+
+    threads = [threading.Thread(target=worker, args=(d,)) for d in ("desk", "lamp")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(10)
+    assert errors == [] and set(results) == {"desk", "lamp"}
+    for device_id, record in results.items():
+        assert store.load(device_id, record.backup_id).preset == PRESET
