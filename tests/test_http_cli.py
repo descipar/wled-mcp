@@ -11,7 +11,6 @@ import signal
 import socket
 import subprocess
 import sys
-import textwrap
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -308,28 +307,14 @@ def test_console_serves_http_and_shuts_down_cleanly(tmp_path, source):
     assert not listening(port)
 
 
-def test_stdio_ignores_ambient_http_token_and_binds_nothing(tmp_path):
-    """Default stdio: no listener, no HTTP credential needed, HTTP service module unloaded."""
+def run_stdio_socket_probe(tmp_path: Path, mode: str = "none") -> dict[str, Any]:
+    """Run the real default-stdio ``cli.main`` under the socket guard in a subprocess."""
     config = write_config(tmp_path)
-    report = tmp_path / "audit.json"
-    script = textwrap.dedent(
-        f"""
-        import json, sys
-        events = []
-        def hook(event, args):
-            if event in ("socket.bind", "socket.listen", "socket.connect"):
-                events.append(event)
-        sys.addaudithook(hook)
-        from wled_mcp.cli import main
-        code = main(["--config", {str(config)!r}, "--data-dir", {str(tmp_path)!r}])
-        open({str(report)!r}, "w").write(json.dumps({{
-            "code": code, "events": events,
-            "service": "wled_mcp.http_service" in sys.modules,
-        }}))
-        """
-    )
+    report = tmp_path / f"socket-guard-{mode}.json"
     result = subprocess.run(
-        [sys.executable, "-c", script],
+        [sys.executable, "-m", "tests.stdio_socket_probe", str(config), str(tmp_path), str(report)]
+        + ([] if mode == "none" else [mode]),
+        cwd=ROOT,
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
@@ -337,11 +322,46 @@ def test_stdio_ignores_ambient_http_token_and_binds_nothing(tmp_path):
         env=clean_env(WLED_MCP_HTTP_TOKEN=TOKEN),
     )
     assert result.stdout == "" and result.returncode == 0, result.stderr
-    assert json.loads(report.read_text()) == {
-        "code": 0,
-        "events": [],
-        "service": False,
-    }
+    data: dict[str, Any] = json.loads(report.read_text(encoding="utf-8"))
+    for event in data["allowed"]:
+        assert event["kind"] in {"bind", "listen", "connect"}, data
+        assert event["caller"].endswith(":_fallback_socketpair"), data
+    return data
+
+
+def test_stdio_ignores_ambient_http_token_and_binds_nothing(tmp_path):
+    """Default stdio: no listener, no outbound socket use, no HTTP credential, no HTTP module.
+
+    Only the event loop's own self-pipe (``socket._fallback_socketpair`` on Windows) may
+    bind/listen/connect on loopback; see ISSUE-53-DEC-001 and tests/stdio_socket_probe.py.
+    """
+    data = run_stdio_socket_probe(tmp_path)
+    assert data["violations"] == [], data
+    assert data["code"] == 0 and data["error"] is None, data
+    assert data["service"] is False
+
+
+@pytest.mark.parametrize(
+    ("mode", "kind"),
+    [
+        ("listen_loopback", "bind"),
+        ("listen_unbound", "listen"),
+        ("bind_any", "bind"),
+        ("create_server", "bind"),
+        ("connect_loopback", "connect"),
+        ("udp_sendto", "sendto"),
+    ],
+)
+def test_stdio_socket_guard_detects_violation(tmp_path, mode, kind):
+    """Negative controls: an injected listener/bind/connect/send inside the real stdio start.
+
+    The guard refuses each injected operation before the OS sees it, so no listener stays
+    open and nothing is sent; the start itself still completes with exit code 0.
+    """
+    data = run_stdio_socket_probe(tmp_path, mode)
+    assert kind in {event["kind"] for event in data["violations"]}, data
+    assert data["code"] == 0 and data["error"] is None, data
+    assert data["service"] is False
 
 
 @pytest.mark.anyio

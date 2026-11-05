@@ -320,7 +320,7 @@ recorded per candidate.
 | C14-03, T19 | `test_two_http_clients_share_device_lock_while_other_device_progresses` (second writer and a read wait for the same lock, other device progresses, strict per-device request order, one resource graph, one close); `test_clients_share_one_catalog_cache` |
 | C14-04/05, T20 | `test_access_matrix_rejects_before_any_tool_or_device_work` (60 header/method/path cases, zero tool executions and device requests, no secret or header-value leakage in responses or logs); `test_duplicate_and_missing_host_are_rejected_on_the_wire`; `test_http_startup_fails_closed_in_process` (48 startup failures: credential, bind, allowlist, flags) and `test_real_console_refuses_to_start_and_never_listens` |
 | C14-06/07, T21 | `test_disconnect_after_dispatch_does_not_cancel_or_replay` (both protocol eras); `test_reconnect_is_a_new_invocation`; `test_graceful_shutdown_drains_in_flight_write`; `test_forced_shutdown_leaves_write_uncertain_without_replay` (restart contacts no device); `test_signal_drains_in_flight_write_and_exits_zero` (SIGTERM, SIGINT; skipped on Windows) |
-| C14-08/09, T20/T16 | `test_stdio_ignores_ambient_http_token_and_binds_nothing` (audit hook: no bind/listen/connect, HTTP module unloaded); existing stdio tests unchanged; `scripts/check_distribution.py` installed-console HTTP smoke |
+| C14-08/09, T20/T16 | `test_stdio_ignores_ambient_http_token_and_binds_nothing` (real default-stdio `cli.main` subprocess with an ambient HTTP token and the `tests/stdio_socket_probe.py` guard: audit hook on bind/connect/sendto/sendmsg/getaddrinfo plus a `socket.socket.listen` wrapper; only `socket._fallback_socketpair` may bind loopback port 0, listen and connect to loopback; zero violations, exit 0, empty stdout, HTTP module unloaded); `test_stdio_socket_guard_detects_violation` (6 negative controls: loopback listener, unbound `listen()`, wildcard bind, asyncio `create_server`, foreign loopback connect, UDP sendto; the guard refuses each before the OS sees it); existing stdio tests unchanged; `scripts/check_distribution.py` installed-console HTTP smoke |
 | C14-10/11 | [DEPLOYMENT.md](DEPLOYMENT.md), [TOOL-CONTRACT.md](TOOL-CONTRACT.md#transport-access-and-lifecycle), [decisions](decisions/issue-14.md) |
 
 Pending and not claimed: H02/H03 and hub integration (#11), the resource measurements
@@ -328,6 +328,31 @@ listed in DEPLOYMENT.md, Windows signal delivery (covered only by the in-process
 shutdown tests), TLS, rate limiting, per-user authorization and multi-worker
 coordination. Session expiry is vacuous under stateless JSON and is evidenced by the
 stale-ID and no-session tests.
+
+## Issue #53 stdio socket-guard note
+
+Cause (Windows 11, CPython 3.13.2): the previous listener-free stdio check failed with
+`socket.bind`/`socket.connect` audit events. Both come from
+`cli.main -> anyio.run -> asyncio.Runner -> ProactorEventLoop.__init__ ->
+_make_self_pipe -> socket.socketpair` (= `socket._fallback_socketpair`): a bind to
+`('127.0.0.1', 0)`, a `listen()` and a connect to that ephemeral loopback port, all
+closed inside the function. Nothing came from `wled_mcp` or the MCP SDK. Linux uses the
+native AF_UNIX `socketpair` and emits none of these events. CPython emits no
+`socket.listen` audit event, so the old filter could not see any `listen()`, including
+an unbound one. Per [ISSUE-53-DEC-001](decisions/issue-53.md) the test, not the product,
+was changed; no platform skip or `xfail` is used.
+
+Windows result: the positive run records exactly the three allowed self-pipe operations
+and no violation; every negative control records a violation of its expected kind.
+Without the socketpair allowlist the same start reports a violation and exits 1. Linux
+CI is the second platform result (no allowed events expected there).
+
+Residual limits: code that calls `_socket.socket.listen` directly bypasses the wrapper
+(asyncio, anyio and uvicorn use `socket.socket`); a product call to `socket.socketpair()`
+on Windows would be allowed, and it only creates the same transient loopback pair; an
+asyncio outbound connect to an IP literal on the Windows Proactor loop uses `ConnectEx`
+and emits no `socket.connect` audit event, so that case is guarded only by the Linux
+selector-loop run (hostnames still raise `getaddrinfo` on both platforms).
 
 ## Evidence template
 
