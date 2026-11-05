@@ -342,24 +342,35 @@ def test_stdio_ignores_ambient_http_token_and_binds_nothing(tmp_path):
 
 
 @pytest.mark.parametrize(
-    ("mode", "kind"),
+    ("mode", "kind", "socket_checked"),
     [
-        ("listen_loopback", "bind"),
-        ("listen_unbound", "listen"),
-        ("bind_any", "bind"),
-        ("create_server", "bind"),
-        ("connect_loopback", "connect"),
-        ("udp_sendto", "sendto"),
+        ("listen_loopback", "bind", True),
+        ("listen_unbound", "listen", True),
+        ("bind_any", "bind", True),
+        ("create_server", "bind", False),
+        ("connect_loopback", "connect", False),
+        ("udp_sendto", "sendto", True),
+        # asyncio-level paths: Proactor (Windows) and selector (Linux) event loops.
+        ("asyncio_connect", "connect", False),
+        ("asyncio_udp_connect", "connect", False),
+        ("asyncio_udp_sendto", "sendto", False),
     ],
 )
-def test_stdio_socket_guard_detects_violation(tmp_path, mode, kind):
+def test_stdio_socket_guard_detects_violation(tmp_path, mode, kind, socket_checked):
     """Negative controls: an injected listener/bind/connect/send inside the real stdio start.
 
     The guard refuses each injected operation before the OS sees it, so no listener stays
-    open and nothing is sent; the start itself still completes with exit code 0.
+    open and nothing is sent; the start itself still completes with exit code 0. The
+    injected code must receive the guard's own ``PermissionError`` (an OS refusal such as
+    ``ConnectionRefusedError`` or a silent success does not count), and a plain socket
+    must still hold no local port afterwards (a bind, ``listen()`` or ``sendto`` that
+    reached the OS would have assigned one).
     """
     data = run_stdio_socket_probe(tmp_path, mode)
     assert kind in {event["kind"] for event in data["violations"]}, data
+    assert data["injection"]["refused"] is True, data
+    if socket_checked:
+        assert data["injection"]["bound"] is False, data
     assert data["code"] == 0 and data["error"] is None, data
     assert data["service"] is False
 

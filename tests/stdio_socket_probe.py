@@ -14,15 +14,25 @@ loopback address. Everything else is a violation and is refused with ``Permissio
 before it reaches the operating system, so negative controls never leave a listener
 open or send a packet.
 
+On Windows the Proactor event loop performs outbound connects (TCP ``ConnectEx``, UDP
+``WSAConnect``) and datagram ``sendto`` (``WSASendTo``) through ``_overlapped``, which
+emits no socket audit event. Where ``asyncio.windows_events.IocpProactor`` exists, its
+``connect`` and ``sendto`` methods are therefore wrapped and routed through the same
+check.
+
 ``MODE`` other than ``none`` replaces ``wled_mcp.cli.serve_stdio`` with a wrapper that
 first attempts one injected forbidden operation inside the running event loop and then
-starts the real stdio server. stdout stays empty; the report is a JSON file.
+starts the real stdio server. The report records whether the guard refused that
+operation (its ``PermissionError`` reached the injected code) and, for plain-socket
+modes, whether the socket ended up holding a local port. stdout stays empty; the report
+is a JSON file.
 """
 
 import ipaddress
 import json
 import socket
 import sys
+from collections.abc import Callable
 from types import CodeType, FrameType
 from typing import Any
 
@@ -31,9 +41,12 @@ AUDITED = frozenset(
 )
 _PAIR = getattr(socket, "_fallback_socketpair", None)
 PAIR_CODE: CodeType | None = _PAIR.__code__ if _PAIR is not None else None
+REFUSAL = "stdio socket guard refused"
 
 allowed: list[dict[str, str]] = []
 violations: list[dict[str, str]] = []
+injection: dict[str, Any] = {}
+_proactor_originals: dict[str, Callable[..., Any]] = {}
 
 
 def _caller() -> FrameType | None:
@@ -72,7 +85,7 @@ def _check(kind: str, address: object) -> None:
         allowed.append(record)
         return
     violations.append(record)
-    raise PermissionError(f"stdio socket guard refused {kind} {address!r}")
+    raise PermissionError(f"{REFUSAL} {kind} {address!r}")
 
 
 def _hook(event: str, args: tuple[Any, ...]) -> None:
@@ -103,7 +116,58 @@ def _sockname(sock: socket.socket) -> object:
         return None
 
 
-GUARD_CODES = frozenset({_caller.__code__, _check.__code__, _hook.__code__, _listen.__code__})
+def _proactor_connect(self: object, conn: socket.socket, address: object) -> Any:
+    _check("connect", address)
+    return _proactor_originals["connect"](self, conn, address)
+
+
+def _proactor_sendto(
+    self: object, conn: socket.socket, buf: bytes, flags: int = 0, addr: object = None
+) -> Any:
+    _check("sendto", addr)
+    return _proactor_originals["sendto"](self, conn, buf, flags, addr)
+
+
+def _install_proactor_guard() -> bool:
+    """Wrap the Windows Proactor connect/sendto, which bypass the socket audit events."""
+    if sys.platform != "win32":
+        return False
+    from asyncio import windows_events
+
+    proactor = windows_events.IocpProactor
+    _proactor_originals.update(connect=proactor.connect, sendto=proactor.sendto)
+    proactor.connect = _proactor_connect  # type: ignore[method-assign,assignment]
+    proactor.sendto = _proactor_sendto  # type: ignore[method-assign,assignment]
+    return True
+
+
+GUARD_CODES = frozenset(
+    {
+        _caller.__code__,
+        _check.__code__,
+        _hook.__code__,
+        _listen.__code__,
+        _proactor_connect.__code__,
+        _proactor_sendto.__code__,
+    }
+)
+
+
+def _refused(exc: BaseException | None) -> bool:
+    """True if the guard's own ``PermissionError`` is in the exception chain."""
+    seen: set[int] = set()
+    while exc is not None and id(exc) not in seen:
+        if isinstance(exc, PermissionError) and REFUSAL in str(exc):
+            return True
+        seen.add(id(exc))
+        exc = exc.__cause__ or exc.__context__
+    return False
+
+
+def _record_bound(sock: socket.socket) -> None:
+    """Record whether the socket holds a local port; a refused bind/listen/send leaves none."""
+    name = _sockname(sock)
+    injection["bound"] = isinstance(name, tuple) and len(name) >= 2 and name[1] != 0
 
 
 def _inject(mode: str) -> None:
@@ -113,19 +177,35 @@ def _inject(mode: str) -> None:
 
     original = cli.serve_stdio
 
+    class RecordingDatagram(asyncio.DatagramProtocol):
+        def __init__(self) -> None:
+            self.errors: list[Exception] = []
+
+        def error_received(self, exc: Exception) -> None:
+            self.errors.append(exc)
+
     async def attempt() -> None:
+        loop = asyncio.get_running_loop()
         if mode == "listen_loopback":
             with socket.socket() as sock:
-                sock.bind(("127.0.0.1", 0))
-                sock.listen()
+                try:
+                    sock.bind(("127.0.0.1", 0))
+                    sock.listen()
+                finally:
+                    _record_bound(sock)
         elif mode == "listen_unbound":
             with socket.socket() as sock:
-                sock.listen()
+                try:
+                    sock.listen()
+                finally:
+                    _record_bound(sock)
         elif mode == "bind_any":
             with socket.socket() as sock:
-                sock.bind(("0.0.0.0", 0))
+                try:
+                    sock.bind(("0.0.0.0", 0))
+                finally:
+                    _record_bound(sock)
         elif mode == "create_server":
-            loop = asyncio.get_running_loop()
             server = await loop.create_server(asyncio.Protocol, "127.0.0.1", 0)
             server.close()
             await server.wait_closed()
@@ -134,15 +214,41 @@ def _inject(mode: str) -> None:
                 sock.connect(("127.0.0.1", 9))
         elif mode == "udp_sendto":
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-                sock.sendto(b"x", ("127.0.0.1", 9))
+                try:
+                    sock.sendto(b"x", ("127.0.0.1", 9))
+                finally:
+                    _record_bound(sock)
+        elif mode == "asyncio_connect":
+            _, writer = await asyncio.open_connection("127.0.0.1", 9)
+            writer.close()
+        elif mode == "asyncio_udp_connect":
+            transport, _ = await loop.create_datagram_endpoint(
+                asyncio.DatagramProtocol, remote_addr=("127.0.0.1", 9)
+            )
+            transport.close()
+        elif mode == "asyncio_udp_sendto":
+            transport, protocol = await loop.create_datagram_endpoint(
+                RecordingDatagram, family=socket.AF_INET
+            )
+            try:
+                transport.sendto(b"x", ("127.0.0.1", 9))
+                await asyncio.sleep(0)
+            finally:
+                transport.close()
+            # The datagram transport reports send errors to its protocol, not the caller.
+            errors = sorted(protocol.errors, key=lambda exc: not _refused(exc))
+            if errors:
+                raise errors[0]
         else:
             raise ValueError(f"unknown probe mode {mode!r}")
 
     async def guarded(server: Any) -> None:
         try:
             await attempt()
-        except OSError:
-            pass  # refused by the guard (or by the OS); the violation is recorded
+        except OSError as exc:  # refused by the guard (or by the OS)
+            injection.update(refused=_refused(exc), error=repr(exc))
+        else:
+            injection.update(refused=False, error=None)
         await original(server)
 
     cli.serve_stdio = guarded  # type: ignore[assignment]
@@ -154,6 +260,7 @@ def main(argv: list[str]) -> None:
     sys.addaudithook(_hook)
     socket.socket.listen = _listen  # type: ignore[method-assign]
     result: dict[str, Any] = {"code": None, "error": None}
+    result["proactor_guard"] = _install_proactor_guard()
     try:
         if mode != "none":
             _inject(mode)
@@ -166,6 +273,7 @@ def main(argv: list[str]) -> None:
         result.update(
             allowed=allowed,
             violations=violations,
+            injection=injection,
             service="wled_mcp.http_service" in sys.modules,
             pair_fallback=PAIR_CODE is not None and socket.socketpair is _PAIR,
         )

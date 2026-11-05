@@ -320,7 +320,7 @@ recorded per candidate.
 | C14-03, T19 | `test_two_http_clients_share_device_lock_while_other_device_progresses` (second writer and a read wait for the same lock, other device progresses, strict per-device request order, one resource graph, one close); `test_clients_share_one_catalog_cache` |
 | C14-04/05, T20 | `test_access_matrix_rejects_before_any_tool_or_device_work` (60 header/method/path cases, zero tool executions and device requests, no secret or header-value leakage in responses or logs); `test_duplicate_and_missing_host_are_rejected_on_the_wire`; `test_http_startup_fails_closed_in_process` (48 startup failures: credential, bind, allowlist, flags) and `test_real_console_refuses_to_start_and_never_listens` |
 | C14-06/07, T21 | `test_disconnect_after_dispatch_does_not_cancel_or_replay` (both protocol eras); `test_reconnect_is_a_new_invocation`; `test_graceful_shutdown_drains_in_flight_write`; `test_forced_shutdown_leaves_write_uncertain_without_replay` (restart contacts no device); `test_signal_drains_in_flight_write_and_exits_zero` (SIGTERM, SIGINT; skipped on Windows) |
-| C14-08/09, T20/T16 | `test_stdio_ignores_ambient_http_token_and_binds_nothing` (real default-stdio `cli.main` subprocess with an ambient HTTP token and the `tests/stdio_socket_probe.py` guard: audit hook on bind/connect/sendto/sendmsg/getaddrinfo plus a `socket.socket.listen` wrapper; only `socket._fallback_socketpair` may bind loopback port 0, listen and connect to loopback; zero violations, exit 0, empty stdout, HTTP module unloaded); `test_stdio_socket_guard_detects_violation` (6 negative controls: loopback listener, unbound `listen()`, wildcard bind, asyncio `create_server`, foreign loopback connect, UDP sendto; the guard refuses each before the OS sees it); existing stdio tests unchanged; `scripts/check_distribution.py` installed-console HTTP smoke |
+| C14-08/09, T20/T16 | `test_stdio_ignores_ambient_http_token_and_binds_nothing` (real default-stdio `cli.main` subprocess with an ambient HTTP token and the `tests/stdio_socket_probe.py` guard: audit hook on bind/connect/sendto/sendmsg/getaddrinfo plus a `socket.socket.listen` wrapper and, where `asyncio.windows_events.IocpProactor` exists, wrappers on its `connect`/`sendto`; only `socket._fallback_socketpair` may bind loopback port 0, listen and connect to loopback; zero violations, exit 0, empty stdout, HTTP module unloaded); `test_stdio_socket_guard_detects_violation` (9 negative controls: loopback listener, unbound `listen()`, wildcard bind, asyncio `create_server`, foreign loopback connect, UDP sendto, and on the event loop `asyncio.open_connection`, a UDP `create_datagram_endpoint(remote_addr=...)` and a datagram-transport `sendto`, all to 127.0.0.1:9; each asserts that the injected code received the guard's own `PermissionError` and, for plain sockets, that no local port was assigned, so the refusal happens before the OS call); existing stdio tests unchanged; `scripts/check_distribution.py` installed-console HTTP smoke |
 | C14-10/11 | [DEPLOYMENT.md](DEPLOYMENT.md), [TOOL-CONTRACT.md](TOOL-CONTRACT.md#transport-access-and-lifecycle), [decisions](decisions/issue-14.md) |
 
 Pending and not claimed: H02/H03 and hub integration (#11), the resource measurements
@@ -343,16 +343,28 @@ an unbound one. Per [ISSUE-53-DEC-001](decisions/issue-53.md) the test, not the 
 was changed; no platform skip or `xfail` is used.
 
 Windows result: the positive run records exactly the three allowed self-pipe operations
-and no violation; every negative control records a violation of its expected kind.
-Without the socketpair allowlist the same start reports a violation and exits 1. Linux
-CI is the second platform result (no allowed events expected there).
+and no violation (the Proactor wrappers see no call from the self-pipe); every negative
+control records a violation of its expected kind and is refused before the OS call.
+Without the socketpair allowlist the same start reports a violation and exits 1. Without
+the Proactor wrappers the three event-loop outbound controls are not detected on
+Windows. Linux CI is the second platform result (no allowed events expected there; the
+event-loop controls run on the selector loop, which calls `socket.connect`/`sendto`
+directly and is covered by the audit events).
 
-Residual limits: code that calls `_socket.socket.listen` directly bypasses the wrapper
-(asyncio, anyio and uvicorn use `socket.socket`); a product call to `socket.socketpair()`
-on Windows would be allowed, and it only creates the same transient loopback pair; an
-asyncio outbound connect to an IP literal on the Windows Proactor loop uses `ConnectEx`
-and emits no `socket.connect` audit event, so that case is guarded only by the Linux
-selector-loop run (hostnames still raise `getaddrinfo` on both platforms).
+Visibility on Windows: on the Proactor loop, outbound TCP connects (`ConnectEx`), UDP
+connects (`WSAConnect`) and datagram sends (`WSASendTo`) bypass the socket audit events;
+the guard sees them through the wrapped `IocpProactor.connect`/`sendto`. Binds, `listen()`
+and name resolution still go through `socket.socket`/`getaddrinfo` and are seen as on
+Linux. Proactor `accept`, `send`/`recv`, `recvfrom` and `sendfile` are not wrapped: they
+need a socket that is already listening, connected or bound, which the guard refuses
+earlier (an unbound UDP `recvfrom` assigns no port).
+
+Residual limits: code that calls `_socket.socket` methods or `_overlapped` directly
+bypasses the wrappers (asyncio, anyio and uvicorn use `socket.socket` and
+`IocpProactor`); a product call to `socket.socketpair()` on Windows would be allowed, and
+it only creates the same transient loopback pair; Windows named pipes
+(`loop.start_serving_pipe`, `IocpProactor.connect_pipe`) are not sockets and are not
+guarded on either platform; macOS and Python versions other than 3.13 are not checked.
 
 ## Evidence template
 
