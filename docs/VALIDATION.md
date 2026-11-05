@@ -205,7 +205,7 @@ host, as documented under issue #5's evidence.
 
 | Criterion | Executed evidence (all in `tests/test_patches.py` unless noted) |
 | --- | --- |
-| C2-01, T04 | master patch rules: off-master + positive brightness payload excludes `on`; explicit `on=False` sends only `{on:false}`; reject `on=true, brightness=0` and `brightness=0` with resolved `on=true`; turning on requires an explicit positive brightness when remembered is zero; persistent `transition` is never in the payload |
+| C2-01, T04 | master patch rules: off-master + positive brightness payload excludes `on` (superseded by #52: the payload now carries the compensating `on=false`, see [Issue #52 implementation evidence](#issue-52-implementation-evidence)); explicit `on=False` sends only `{on:false}`; reject `on=true, brightness=0` and `brightness=0` with resolved `on=true`; turning on requires an explicit positive brightness when remembered is zero; persistent `transition` is never in the payload |
 | C2-05, T04 | `transition_ms` -> `tt` conversion verified for `0`, `50`, `149`, `150`, `65500` (0/1/1/2/655); 1-49 rejected; transition-only request rejected before POST; `transition_ms` out of range caught by request schema |
 | C2-03/04, T06 | RGB-only with 4 channels or RGBW with 3 channels -> `VALIDATION_ERROR`; unknown per-segment capability for a color change -> `UNSUPPORTED_CAPABILITY`; unknown patch target -> `VALIDATION_ERROR`; patch without a mutable field -> `VALIDATION_ERROR`; range change requires both `start`/`stop`; range change introducing overlap with an untouched active segment -> `VALIDATION_ERROR`; `effect_id` beyond catalog range -> `VALIDATION_ERROR`; unknown device -> `UNKNOWN_DEVICE` with zero HTTP |
 | C2-06, T07 | dry-run plan lists exact update IDs, empty create/remove IDs and all preserved IDs; payload shows only the sent fields; zero POSTs; actual invocation under the per-device lock revalidates and rejects a plan invalidated by a live state change |
@@ -300,6 +300,50 @@ behavior of `grp`/`spc` above 255 and a possible visible transition when `{bri, 
 is sent to an off segment are unverified and stay with #12. Master `wled_set_state`
 behavior is unchanged (a positive `bri` can still switch an off master on); that is
 outside #48.
+
+## Issue #52 implementation evidence
+
+Master power preservation in `wled_set_state` per the delegated decision
+[ISSUE-52-DEC-001](decisions/issue-52.md): a positive `brightness` with omitted `on` on an
+off master is sent with the resolved `on=false` and every master write verifies the
+resolved `on`. Candidate under review; mock transport and the stateful fake WLED only
+(`tests/layout_support.py` now also models the master `on = root["on"] | (bri > 0)`,
+`toggleOnOff` and the `on = bri > 0` / `bri = briLast` readback); no LAN/device access;
+**H04/H05 not run** (#12). 2026-11-05, Windows 11/Python 3.13.2, commands from the
+repository root:
+
+| Command | Result |
+| --- | --- |
+| `uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py` | All checks passed |
+| `uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py` | 41 files already formatted |
+| `uv run --frozen mypy` | Success: no issues found in 19 source files |
+| `python scripts/check_agent_setup.py` / `python scripts/sync_agents.py --check` | valid (static) / adapters synchronized |
+| `uv run --frozen python scripts/check_lock.py` | Lock/export consistency: PASS |
+| `uv run --frozen pytest` | Final run: 563 passed, 9 skipped, 1 failed: `test_http_cli.py::test_stdio_ignores_ambient_http_token_and_binds_nothing` (fails identically on an export of the unchanged base commit; tracked by #53). An earlier run also hit the known wall-clock flake `test_one_total_deadline_and_bounded_read_retry` (passed in 2 of 3 isolated reruns). `tests/test_patches.py` and `tests/test_layouts.py`: 168 passed |
+
+| Criterion | Executed evidence (all in `tests/test_patches.py`) |
+| --- | --- |
+| AC-52-01 | `test_52_off_master_positive_brightness_dry_run_is_compensated` (payload `{"on": false, "bri": 120}`, `targeted_compensation == [{"on": false}]`, `plan.on` null, `plan.resolved` `{on: false, brightness: 120}`, postcondition, zero POSTs); the former #6 assertion in `test_T04_master_set_state_power_and_brightness_rules` now expects the same payload |
+| AC-52-02 | `test_52_off_master_positive_brightness_live_stays_off_and_verifies` (one POST, readback `on=false`/`bri=120`, `applied/verified`, live plan equals dry-run plan, segment power unchanged) |
+| AC-52-03 | `test_52_on_master_positive_brightness_is_sent_alone_and_stays_on` |
+| AC-52-04 | `test_52_dropped_compensation_power_flip_is_a_mismatch` (device drops `on`, master flips on: `VERIFICATION_MISMATCH`, `unknown/mismatch`, exactly one POST) |
+| AC-52-05 | `test_52_on_master_that_ends_off_after_bri_is_a_mismatch` |
+| AC-52-06 | `test_52_compensation_keeps_one_call_transition` (`{"on": false, "bri": 120, "tt": 2}`, 150/200/2, persistent `transition` untouched) |
+| AC-52-07 | `test_52_existing_master_rejections_before_any_post` (3 cases x dry/live: `VALIDATION_ERROR`, `not_attempted/not_requested`, zero POSTs) |
+| AC-52-08 | `test_52_off_master_brightness_zero_is_accepted_without_compensation` |
+| AC-52-09 | `test_52_explicit_on_with_brightness_is_not_compensation` (4 power combinations; a dropped explicit `on=false` is a mismatch) |
+| AC-52-10 | `test_52_master_without_boolean_on_is_invalid_response` (missing/string/int `on` x dry/live: `INVALID_RESPONSE`, zero POSTs) |
+| AC-52-11 | [TOOL-CONTRACT.md](TOOL-CONTRACT.md#master-power-rules-wled_set_state) master rule table; [SOURCES.md](SOURCES.md) power row; #6 row above marked superseded; decision recorded in [issue-52.md](decisions/issue-52.md) |
+| AC-52-12 | command table above; #48 segment tests and `tests/test_layouts.py` pass unchanged |
+
+The new tests were also run against the unchanged base `src/wled_mcp/patches.py` (new tests
+and fake kept): 12 failed (AC-52-01/02/04/05/06 on behavior; AC-52-03/08/09 on the missing
+`targeted_compensation` field; the updated #6 assertion), while the AC-52-07/10 regression
+guards passed as expected. Remaining limits: the firmware behavior is source-derived
+(pinned v0.15.1) and modeled by the fake; a visible blip or transition effect when
+`{on: false, bri: X}` reaches an off master, `tt` consumption and a `ps` change on real
+devices are unverified and stay with #12. An external power change between the fresh read
+and the POST remains a documented residual risk.
 
 ## Issue #14 implementation evidence
 

@@ -193,10 +193,12 @@ def _apply_speed_patch(router: WriteRouter, patched_state: dict) -> httpx.Respon
 async def test_T04_master_set_state_power_and_brightness_rules(tmp_path):
     router = fleet()
     async with open_resources(tmp_path, router) as resources:
-        # off master + positive brightness: payload contains only bri (preserves omitted on).
+        # off master + positive brightness: the omitted on is preserved by sending the
+        # resolved on=false with bri (ISSUE-52-DEC-001; supersedes the former bri-only
+        # payload, which the firmware turns on).
         router.set(DESK, "/json/state", make_state(on=False, bri=200))
         result = await call_set_state(resources, brightness=120, dry_run=True)
-        assert result.ok and result.data["payload"] == {"bri": 120}
+        assert result.ok and result.data["payload"] == {"on": False, "bri": 120}
 
         # explicit on=False keeps remembered brightness; payload only {on:false}.
         router.set(DESK, "/json/state", make_state(on=True, bri=180))
@@ -819,3 +821,202 @@ async def test_48_patch_and_replace_apply_the_same_rules(tmp_path, seg0, fields,
         patched_on = patched.data["plan"]["resolved_segments"][0]["on"]
         replaced_on = replaced.data["plan"]["resolved_segments"][0]["on"]
         assert patched_on == replaced_on
+
+
+# ===================================================  issue #52: master power preservation (#6)
+#
+# Master side of ``wled_set_state`` against the firmware-like fake of
+# ``tests/layout_support.py``, which models ``on = root["on"] | (bri > 0)`` and
+# ``toggleOnOff`` (pinned v0.15.1). ``ISSUE-52-DEC-001``; mock-only.
+
+
+def master_fake(*, on: bool, bri: int) -> FakeWLED:
+    fake = FakeWLED([make_segment(0, 0, 10), make_segment(1, 10, 20)])
+    fake.on, fake.bri = on, bri
+    return fake
+
+
+def segment_power(fake: FakeWLED) -> list[bool]:
+    return [seg["on"] for seg in fake.active()]
+
+
+@pytest.mark.anyio
+async def test_52_off_master_positive_brightness_dry_run_is_compensated(tmp_path):
+    """AC-52-01: the dry run shows the compensating on=false and sends nothing."""
+    fake = master_fake(on=False, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, brightness=120, dry_run=True)
+    assert result.ok and result.dry_run, (result.error, result.data)
+    assert result.data["payload"] == {"on": False, "bri": 120}
+    plan = result.data["plan"]
+    assert plan["targeted_compensation"] == [{"on": False}]
+    assert plan["on"] is None
+    assert plan["resolved"] == {"on": False, "brightness": 120}
+    assert any("on=false" in text for text in result.data["postconditions"])
+    assert fake.posts == [] and fake.method_count("POST") == 0
+    assert (fake.on, fake.bri) == (False, 200)
+
+
+@pytest.mark.anyio
+async def test_52_off_master_positive_brightness_live_stays_off_and_verifies(tmp_path):
+    """AC-52-02: one POST with the dry-run payload; the master stays off, remembers the
+    brightness, segment power is untouched and the live plan equals the dry-run plan."""
+    fake = master_fake(on=False, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        dry = await call_set_state(resources, brightness=120, dry_run=True)
+        live = await call_set_state(resources, brightness=120)
+    assert live.ok, (live.error, live.data)
+    assert (live.application, live.verification) == ("applied", "verified")
+    assert fake.posts == [{"on": False, "bri": 120}]
+    assert (fake.state()["on"], fake.state()["bri"]) == (False, 120)
+    assert live.data["plan"] == dry.data["plan"]
+    assert segment_power(fake) == [True, True]
+
+
+@pytest.mark.anyio
+async def test_52_on_master_positive_brightness_is_sent_alone_and_stays_on(tmp_path):
+    """AC-52-03: no on is added for a master that is on; it stays on."""
+    fake = master_fake(on=True, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, brightness=120)
+    assert fake.posts == [{"bri": 120}]
+    assert result.ok and (result.application, result.verification) == ("applied", "verified")
+    assert result.data["plan"]["targeted_compensation"] == []
+    assert (fake.on, fake.bri) == (True, 120)
+
+
+@pytest.mark.anyio
+async def test_52_dropped_compensation_power_flip_is_a_mismatch(tmp_path):
+    """AC-52-04: the device drops the compensating on=false and the firmware switches the
+    master on; this is reported as a mismatch after one POST, never replayed."""
+    fake = master_fake(on=False, bri=200)
+    fake.ignore_keys = {"on"}
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, brightness=120)
+    assert (fake.on, fake.bri) == (True, 120)
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+    assert (result.application, result.verification) == ("unknown", "mismatch")
+    assert fake.method_count("POST") == 1 and fake.posts == [{"on": False, "bri": 120}]
+
+
+@pytest.mark.anyio
+async def test_52_on_master_that_ends_off_after_bri_is_a_mismatch(tmp_path):
+    """AC-52-05: a bri-only write on an on master verifies the resolved on=true."""
+    fake = master_fake(on=True, bri=200)
+
+    def switch_off(device: FakeWLED) -> None:
+        device.on = False
+
+    fake.interference = {0: switch_off}
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, brightness=120)
+    assert fake.posts == [{"bri": 120}] and fake.bri == 120
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+    assert (result.application, result.verification) == ("unknown", "mismatch")
+
+
+@pytest.mark.anyio
+async def test_52_compensation_keeps_one_call_transition(tmp_path):
+    """AC-52-06: tt is still sent and reported; persistent transition is untouched."""
+    fake = master_fake(on=False, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        dry = await call_set_state(resources, brightness=120, transition_ms=150, dry_run=True)
+        assert fake.posts == []
+        live = await call_set_state(resources, brightness=120, transition_ms=150)
+    expected = {"on": False, "bri": 120, "tt": 2}
+    assert dry.ok and dry.data["payload"] == expected
+    assert dry.data["plan"]["transition"] == {
+        "requested_ms": 150,
+        "effective_ms": 200,
+        "wire_units": 2,
+    }
+    assert dry.data["plan"]["persistent_transition_touched"] is False
+    assert fake.posts == [expected]
+    assert live.ok and (fake.on, fake.bri) == (False, 120)
+
+
+MASTER_REJECTIONS_52 = [
+    pytest.param(False, 0, {"on": True, "brightness": 0}, id="on-true-bri-0"),
+    pytest.param(True, 180, {"brightness": 0}, id="bri-0-on-master"),
+    pytest.param(False, 0, {"on": True}, id="turn-on-remembered-0"),
+]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("dry_run", [True, False], ids=["dry", "live"])
+@pytest.mark.parametrize(("on", "bri", "fields"), MASTER_REJECTIONS_52)
+async def test_52_existing_master_rejections_before_any_post(tmp_path, on, bri, fields, dry_run):
+    """AC-52-07: unchanged rejections, identical in dry run and live call."""
+    fake = master_fake(on=on, bri=bri)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, dry_run=dry_run, **fields)
+    assert result.error is not None and result.error.code == "VALIDATION_ERROR"
+    assert (result.ok, result.application, result.verification) == (
+        False,
+        "not_attempted",
+        "not_requested",
+    )
+    assert fake.posts == [] and fake.method_count("POST") == 0
+
+
+@pytest.mark.anyio
+async def test_52_off_master_brightness_zero_is_accepted_without_compensation(tmp_path):
+    """AC-52-08: bri=0 on an off master needs no on and is verified off."""
+    fake = master_fake(on=False, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, brightness=0)
+    assert fake.posts == [{"bri": 0}]
+    assert result.ok and (result.application, result.verification) == ("applied", "verified")
+    assert result.data["plan"]["targeted_compensation"] == []
+    assert fake.on is False
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("current_on", "requested_on"),
+    [(False, True), (True, False), (False, False), (True, True)],
+    ids=["off-to-on", "on-to-off", "off-stays-off", "on-stays-on"],
+)
+async def test_52_explicit_on_with_brightness_is_not_compensation(
+    tmp_path, current_on, requested_on
+):
+    """AC-52-09: an explicit on is sent as requested, listed as no compensation, and the
+    readback checks it: a device that drops on=false (positive bri then turns it on) is a
+    mismatch, not a verified success."""
+    fake = master_fake(on=current_on, bri=200)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_set_state(resources, on=requested_on, brightness=120)
+    assert fake.posts == [{"on": requested_on, "bri": 120}]
+    assert result.ok and (result.application, result.verification) == ("applied", "verified")
+    assert result.data["plan"]["targeted_compensation"] == []
+    assert result.data["plan"]["on"] is requested_on
+    assert (fake.on, fake.bri) == (requested_on, 120)
+
+    flipped = master_fake(on=current_on, bri=200)
+    flipped.ignore_keys = {"on"}
+    async with open_resources(tmp_path, flipped) as resources:
+        dropped = await call_set_state(resources, on=requested_on, brightness=120)
+    assert flipped.on is True
+    if requested_on:
+        assert dropped.ok
+    else:
+        assert not dropped.ok and dropped.error.code == "VERIFICATION_MISMATCH"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("dry_run", [True, False], ids=["dry", "live"])
+@pytest.mark.parametrize("raw_on", [None, "off", 0], ids=["missing", "string", "int"])
+async def test_52_master_without_boolean_on_is_invalid_response(tmp_path, raw_on, dry_run):
+    """AC-52-10: unknown master power is rejected before planning; no POST."""
+    router = fleet()
+    state = make_state(bri=200)
+    if raw_on is None:
+        state.pop("on")
+    else:
+        state["on"] = raw_on
+    router.set(DESK, "/json/state", state)
+    async with open_resources(tmp_path, router) as resources:
+        result = await call_set_state(resources, brightness=120, dry_run=dry_run)
+    assert not result.ok and result.error.code == "INVALID_RESPONSE"
+    assert result.application == "not_attempted"
+    assert router.method_counts()["POST"] == 0

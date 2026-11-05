@@ -6,6 +6,11 @@ Models the pinned v0.15.1 behavior that matters for a layout replacement (source
 ID, ``id >= maxseg`` ignored, geometry change clearing the name unless ``n`` is sent,
 offset clamping, main reset to 0 when the main slot is removed, ``mainseg < slots``,
 bri/on interplay and the array-path purge (so accidental array or bulk use is caught).
+
+Issue #52 adds the master power/brightness coupling of ``json.cpp`` L314-318 and
+``led.cpp`` ``toggleOnOff``: ``on = root["on"] | (bri > 0)``, a toggle when power and the
+actual brightness disagree, and a readback of ``on = bri > 0`` with the remembered
+``briLast`` as ``bri`` (``json.cpp`` L572-575). Segment behavior is unchanged.
 """
 
 from __future__ import annotations
@@ -59,6 +64,7 @@ class FakeWLED:
         self.mainseg = mainseg
         self.lc = lc
         self.seglc = seglc
+        # Master readback: ``on`` is actual power, ``bri`` the remembered ``briLast``.
         self.on = True
         self.bri = 128
         self.posts: list[Any] = []
@@ -113,6 +119,7 @@ class FakeWLED:
 
     # ------------------------------------------------------------------ firmware model
     def apply(self, body: dict[str, Any]) -> None:
+        self._apply_master(body)
         if "mainseg" in body:
             value = body["mainseg"]
             self.mainseg = value if 0 <= value < len(self.slots) else 0
@@ -129,6 +136,26 @@ class FakeWLED:
                         deleted += 1
             if len(self.slots) > 3 and deleted >= len(self.slots) // 2:
                 self._purge()
+
+    def _apply_master(self, body: dict[str, Any]) -> None:
+        """Top-level ``on``/``bri`` per pinned ``json.cpp`` L314-318 and ``toggleOnOff``."""
+        obj = {k: v for k, v in body.items() if k in ("on", "bri") and k not in self.ignore_keys}
+        if not obj:
+            return
+        bri = self.bri if self.on else 0  # firmware ``bri`` (actual output brightness)
+        bri_last = self.bri
+        if "bri" in obj:
+            bri = obj["bri"]
+        on = obj["on"] if "on" in obj else bri > 0
+        if (not on) != (not bri):  # toggleOnOff()
+            if bri == 0:
+                bri = bri_last
+            else:
+                bri_last, bri = bri, 0
+        if bri > 0:
+            bri_last = bri
+        self.on = bri > 0
+        self.bri = bri_last
 
     def _purge(self) -> None:
         kept = [s for s in self.slots if s["stop"] > s["start"]]

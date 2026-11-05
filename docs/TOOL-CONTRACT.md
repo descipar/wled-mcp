@@ -155,6 +155,39 @@ power/effective zero and retained remembered level separately. Do not demand raw
 `bri=0` or treat remembered nonzero readback as failed off. Effects and unrelated
 transient frames are not equality targets.
 
+### Master power rules (`wled_set_state`)
+
+Issue #52, [ISSUE-52-DEC-001](decisions/issue-52.md) (delegated decision). The pinned
+v0.15.1 firmware couples master power to brightness (`on = root["on"] | (bri > 0)`), so a
+positive `bri` alone turns an off master on. The planner applies these rules before any
+write and identically in a dry run (evidence: [SOURCES.md](SOURCES.md); hardware
+confirmation stays with #12).
+
+| Input | Rule | Outcome |
+| --- | --- | --- |
+| `on=true` with `brightness=0` | Rejected | `VALIDATION_ERROR`, zero POSTs |
+| `brightness=0`, `on` omitted | Accepted only when the master is off; otherwise pass `on=false` explicitly | Off master: `{"bri": 0}`, verified off; on master: `VALIDATION_ERROR`, zero POSTs |
+| `on=true` without `brightness` | Requires a positive remembered brightness | Remembered zero: `VALIDATION_ERROR`, zero POSTs |
+| `brightness > 0`, `on` omitted, master off | Targeted compensation: the resolved `on=false` is sent with `bri` and listed in `plan.targeted_compensation` as `{"on": false}`; the master stays off and remembers the new brightness | Payload `{"on": false, "bri": X}`, `applied/verified` |
+| `brightness > 0`, `on` omitted, master on | `bri` is sent alone (no `on` added); the master stays on | `applied/verified` |
+| Explicit `on` with `brightness` | Sent as requested; not a compensation (`targeted_compensation` is `[]`) | `applied/verified` |
+| Current master `on` not a boolean | Power is unknown; the state read already fails before planning | `INVALID_RESPONSE`, zero POSTs |
+
+`plan.targeted_compensation` is always present for `wled_set_state` (`[]` or
+`[{"on": false}]`; the master has no `id`). `plan.on` keeps the requested value (`null`
+when omitted) and `plan.resolved` shows the resolved `on` and `brightness`; a
+postcondition names the compensation. Every master write verifies the resolved `on` in
+the readback, because it sends either `on` or a power-coupled `bri`; a power flip is a
+`VERIFICATION_MISMATCH` (`application=unknown`), never a silent success, and is not
+replayed. One-call `tt` is unchanged by compensation: it is still sent and reported;
+whether the off master shows any visible transition effect is unverified on hardware
+(#12). The plan is rebuilt from a fresh read under the per-device lock; an external power
+change between that read and the POST can still be undone (compensation) or carried
+forward (a bri-only write) and remains a residual risk; verification compares the
+readback with the resolved target of that fresh read, so such a reversal is not
+detected. `wled_set_state` has no segment fields, and the
+master `on=false` does not change segment power.
+
 Master `transition_ms` affects this change only via WLED `tt`, leaving persistent
 `transition` untouched. Accept integer 0â€“65500 ms; compute wire units as
 `floor((transition_ms + 50) / 100)` (nearest 100 ms, half upward). Zero is immediate;
