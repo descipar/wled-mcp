@@ -13,7 +13,7 @@ optional fxdata, firmware-aware cache, internal name resolver) and three operati
 `operations.py`. Reads take the per-device lock and one deadline; the injectable
 `Clock` lives on `Resources`. See [TOOL-CONTRACT](TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5)
 and [decisions](decisions/issue-5.md). Durable snapshots and actual multi-session HTTP
-handling remain #8/#14 work.
+handling remain #8 work; the HTTP service is implemented by the #14 candidate.
 
 ## Components
 
@@ -65,7 +65,7 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 | Python, async HTTP, official MCP SDK | Proposed | Fits existing hub ecosystem and small adapter scope; choose maintained compatible versions at bootstrap |
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |
 | Streamable HTTP plus stdio in v1 | Confirmed scope update | Independent service mode plus client-managed uvx mode; identical tools and domain layer |
-| One HTTP worker, SDK stateless JSON responses | Issue-2 technical design | No session IDs/replay store; shared process-wide resources and locks; bounded drain, access checks before device work; implement/test in #14 |
+| One HTTP worker, SDK stateless JSON responses | Issue-2 technical design | No session IDs/replay store; shared process-wide resources and locks; bounded drain, access checks before device work; implemented in #14 ([decisions](decisions/issue-14.md)) |
 | Explicit named inventory | Proposed | Predictable target selection; avoids Docker multicast/mDNS assumptions |
 | No arbitrary caller-supplied hosts | Proposed | Limits tool targeting to the configured installation and removes accidental host selection |
 | Separate segment patch and layout replacement | Issue-2 technical design | Preserve existing omitted state; new IDs use explicit defaults; reject unrepresentable ID/preservation plans; see contract and decisions |
@@ -84,6 +84,13 @@ Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`
 Build the same tool/domain graph for either explicitly selected transport. In HTTP mode create shared resources once per process, not per request/session; all sessions share the same device locks and backup store. Use the maintained SDK for `/mcp`, protocol negotiation and session handling. One worker is the v1 baseline; multiple worker processes need cross-process coordination before they can provide equivalent write guarantees.
 
 CLI stdio is the default and opens no listener; `--transport streamable-http` starts the independent service with explicit bind/port options. HTTP defaults to loopback. Private container-network binding and the actual allowlist/secret values remain deployment configuration. The contract fixes loopback port 8000, exact allowlists, mandatory auth on every method and fail-closed startup; no HTTP credential is required for stdio. Protect the endpoint independently of the hub, without inventing a new OAuth product. Use SDK-supported stateless JSON responses with no session IDs or replay store, as specified in [the transport contract](TOOL-CONTRACT.md#transport-access-and-lifecycle). Test initialization, auth/Host/Origin rejection, reconnect and bounded shutdown without replay. #3 selects a compatible SDK; #14 implements this lifecycle.
+
+Issue #14 implementation: `http_config.py` validates bind/allowlist/credential settings
+before any listener exists; `http_service.py` wraps the SDK stateless JSON app in a
+header-only access guard (Host 403, Origin 403, bearer 401, path 404, non-POST 405)
+and runs one uvicorn worker that owns SIGINT/SIGTERM and drains within the operation
+deadline. `cli.py` imports it only for `--transport streamable-http`; stdio never
+loads it. Both transports call `create_server(build_operations(resources))`.
 
 Reuse one managed async HTTP client with bounded connections, close it on process exit, and use operation deadlines. Reads can use a single bounded retry for transient transport failures; parse errors and invalid requests are not retry candidates. Writes are never automatically retried.
 

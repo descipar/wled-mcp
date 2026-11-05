@@ -12,11 +12,11 @@ attrs==26.1.0
     #   referencing
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-click==8.5.0 ; sys_platform != 'emscripten'
+click==8.5.0
     # via uvicorn
 cryptography==50.0.2
     # via pyjwt
-h11==0.16.0 ; sys_platform != 'emscripten'
+h11==0.16.0
     # via
     #   httpcore2
     #   uvicorn
@@ -71,6 +71,7 @@ starlette==1.10.0
     # via
     #   mcp
     #   sse-starlette
+    #   wled-mcp
 truststore==0.10.5 ; sys_platform != 'emscripten'
     # via
     #   httpcore2
@@ -88,5 +89,7 @@ typing-inspection==0.4.5
     # via
     #   mcp
     #   pydantic
-uvicorn==0.54.0 ; sys_platform != 'emscripten'
-    # via mcp
+uvicorn==0.54.0
+    # via
+    #   mcp
+    #   wled-mcp

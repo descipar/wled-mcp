@@ -2,8 +2,9 @@
 
 Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
-The production registry contains `wled_list_devices`, `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (the three read tools from #5; no setters). HTTP selection exits 2 before listening
-pending authenticated service support in #14. Full dual-mode acceptance is pending.
+The production registry contains `wled_list_devices`, `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (the three read tools from #5; no setters). `--transport streamable-http` starts the
+authenticated stateless HTTP service from #14 (see below); its software evidence is
+mock/loopback only and full dual-mode acceptance (#10/#11) is pending.
 
 ## Checks and build
 
@@ -44,6 +45,28 @@ The lock checker rejects drift. uvx does **not** consume `uv.lock`; runtime
 constraints pin its versions. Constraints do not enforce artifact hashes or
 authenticate the wheel; preserve a trusted wheel for private distribution.
 The lockfile separately retains dependency artifact hashes.
+
+## Streamable HTTP service and tests
+
+The HTTP service needs a bearer credential before it listens: set
+`WLED_MCP_HTTP_TOKEN` (32 to 512 printable ASCII characters) or pass
+`--http-token-file <absolute path>`; never pass the value on the command line.
+Local loopback run (synthetic placeholder credential):
+
+```text
+WLED_MCP_HTTP_TOKEN=<synthetic-token-of-32-or-more-characters> \
+  uv run --frozen wled-mcp --config <abs>/bootstrap.toml --data-dir <abs>/runtime \
+  --transport streamable-http
+```
+
+The endpoint is `http://127.0.0.1:8000/mcp`. A different host or port requires an
+explicit `--allowed-host host[:port]`. HTTP-only options with stdio exit 2.
+`tests/test_http_service.py` and `tests/test_http_cli.py` bind `127.0.0.1`
+ephemeral ports, use a mocked or synthetic loopback device and never contact a LAN
+device; the POSIX signal tests are skipped on Windows (the in-process shutdown tests
+run everywhere). The distribution check also starts the installed console over HTTP
+on a loopback port and stops it with a signal. Run just these tests with
+`uv run --frozen pytest tests/test_http_service.py tests/test_http_cli.py`.
 
 ## Private local wheel launch
 

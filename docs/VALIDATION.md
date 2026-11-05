@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Issue #5 (read-only state/catalog tools) is validated with mocks only; see [its evidence](#issue-5-implementation-evidence). Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. Full HTTP T18–T21 and hardware H checks remain pending.
+Issue #5 (read-only state/catalog tools) is validated with mocks only; see [its evidence](#issue-5-implementation-evidence). Current runtime result: **issue #3 bootstrap checks pass locally on Windows/Python 3.13.2**. T14/T16 bootstrap evidence includes 24 tests, SDK subprocess current/legacy negotiation, fixture schema/result/error/uncertainty parity, stdout framing/EOF, configuration, wheel build, clean install and uvx with 30 exact runtime versions verified in each environment. Ruff, strict mypy, lock/export and static agent-setup checks pass. Linux CI is configured; verify its remote result separately. These tests do not implement device writes. HTTP T18–T21 software evidence is recorded in [the issue #14 section](#issue-14-implementation-evidence); hardware H checks remain pending.
 
 Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
@@ -176,6 +176,34 @@ Remaining limits: hardware acceptance (H04/H05) is not authorized in this round
 and not run; mock-only POST handlers model profile 0 behavior per the pinned
 source (`docs/SOURCES.md#issue-2-contract-evidence`) and `ISSUE-6-DEC-002`. No
 issue acceptance box that requires hardware evidence is claimed from mocks.
+
+## Issue #14 implementation evidence
+
+2026-11-05, macOS/Python 3.13, MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0: 246 tests passed
+(27 new HTTP tests, one superseded refusal test removed); the new HTTP tests passed in three
+consecutive runs. Ruff, strict mypy, lock/export consistency, agent setup/sync checks, offline
+wheel build and the distribution check (clean install, stdio and installed-console HTTP
+smoke, uvx; 29 exact runtime versions on this platform) passed. All tests use mocks,
+a synthetic loopback fake device and `127.0.0.1` ephemeral ports; no LAN device was
+contacted. This is software evidence only: no deployment, hub integration, resource
+measurement or hardware check was performed, and Linux CI plus independent review are
+recorded per candidate.
+
+| Packet ID / scenario | Executed evidence |
+| --- | --- |
+| C14-01, T18 | `test_sdk_client_initialize_list_call_over_http` (legacy, auto, 2026-07-28 SDK clients: list, mocked reads, one verified write); `test_stateless_json_transport_behavior` (no session ID, 202 notification, GET/DELETE 405, stale ID served, 400/413 transport errors execute no tool); `test_console_serves_http_and_shuts_down_cleanly` (real console, env and file credential) |
+| C14-02, T18/T14 | `test_http_results_match_in_process_server` (identical envelopes, text, isError, MCP errors and device traffic for success, schema/range/domain validation, unknown device, read failure, mismatch, uncertain write, crash, unknown tool; both protocol eras); `test_http_and_stdio_expose_identical_tool_descriptors` (real consoles) |
+| C14-03, T19 | `test_two_http_clients_share_device_lock_while_other_device_progresses` (second writer and a read wait for the same lock, other device progresses, strict per-device request order, one resource graph, one close); `test_clients_share_one_catalog_cache` |
+| C14-04/05, T20 | `test_access_matrix_rejects_before_any_tool_or_device_work` (60 header/method/path cases, zero tool executions and device requests, no secret or header-value leakage in responses or logs); `test_duplicate_and_missing_host_are_rejected_on_the_wire`; `test_http_startup_fails_closed_in_process` (48 startup failures: credential, bind, allowlist, flags) and `test_real_console_refuses_to_start_and_never_listens` |
+| C14-06/07, T21 | `test_disconnect_after_dispatch_does_not_cancel_or_replay` (both protocol eras); `test_reconnect_is_a_new_invocation`; `test_graceful_shutdown_drains_in_flight_write`; `test_forced_shutdown_leaves_write_uncertain_without_replay` (restart contacts no device); `test_signal_drains_in_flight_write_and_exits_zero` (SIGTERM, SIGINT; skipped on Windows) |
+| C14-08/09, T20/T16 | `test_stdio_ignores_ambient_http_token_and_binds_nothing` (audit hook: no bind/listen/connect, HTTP module unloaded); existing stdio tests unchanged; `scripts/check_distribution.py` installed-console HTTP smoke |
+| C14-10/11 | [DEPLOYMENT.md](DEPLOYMENT.md), [TOOL-CONTRACT.md](TOOL-CONTRACT.md#transport-access-and-lifecycle), [decisions](decisions/issue-14.md) |
+
+Pending and not claimed: H02/H03 and hub integration (#11), the resource measurements
+listed in DEPLOYMENT.md, Windows signal delivery (covered only by the in-process
+shutdown tests), TLS, rate limiting, per-user authorization and multi-worker
+coordination. Session expiry is vacuous under stateless JSON and is evidenced by the
+stale-ID and no-session tests.
 
 ## Evidence template
 

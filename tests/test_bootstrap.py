@@ -103,28 +103,6 @@ def test_cli_rejects_unsupported_arguments_without_stdout(args, tmp_path):
     assert "synthetic-secret" not in result.stderr
 
 
-def test_http_fails_without_side_effects(startup):
-    config, data = startup
-    result = subprocess.run(
-        [
-            str(CONSOLE),
-            "--config",
-            str(config),
-            "--data-dir",
-            str(data),
-            "--transport",
-            "streamable-http",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    assert result.returncode == 2
-    assert not result.stdout
-    assert "#14" in result.stderr
-    assert set(data.iterdir()) == {config}
-
-
 @pytest.mark.parametrize("transport", [[], ["--transport", "stdio"]])
 @pytest.mark.parametrize("mode", ["legacy", "auto"])
 def test_actual_console_sdk_handshake(startup, transport, mode):

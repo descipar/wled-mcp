@@ -2,7 +2,7 @@
 
 Specification and implementation backlog for a standalone WLED MCP server with MCPHub integration.
 
-**Status, 2026-11-04:** version 0.1.0 provides an installable Python 3.13 stdio server with validated inventory, `wled_list_devices` and (issue #5 candidate) the read-only `wled_get_state`, `wled_get_effects` and `wled_get_palettes`. Listing is network-free by default; explicit probes and reads use bounded requests to configured devices; effect/palette catalogs have a firmware-aware cache. A shared internal HTTP/deadline/lock foundation supports later operations. HTTP service selection still fails before listening until #14. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md), [inventory behavior](docs/INVENTORY-CLIENT.md) and [validation](docs/VALIDATION.md).
+**Status, 2026-11-04:** version 0.1.0 provides an installable Python 3.13 stdio server with validated inventory, `wled_list_devices` and (issue #5 candidate) the read-only `wled_get_state`, `wled_get_effects` and `wled_get_palettes`. Listing is network-free by default; explicit probes and reads use bounded requests to configured devices; effect/palette catalogs have a firmware-aware cache. A shared internal HTTP/deadline/lock foundation supports later operations. The authenticated stateless Streamable HTTP service (`--transport streamable-http`, issue #14 candidate) shares the same tools and resource graph; it is validated with mocks and loopback only. No deployment or hardware compatibility is claimed. See [development commands](docs/DEVELOPMENT.md), [inventory behavior](docs/INVENTORY-CLIENT.md) and [validation](docs/VALIDATION.md).
 
 The repository also includes [shared Codex and Claude Code roles](agents/README.md) and a [human-in-the-loop workflow](docs/AGENT-WORKFLOW.md) for requirements, implementation, independent review and post-merge issue completion. These run inside an active or resumed client session; no autonomous background service or WLED backlog run is started by checking them out.
 
@@ -44,7 +44,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Marketplace plan](docs/MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
 | [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual home-network configuration |
 | [Stdio hub example](examples/mcphub.example.json) | Proposed uvx entry with separate arguments and placeholder artifact path |
-| [HTTP hub example](examples/mcphub.http.example.json) | Proposed Streamable HTTP URL and placeholder service credential |
+| [HTTP hub example](examples/mcphub.http.example.json) | Streamable HTTP URL (default port 8000) and placeholder service credential |
 
 ## Development status
 

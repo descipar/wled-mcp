@@ -2,7 +2,7 @@
   "mcpServers": {
     "wled": {
       "type": "streamable-http",
-      "url": "http://wled-mcp:8080/mcp",
+      "url": "http://wled-mcp:8000/mcp",
       "headers": {
         "Authorization": "Bearer REPLACE_WITH_PRIVATE_SERVICE_TOKEN"
       }
