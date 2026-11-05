@@ -198,7 +198,11 @@ async def test_get_returns_exact_object_and_not_found_for_empty_slots(tmp_path):
         got = await call(resources, "wled_get_preset", preset_id=3)
         assert got.ok and got.data["preset"] == original
         assert list(got.data["preset"]) == list(original)  # key order untouched
-        assert (got.data["type"], got.data["name"], got.data["preset_id"]) == ("state", "Scene", 3)
+        assert (got.data["type"], got.data["name"], got.data["preset_id"]) == (
+            "unknown",
+            "Scene",
+            3,
+        )  # vendor key: not plain state
         command = await call(resources, "wled_get_preset", preset_id=6)
         assert command.data["type"] == "api-command"
         for empty in (4, 5, 9):
@@ -296,7 +300,7 @@ async def test_activate_absent_and_dry_run_send_nothing(tmp_path):
 async def test_activate_unobservable_is_reported_not_replayed(tmp_path):
     desk = desk_with({"1": state_entry()})
     desk.apply_delay = 10**6
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(resources, "wled_activate_preset", preset_id=1)
     assert outcome.error.code == "VERIFICATION_MISMATCH"
     assert (outcome.application, outcome.verification) == ("unknown", "mismatch")
@@ -596,7 +600,7 @@ async def test_save_visible_only_after_several_polls_succeeds_within_deadline(tm
 async def test_acknowledged_but_never_persisted_save_is_a_mismatch_at_the_deadline(tmp_path):
     desk = desk_with({"3": state_entry("Old")})
     desk.persist = False
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(
             resources, "wled_save_preset", name="Ghost", preset_id=3, overwrite=True
         )
@@ -612,7 +616,7 @@ async def test_acknowledged_but_never_persisted_save_is_a_mismatch_at_the_deadli
 async def test_matching_name_but_differing_captured_field_is_a_mismatch(tmp_path):
     desk = desk_with({})
     desk.entry_mutator = lambda entry: entry["seg"][0].update({"fx": 99})
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(resources, "wled_save_preset", name="Drift")
     assert outcome.error.code == "VERIFICATION_MISMATCH"
     assert outcome.data["differences"] == ["seg[0].fx"]
@@ -634,7 +638,7 @@ async def test_matching_name_but_differing_captured_field_is_a_mismatch(tmp_path
 async def test_every_kind_of_capture_difference_is_reported(tmp_path, mutate):
     desk = desk_with({})
     desk.entry_mutator = mutate
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(resources, "wled_save_preset", name="Drift")
     assert outcome.error.code == "VERIFICATION_MISMATCH"
 
@@ -669,7 +673,7 @@ async def test_unrelated_change_is_reported_as_interference_not_failure(tmp_path
 async def test_delete_never_persisted_is_a_mismatch_with_observed_entry(tmp_path):
     desk = desk_with({"5": state_entry("Stays")})
     desk.persist = False
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(resources, "wled_delete_preset", preset_id=5)
     assert outcome.error.code == "VERIFICATION_MISMATCH"
     assert outcome.data["observed"]["n"] == "Stays" and len(desk.posts) == 1
@@ -692,7 +696,7 @@ async def test_post_timeout_after_apply_reconciles_by_readback_with_warning(tmp_
 async def test_failed_post_with_unchanged_store_is_unknown_and_not_replayed(tmp_path, post_mode):
     desk = desk_with({})
     desk.post_mode = post_mode
-    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.3) as resources:
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(resources, "wled_save_preset", name="Lost")
     assert outcome.error.code == "WRITE_OUTCOME_UNKNOWN"
     assert (outcome.application, outcome.verification) == ("unknown", "unknown")
@@ -711,7 +715,7 @@ async def test_unreadable_readback_is_unknown_and_second_call_is_a_new_invocatio
 
     desk.presets_get_failure = fail_after_post
     async with open_resources(
-        tmp_path, fleet_of(desk), operation_timeout_seconds=0.3, read_retries=0
+        tmp_path, fleet_of(desk), operation_timeout_seconds=0.8, read_retries=0
     ) as resources:
         first = await call(resources, "wled_save_preset", name="Maybe")
         desk.presets_get_failure = None
@@ -728,16 +732,106 @@ async def test_unreadable_readback_is_unknown_and_second_call_is_a_new_invocatio
 async def test_operation_deadline_keeps_last_readable_observation(tmp_path):
     desk = desk_with({"3": state_entry("Old")})
     desk.persist = False
-    async with open_resources(
-        tmp_path, fleet_of(desk), operation_timeout_seconds=0.05
-    ) as resources:
+    desk.hang_after_post_polls = 1  # one readable poll, then every readback hangs
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
         outcome = await call(
             resources, "wled_save_preset", name="Tight", preset_id=3, overwrite=True
         )
-    assert outcome.application in {"not_attempted", "unknown"}
-    if outcome.application == "unknown":
-        assert outcome.error.code in {"VERIFICATION_MISMATCH", "WRITE_OUTCOME_UNKNOWN"}
-        assert len(desk.posts) == 1
+    assert len(desk.posts) == 1
+    assert outcome.error.code == "VERIFICATION_MISMATCH"
+    assert (outcome.application, outcome.verification) == ("unknown", "mismatch")
+    assert outcome.data["observed"]["n"] == "Old" and outcome.data["backup_id"]
+
+
+@pytest.mark.anyio
+async def test_non_object_poll_is_an_unreadable_observation(tmp_path):
+    desk = desk_with({})
+    desk.persist = False
+    original = desk.handle
+
+    def handle(request):
+        if request.url.path == "/presets.json" and desk.posts:
+            return httpx.Response(200, json=[1])  # not an object: also rejected by the client
+        return original(request)
+
+    desk.handle = handle
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
+        outcome = await call(resources, "wled_save_preset", name="X")
+    assert outcome.error.code == "WRITE_OUTCOME_UNKNOWN" and len(desk.posts) == 1
+
+
+@pytest.mark.anyio
+async def test_playlist_end_preset_must_be_a_safe_member(tmp_path):
+    def playlist(end: int) -> dict[str, Any]:
+        entry = playlist_entry([1])
+        entry["playlist"]["end"] = end
+        return entry
+
+    desk = desk_with(
+        {
+            "1": state_entry(),
+            "6": state_entry("End"),
+            "7": {"win": "&RB", "n": "Cmd"},
+            "4": playlist(7),
+            "5": playlist(255),
+            "8": playlist(6),
+            "9": playlist(251),  # outside 1-250: the firmware sets no end preset
+        }
+    )
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        unsafe_end = await call(resources, "wled_activate_preset", preset_id=4)
+        restore_end = await call(resources, "wled_activate_preset", preset_id=5)
+        good_end = await call(resources, "wled_activate_preset", preset_id=8)
+        ignored_end = await call(resources, "wled_activate_preset", preset_id=9)
+    for refused in (unsafe_end, restore_end):
+        assert refused.error.code == "UNSUPPORTED_CAPABILITY"
+        assert refused.application == "not_attempted"
+    assert good_end.ok and ignored_end.ok
+    assert desk.posts == [{"ps": 8}, {"ps": 9}]
+
+
+@pytest.mark.anyio
+async def test_delete_warns_when_a_playlist_references_the_preset_as_end(tmp_path):
+    entry = playlist_entry([1])
+    entry["playlist"]["end"] = 6
+    desk = desk_with({"1": state_entry(), "6": state_entry("End"), "4": entry})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_delete_preset", preset_id=6)
+    assert outcome.ok and any("[4]" in w for w in outcome.warnings)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "extra",
+    [{"rmcpal": True}, {"wifi": {"ap": True}}, {"np": True}, {"nl": {"on": True}}, {"lor": 1}],
+)
+async def test_state_shaped_entry_with_side_effect_keys_is_unknown_and_not_activated(
+    tmp_path, extra
+):
+    desk = desk_with({"6": state_entry(**extra)})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        listing = await call(resources, "wled_list_presets")
+        outcome = await call(resources, "wled_activate_preset", preset_id=6)
+    assert listing.data["presets"][0]["type"] == "unknown"
+    assert outcome.error.code == "UNSUPPORTED_CAPABILITY" and desk.posts == []
+
+
+def test_state_requires_an_observable_field_and_allows_storage_keys():
+    assert classify({"transition": 5, "n": "t"}) == ("unknown", False)
+    assert classify({"mainseg": 0}) == ("unknown", False)
+    assert classify({"on": True, "ql": "A", "ledmap": 1, "n": "x"}) == ("state", False)
+    assert classify({"seg": [], "bri": 3}) == ("state", False)
+
+
+@pytest.mark.anyio
+async def test_already_running_playlist_warning_does_not_claim_firmware_ignores_it(tmp_path):
+    desk = desk_with({"1": state_entry(), "4": playlist_entry([1])})
+    desk.state["pl"] = 4
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_activate_preset", preset_id=4)
+    assert outcome.ok and desk.posts == [{"ps": 4}]
+    assert any("already running" in w for w in outcome.warnings)
+    assert not any("ignores" in w for w in outcome.warnings)
 
 
 @pytest.mark.anyio

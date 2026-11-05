@@ -29,7 +29,15 @@ MAX_LISTED_IDS: Final = 20
 CONTROL_KEYS: Final = frozenset(
     {"psave", "pdel", "ps", "pd", "rb", "win", "playlist", "live", "time", "bootps"}
 )
-STATE_KEYS: Final = frozenset({"on", "bri", "seg", "mainseg", "transition"})
+# A plain state preset carries only what serializeState/doSaveState emit for a save
+# (json.cpp, presets.cpp). Any other top-level key (rmcpal, wifi, np, nl, lor, udpn, ...)
+# is acted on by deserializeState beyond light state, so the entry is `unknown`.
+STATE_ALLOWED_KEYS: Final = frozenset(
+    {"on", "bri", "transition", "mainseg", "seg", "n", "ql", "ledmap"}
+)
+# At least one of these is needed so activation can be observed and verified.
+STATE_REQUIRED_ANY: Final = frozenset({"on", "bri", "seg"})
+END_RESTORE_ID: Final = 255
 
 MASTER_KEYS: Final = ("on", "bri", "transition", "mainseg")
 SEGMENT_KEYS: Final = (
@@ -205,7 +213,7 @@ def classify(entry: JsonValue) -> tuple[str, bool]:
         and not (CONTROL_KEYS - {"playlist"}) & entry.keys()
     ):
         return "playlist", False
-    if not CONTROL_KEYS & entry.keys() and STATE_KEYS & entry.keys():
+    if entry.keys() <= STATE_ALLOWED_KEYS and STATE_REQUIRED_ANY & entry.keys():
         return "state", False
     return "unknown", False
 
@@ -219,9 +227,25 @@ def entry_name(entry: JsonValue) -> str | None:
 
 
 def playlist_members(entry: JsonValue) -> list[int]:
-    if isinstance(entry, dict):
-        return playlist_ids(entry.get("playlist")) or []
-    return []
+    """Presets a playlist applies: its ``ps`` list plus a persistent ``end`` preset."""
+    if not isinstance(entry, dict):
+        return []
+    members = playlist_ids(entry.get("playlist")) or []
+    end = playlist_end(entry)
+    if end is not None and MIN_PERSISTENT_ID <= end <= MAX_PERSISTENT_ID:
+        members.append(end)
+    return members
+
+
+def playlist_end(entry: JsonValue) -> int | None:
+    playlist = entry.get("playlist") if isinstance(entry, dict) else None
+    end = playlist.get("end") if isinstance(playlist, dict) else None
+    return end if type(end) is int else None
+
+
+def playlist_restores_previous(entry: JsonValue) -> bool:
+    """``end: 255`` makes the firmware restore whatever preset ran before (not checkable)."""
+    return playlist_end(entry) == END_RESTORE_ID
 
 
 def unsafe_playlist_members(store: PresetStore, members: list[int]) -> list[int]:

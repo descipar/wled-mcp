@@ -43,6 +43,9 @@ class PresetDevice:
         self.entry_mutator: Callable[[dict[str, Any]], None] | None = None
         self.before_presets_get: Hook | None = None
         self.on_post: Callable[[dict[str, Any]], None] | None = None
+        # Hang every presets.json readback after this many post-POST polls (None: never).
+        self.hang_after_post_polls: int | None = None
+        self._post_polls = 0
         self.presets_get_failure: Callable[[int], BaseException | None] | None = None
         self._pending: list[tuple[str, int, dict[str, Any]]] = []
 
@@ -190,6 +193,12 @@ class PresetFleet:
     async def __call__(self, request: httpx.Request) -> httpx.Response:
         self.calls.append((request.method, request.url.host, request.url.path))
         await anyio.sleep(0)
+        device = self.devices[request.url.host]
+        if device.hang_after_post_polls is not None and request.url.path == "/presets.json":
+            if device.posts:
+                device._post_polls += 1
+                if device._post_polls > device.hang_after_post_polls:
+                    await anyio.sleep(60)
         return self.devices[request.url.host].handle(request)
 
     def transport(self) -> httpx.MockTransport:

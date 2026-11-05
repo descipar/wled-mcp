@@ -41,3 +41,9 @@ Decision numbers refer to the open points OD-1 to OD-7 of the issue-9 work packe
   tests, scripts/check_distribution.py (mechanical tool-list change accepted).
 - Supersession: none.
 - Propagation: passed with the packet to implementer and reviewer.
+- Clarification (correction round 1, no new decision): OD-3 "positive evidence only" is
+  implemented for `state` as an allowlist of the top-level keys a firmware save emits
+  (`on`, `bri`, `transition`, `mainseg`, `seg`, `n`, `ql`, `ledmap`) with at least one of
+  `on`, `bri`, `seg`; other state-shaped objects are `unknown`. For playlists the
+  members checked are `playlist.ps` plus a persistent `end` preset; `end=255` is not
+  activatable.

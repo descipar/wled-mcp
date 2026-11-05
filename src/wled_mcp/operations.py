@@ -41,6 +41,7 @@ from wled_mcp.presets import (
     lowest_free,
     parse_store,
     playlist_members,
+    playlist_restores_previous,
     referencing_playlists,
     unsafe_playlist_members,
 )
@@ -486,6 +487,9 @@ ACTIVATION_NOOP_WARNING = (
     "The firmware ignores re-selecting the preset that is already active, so a verified "
     "result cannot prove that this call re-applied it."
 )
+PLAYLIST_RUNNING_WARNING = (
+    "This playlist is already running; a verified result cannot prove that it was restarted."
+)
 PRESET_RECONCILE = (
     "Read the presets with wled_list_presets or wled_get_preset before any new attempt; "
     "do not replay the write."
@@ -604,6 +608,13 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         kind, _malformed = classify(entry)
         members: list[int] = []
         if kind == "playlist":
+            if playlist_restores_previous(entry):
+                raise _preset_failure(
+                    "UNSUPPORTED_CAPABILITY",
+                    "The playlist ends by restoring the previously running preset "
+                    "(end=255), which cannot be checked; it is not activated.",
+                    "Inspect the playlist with wled_get_preset.",
+                )
             members = playlist_members(entry)
             bad = unsafe_playlist_members(store, members)
             if bad:
@@ -625,10 +636,10 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         before_ps = ps if type(ps) is int else None
         before_pl = pl if type(pl) is int else None
         warnings = list(store_warnings(store))
-        already = (
-            before_pl == request.preset_id if kind == "playlist" else before_ps == request.preset_id
-        )
-        if already:
+        if kind == "playlist":
+            if before_pl == request.preset_id:
+                warnings.append(PLAYLIST_RUNNING_WARNING)
+        elif before_ps == request.preset_id:
             warnings.append(ACTIVATION_NOOP_WARNING)
         return ActivationPlan(kind, members, before_ps, before_pl, warnings)
 

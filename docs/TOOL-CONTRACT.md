@@ -423,10 +423,10 @@ Entry types (positive evidence only, `type` in list/get):
 
 | Type | Recognized as | Activation |
 | --- | --- | --- |
-| `state` | object without any stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `playlist`, `live`, `time`, `bootps`) and at least one of `on`, `bri`, `seg`, `mainseg`, `transition` | yes |
-| `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other control key | yes, if every member exists and is itself a `state` entry |
+| `state` | object whose top-level keys are all within the allowlist `on`, `bri`, `transition`, `mainseg`, `seg`, `n`, `ql`, `ledmap` (what a firmware save emits) and that has at least one of `on`, `bri`, `seg` (so activation is observable) | yes |
+| `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `live`, `time`, `bootps`) | yes, if every member (`playlist.ps` and a persistent `playlist.end` of 1-250) exists and is a `state` entry; `end=255` (restore previous preset) is refused |
 | `api-command` | object with a string-valued `win` key | `UNSUPPORTED_CAPABILITY` |
-| `unknown` | any other object (also objects with control keys) | `UNSUPPORTED_CAPABILITY` |
+| `unknown` | any other object, including state-shaped objects with extra keys (`rmcpal`, `wifi`, `np`, `nl`, `lor`, `udpn`, vendor keys, control keys) | `UNSUPPORTED_CAPABILITY` |
 
 A nonempty non-object entry is `unknown` with `malformed=true`: listed and readable,
 but neither overwritten nor deleted (it cannot be snapshotted; `VALIDATION_ERROR`).
@@ -442,8 +442,10 @@ POSTs.
 - `wled_activate_preset`: one POST `{"ps": id}`, never any storage control; verified
   by bounded `/json/state` polling (`ps == id`, for a playlist `pl == id`). The
   firmware applies the preset in its main loop and ignores re-selecting the preset
-  that is already active, so an already-active preset adds a warning (a verified
-  result then cannot prove re-application). Activation changes live output, may
+  that is already active, so an already-active state preset adds a warning (a verified
+  result then cannot prove re-application). A playlist that is already running is
+  restarted by the firmware but `pl == id` is already true, so only a weaker warning
+  is given. Activation changes live output, may
   interrupt current playback and clears/moves the active markers.
 - `wled_save_preset`: inside the device lock: read store, choose the lowest free ID
   (or validate the explicit one), read state and info for the capture reference, take

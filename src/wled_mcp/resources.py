@@ -467,7 +467,7 @@ class Resources:
                         value = await context.read(plan.endpoint)
                     except ClientFailure:
                         value = None  # unreadable poll; the last readable observation stays
-                    if value is not None:
+                    if isinstance(value, dict):  # anything else is an unreadable poll
                         verdict = plan.evaluate(value)
                         if verdict.matched:
                             return self._polled_success(device_id, operation, plan, verdict, record)
