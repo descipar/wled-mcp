@@ -128,6 +128,10 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-52-DEC-001](decisions/issue-52.md) (delegated decision, 2026-11-05, issue #52
+  only, content decided by the coordinator): `wled_set_state` sends `on=false` with a
+  positive brightness on an off master, shows it as targeted compensation and verifies
+  the resolved `on` on every master write.
 - [ISSUE-48-DEC-001](decisions/issue-48.md) (human, 2026-11-05, issue #48 only): both
   segment tools reject unrepresentable names (>32 UTF-8 bytes, U+0000), grouping/spacing
   outside 1/0-255, `on=true` with `brightness=0` and `brightness=0` without `on=false` on
