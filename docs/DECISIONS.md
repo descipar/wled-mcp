@@ -167,6 +167,10 @@ can explicitly amend them.
   only, content decided by the coordinator): the stdio no-listener test allows only the
   stdlib loopback socketpair of the asyncio self-pipe; no product change, no platform skip.
 
+- [ISSUE-55-DEC-001](decisions/issue-55.md) (technical coordinator decision, 2026-11-05,
+  issue #55 only): the deadline/retry test uses controlled time instead of wall-clock
+  sleeps; no product change.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

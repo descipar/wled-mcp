@@ -231,24 +231,85 @@ async def test_response_validation_stream_closure_and_no_retry(tmp_path, body, h
         assert len(calls) == 1 and stream.closed
 
 
+@pytest.fixture
+def shifted_clock(monkeypatch):
+    """Controlled time (as in the T09 budget test): `Deadline` reads `anyio.current_time`,
+    so advancing the offset consumes the shared budget without wall-clock sleeps. This keeps
+    the deadline/retry tests independent of OS timer granularity (issue #55)."""
+    offset = {"value": 0.0}
+    real_time = anyio.current_time
+    monkeypatch.setattr(anyio, "current_time", lambda: real_time() + offset["value"])
+    return offset
+
+
+TOTAL_SECONDS = 5.0
+# Real time spent in the mocked path is milliseconds; budget checks tolerate a full second.
+WALL_CLOCK_MARGIN = 1.0
+
+
 @pytest.mark.anyio
-async def test_one_total_deadline_and_bounded_read_retry(tmp_path):
-    calls = []
+@pytest.mark.parametrize(
+    "consumed,expected_calls",
+    [
+        pytest.param((4.9, 0.0), 2, id="shared_remainder"),
+        pytest.param((1.0, 1.0), 2, id="retry_bound"),
+        pytest.param((5.1,), 1, id="expired_before_retry"),
+    ],
+)
+async def test_one_total_deadline_and_bounded_read_retry(
+    tmp_path, shifted_clock, consumed, expected_calls
+):
+    calls, budgets = [], []
 
     async def handler(request):
         calls.append(request)
-        await anyio.sleep(0.04)
+        budgets.append(request.extensions["timeout"]["read"])
+        shifted_clock["value"] += consumed[len(calls) - 1]
         raise httpx.ReadTimeout("synthetic-secret")
 
     async with Resources(
-        config(tmp_path, operation_timeout_seconds=0.05), httpx.MockTransport(handler)
+        config(tmp_path, operation_timeout_seconds=TOTAL_SECONDS), httpx.MockTransport(handler)
+    ) as resources:
+        with pytest.raises(ClientFailure) as caught:
+            await resources.client.read(device(), Endpoint.INFO, Deadline.after(TOTAL_SECONDS))
+    assert caught.value.error.code == "TIMEOUT"
+    assert "synthetic-secret" not in str(caught.value)
+    # At most one retry, and none once the shared deadline has expired.
+    assert len(calls) == expected_calls
+    assert TOTAL_SECONDS - WALL_CLOCK_MARGIN < budgets[0] <= TOTAL_SECONDS
+    if expected_calls == 2:
+        # The retry gets the remainder of the same deadline, not a fresh full budget.
+        remainder = TOTAL_SECONDS - consumed[0]
+        assert max(0.0, remainder - WALL_CLOCK_MARGIN) < budgets[1] <= remainder
+
+
+@pytest.mark.anyio
+async def test_hanging_read_retry_is_cut_at_shared_deadline(tmp_path, shifted_clock):
+    calls, cancelled = [], []
+
+    async def handler(request):
+        calls.append(request)
+        if len(calls) == 1:
+            shifted_clock["value"] += TOTAL_SECONDS - 0.1
+            raise httpx.ReadTimeout("synthetic-secret")
+        try:
+            await anyio.sleep_forever()
+        except anyio.get_cancelled_exc_class():
+            cancelled.append(True)
+            raise
+
+    async with Resources(
+        config(tmp_path, operation_timeout_seconds=TOTAL_SECONDS), httpx.MockTransport(handler)
     ) as resources:
         start = anyio.current_time()
         with pytest.raises(ClientFailure) as caught:
-            await resources.client.read(device(), Endpoint.INFO, Deadline.after(0.05))
-        assert caught.value.error.code == "TIMEOUT"
-        assert len(calls) == 2
-        assert anyio.current_time() - start < 0.5
+            await resources.client.read(device(), Endpoint.INFO, Deadline.after(TOTAL_SECONDS))
+        real_elapsed = anyio.current_time() - start - shifted_clock["value"]
+    assert caught.value.error.code == "TIMEOUT"
+    assert "synthetic-secret" not in str(caught.value)
+    assert len(calls) == 2 and cancelled == [True]
+    # About 0.1 s of shared budget remained; a fresh per-attempt deadline would hang ~5 s.
+    assert real_elapsed < 2.0
 
 
 @pytest.mark.anyio
