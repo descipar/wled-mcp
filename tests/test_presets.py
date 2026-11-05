@@ -775,7 +775,7 @@ async def test_playlist_end_preset_must_be_a_safe_member(tmp_path):
             "4": playlist(7),
             "5": playlist(255),
             "8": playlist(6),
-            "9": playlist(251),  # outside 1-250: the firmware sets no end preset
+            "9": playlist(251),  # 251-254: the firmware sets no end preset
         }
     )
     async with open_resources(tmp_path, fleet_of(desk)) as resources:
@@ -783,7 +783,12 @@ async def test_playlist_end_preset_must_be_a_safe_member(tmp_path):
         restore_end = await call(resources, "wled_activate_preset", preset_id=5)
         good_end = await call(resources, "wled_activate_preset", preset_id=8)
         ignored_end = await call(resources, "wled_activate_preset", preset_id=9)
-    for refused in (unsafe_end, restore_end):
+    wrapped = {}
+    async with open_resources(tmp_path / "w", fleet_of(desk)) as resources:
+        for value in (262, 263, -1, 511, 256):
+            desk.store["20"] = playlist(value)
+            wrapped[value] = await call(resources, "wled_activate_preset", preset_id=20)
+    for refused in (unsafe_end, restore_end, *wrapped.values()):
         assert refused.error.code == "UNSUPPORTED_CAPABILITY"
         assert refused.application == "not_attempted"
     assert good_end.ok and ignored_end.ok
@@ -960,3 +965,14 @@ async def test_backup_failure_example_is_actual_delete_output(tmp_path, monkeypa
         outcome = await call(resources, "wled_delete_preset", preset_id=5)
         monkeypatch.undo()
     assert outcome.model_dump(mode="json") == case["expected"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("end", [1.5, True, "7", None])
+async def test_non_integer_playlist_end_is_ignored_like_zero(tmp_path, end):
+    entry = playlist_entry([1])
+    entry["playlist"]["end"] = end
+    desk = desk_with({"1": state_entry(), "4": entry})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_activate_preset", preset_id=4)
+    assert outcome.ok and desk.posts == [{"ps": 4}]

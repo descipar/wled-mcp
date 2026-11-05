@@ -243,9 +243,15 @@ def playlist_end(entry: JsonValue) -> int | None:
     return end if type(end) is int else None
 
 
-def playlist_restores_previous(entry: JsonValue) -> bool:
-    """``end: 255`` makes the firmware restore whatever preset ran before (not checkable)."""
-    return playlist_end(entry) == END_RESTORE_ID
+def playlist_end_unsafe(entry: JsonValue) -> bool:
+    """True when the firmware's use of ``end`` cannot be checked.
+
+    The firmware stores ``end`` in a byte (low 8 bits) before its >250 check, so an
+    integer outside 0-255 wraps onto another preset or onto 255; 255 restores whatever
+    preset ran before. Both are refused. 251-254 and non-integers resolve to no end.
+    """
+    end = playlist_end(entry)
+    return end is not None and (end == END_RESTORE_ID or not 0 <= end <= END_RESTORE_ID)
 
 
 def unsafe_playlist_members(store: PresetStore, members: list[int]) -> list[int]:

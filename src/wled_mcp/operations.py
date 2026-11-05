@@ -40,8 +40,8 @@ from wled_mcp.presets import (
     json_equal,
     lowest_free,
     parse_store,
+    playlist_end_unsafe,
     playlist_members,
-    playlist_restores_previous,
     referencing_playlists,
     unsafe_playlist_members,
 )
@@ -608,11 +608,11 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         kind, _malformed = classify(entry)
         members: list[int] = []
         if kind == "playlist":
-            if playlist_restores_previous(entry):
+            if playlist_end_unsafe(entry):
                 raise _preset_failure(
                     "UNSUPPORTED_CAPABILITY",
-                    "The playlist ends by restoring the previously running preset "
-                    "(end=255), which cannot be checked; it is not activated.",
+                    "The playlist's end preset restores the previous preset (255) or is outside "
+                    "0-255 (the firmware wraps it); it cannot be checked and is not activated.",
                     "Inspect the playlist with wled_get_preset.",
                 )
             members = playlist_members(entry)

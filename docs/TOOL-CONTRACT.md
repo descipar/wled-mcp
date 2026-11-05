@@ -424,7 +424,7 @@ Entry types (positive evidence only, `type` in list/get):
 | Type | Recognized as | Activation |
 | --- | --- | --- |
 | `state` | object whose top-level keys are all within the allowlist `on`, `bri`, `transition`, `mainseg`, `seg`, `n`, `ql`, `ledmap` (what a firmware save emits) and that has at least one of `on`, `bri`, `seg` (so activation is observable) | yes |
-| `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `live`, `time`, `bootps`) | yes, if every member (`playlist.ps` and a persistent `playlist.end` of 1-250) exists and is a `state` entry; `end=255` (restore previous preset) is refused |
+| `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `live`, `time`, `bootps`) | yes, if every member (`playlist.ps` and a persistent `playlist.end` of 1-250) exists and is a `state` entry; `end=255` (restore previous preset) and any integer `end` outside 0-255 (the firmware keeps `end` in a byte, so it wraps onto another preset) are refused |
 | `api-command` | object with a string-valued `win` key | `UNSUPPORTED_CAPABILITY` |
 | `unknown` | any other object, including state-shaped objects with extra keys (`rmcpal`, `wifi`, `np`, `nl`, `lor`, `udpn`, vendor keys, control keys) | `UNSUPPORTED_CAPABILITY` |
 
