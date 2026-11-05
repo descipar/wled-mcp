@@ -6,15 +6,20 @@ Run after `uv sync --frozen`; runtime export drift is checked separately.
 
 import json
 import os
+import signal
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import zipfile
 from pathlib import Path
 
 import anyio
+import httpx2
 from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
+from mcp.client.streamable_http import streamable_http_client
 from packaging.requirements import Requirement
 
 
@@ -47,6 +52,68 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert result.structured_content is not None
                 assert result.structured_content["data"] == {"devices": []}
                 assert not result.is_error
+
+
+TOOL_COUNT = 6
+
+
+async def http_exchange(port: int, token: str) -> None:
+    for mode in ("legacy", "auto"):
+        with anyio.fail_after(30):
+            async with httpx2.AsyncClient(headers={"Authorization": f"Bearer {token}"}) as http:
+                transport = streamable_http_client(
+                    f"http://127.0.0.1:{port}/mcp", http_client=http, terminate_on_close=False
+                )
+                async with Client(transport, mode=mode, read_timeout_seconds=10) as client:
+                    assert len((await client.list_tools()).tools) == TOOL_COUNT
+                    result = await client.call_tool("wled_list_devices", {})
+                    assert result.structured_content is not None
+                    assert result.structured_content["data"] == {"devices": []}
+
+
+def http_smoke(console: Path, args: list[str], cwd: Path, env: dict[str, str]) -> None:
+    """Installed console serves authenticated loopback HTTP and exits 0 on a stop signal."""
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = int(probe.getsockname()[1])
+    token = "synthetic-distribution-token-0123456789"
+    flags = ["--transport", "streamable-http", "--port", str(port)]
+    flags += ["--allowed-host", f"127.0.0.1:{port}"]
+    creation = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    process = subprocess.Popen(
+        [str(console), *args, *flags],
+        cwd=cwd,
+        env={**env, "WLED_MCP_HTTP_TOKEN": token},
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        creationflags=creation,
+    )
+    assert process.stderr is not None and process.stdout is not None
+    ready = threading.Event()
+    stderr = process.stderr
+
+    def watch() -> None:
+        for line in stderr:
+            if "listening on" in line:
+                ready.set()
+
+    threading.Thread(target=watch, daemon=True).start()
+    try:
+        if not ready.wait(30):
+            raise SystemExit("Installed HTTP service did not report readiness.")
+        anyio.run(http_exchange, port, token)
+        stop = getattr(signal, "CTRL_BREAK_EVENT", signal.SIGTERM)  # CTRL_BREAK on Windows
+        process.send_signal(stop)
+        assert process.wait(timeout=30) == 0, "HTTP service must exit 0 after a stop signal"
+        assert process.stdout.read() == "", "stdout stays unused in HTTP mode"
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=10)
+        process.stdout.close()
+        process.stderr.close()
 
 
 def main() -> None:
@@ -117,6 +184,7 @@ def main() -> None:
         config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
         args = ["--config", str(config), "--data-dir", str(outside)]
         anyio.run(handshake, str(console), args, outside, env)
+        http_smoke(console, args, outside, env)
         uvx = [
             "uvx",
             "--isolated",
@@ -133,7 +201,9 @@ def main() -> None:
         assert str(root / "src").casefold() not in tool[1].casefold()
         assert run([*uvx, "wled-mcp", "--version"], outside, env) == "wled-mcp 0.1.0"
         anyio.run(handshake, uvx[0], [*uvx[1:], "wled-mcp", *args], outside, env)
-    print(f"Wheel/clean install/uvx: PASS; {len(expected)} exact runtime versions verified")
+    print(
+        f"Wheel/clean install/stdio/HTTP/uvx: PASS; {len(expected)} exact runtime versions verified"
+    )
 
 
 if __name__ == "__main__":
