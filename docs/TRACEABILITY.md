@@ -15,10 +15,12 @@ integration, resource measurements and update/rollback to
 [#11](https://github.com/descipar/wled-mcp/issues/11).
 
 `scripts/check_traceability.py` (run by `tests/test_traceability.py` in ordinary CI)
-rejects a Must requirement without a row, a row or scenario without an existing
-`tests/...py::function` or `scripts/...` reference, an unmapped T-scenario and any
-hardware/deployment cell other than `pending: ...` or `not applicable: ...`. A `name*`
-reference means every function in that file whose name starts with `name`.
+rejects a Must requirement without a row, a duplicate row, a row or scenario without an
+existing `tests/test_*.py::test_*` or file-level `scripts/...` reference, an unmapped
+T-scenario, any hardware/deployment cell other than `pending: ...` or
+`not applicable: ...`, and outcome claims in those cells or in scenario notes. A group
+reference such as `test_T05_*` means every test in that file whose name starts with
+that stem; a bare test file, a non-test name or a catch-all `test_*` is not evidence.
 
 ## Must requirements
 

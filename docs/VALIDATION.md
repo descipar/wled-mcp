@@ -426,8 +426,8 @@ CPython 3.13.2, uv 0.11.14, MCP SDK 2.3.0, commands from the repository root:
 | `uv run --frozen mypy` | no issues in 20 source files |
 | `uv run --frozen python scripts/check_agent_setup.py`; `python scripts/sync_agents.py --check` | valid; adapters synchronized |
 | `uv run --frozen python scripts/check_lock.py` | lock/export consistent |
-| `uv run --frozen pytest` | 653 passed, 9 skipped (POSIX-only signal, permission, symlink and FIFO tests) |
-| new test modules (`tests/test_acceptance_parity.py`, `tests/test_acceptance_verification.py`, `tests/test_traceability.py`), three consecutive runs | 77 passed each run |
+| `uv run --frozen pytest` | 672 passed, 9 skipped (POSIX-only signal, permission, symlink and FIFO tests) |
+| new test modules (`tests/test_acceptance_parity.py`, `tests/test_acceptance_verification.py`, `tests/test_traceability.py`), three consecutive runs | 96 passed each run |
 | `uv run --frozen python scripts/check_distribution.py` | wheel, clean install, stdio, two HTTP start/stop cycles on one port and data directory, uvx; 30 exact runtime versions |
 | `uv run --frozen python scripts/check_traceability.py` | 26 Must requirements and T01–T21 mapped |
 

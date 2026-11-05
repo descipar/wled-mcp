@@ -78,7 +78,7 @@ def test_row_for_a_non_must_requirement_fails():
     ("reference", "expected"),
     [
         ("`tests/test_patches.py::test_does_not_exist`", "no function test_does_not_exist"),
-        ("`tests/test_patches.py::test_zz_prefix_*`", "no function test_zz_prefix_*"),
+        ("`tests/test_patches.py::test_ZZ_*`", "no function test_ZZ_*"),
         ("`tests/test_absent_file.py::test_x`", "referenced file does not exist"),
         ("`scripts/absent_script.py`", "referenced file does not exist"),
     ],
@@ -126,6 +126,83 @@ def test_executed_result_wording_fails():
     original = row(MATRIX, "T02")
     found = problems_for(MATRIX.replace(original, original.replace("| |", "| passed on CI |")))
     assert any("executed-result wording" in problem for problem in found)
+
+
+def problems_from_copy(tmp_path: Path, traceability: str) -> list[str]:
+    """Run the checker on a synthetic tmp copy of the matrix (the real file stays intact)."""
+    copy = tmp_path / "TRACEABILITY.md"
+    copy.write_text(traceability, encoding="utf-8")
+    return list(checker.check(ROOT, traceability=copy))
+
+
+@pytest.mark.parametrize("identifier", ["DEV-01", "T05"])
+def test_duplicate_row_before_the_real_one_fails(tmp_path, identifier):
+    original = row(MATRIX, identifier)
+    cells = original.split(" | ")
+    cells[2] = "`tests/test_patches.py::test_does_not_exist`"
+    bad_first = " | ".join(cells)
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, bad_first + "\n" + original))
+    assert any(problem.startswith(f"{identifier}: duplicate row") for problem in found)
+
+
+@pytest.mark.parametrize(
+    ("reference", "expected"),
+    [
+        ("`tests/test_patches.py`", "needs '::test_<name>'"),
+        (
+            "`tests/test_patches.py::test_T04_persistent_transition_is_never_in_payload"
+            "::test_does_not_exist`",
+            "more than one '::'",
+        ),
+        ("`tests/test_patches.py::test_*`", "wildcard must be a test group stem"),
+        ("`tests/test_patches.py::test_T*`", "wildcard must be a test group stem"),
+        ("`tests/test_patches.py::fleet`", "not a test function"),
+        ("`tests/test_patches.py::call_set_state`", "not a test function"),
+        ("`tests/patch_support.py::test_x`", "must name a tests/.../test_*.py file"),
+        ("`scripts/check_lock.py::main`", "file-level only"),
+    ],
+)
+def test_weak_or_malformed_reference_is_not_evidence(tmp_path, reference, expected):
+    original = row(MATRIX, "READ-02")
+    mutated = original.replace("| T03 | `", f"| T03 | {reference}, `", 1)
+    assert mutated != original
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, mutated))
+    assert any(problem.startswith("READ-02:") and expected in problem for problem in found)
+
+
+def test_bare_test_file_alone_does_not_count_as_evidence(tmp_path):
+    original = row(MATRIX, "REL-03")
+    cells = original.split(" | ")
+    cells[2] = "`tests/test_backups.py`"
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, " | ".join(cells)))
+    assert any(p.startswith("REL-03:") and "needs '::test_<name>'" in p for p in found)
+
+
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "pending: verified on hardware H05 (#12)",
+        "pending: H05 confirmed (#12)",
+        "not applicable: succeeded on the bench",
+        "not applicable: hub integration OK",
+        "pending: CI green, H05 (#12)",
+    ],
+)
+def test_outcome_claim_inside_an_allowed_hardware_cell_fails(tmp_path, cell):
+    original = row(MATRIX, "SEG-02")
+    mutated = original.replace("pending: H05 (#12)", cell)
+    assert mutated != original
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, mutated))
+    assert any(p.startswith("SEG-02: hardware/deployment cell must not claim") for p in found)
+
+
+@pytest.mark.parametrize("note", ["Verified on hardware.", "Validated on the hub.", "Done."])
+def test_outcome_claim_in_scenario_notes_fails(tmp_path, note):
+    original = row(MATRIX, "T02")
+    mutated = original.replace("| |", f"| {note} |")
+    assert mutated != original
+    found = problems_from_copy(tmp_path, MATRIX.replace(original, mutated))
+    assert any(p.startswith("T02: notes must not claim an outcome") for p in found)
 
 
 def test_console_script_fails_on_a_synthetic_defective_copy(tmp_path):
