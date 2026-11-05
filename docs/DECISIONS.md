@@ -51,6 +51,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-005 | Project documentation / issues | Use neutral roles and synthetic examples. Exclude personal names, private hostnames and installation-specific personal context unless explicitly requested. | Existing governing [AGENTS.md](../AGENTS.md) rule, recorded 2026-11-04 |
 | DEC-006 | Workflow | Add an agent responsible for completing issue checklists after merge. | Confirmed human instruction, post-merge workflow discussion, 2026-11-04; [issue #34](https://github.com/descipar/wled-mcp/issues/34) |
 | DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
+| DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -108,7 +109,30 @@ can explicitly amend them.
   fidelity, native client discovery and actual model behavior require distinct
   evidence; generated files alone do not prove an end-to-end run.
 
+### DEC-008 — Reviewer on Opus in Claude Code
+
+- Status: active workflow decision for Claude Code sessions.
+- Authority/source: human instruction in the issue-48 workflow session, 2026-11-05
+  (no permalink): the review agent has to be started with Opus, restricted by the
+  human to Claude only because Codex offers no Opus model.
+- Scope/decision: when the coordinator runs in Claude Code, it passes the Opus model
+  explicitly on every `wled_reviewer` delegation. Codex sessions keep their inherited
+  model; no Codex configuration changes.
+- Conditions: the choice is made at delegation time by the coordinator. Role sources and
+  generated adapters keep carrying no model override (setup checker rule unchanged). If
+  Opus is unavailable in a Claude Code session, report that instead of silently
+  reviewing with another model.
+- Rationale supplied: none beyond Codex lacking Opus. Supersedes no earlier decision;
+  refines the "models inherited from the session" default for this one role/client.
+- Affected: agents/coordinator.md (and its generated adapters), docs/AGENT-WORKFLOW.md.
+
 ## Issue-specific decisions (pointers)
+
+- [ISSUE-48-DEC-001](decisions/issue-48.md) (human, 2026-11-05, issue #48 only): both
+  segment tools reject unrepresentable names (>32 UTF-8 bytes, U+0000), grouping/spacing
+  outside 1/0-255, `on=true` with `brightness=0` and `brightness=0` without `on=false` on
+  an on segment before any write; positive brightness on an off segment is compensated
+  with `on=false`. Supersedes the corresponding parts of ISSUE-7-DEC-006.
 
 - [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
   (human, 2026-11-05, issue #7 only): `wled_replace_layout` aligns with #6 for the

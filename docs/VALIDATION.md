@@ -257,7 +257,49 @@ reported as `VERIFICATION_MISMATCH`). The agent technical baselines
 [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) are accepted by delegated decision
 (issue #7 only; decided by the main session under the human's delegation, not personally
 dictated by the human). The narrow `brightness=0` reading (DEC-007) and the follow-up
-issue #48 for the shared #6/#7 limits are recorded the same way.
+issue #48 for the shared #6/#7 limits are recorded the same way. The name, 255-bound and
+`bri` points above (and the tests that pinned them) are superseded by issue #48; see the
+next section.
+
+## Issue #48 implementation evidence
+
+Shared #6/#7 segment limits per the human decision
+[ISSUE-48-DEC-001](decisions/issue-48.md) (option B, 32 UTF-8 bytes, `brightness=0`
+without `on=false` on an on segment rejected). Candidate under review; mock transport and
+the stateful fake WLED only (`tests/layout_support.py`, 32-byte name buffer, `uint8_t`
+grp/spc, bri/on coupling); no LAN/device access; **H04/H05 not run** (#12). 2026-11-05,
+Windows 11/Python 3.13.2, MCP SDK 2.3.0, commands from the repository root:
+
+| Command | Result |
+| --- | --- |
+| `uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py` | All checks passed |
+| `uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py` | 41 files already formatted |
+| `uv run --frozen mypy` | Success: no issues found in 19 source files |
+| `uv run --frozen python scripts/check_agent_setup.py` | valid (static) |
+| `uv run --frozen python scripts/check_lock.py` | Lock/export consistency: PASS |
+| `uv run --frozen pytest` | 540 passed, 9 skipped, 1 failed: `test_http_cli.py::test_stdio_ignores_ambient_http_token_and_binds_nothing` (audit hook sees `socket.bind`/`socket.connect` on Windows); it fails identically on the unchanged base commit and is unrelated to #48 |
+| `uv run --frozen python scripts/check_distribution.py` | Wheel/clean install/stdio/HTTP/uvx: PASS; 30 exact runtime versions verified |
+
+| Criterion | Executed evidence (#6 in `tests/test_patches.py`, #7 in `tests/test_layouts.py`) |
+| --- | --- |
+| AC-48-01 | `test_48_name_of_exactly_32_utf8_bytes_is_accepted_and_verified`, `test_T06_name_of_exactly_32_utf8_bytes_is_accepted_and_verified` (32 ASCII, 16 two-byte characters; `applied/verified`, stored name equal) |
+| AC-48-02/03/05/06, AC-48-11 | `test_48_rejections_before_any_post`, `test_T06_issue48_rejections_before_any_post` (33 bytes, 17 two-byte characters, U+0000, `on=true`+`brightness=0`, `brightness=0` on an on segment; dry run and live: `VALIDATION_ERROR`, `not_attempted/not_requested`, message names segment and byte limit, zero POSTs); `..._brightness_zero_with_on_false_or_on_off_segment_is_accepted` in both files |
+| AC-48-04 | `test_48_grouping_and_spacing_255_are_accepted_and_verified` (#6; 256 schema-rejected), `test_T06_grouping_and_spacing_255_are_accepted_and_verified`, 256 cases in `test_T06_schema_rejections`, `test_T06_limits_are_shared_with_patch_segments` (both JSON input schemas advertise `maximum: 255`) |
+| AC-48-07, AC-48-11 | `test_48_positive_brightness_on_off_segment_is_compensated` (payload `{"id":0,"on":false,"bri":50}` in dry run and live, `targeted_compensation` entry, segment stays off with bri 50, `applied/verified`), `test_T05_positive_brightness_on_off_segment_is_compensated_with_on_false` (dry-run `step_payloads` equal live POSTs) |
+| AC-48-08 | `..._positive_brightness_on_on_segment_is_sent_alone_and_stays_on` in both files (`bri` sent alone, segment stays on, verified) |
+| AC-48-09 | `test_48_power_flip_after_brightness_is_a_mismatch_not_silent_success` (device drops `on`, segment flips on -> `VERIFICATION_MISMATCH`), `test_48_power_flip_on_on_segment_is_also_verified`, `test_T05_power_flip_by_external_change_is_still_a_mismatch` |
+| AC-48-10 | `test_T06_invalid_later_segment_keeps_every_stale_segment` (stale IDs 0 and 5 plus each invalid case in a desired segment: zero POSTs, layout unchanged); grouping/spacing 256 never reaches a plan because the schema rejects it |
+| Parity | `test_48_patch_and_replace_apply_the_same_rules` (11 edge cases through both tools: same code, same power compensation, same resolved `on`); both planners call `src/wled_mcp/segment_rules.py` |
+| AC-48-12 | [TOOL-CONTRACT.md](TOOL-CONTRACT.md#shared-segment-limits-wled_patch_segments-and-wled_replace_layout) shared rule set, #7 exceptions removed; [SOURCES.md](SOURCES.md#issue-7-layout-evidence) grp/spc and name wording; existing suites pass |
+
+The new tests were also run against the unchanged base commit, where they fail (old
+behavior: names and 256 accepted, no compensation, no `on` verification in #6, removals
+before a mismatch in #7). Remaining limits: firmware behavior is source-derived (pinned
+v0.15.1) and modeled by the fake; the real per-build name buffer, the exact overflow
+behavior of `grp`/`spc` above 255 and a possible visible transition when `{bri, on:false}`
+is sent to an off segment are unverified and stay with #12. Master `wled_set_state`
+behavior is unchanged (a positive `bri` can still switch an off master on); that is
+outside #48.
 
 ## Issue #14 implementation evidence
 

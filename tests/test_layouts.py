@@ -321,18 +321,56 @@ async def test_T05_preserved_and_requested_fields_on_existing_ids(tmp_path):
 
 
 @pytest.mark.anyio
-async def test_T05_brightness_is_sent_alone_like_patch_and_firmware_power_flip_is_reported(
+async def test_T05_positive_brightness_on_off_segment_is_compensated_with_on_false(
     tmp_path,
 ):
-    """Aligned with #6: bri is sent without an extra resolved on. The firmware turns an off
-    segment on for bri>0 (known limit shared with #6); the final readback reports it."""
+    """AC-48-07 (#7): the firmware turns an off segment on for a bare bri>0; the planner
+    sends the resolved on=false with bri, lists it as targeted compensation and the
+    segment stays off with the new brightness."""
     fake = FakeWLED([make_segment(0, 0, 10, on=False, bri=100)])
+    async with open_resources(tmp_path, fake) as resources:
+        dry = await replace(
+            resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50}], dry_run=True
+        )
+        assert fake.posts == []
+        result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50}])
+    assert fake.posts == [{"seg": {"id": 0, "bri": 50, "on": False}}]
+    assert dry.data["plan"]["step_payloads"] == fake.posts
+    assert dry.data["plan"]["targeted_compensation"] == [{"id": 0, "on": False}]
+    assert result.ok, (result.error, result.data.get("observed"))
+    assert (result.application, result.verification) == ("applied", "verified")
+    assert (by_id(fake)[0]["on"], by_id(fake)[0]["bri"]) == (False, 50)
+    resolved = result.data["plan"]["resolved_segments"][0]
+    assert (resolved["on"], resolved["brightness"], resolved["effective_brightness"]) == (
+        False,
+        50,
+        0,
+    )
+
+
+@pytest.mark.anyio
+async def test_T05_positive_brightness_on_on_segment_is_sent_alone_and_stays_on(tmp_path):
+    """AC-48-08 (#7): on a segment that is on, bri is sent without an added on."""
+    fake = FakeWLED([make_segment(0, 0, 10, on=True, bri=100)])
     async with open_resources(tmp_path, fake) as resources:
         result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50}])
     assert fake.posts == [{"seg": {"id": 0, "bri": 50}}]
-    assert by_id(fake)[0]["on"] is True  # firmware side effect, modeled by the fake
-    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+    assert result.ok and (result.application, result.verification) == ("applied", "verified")
     assert result.data["plan"]["targeted_compensation"] == []
+    assert (by_id(fake)[0]["on"], by_id(fake)[0]["bri"]) == (True, 50)
+
+
+@pytest.mark.anyio
+async def test_T05_power_flip_by_external_change_is_still_a_mismatch(tmp_path):
+    """The final check verifies the resolved on: a segment that ends on although the plan
+    resolved it off is reported, never hidden."""
+    fake = FakeWLED([make_segment(0, 0, 10, on=False, bri=100)])
+    fake.ignore_keys = {"on"}  # the device drops the compensating on=false
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "brightness": 50}])
+    assert fake.posts == [{"seg": {"id": 0, "bri": 50, "on": False}}]
+    assert by_id(fake)[0]["on"] is True
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
 
 
 @pytest.mark.anyio
@@ -468,46 +506,94 @@ async def test_T06_invalid_requests_send_no_post(tmp_path, segments, code):
 
 
 @pytest.mark.anyio
-async def test_T06_name_of_32_characters_is_accepted_by_validation(tmp_path):
-    """Validation counts characters (aligned with #6); the firmware byte buffer is a limit."""
-    fake = fixture_fake()
+@pytest.mark.parametrize("name", ["a" * 32, "ä" * 16], ids=["ascii-32", "two-byte-16"])
+async def test_T06_name_of_exactly_32_utf8_bytes_is_accepted_and_verified(tmp_path, name):
+    """AC-48-01 (#7): 32 UTF-8 bytes fit the 32-byte firmware buffer of the fake."""
+    fake = fixture_fake(name_buffer=32)
     async with open_resources(tmp_path, fake) as resources:
-        result = await replace(
-            resources,
-            [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 32}],
-            dry_run=True,
-        )
-    assert result.ok, result.error
-    assert fake.posts == []  # the dry run does not warn about the firmware byte buffer
+        result = await replace(resources, keep_all(name=name))
+    assert result.ok, (result.error, result.data.get("observed"))
+    assert (result.application, result.verification) == ("applied", "verified")
+    assert fake.posts == [{"seg": {"id": 0, "n": name}}]
+    assert by_id(fake)[0]["n"] == name
+
+
+# Shared invalid cases for AC-48-02/03/05/06 on segment ID 0 (on, bri 255 in the fixture).
+INVALID_48 = [
+    pytest.param({"name": "a" * 31 + "ä"}, "33 UTF-8 bytes", id="name-33-bytes"),
+    pytest.param({"name": "ä" * 17}, "34 UTF-8 bytes", id="name-17-two-byte-chars"),
+    pytest.param({"name": "ab\x00cd"}, "U+0000", id="name-nul"),
+    pytest.param({"on": True, "brightness": 0}, "on=true with brightness=0", id="on-true-bri-0"),
+    pytest.param({"brightness": 0}, "requires an explicit on=false", id="bri-0-on-segment"),
+]
 
 
 @pytest.mark.anyio
-async def test_T06_multibyte_name_over_firmware_buffer_is_reported_as_mismatch(tmp_path):
-    """32 two-byte characters pass validation but exceed a 32-byte firmware buffer: the
-    firmware truncates silently and the final readback reports VERIFICATION_MISMATCH."""
+@pytest.mark.parametrize("dry_run", [True, False], ids=["dry", "live"])
+@pytest.mark.parametrize(("fields", "message"), INVALID_48)
+async def test_T06_issue48_rejections_before_any_post(tmp_path, fields, message, dry_run):
+    """AC-48-02/03/05/06/11 (#7): rejected identically in dry run and live call."""
     fake = fixture_fake()
     async with open_resources(tmp_path, fake) as resources:
-        result = await replace(resources, [{"id": 0, "start": 0, "stop": 10, "name": "ä" * 32}])
-    assert result.error is not None and result.error.code == "VERIFICATION_MISMATCH"
-    assert by_id(fake)[0]["n"] == "ä" * 16  # truncated to the 32-byte buffer
+        result = await replace(resources, keep_all(**fields), dry_run=dry_run)
+    assert result.error is not None and result.error.code == "VALIDATION_ERROR"
+    assert message in result.error.message and "Segment 0" in result.error.message
+    if "name" in fields and "U+0000" not in message:
+        assert "32 bytes" in result.error.message
+    assert (result.ok, result.application, result.verification) == (
+        False,
+        "not_attempted",
+        "not_requested",
+    )
+    assert fake.posts == [] and fake.method_count("POST") == 0
 
 
 @pytest.mark.anyio
-async def test_T06_grouping_256_on_new_id_wraps_and_keeps_earlier_removals_applied(tmp_path):
+@pytest.mark.parametrize(("fields", "message"), INVALID_48)
+async def test_T06_invalid_later_segment_keeps_every_stale_segment(tmp_path, fields, message):
+    """AC-48-10: stale IDs 0 and 5 plus an invalid desired segment: no removal happens."""
     fake = fixture_fake()
+    before = fake.layout()
+    desired = [
+        {"id": 2, "start": 0, "stop": 30, **fields},
+        {"id": 6, "start": 30, "stop": 60, "colors": BLUE},
+    ]
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, desired)
+    assert result.error is not None and result.error.code == "VALIDATION_ERROR"
+    assert message in result.error.message
+    assert fake.posts == []
+    assert fake.layout() == before and {0, 5} <= set(by_id(fake))
+
+
+@pytest.mark.anyio
+async def test_T06_brightness_zero_with_on_false_or_on_off_segment_is_accepted(tmp_path):
+    """AC-48-06 (#7): explicit on=false is accepted; an already-off segment needs no on."""
+    fake = FakeWLED([make_segment(0, 0, 10), make_segment(1, 10, 20, on=False, bri=90)])
     async with open_resources(tmp_path, fake) as resources:
         result = await replace(
             resources,
             [
-                {"id": 0, "start": 0, "stop": 10},
-                {"id": 1, "start": 10, "stop": 20, "colors": BLUE, "grouping": 256},
+                {"id": 0, "start": 0, "stop": 10, "brightness": 0, "on": False},
+                {"id": 1, "start": 10, "stop": 20, "brightness": 0},
             ],
         )
-    assert result.error is not None and result.error.code == "VERIFICATION_MISMATCH"
-    assert (result.application, result.verification) == ("applied", "mismatch")
-    assert result.data["completed_steps"] >= 2  # earlier removals stay applied
-    assert sorted(by_id(fake)) == [0, 1]
-    assert by_id(fake)[1]["grp"] == 1  # 256 wrapped by the firmware uint8_t argument
+    assert result.ok, (result.error, result.data.get("observed"))
+    assert fake.posts == [{"seg": {"id": 0, "bri": 0, "on": False}}]  # ID 1 already off
+    assert (by_id(fake)[0]["on"], by_id(fake)[1]["on"]) == (False, False)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("field", ["grouping", "spacing"])
+async def test_T06_grouping_and_spacing_255_are_accepted_and_verified(tmp_path, field):
+    """AC-48-04 (#7): the upper bound itself is storable."""
+    fake = fixture_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, keep_all(**{field: 255}))
+    assert result.ok, (result.error, result.data.get("observed"))
+    wire = {"grouping": "grp", "spacing": "spc"}[field]
+    assert fake.posts == [{"seg": {"id": 0, wire: 255}}]
+    assert by_id(fake)[0][wire] == 255
 
 
 @pytest.mark.anyio
@@ -623,6 +709,8 @@ def test_T06_schema_rejections():
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "grouping": 0}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "spacing": -1}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "name": "a" * 33}]},
+        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "grouping": 256}]},
+        {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "spacing": 256}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "brightness": 256}]},
         {**base, "segments": [{"id": 0, "start": 0, "stop": 10, "on": 1}]},
         {**base, "segments": [{"start": 0, "stop": 10}]},
@@ -633,10 +721,20 @@ def test_T06_schema_rejections():
             ReplaceLayoutRequest.model_validate(bad)
 
 
-def test_T06_limits_align_with_patch_segments():
-    """#7 follows #6: 32-character name, no extra 255 cap on grouping/spacing."""
-    seg = {"id": 0, "start": 0, "stop": 10, "grouping": 1000, "spacing": 1000, "name": "ä" * 32}
-    ReplaceLayoutRequest.model_validate({"device_id": "desk", "segments": [seg]})
+def test_T06_limits_are_shared_with_patch_segments():
+    """AC-48-04 (#6/#7 parity): both input schemas advertise the same 255 bounds and the
+    same coarse 32-character name bound (the byte limit is a planner check)."""
+    from wled_mcp.patches import PatchSegmentsRequest
+
+    layout = ReplaceLayoutRequest.model_json_schema()["$defs"]["LayoutSegment"]["properties"]
+    patch = PatchSegmentsRequest.model_json_schema()["$defs"]["SegmentPatch"]["properties"]
+    for props in (layout, patch):
+        grouping = next(o for o in props["grouping"]["anyOf"] if o.get("type") == "integer")
+        spacing = next(o for o in props["spacing"]["anyOf"] if o.get("type") == "integer")
+        name = next(o for o in props["name"]["anyOf"] if o.get("type") == "string")
+        assert (grouping["minimum"], grouping["maximum"]) == (1, 255)
+        assert (spacing["minimum"], spacing["maximum"]) == (0, 255)
+        assert name["maxLength"] == 32
 
 
 @pytest.mark.anyio

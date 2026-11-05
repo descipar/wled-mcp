@@ -21,6 +21,13 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from wled_mcp.client import ClientFailure
 from wled_mcp.readmodels import CAP_RGB, CAP_WHITE, as_dict
+from wled_mcp.segment_rules import (
+    GROUPING_MAX,
+    SPACING_MAX,
+    SegmentPower,
+    check_segment_name,
+    resolve_segment_power,
+)
 
 # ---------------------------------------------------------------------------- requests
 
@@ -57,12 +64,13 @@ class SegmentPatch(BaseModel):
     palette_id: int | None = Field(default=None, ge=0)
     speed: int | None = Field(default=None, ge=0, le=255)
     intensity: int | None = Field(default=None, ge=0, le=255)
-    grouping: int | None = Field(default=None, ge=1)
-    spacing: int | None = Field(default=None, ge=0)
+    grouping: int | None = Field(default=None, ge=1, le=GROUPING_MAX)
+    spacing: int | None = Field(default=None, ge=0, le=SPACING_MAX)
     offset: int | None = Field(default=None, ge=0)
     reverse: bool | None = None
     mirror: bool | None = None
     selected: bool | None = None
+    # Coarse character bound; the 32 UTF-8 byte limit is checked by the planner.
     name: str | None = Field(default=None, max_length=32)
 
 
@@ -356,11 +364,13 @@ def _segment_payload(
     normalized_colors: list[list[int]] | None,
     compensate_name: str | None,
     range_change: bool,
+    power: SegmentPower,
 ) -> dict[str, JsonValue]:
     """Build the exact WLED segment object for one patched ID.
 
-    Omitted fields are *not* sent. The only exception is baseline profile 0
-    name-clearing compensation on a geometry change (``compensate_name``).
+    Omitted fields are *not* sent. The exceptions are baseline profile 0 targeted
+    compensations: the existing name on a geometry change (``compensate_name``) and
+    the resolved ``on=false`` with a positive ``bri`` on an off segment (#48).
     """
     entry: dict[str, JsonValue] = {"id": patch.id}
     if patch.start is not None and patch.stop is not None:
@@ -368,6 +378,8 @@ def _segment_payload(
         entry["stop"] = patch.stop
     if patch.on is not None:
         entry["on"] = patch.on
+    elif power.compensate_off:
+        entry["on"] = False
     if patch.brightness is not None:
         entry["bri"] = patch.brightness
     if normalized_colors is not None:
@@ -463,7 +475,7 @@ def _resolve_public_segment(
 
 
 def _patch_expectation(
-    patch: SegmentPatch, normalized_colors: list[list[int]] | None
+    patch: SegmentPatch, normalized_colors: list[list[int]] | None, power: SegmentPower
 ) -> dict[str, JsonValue]:
     """Normalized postcondition fields for ``matches_segments`` readback."""
     expectation: dict[str, JsonValue] = {}
@@ -480,6 +492,10 @@ def _patch_expectation(
             expectation["segment_off_from_zero_bri"] = True
         else:
             expectation["bri"] = patch.brightness
+            # A sent bri couples power in the firmware: always verify the resolved
+            # on, so an unexpected power flip is a mismatch, never a silent success.
+            if power.resolved_on is not None:
+                expectation["on"] = power.resolved_on
     if normalized_colors is not None:
         expectation["col"] = [list(slot) for slot in normalized_colors]
     if patch.effect_id is not None:
@@ -546,6 +562,7 @@ def build_segment_patch_plan(
         )
         if not has_change:
             raise _fail(f"Segment {patch.id}: patch must contain at least one mutable field.")
+        check_segment_name(patch.id, patch.name)
         # Both start and stop together (SEG-03). Range change implies both.
         if (patch.start is None) != (patch.stop is None):
             raise _fail(f"Segment {patch.id}: a range change requires both 'start' and 'stop'.")
@@ -569,6 +586,17 @@ def build_segment_patch_plan(
             raise _fail(
                 f"Segment {patch.id}: not an existing active segment; patch cannot add segments."
             )
+
+    # Shared power/brightness rules (ISSUE-48-DEC-001, same helper as #7).
+    powers: dict[int, SegmentPower] = {}
+    for patch in request.segments:
+        current_on = layout_by_id[patch.id].get("on")
+        powers[patch.id] = resolve_segment_power(
+            patch.id,
+            patch.on,
+            patch.brightness,
+            current_on if isinstance(current_on, bool) else None,
+        )
 
     led_count = capabilities.get("led_count")
     max_segments = capabilities.get("max_segments")
@@ -650,8 +678,10 @@ def build_segment_patch_plan(
     payload_segments: list[JsonValue] = []
     resolved_segments: list[JsonValue] = []
     expectations: dict[int, dict[str, JsonValue]] = {}
+    compensation: list[JsonValue] = []
     for patch in request.segments:
         current = layout_by_id[patch.id]
+        power = powers[patch.id]
         is_range_change = patch.start is not None and patch.stop is not None
         if patch.colors is not None:
             seglc_cap = _segment_capability_bits(raw_info, patch.id, raw_segments)
@@ -671,13 +701,16 @@ def build_segment_patch_plan(
             existing_name = current.get("name")
             if isinstance(existing_name, str) and existing_name:
                 compensate_name = existing_name
-        payload_segments.append(
-            _segment_payload(patch, normalized_colors, compensate_name, is_range_change)
-        )
+        entry = _segment_payload(patch, normalized_colors, compensate_name, is_range_change, power)
+        payload_segments.append(entry)
+        if patch.name is None and compensate_name is not None and "n" in entry:
+            compensation.append({"id": patch.id, "name": compensate_name})
+        if power.compensate_off:
+            compensation.append({"id": patch.id, "on": False})
         resolved_segments.append(
             _resolve_public_segment(patch, current, normalized_colors, compensate_name)
         )
-        expectations[patch.id] = _patch_expectation(patch, normalized_colors)
+        expectations[patch.id] = _patch_expectation(patch, normalized_colors, power)
 
     payload: dict[str, JsonValue] = {"seg": payload_segments}
 
@@ -692,6 +725,7 @@ def build_segment_patch_plan(
         "remove_segment_ids": list(empty_list),
         "resolved_segments": resolved_segments,
         "preserve_segment_ids": preserve_ids,
+        "targeted_compensation": compensation,
     }
     postconditions: list[JsonValue] = [
         "No device POST or filesystem mutation occurs during dry_run.",
@@ -702,6 +736,11 @@ def build_segment_patch_plan(
         postconditions.append(
             "Baseline profile 0 resends existing segment names to counter "
             "geometry-change name clearing."
+        )
+    if any(power.compensate_off for power in powers.values()):
+        postconditions.append(
+            "A positive brightness on an off segment is sent with on=false so the omitted "
+            "power is preserved; the readback verifies the segment stays off."
         )
     return SegmentsPlan(
         payload=payload,

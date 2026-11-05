@@ -172,9 +172,33 @@ Core fields: `id`, `start`, `stop`, `on`, `brightness`, `colors`, `effect_id` or
 are mutually exclusive; ambiguous names return candidates. Brightness/speed/
 intensity are integers 0â€“255; effects/palettes must exist in target catalogs.
 Should fields: `grouping`, `spacing`, `offset`, `reverse`, `mirror`, `selected`,
-`name`. If exposed, grouping is positive, spacing nonnegative (both within known
-firmware limits; `wled_replace_layout` is an exception, see [Layout replacement](#layout-replacement-implemented-in-7)), offset is 0 <= offset < resulting physical range length (no
-implicit wrap), and names respect the profile's UTF-8 byte limit (no truncation; for `wled_replace_layout` the #7 section overrides this, consistent with #6).
+`name`. If exposed, offset is 0 <= offset < resulting physical range length (no
+implicit wrap); grouping, spacing and names follow the shared limits below.
+
+### Shared segment limits (`wled_patch_segments` and `wled_replace_layout`)
+
+Issue #48, [ISSUE-48-DEC-001](decisions/issue-48.md) (human decision; supersedes the
+#7-only name, 255-bound and `bri` sending points of ISSUE-7-DEC-006). Both segment tools
+apply one rule set, implemented once (`src/wled_mcp/segment_rules.py`), before any write
+and identically in a dry run. Evidence is the pinned v0.15.1 source
+([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware confirmation stays with #12.
+
+| Input | Rule | Outcome |
+| --- | --- | --- |
+| `name` | At most 32 UTF-8 bytes on every device (the firmware truncates by bytes; 32 is the build-independent minimum, the chip type does not prove a larger buffer), no U+0000. The input schema keeps `maxLength: 32` (characters) as a coarse bound. | Otherwise `VALIDATION_ERROR` naming the segment and the byte limit, zero POSTs |
+| `grouping` / `spacing` | 1-255 / 0-255 (firmware `uint8_t`); both input schemas advertise `maximum: 255` | 256 or more fails schema validation (`VALIDATION_ERROR`), zero HTTP |
+| `on=true` with `brightness=0` | Rejected (the firmware would end on) | `VALIDATION_ERROR`, zero POSTs |
+| `brightness=0`, `on` omitted | Accepted only when the segment is reported off (a new #7 ID counts as on; an unreported current power also counts as not off); otherwise pass `on=false` explicitly | `VALIDATION_ERROR`, zero POSTs |
+| `brightness > 0`, `on` omitted, segment off | Targeted compensation: the resolved `on=false` is sent with `bri` and listed in `plan.targeted_compensation` as `{"id": N, "on": false}`; the segment stays off with the new remembered brightness | `applied/verified` |
+| `brightness > 0`, `on` omitted, segment on | `bri` is sent alone (no `on` added); the firmware keeps the segment on | `applied/verified` |
+| `brightness > 0`, `on` omitted, current power not reported | The power effect cannot be predicted; pass `on` explicitly (`brightness=0` in this case follows the row above: `VALIDATION_ERROR`) | `UNSUPPORTED_CAPABILITY`, zero POSTs (unrelated fields still work) |
+
+Whenever a positive `bri` is sent, the readback also verifies the resolved `on`, so a
+power flip is a `VERIFICATION_MISMATCH`, never a silent success. For
+`wled_replace_layout` none of these causes can occur after earlier removals any more:
+all are rejected or compensated before the first POST; partial application remains
+possible only for other causes (for example external interference or an uncertain
+step), as described below.
 Unsupported fields/capabilities fail explicitly. CCT/2D/pixel streaming are separate
 extensions; preservation of an existing unexposed field does not expose its setter.
 
@@ -192,7 +216,10 @@ Patch requires an existing active `id` plus at least one mutable field. Preserve
 all omitted fields and unrelated segments, including unexposed extension state.
 Firmware side effects (such as omitted name clearing on geometry changes or effect
 parameter resets) require proven targeted compensation shown in the plan; never
-round-trip the whole configuration. Reject an unrepresentable preservation plan.
+round-trip the whole configuration. `wled_patch_segments` lists it in
+`plan.targeted_compensation` with the same entry shapes as `wled_replace_layout`
+(`{"id": N, "name": ...}` for a name resent on a geometry change, `{"id": N, "on": false}`
+for the shared power compensation). Reject an unrepresentable preservation plan.
 Scalar patches may retain preexisting overlaps; a range-changing patch rejects
 introduced overlaps against the complete resulting layout, including untouched IDs.
 
@@ -248,33 +275,20 @@ these are acceptance targets, not firmware execution evidence.
 
 Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus the REL-01/02
 uncertain-write rules and the MCP-02 envelope); decisions
-[ISSUE-7-DEC-001–006](decisions/issue-7.md). Evidence is mock-only and source-derived
+[ISSUE-7-DEC-001–007](decisions/issue-7.md) and, for the shared segment limits,
+[ISSUE-48-DEC-001](decisions/issue-48.md). Evidence is mock-only and source-derived
 ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 has not run.
 
 **`wled_replace_layout(device_id, segments, dry_run=false)`**. Strict input
 (`segments`: 1-64 entries, unknown fields rejected). Each entry needs `id`, `start`,
 `stop`; optional: `on`, `brightness`, `colors`, `effect_id`, `palette_id`, `speed`,
-`intensity`, `grouping` (>= 1), `spacing` (>= 0), `offset`, `reverse`, `mirror`,
-`selected`, `name` (at most 32 characters). ISSUE-7-DEC-002 says #7 follows #6 wherever
-#6 defines handling; with [ISSUE-7-DEC-006](decisions/issue-7.md) (human decision B,
-resolving ISSUE-7-OPEN-001) the name limit and grouping/spacing bounds are aligned with
-`wled_patch_segments`: no extra byte limit and no extra 255 bound. `bri` is sent as #6
-sends it (no resolved `on` is added; an explicit `on` is sent); this covers only how
-`bri` is sent. The brightness validation of #7 follows the general power/brightness
-contract and differs from #6: `brightness=0` without an explicit `on=false` on an ON
-segment, and `on=true` with `brightness=0`, are rejected (#6 accepts them). This reading is
-confirmed by delegated decision ISSUE-7-DEC-007; the shared firmware limits and the #6
-`on:true` + `bri:0` defect are tracked in follow-up issue #48.
-
-Known firmware limits shared with #6 (this section overrides the general "within known
-firmware limits" and "no truncation" wording above for this tool): a name longer than
-the firmware buffer (32 bytes ESP8266, 64 ESP32, counted in bytes) is truncated
-silently; `grouping`/`spacing` above 255 wrap in the firmware `uint8_t` arguments; and
-`bri > 0` sent without `on` may switch an off segment on (an explicit `on=false` stays
-off). The plan and the dry run do not warn about these. The tool-level outcome is
-the same for all three: the final readback reports `VERIFICATION_MISMATCH`
-(`applied`/`mismatch`) instead of hiding the difference, and earlier destructive steps
-(removals, `mainseg` redirect) remain applied and are not rolled back.
+`intensity`, `grouping` (1-255), `spacing` (0-255), `offset`, `reverse`, `mirror`,
+`selected`, `name` (at most 32 UTF-8 bytes, no U+0000). ISSUE-7-DEC-002 says #7 follows
+#6 wherever #6 defines handling. Names, grouping/spacing bounds and the power/brightness
+rules (including the `brightness=0` rejections of ISSUE-7-DEC-007 and the `on=false`
+compensation for a positive `bri` on an off segment) are the
+[shared segment limits](#shared-segment-limits-wled_patch_segments-and-wled_replace_layout)
+of ISSUE-48-DEC-001, which supersedes the #7-only exceptions of ISSUE-7-DEC-006.
 Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
 only; authorization belongs to the host).
 
@@ -292,9 +306,8 @@ identical for dry run and live call; an earlier dry run is never a reservation):
    size, any gaps; no constant cleanup count).
 2. Validate the whole request before the first POST (unique IDs, `id < maxseg`,
    `0 <= start < stop <= led_count`, no overlap in the desired layout, effect/palette IDs
-   inside the catalogs, offset `0 <= offset < length`, `on=true` with
-   `brightness=0` and `brightness=0` without an explicit `on=false` rejected, color
-   widths). New IDs need explicit `colors`. Channel evidence for a new range is the
+   inside the catalogs, offset `0 <= offset < length`, the shared segment limits for
+   names, grouping/spacing and power/brightness, color widths). New IDs need explicit `colors`. Channel evidence for a new range is the
    profile-0 uniform RGB-only rule (`leds.lc` is RGB-only and `leds.seglc` is absent or
    aligned and RGB-only); otherwise `UNSUPPORTED_CAPABILITY`, and four channels for a new
    or moved range are refused the same way. Existing unchanged ranges follow
@@ -315,8 +328,9 @@ identical for dry run and live call; an earlier dry run is never a reservation):
    resets main to 0 on that removal).
 5. Update steps send only fields that differ from the fresh read, `start`/`stop` only
    for a geometry change, plus targeted compensation shown in the plan: the existing name
-   is resent after a geometry change. A sent `bri` is not accompanied by an extra `on`
-   (as #6; see the shared limits above). Existing IDs without any
+   is resent after a geometry change (`{"id": N, "name": ...}`), and a positive `bri` on an
+   off segment with omitted `on` is sent with `on=false` (`{"id": N, "on": false}`, shared
+   limits above); on a segment that is on, `bri` is sent alone. Existing IDs without any
    difference get no POST (`unchanged_segment_ids`); a request that changes nothing is
    a no-op: `ok=true`, `application=not_attempted`, `verification=not_requested`, one
    warning, zero POSTs. Create steps send every public field explicitly (defaults table

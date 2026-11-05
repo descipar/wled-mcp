@@ -19,6 +19,7 @@ import httpx2 as httpx
 import pytest
 from pydantic import ValidationError
 
+from tests.layout_support import FakeWLED
 from tests.patch_support import WriteRouter
 from tests.state_catalog_support import make_info, make_segment, make_state
 from tests.test_inventory_client import config, device
@@ -609,3 +610,212 @@ async def test_set_state_live_success_when_readback_matches(tmp_path):
     assert result.ok, (result.application, result.verification, result.error)
     assert result.application == "applied" and result.verification == "verified"
     assert router.posts[0][2] == {"on": True, "bri": 200}
+
+
+# ===================================================  issue #48: shared firmware limits (#6 side)
+#
+# These tests run against the firmware-like fake of ``tests/layout_support.py`` (byte name
+# buffer, uint8_t grp/spc, bri/on coupling), because static router fixtures cannot model
+# the firmware power flip. ``ISSUE-48-DEC-001``; mock-only.
+
+
+def seg_fake(**seg0: object) -> FakeWLED:
+    """Two active segments; ID 0 carries the overrides (default: on, bri 255)."""
+    return FakeWLED([make_segment(0, 0, 10, **seg0), make_segment(1, 10, 20)])
+
+
+def fake_seg(fake: FakeWLED, seg_id: int = 0) -> dict:
+    return {s["id"]: s for s in fake.active()}[seg_id]
+
+
+INVALID_48 = [
+    pytest.param({"name": "a" * 31 + "ä"}, "33 UTF-8 bytes", id="name-33-bytes"),
+    pytest.param({"name": "ä" * 17}, "34 UTF-8 bytes", id="name-17-two-byte-chars"),
+    pytest.param({"name": "ab\x00cd"}, "U+0000", id="name-nul"),
+    pytest.param({"on": True, "brightness": 0}, "on=true with brightness=0", id="on-true-bri-0"),
+    pytest.param({"brightness": 0}, "requires an explicit on=false", id="bri-0-on-segment"),
+]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("name", ["a" * 32, "ä" * 16], ids=["ascii-32", "two-byte-16"])
+async def test_48_name_of_exactly_32_utf8_bytes_is_accepted_and_verified(tmp_path, name):
+    """AC-48-01 (#6)."""
+    fake = seg_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, "name": name}])
+    assert result.ok, (result.error, result.data)
+    assert (result.application, result.verification) == ("applied", "verified")
+    assert fake.posts == [{"seg": [{"id": 0, "n": name}]}]
+    assert fake_seg(fake)["n"] == name
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("dry_run", [True, False], ids=["dry", "live"])
+@pytest.mark.parametrize(("fields", "message"), INVALID_48)
+async def test_48_rejections_before_any_post(tmp_path, fields, message, dry_run):
+    """AC-48-02/03/05/06/11 (#6): rejected identically in dry run and live call."""
+    fake = seg_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, **fields}], dry_run=dry_run)
+    assert result.error is not None and result.error.code == "VALIDATION_ERROR"
+    assert message in result.error.message and "Segment 0" in result.error.message
+    if "name" in fields and "U+0000" not in message:
+        assert "32 bytes" in result.error.message
+    assert (result.ok, result.application, result.verification) == (
+        False,
+        "not_attempted",
+        "not_requested",
+    )
+    assert fake.posts == [] and fake.method_count("POST") == 0
+
+
+@pytest.mark.anyio
+async def test_48_brightness_zero_with_on_false_or_on_off_segment_is_accepted(tmp_path):
+    """AC-48-06 (#6): explicit on=false works; an already-off segment needs no on."""
+    fake = FakeWLED([make_segment(0, 0, 10), make_segment(1, 10, 20, on=False, bri=90)])
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(
+            resources, [{"id": 0, "brightness": 0, "on": False}, {"id": 1, "brightness": 0}]
+        )
+    assert result.ok, (result.error, result.data)
+    assert fake.posts == [{"seg": [{"id": 0, "on": False, "bri": 0}, {"id": 1, "bri": 0}]}]
+    assert (fake_seg(fake, 0)["on"], fake_seg(fake, 1)["on"]) == (False, False)
+
+
+@pytest.mark.anyio
+async def test_48_positive_brightness_on_off_segment_is_compensated(tmp_path):
+    """AC-48-07/11 (#6): bri is sent with the resolved on=false, shown as targeted
+    compensation; dry run and live call carry the same payload; the segment stays off."""
+    fake = seg_fake(on=False, bri=100)
+    async with open_resources(tmp_path, fake) as resources:
+        dry = await call_patch_segments(resources, [{"id": 0, "brightness": 50}], dry_run=True)
+        assert fake.posts == []
+        live = await call_patch_segments(resources, [{"id": 0, "brightness": 50}])
+    expected = {"seg": [{"id": 0, "on": False, "bri": 50}]}
+    assert dry.ok and dry.data["payload"] == expected
+    assert dry.data["plan"]["targeted_compensation"] == [{"id": 0, "on": False}]
+    assert any("on=false" in text for text in dry.data["postconditions"])
+    assert fake.posts == [expected]
+    assert live.ok, (live.error, live.data)
+    assert (live.application, live.verification) == ("applied", "verified")
+    assert live.data["plan"] == dry.data["plan"]
+    assert (fake_seg(fake)["on"], fake_seg(fake)["bri"]) == (False, 50)
+    resolved = live.data["plan"]["resolved_segments"][0]
+    assert (resolved["on"], resolved["brightness"], resolved["effective_brightness"]) == (
+        False,
+        50,
+        0,
+    )
+
+
+@pytest.mark.anyio
+async def test_48_positive_brightness_on_on_segment_is_sent_alone_and_stays_on(tmp_path):
+    """AC-48-08 (#6): no on is added for a segment that is on; it stays on."""
+    fake = seg_fake(on=True, bri=100)
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, "brightness": 50}])
+    assert fake.posts == [{"seg": [{"id": 0, "bri": 50}]}]
+    assert result.ok and (result.application, result.verification) == ("applied", "verified")
+    assert result.data["plan"]["targeted_compensation"] == []
+    assert (fake_seg(fake)["on"], fake_seg(fake)["bri"]) == (True, 50)
+
+
+@pytest.mark.anyio
+async def test_48_power_flip_after_brightness_is_a_mismatch_not_silent_success(tmp_path):
+    """AC-48-09 (#6): the resolved on is verified whenever bri is sent. The device drops
+    the compensating on=false and the firmware switches the segment on."""
+    fake = seg_fake(on=False, bri=100)
+    fake.ignore_keys = {"on"}
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, "brightness": 50}])
+    assert fake_seg(fake)["on"] is True and fake_seg(fake)["bri"] == 50
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+    assert (result.application, result.verification) == ("unknown", "mismatch")
+
+
+@pytest.mark.anyio
+async def test_48_power_flip_on_on_segment_is_also_verified(tmp_path):
+    """AC-48-09 (#6): a segment that ends off after a positive bri is reported too."""
+    fake = seg_fake(on=True, bri=100)
+
+    def switch_off(device: FakeWLED) -> None:
+        device.slots[0]["on"] = False
+
+    fake.interference = {0: switch_off}
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, "brightness": 50}])
+    assert fake_seg(fake)["bri"] == 50  # the requested brightness itself was stored
+    assert not result.ok and result.error.code == "VERIFICATION_MISMATCH"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("field", ["grouping", "spacing"])
+async def test_48_grouping_and_spacing_255_are_accepted_and_verified(tmp_path, field):
+    """AC-48-04 (#6): the bound itself is storable; 256 is a schema rejection."""
+    fake = seg_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await call_patch_segments(resources, [{"id": 0, field: 255}])
+    assert result.ok, (result.error, result.data)
+    wire = {"grouping": "grp", "spacing": "spc"}[field]
+    assert fake_seg(fake)[wire] == 255
+    with pytest.raises(ValidationError):
+        PatchSegmentsRequest.model_validate(
+            {"device_id": "desk", "segments": [{"id": 0, field: 256}]}
+        )
+
+
+# Parity: the same edge case through both tools gives the same code, the same power
+# compensation and the same resolved power (guards drift between #6 and #7).
+PARITY_CASES = [
+    pytest.param({"on": False, "bri": 100}, {"brightness": 50}, None, id="bri-on-off-segment"),
+    pytest.param({"on": True, "bri": 100}, {"brightness": 50}, None, id="bri-on-on-segment"),
+    pytest.param({"on": True}, {"brightness": 0}, "VALIDATION_ERROR", id="bri-0-on-segment"),
+    pytest.param({"on": False}, {"brightness": 0}, None, id="bri-0-off-segment"),
+    pytest.param(
+        {"on": True}, {"on": True, "brightness": 0}, "VALIDATION_ERROR", id="on-true-bri-0"
+    ),
+    pytest.param({"on": True}, {"on": False, "brightness": 0}, None, id="on-false-bri-0"),
+    pytest.param({}, {"name": "a" * 31 + "ä"}, "VALIDATION_ERROR", id="name-33-bytes"),
+    pytest.param({}, {"name": "x\x00"}, "VALIDATION_ERROR", id="name-nul"),
+    pytest.param({}, {"name": "ä" * 16}, None, id="name-32-bytes"),
+    pytest.param(
+        {"on": None}, {"brightness": 50}, "UNSUPPORTED_CAPABILITY", id="unknown-power-bri"
+    ),
+    pytest.param({"on": None}, {"speed": 3}, None, id="unknown-power-unrelated"),
+]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("seg0", "fields", "code"), PARITY_CASES)
+async def test_48_patch_and_replace_apply_the_same_rules(tmp_path, seg0, fields, code):
+    from tests.test_layouts import replace
+
+    def make() -> FakeWLED:
+        fake = seg_fake(**{k: v for k, v in seg0.items() if v is not None})
+        if "on" in seg0 and seg0["on"] is None:
+            fake.slots[0].pop("on")
+        return fake
+
+    patch_fake, replace_fake = make(), make()
+    async with open_resources(tmp_path, patch_fake) as resources:
+        patched = await call_patch_segments(resources, [{"id": 0, **fields}], dry_run=True)
+    async with open_resources(tmp_path, replace_fake) as resources:
+        replaced = await replace(
+            resources,
+            [{"id": 0, "start": 0, "stop": 10, **fields}, {"id": 1, "start": 10, "stop": 20}],
+            dry_run=True,
+        )
+    assert patch_fake.posts == [] and replace_fake.posts == []
+    patched_code = patched.error.code if patched.error else None
+    replaced_code = replaced.error.code if replaced.error else None
+    assert patched_code == replaced_code == code
+    if patched.ok:
+
+        def power_entries(plan: dict) -> list:
+            return [c for c in plan["targeted_compensation"] if "on" in c]
+
+        assert power_entries(patched.data["plan"]) == power_entries(replaced.data["plan"])
+        patched_on = patched.data["plan"]["resolved_segments"][0]["on"]
+        replaced_on = replaced.data["plan"]["resolved_segments"][0]["on"]
+        assert patched_on == replaced_on

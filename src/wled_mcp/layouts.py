@@ -30,6 +30,13 @@ from wled_mcp.patches import (
 )
 from wled_mcp.readmodels import as_dict
 from wled_mcp.resources import SequencePlan, WriteStep
+from wled_mcp.segment_rules import (
+    GROUPING_MAX,
+    SPACING_MAX,
+    SegmentPower,
+    check_segment_name,
+    resolve_segment_power,
+)
 
 # ---------------------------------------------------------------------------- request
 
@@ -48,12 +55,13 @@ class LayoutSegment(BaseModel):
     palette_id: int | None = Field(default=None, ge=0)
     speed: int | None = Field(default=None, ge=0, le=255)
     intensity: int | None = Field(default=None, ge=0, le=255)
-    grouping: int | None = Field(default=None, ge=1)
-    spacing: int | None = Field(default=None, ge=0)
+    grouping: int | None = Field(default=None, ge=1, le=GROUPING_MAX)
+    spacing: int | None = Field(default=None, ge=0, le=SPACING_MAX)
     offset: int | None = Field(default=None, ge=0)
     reverse: bool | None = None
     mirror: bool | None = None
     selected: bool | None = None
+    # Coarse character bound; the 32 UTF-8 byte limit is checked by the planner.
     name: str | None = Field(default=None, max_length=32)
 
 
@@ -410,20 +418,13 @@ def build_layout_plan(
             seg, is_new=is_new, moved=moved, raw_info=raw_info, raw_segments=raw_segments
         )
 
-        # Power / brightness (the firmware keeps ON when on=true accompanies bri=0).
-        if seg.on is True and seg.brightness == 0:
-            raise _fail(f"{ctx}on=true with brightness=0 is rejected; pass on=false.")
-        cur_on = None if cur is None else cur["on"]
-        resolved_on: bool | None
-        if seg.on is not None:
-            resolved_on = seg.on
-        elif is_new:
-            resolved_on = True
-        else:
-            assert isinstance(cur_on, bool) or cur_on is None
-            resolved_on = cur_on
-        if seg.brightness == 0 and resolved_on is not False:
-            raise _fail(f"{ctx}brightness=0 requires an explicit on=false.")
+        # Shared name and power/brightness rules (ISSUE-48-DEC-001, same helper as #6).
+        # A new ID resolves omitted power to its default on=true.
+        check_segment_name(seg.id, seg.name)
+        cur_on = True if cur is None else cur["on"]
+        power = resolve_segment_power(
+            seg.id, seg.on, seg.brightness, cur_on if isinstance(cur_on, bool) else None
+        )
 
         if cur is None:
             resolved = _resolve_new(seg, colors)
@@ -432,7 +433,7 @@ def build_layout_plan(
         else:
             cur_raw = raw_by_id.get(seg.id)
             resolved, payload, compensation_entries = _update_plan(
-                seg, cur, _raw_name(cur_raw), colors, resolved_on, moved
+                seg, cur, _raw_name(cur_raw), colors, power, moved
             )
             if moved:
                 geometry_changed.add(seg.id)
@@ -718,7 +719,7 @@ def _update_plan(
     cur: dict[str, JsonValue],
     cur_name: str | None,
     colors: list[list[int]] | None,
-    resolved_on: bool | None,
+    power: SegmentPower,
     moved: bool,
 ) -> tuple[dict[str, JsonValue], dict[str, JsonValue], list[JsonValue]]:
     ctx = f"Segment {seg.id}: "
@@ -737,9 +738,10 @@ def _update_plan(
                     f"{ctx}the existing offset would be clamped by the firmware; "
                     "supply offset explicitly."
                 )
-    # Power and brightness, handled as #6 does: bri is sent alone; an explicit on is sent
-    # only when requested. A positive bri on an off segment may turn it on in the firmware
-    # (known limit shared with #6); the final readback then reports a mismatch.
+    # Power and brightness (ISSUE-48-DEC-001, shared with #6): an explicit on accompanies a
+    # sent bri; a positive bri with omitted on on an off segment is sent with the resolved
+    # on=false (targeted compensation), because the firmware would otherwise switch the
+    # segment on. On a segment that is on, bri is sent alone (the firmware keeps it on).
     cur_on = cur["on"]
     if seg.brightness is not None:
         if seg.brightness == 0:
@@ -748,8 +750,11 @@ def _update_plan(
                 payload["on"] = False
         elif cur["brightness"] != seg.brightness:
             payload["bri"] = seg.brightness
+            if power.compensate_off:
+                payload["on"] = False
+                compensation.append({"id": seg.id, "on": False})
     if seg.on is not None and "on" not in payload and (seg.on != cur_on or "bri" in payload):
-        payload["on"] = seg.on  # an explicit on accompanies a sent bri, as in #6
+        payload["on"] = seg.on
     if colors is not None:
         current_colors = cur["colors"]
         same = isinstance(current_colors, list) and current_colors[: len(colors)] == colors
@@ -790,7 +795,7 @@ def _update_plan(
         seg.id,
         seg.start,
         seg.stop,
-        resolved_on,
+        power.resolved_on,
         brightness_value,
         resolved_colors,
         channels if isinstance(channels, int) else None,
