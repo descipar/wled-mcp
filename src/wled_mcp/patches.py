@@ -92,7 +92,7 @@ class MasterPlan:
     public: dict[str, JsonValue]
     postconditions: list[JsonValue]
     # Normalized postcondition keys the readback must match (subset of the
-    # normalized state view keys).
+    # normalized state view keys). ``expect_on`` is the resolved master power.
     expect_on: bool | None
     expect_brightness: int | None
 
@@ -228,9 +228,23 @@ def build_set_state_plan(request: SetStateRequest, state_view: dict[str, JsonVal
                 "remembered brightness is zero."
             )
 
+    # Pinned v0.15.1 firmware couples master power to brightness
+    # (``on = root["on"] | (bri > 0)``): a positive ``bri`` alone switches an off
+    # master on. An omitted ``on`` is preserved by sending the resolved
+    # ``on=false`` together with ``bri`` (targeted compensation,
+    # ``ISSUE-52-DEC-001``); the master stays off and remembers the brightness.
+    compensate_off = (
+        request.on is None
+        and request.brightness is not None
+        and request.brightness > 0
+        and current_on is False
+    )
+
     payload: dict[str, JsonValue] = {}
     if request.on is not None:
         payload["on"] = request.on
+    elif compensate_off:
+        payload["on"] = False
     if request.brightness is not None:
         payload["bri"] = request.brightness
 
@@ -243,14 +257,14 @@ def build_set_state_plan(request: SetStateRequest, state_view: dict[str, JsonVal
         effective_ms = wire_units * 100
         payload["tt"] = wire_units
 
-    # Expected normalized postcondition.
-    expect_on = request.on if request.on is not None else None
+    # Expected postcondition. Every master write sends ``on`` explicitly or a
+    # power-coupled ``bri``, so the resolved power is always verified: a silent
+    # power flip is a mismatch, never a verified success (``ISSUE-52-DEC-001``).
+    # For ``bri=0`` the resolved power is off; remembered brightness is kept
+    # (readback may still show the previous nonzero value).
+    expect_on: bool = resolved_on
     expect_brightness = request.brightness if request.brightness is not None else None
-    # ``bri=0`` resolves to off on this contract: expect the normalized state
-    # to report on=False and effective_brightness=0; remembered brightness is
-    # kept (readback may still show the previous nonzero value).
-    if request.brightness == 0 and request.on is None and resolved_on is False:
-        expect_on = False
+    targeted_compensation: list[JsonValue] = [{"on": False}] if compensate_off else []
 
     public_plan: dict[str, JsonValue] = {
         "on": request.on,
@@ -267,11 +281,18 @@ def build_set_state_plan(request: SetStateRequest, state_view: dict[str, JsonVal
             ),
         },
         "persistent_transition_touched": False,
+        "targeted_compensation": targeted_compensation,
     }
     postconditions: list[JsonValue] = [
         "No device POST or filesystem mutation occurs during dry_run.",
         "Persistent 'transition' is never written; only one-call 'tt' applies.",
+        "The readback verifies the resolved master power.",
     ]
+    if compensate_off:
+        postconditions.append(
+            "A positive brightness on an off master is sent with on=false so the omitted "
+            "power is preserved; the readback verifies the master stays off."
+        )
     if request.transition_ms is not None:
         postconditions.append(
             f"transition_ms {requested_ms} maps to wire units {wire_units} "
@@ -293,9 +314,10 @@ def build_set_state_plan(request: SetStateRequest, state_view: dict[str, JsonVal
 def matches_set_state(expected: MasterPlan, state: JsonValue) -> bool:
     """Postcondition check for ``write_verified``.
 
-    The readback is the raw ``/json/state`` object. Verify only the fields the
-    request asked for; master ``bri`` readback is remembered brightness while
-    ``on`` reflects actual power; animation of unrelated fields is ignored.
+    The readback is the raw ``/json/state`` object. Verify the resolved master
+    power and the requested brightness; master ``bri`` readback is remembered
+    brightness while ``on`` reflects actual power; animation of unrelated fields
+    is ignored.
     """
     if not isinstance(state, dict):
         return False
