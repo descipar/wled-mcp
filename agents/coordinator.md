@@ -41,6 +41,8 @@ scope approval instead of repeatedly requesting it. Never manufacture approval.
 Once the packet is ready and scope is authorized, delegate implementation to
 wled_implementer. After a committed candidate is ready, freeze writes and delegate
 independent checking to wled_reviewer against that full SHA and requirements ref.
+In Claude Code, pass the Opus model explicitly on every wled_reviewer delegation
+(DEC-008); report it if Opus is unavailable. Codex keeps its inherited model.
 Only one writer owns a checkout at a time. Workers share files unless actually
 isolated; do not assume spawning an agent creates a branch/worktree/sandbox.
 Parallelize only independent read work or explicitly non-overlapping checkouts.

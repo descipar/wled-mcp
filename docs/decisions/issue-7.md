@@ -122,7 +122,10 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 
 - ID: ISSUE-7-DEC-006
 - Recorded date: 2026-11-05
-- Status: active for issue #7 only.
+- Status: superseded (2026-11-05) by
+  [ISSUE-48-DEC-001](issue-48.md#issue-48-dec-001--shared-67-handling-of-firmware-segment-limits)
+  for the name limit, the grouping/spacing bounds and the `bri` sending rule; kept for
+  history. Its new-ID defaults condition remains valid for #7.
 - Authority: human decision.
 - Source: the human chat message "B" in the current issue-7 workflow session,
   2026-11-05, answering ISSUE-7-OPEN-001 (relayed by the coordinator); no permalink.
@@ -139,7 +142,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Rationale supplied: none beyond the choice itself.
 - Affected: SEG-05, T05/T06, TOOL-CONTRACT.md, VALIDATION.md, `layouts.py`.
 - Supersedes / superseded by: resolves ISSUE-7-OPEN-001; partially supersedes
-  ISSUE-7-DEC-005 (see there).
+  ISSUE-7-DEC-005 (see there); superseded by ISSUE-48-DEC-001 (human, issue #48).
 - Propagated to: implementation handoff `.agent-runs/issue-7/implementation.md`.
 - Clarification note (originally a coordinator reading; confirmed by
   [ISSUE-7-DEC-007](#issue-7-dec-007--narrow-reading-of-dec-006-confirmed)): "bri handling

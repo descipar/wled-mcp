@@ -36,7 +36,10 @@ for input validation, preserved unrelated files and nontransactional batch failu
 
 Models, reasoning, providers, MCP, tools and permissions remain inherited from
 each client/session; the adapters add no overrides. Client trust/loading and
-managed/session policy still apply. Role text is guidance, not OS enforcement.
+managed/session policy still apply. One delegation-time exception is recorded in
+[DEC-008](DECISIONS.md#dec-008--reviewer-on-opus-in-claude-code): in Claude Code the
+coordinator launches `wled_reviewer` with Opus; Codex is unaffected and the adapters
+still carry no model field. Role text is guidance, not OS enforcement.
 Claude's [documented `@AGENTS.md` import](https://code.claude.com/docs/en/memory#import-additional-files)
 keeps the project rules shared even on versions without direct AGENTS.md support.
 Client registration formats: [Codex subagents](https://learn.chatgpt.com/docs/agent-configuration/subagents),
