@@ -219,3 +219,59 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Propagated to roles / packet references: coordinator to implementer; reviewer through
   the coordinator.
 - Revalidation needed / next action: none.
+
+## ISSUE-12-DEC-007 — Remaining #12 scope after the second run, and a third run
+
+- ID: ISSUE-12-DEC-007
+- Recorded date: 2026-11-06
+- Status: active for issue #12; item 2 (the run authorization) was used by the third
+  #12 live run on 2026-11-06 and expired after that run.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("stimme zu") to the
+  coordinator's six-point proposal, relayed by the coordinator and recorded as a
+  coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12) and, for
+  item 6, on [#25](https://github.com/descipar/wled-mcp/issues/25); no permalink to the
+  original message available.
+- Scope: the items left open after the second run by the post-merge completion record
+  of PR #71 (boxes 1, 3 and 7 of #12, and the relevance of H07 to #12).
+- Decision:
+  1. H02: the comparison "with the WLED UI" is satisfied by comparing the tool output
+     with the controller endpoints the WLED UI renders (state, info, effect, palette
+     and preset data); no separate screenshot or UI comparison is required.
+  2. A short owner-watched run through the deployed Streamable HTTP service on the
+     test controller of ISSUE-12-DEC-001 verifies visible effect animation and a speed
+     change; capture before and restore after apply. This agreement authorizes that
+     one run only (the third run). The coordinator's run plan for that run also
+     included a brightness transition on the same controller.
+  3. stdio H04 is sufficient as exercised in the second run (power/brightness rules
+     plus color/effect writes via `wled_replace_layout`, in the proposal's words); the
+     stdio mode uses the same domain code as HTTP.
+  4. stdio drain evidence at host level is sufficient for #12, consistent with
+     ISSUE-12-DEC-006; no dedicated server-side SIGTERM observation in stdio mode.
+  5. stdio load measured through the hub within its rate limit is sufficient for #12;
+     Streamable HTTP is the preferred mode and is fully measured. Load beyond the
+     hub's rate limit or without the hub hop is not required for #12.
+  6. The live H07 check (an unreachable configured controller on the deployed target)
+     moves to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)); the
+     mocked coverage (T02, T09) remains the stage-1 evidence. A live H07 run needs its
+     own authorization.
+- Applicability / conditions / expiry: issue #12 only. Item 2 is bounded to the third
+  run, the HTTP entry and the one test controller, with capture and restore; it is not
+  standing permission for later controller writes, service or hub operations. Items 1
+  and 3-5 define sufficiency for #12 and are not general rules for other issues or
+  later releases. Item 6 changes no other stage-2 scope.
+- Rationale supplied: HTTP is the preferred mode (see ISSUE-12-DEC-006); otherwise none
+  beyond the proposal.
+- Affected requirement IDs, files, issues and tests: H02, H04, H07; READ-02, CTRL-01,
+  SEG-04, DEV-02, REL-01, MCP-04, OPS-01, TEST-01;
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), README.md; #12, #25;
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none. Narrows the remaining #12 work under
+  ISSUE-12-DEC-004 (stdio stays in #12 scope) without removing stdio from #12;
+  ISSUE-12-DEC-001 conditions apply to the run of item 2.
+- Propagated to roles / packet references: coordinator comments on #12 and #25;
+  implementer and reviewer through the coordinator.
+- Revalidation needed / next action: post-merge completion review of #12 against the
+  run-3 record and this decision; any further controller write, deployment or live H07
+  run needs a new human instruction.

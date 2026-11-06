@@ -721,7 +721,15 @@ def test_live_deployment_documents_carry_no_installation_identifiers(path):
         "image sha256:0123456789abcdef0123456789abcdef",
     ],
 )
-@pytest.mark.parametrize("heading", [LIVE_HEADING, HARDWARE_HEADING, RUN2_HEADING])
+@pytest.mark.parametrize(
+    "heading",
+    [
+        LIVE_HEADING,
+        HARDWARE_HEADING,
+        RUN2_HEADING,
+        "## Issue #12 hardware acceptance, run 3 (2026-11-06)",
+    ],
+)
 def test_private_identifier_detector_catches_installation_details(leak, heading):
     section = markdown_section(VALIDATION.read_text("utf-8"), heading)
     assert private_identifiers(section) == []
@@ -976,14 +984,17 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
         ),
         (
             "TRACEABILITY.md",
-            "without the hub hop (not exercised), tracked by",
-            "without the hub hop (not exercised) (#11), tracked by",
+            "without the hub hop (not exercised, and",
+            "without the hub hop (#11) (not exercised, and",
             "OPS-01 does not track 'load measurements' by #12",
         ),
         (
             "TRACEABILITY.md",
-            "pending: load measurements on the target in stdio mode",
-            "pending: resource figures on the target in stdio mode",
+            "pending: load measurements on the target in stdio mode beyond the MCPHub rate "
+            "limit and without the hub hop (not exercised, and not required for #12 per "
+            "ISSUE-12-DEC-007, so no issue tracks them), after the load measurements moved",
+            "pending: resource figures on the target in stdio mode beyond the MCPHub rate "
+            "limit and without the hub hop (not exercised), after the figures moved",
             "OPS-01 no longer names 'load measurements'",
         ),
         (
@@ -1344,6 +1355,340 @@ def test_run1_not_run_list_points_forward_to_run2():
     assert RUN2_HEADING not in run1
     # Run-1 history stays: its not-run items are not removed by the forward reference.
     assert hardware_section_problems(run1) == []
+
+
+RUN3_HEADING = "## Issue #12 hardware acceptance, run 3 (2026-11-06)"
+RUN3_ANCHOR = "VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06"
+RUN3_FORWARD_REFERENCE = "[run 3](#issue-12-hardware-acceptance-run-3-2026-11-06)"
+RUN3_FACTS = (
+    "ISSUE-12-DEC-007 item 2",
+    "ISSUE-12-DEC-001",
+    "WLED 16.0.1",
+    "no compatibility with other firmware, controllers or LED types",
+    "no deployment, service, hub or inventory change",
+)
+RUN3_VISUAL = {
+    "E1": ("effect ID 9", "slowly moving rainbow"),
+    "E2": ("speed 240", "faster, clearly"),
+    "E3 attempt 1": ("no dimming visible",),
+    "E3 attempt 2": ("no dimming visible",),
+    "E3 attempt 3": ("below the cap", "gently became darker"),
+}
+RUN3_RESULTS = {
+    "current-limiter explanation": (
+        "current limiter (ABL) was capping the output",
+        "at the 850 mA limit",
+        "645 mA, below the cap",
+        "have to start below the cap",
+    ),
+    "TIMEOUT note": (
+        "returned `TIMEOUT` with application `not_attempted`",
+        "the brightness unchanged",
+        "not a blind replay",
+        "the cause of the expired deadline is unknown",
+    ),
+}
+RUN3_RESTORATION = {
+    "R1 preset file": "byte-identical to the run-3 baseline",
+    "R2 state": "byte-identical to the run-3 baseline",
+    "R3 configuration": "byte-identical to the run-3 baseline",
+}
+# Each remaining run-2 item and the ISSUE-12-DEC-007 item that resolves it.
+RUN3_RESOLUTIONS = {
+    "H02 comparison with the WLED UI": "ISSUE-12-DEC-007 item 1",
+    "H04 visible effect animation, speed and brightness transition": "ISSUE-12-DEC-007 item 2",
+    "H04 in stdio mode": "ISSUE-12-DEC-007 item 3",
+    "stdio drain on SIGTERM": "ISSUE-12-DEC-007 item 4",
+    "stdio load beyond the hub's rate limit and without the hub hop": "ISSUE-12-DEC-007 item 5",
+    "H07 offline device on hardware": "ISSUE-12-DEC-007 item 6",
+}
+
+
+def run3_section_problems(section: str) -> list[str]:
+    """What the #12 run-3 record must state (ISSUE-12-DEC-007, TD-12-7)."""
+    problems = []
+    flat = " ".join(section.split())
+    if "```text" not in section or "Restoration performed and verified:" not in section:
+        problems.append("the evidence template is not used")
+    for fact in RUN3_FACTS:
+        if fact not in flat:
+            problems.append(f"run-3 record lacks {fact!r}")
+    for result, facts in RUN3_RESULTS.items():
+        for fact in facts:
+            if fact not in flat:
+                problems.append(f"run-3 {result} lacks {fact!r}")
+    rows = table_rows(section)
+    for check, facts in RUN3_VISUAL.items():
+        if check not in rows:
+            problems.append(f"check {check} is missing")
+            continue
+        for fact in facts:
+            if fact not in rows[check]:
+                problems.append(f"check {check} lacks {fact!r}")
+    for check, fact in RUN3_RESTORATION.items():
+        if check not in rows:
+            problems.append(f"restoration result {check!r} is missing")
+        elif fact not in rows[check]:
+            problems.append(f"{check} lacks {fact!r}")
+    for item, decision in RUN3_RESOLUTIONS.items():
+        if item not in rows:
+            problems.append(f"remaining item {item!r} has no resolution")
+        elif decision not in rows[item]:
+            problems.append(f"remaining item {item!r} does not cite {decision}")
+    if "issues/25" not in rows.get("H07 offline device on hardware", ""):
+        problems.append("the H07 move does not reference issues/25")
+    if "### Not run\n" not in section:
+        return [*problems, "the not-run list is missing"]
+    not_run = " ".join(markdown_section(section, "### Not run").split())
+    for item in ("intensity", "H07 offline device", "Controller reboot", "cause of the `TIMEOUT`"):
+        if item not in not_run:
+            problems.append(f"not-run list lacks {item!r}")
+    if re.search(r"\b(?:all|every) (?:firmware|controllers?)\b[^.]*\bsupported\b", flat, re.I):
+        problems.append("the record makes a blanket compatibility claim")
+    return problems
+
+
+def test_run3_section_records_visible_checks_limiter_timeout_and_resolutions():
+    section = markdown_section(VALIDATION.read_text("utf-8"), RUN3_HEADING)
+    assert run3_section_problems(section) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        ('"yes": a slowly moving rainbow', '"no reply"', "check E1 lacks 'slowly moving rainbow'"),
+        ('"faster, clearly"', '"no change"', "check E2 lacks 'faster, clearly'"),
+        ("| E3 attempt 3 |", "| E3 attempt 4 |", "check E3 attempt 3 is missing"),
+        (
+            '"yes, gently became darker"',
+            "not visible",
+            "check E3 attempt 3 lacks 'gently became darker'",
+        ),
+        (
+            "current limiter (ABL) was\n  capping the output",
+            "cause was not found",
+            "run-3 current-limiter explanation lacks "
+            "'current limiter (ABL) was capping the output'",
+        ),
+        (
+            "it was 645 mA, below the cap",
+            "it was not read",
+            "run-3 current-limiter explanation lacks '645 mA, below the cap'",
+        ),
+        (
+            "(not a blind replay\nof a possibly applied write)",
+            "(a retry)",
+            "run-3 TIMEOUT note lacks 'not a blind replay'",
+        ),
+        (
+            "the cause of the expired deadline is unknown",
+            "the cause was a slow device",
+            "run-3 TIMEOUT note lacks 'the cause of the expired deadline is unknown'",
+        ),
+        (
+            "| R2 state | byte-identical to the run-3 baseline",
+            "| R2 state | similar to the run-3 baseline",
+            "R2 state lacks 'byte-identical to the run-3 baseline'",
+        ),
+        (
+            "| R1 preset file |",
+            "| R1 presets |",
+            "restoration result 'R1 preset file' is missing",
+        ),
+        (
+            "per ISSUE-12-DEC-007 item 1 |",
+            "per the coordinator |",
+            "remaining item 'H02 comparison with the WLED UI' does not cite "
+            "ISSUE-12-DEC-007 item 1",
+        ),
+        (
+            "| stdio drain on SIGTERM |",
+            "| stdio drain |",
+            "remaining item 'stdio drain on SIGTERM' has no resolution",
+        ),
+        (
+            "moved to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)) per "
+            "ISSUE-12-DEC-007 item 6",
+            "moved to stage 2 per ISSUE-12-DEC-007 item 6",
+            "the H07 move does not reference issues/25",
+        ),
+        (
+            "- A visual intensity change (not part of this run).\n",
+            "",
+            "not-run list lacks 'intensity'",
+        ),
+        (
+            "- The cause of the `TIMEOUT` before dispatch",
+            "- The timeout",
+            "not-run list lacks 'cause of the `TIMEOUT`'",
+        ),
+        (
+            "is claimed.\n",
+            "is claimed. All firmware is supported.\n",
+            "the record makes a blanket compatibility claim",
+        ),
+    ],
+)
+def test_run3_section_check_rejects_regressions(old, new, expected):
+    section = markdown_section(VALIDATION.read_text("utf-8"), RUN3_HEADING)
+    assert run3_section_problems(section) == []
+    assert old in section
+    assert expected in run3_section_problems(section.replace(old, new))
+
+
+def test_run2_not_run_list_points_forward_to_run3_and_keeps_its_history():
+    text = VALIDATION.read_text("utf-8")
+    run2 = markdown_section(text, RUN2_HEADING)
+    assert RUN3_FORWARD_REFERENCE in markdown_section(run2, "### Not run")
+    assert RUN3_HEADING not in run2
+    assert run2_section_problems(run2) == []
+
+
+def dec007_problems(texts: dict[str, str]) -> list[str]:
+    """Items resolved by run 3 or ISSUE-12-DEC-007 are no longer pending for #12."""
+    problems = []
+    rows = {
+        line.split("|")[1].strip(): line.split("|")[-2].strip()
+        for line in texts["TRACEABILITY.md"].splitlines()
+        if line.startswith("| ")
+    }
+    for requirement, stale in (
+        ("READ-02", "visual comparison with the WLED UI"),
+        ("CTRL-01", "pending: visible effect animation"),
+        ("SEG-04", "pending: visible effect animation"),
+        ("TEST-01", "the visual comparison with the WLED UI"),
+    ):
+        if stale in rows[requirement]:
+            problems.append(f"{requirement} still lists {stale!r} as pending")
+    for requirement in ("DEV-02", "REL-01", "TEST-01"):
+        cell = rows[requirement]
+        if "H07 (#12)" in cell or "observation (#12)" in cell:
+            problems.append(f"{requirement} still tracks H07 by #12")
+        if "issues/25" not in cell or "ISSUE-12-DEC-007" not in cell:
+            problems.append(f"{requirement} does not move H07 to #25 per ISSUE-12-DEC-007")
+    for requirement in ("READ-02", "CTRL-01", "MCP-04", "OPS-01"):
+        if "ISSUE-12-DEC-007" not in rows[requirement]:
+            problems.append(f"{requirement} does not cite ISSUE-12-DEC-007")
+    for requirement in ("CTRL-01", "SEG-04", "REL-01"):
+        if RUN3_ANCHOR not in rows[requirement]:
+            problems.append(f"{requirement} does not link the #12 run-3 record")
+    if "tracked by [#12](https://github.com/descipar/wled-mcp/issues/12)" in rows["OPS-01"]:
+        problems.append("OPS-01 still tracks stdio load beyond the rate limit by #12")
+    for name in ("README.md", "DEPLOYMENT.md"):
+        flat = " ".join(texts[name].split())
+        if RUN3_ANCHOR not in flat:
+            problems.append(f"{name} does not link the #12 run-3 record")
+        if "issues/25" not in flat or "ISSUE-12-DEC-007" not in flat:
+            problems.append(f"{name} does not state the DEC-007 scope with #25")
+    if "H07, the visual comparison with the WLED UI" in texts["README.md"]:
+        problems.append("README.md still lists the UI comparison as pending")
+    if not re.search(r"current-limiter \(ABL\) cap", " ".join(texts["DEPLOYMENT.md"].split())):
+        problems.append("DEPLOYMENT.md lacks the current-limiter guidance")
+    h04 = " ".join(
+        markdown_section(texts["VALIDATION.md"], "## Opt-in physical write checks").split()
+    )
+    if "stay below the controller's current-limiter (ABL) cap" not in h04 or "leds.pwr" not in h04:
+        problems.append("VALIDATION.md H04 guidance lacks the current-limiter note")
+    heading = re.search(r"^## ISSUE-12-DEC-007 .*$", texts["issue-12.md"], flags=re.M)
+    entry = markdown_section(texts["issue-12.md"], heading.group()) if heading else ""
+    if "Authority: human decision." not in entry or "issues/25" not in entry:
+        problems.append("issue-12.md lacks the human ISSUE-12-DEC-007 entry")
+    if "[ISSUE-12-DEC-007](decisions/issue-12.md)" not in texts["DECISIONS.md"]:
+        problems.append("DECISIONS.md lacks the ISSUE-12-DEC-007 pointer")
+    return problems
+
+
+def dec007_texts() -> dict[str, str]:
+    return {
+        path.name: path.read_text("utf-8")
+        for path in (
+            TRACEABILITY,
+            ROOT / "README.md",
+            DEPLOYMENT,
+            VALIDATION,
+            ROOT / "docs/decisions/issue-12.md",
+            ROOT / "docs/DECISIONS.md",
+        )
+    }
+
+
+def test_dec007_resolutions_are_reflected_in_traceability_readme_and_guidance():
+    assert dec007_problems(dec007_texts()) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "old", "new", "expected"),
+    [
+        (
+            "TRACEABILITY.md",
+            "| pending: live H07 offline observation, moved to stage 2",
+            "| pending: H07 offline observation (#12), moved to stage 2",
+            "DEV-02 still tracks H07 by #12",
+        ),
+        (
+            "TRACEABILITY.md",
+            "| pending: live H07, moved to stage 2 "
+            "([#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-12-DEC-007;",
+            "| pending: live H07 (#12);",
+            "REL-01 does not move H07 to #25 per ISSUE-12-DEC-007",
+        ),
+        (
+            "TRACEABILITY.md",
+            "| pending: controllers and firmware other than WLED 16.0.1 (no compatibility "
+            "claim); the H02 comparison",
+            "| pending: visual comparison with the WLED UI; the H02 comparison",
+            "READ-02 still lists 'visual comparison with the WLED UI' as pending",
+        ),
+        (
+            "TRACEABILITY.md",
+            "| pending: RGBW/CCT colors and controllers",
+            "| pending: visible effect animation, RGBW/CCT colors and controllers",
+            "CTRL-01 still lists 'pending: visible effect animation' as pending",
+        ),
+        (
+            "TRACEABILITY.md",
+            "(not exercised, and not required for #12 per ISSUE-12-DEC-007, so no issue tracks "
+            "them), after the load measurements moved to",
+            "(not exercised), tracked by",
+            "OPS-01 still tracks stdio load beyond the rate limit by #12",
+        ),
+        (
+            "README.md",
+            "docs/VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06",
+            "docs/VALIDATION.md",
+            "README.md does not link the #12 run-3 record",
+        ),
+        (
+            "DEPLOYMENT.md",
+            "stay below its current-limiter (ABL) cap",
+            "check the output",
+            "DEPLOYMENT.md lacks the current-limiter guidance",
+        ),
+        (
+            "VALIDATION.md",
+            "must stay below the controller's current-limiter\n(ABL) cap",
+            "should be watched",
+            "VALIDATION.md H04 guidance lacks the current-limiter note",
+        ),
+        (
+            "issue-12.md",
+            "## ISSUE-12-DEC-007 — Remaining #12 scope",
+            "## ISSUE-12-DEC-008 — Remaining #12 scope",
+            "issue-12.md lacks the human ISSUE-12-DEC-007 entry",
+        ),
+        (
+            "DECISIONS.md",
+            "[ISSUE-12-DEC-007](decisions/issue-12.md)",
+            "ISSUE-12-DEC-007",
+            "DECISIONS.md lacks the ISSUE-12-DEC-007 pointer",
+        ),
+    ],
+)
+def test_dec007_check_rejects_regressions(name, old, new, expected):
+    texts = dec007_texts()
+    assert old in texts[name]
+    texts[name] = texts[name].replace(old, new, 1)
+    assert expected in dec007_problems(texts)
 
 
 def test_hub_http_registration_points_to_owner_and_reload_requirements():

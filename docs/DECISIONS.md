@@ -233,6 +233,12 @@ can explicitly amend them.
   lifecycle only): the host closing the stdio connection on entry disable/stop without
   draining in-flight calls is accepted as a documented stdio limitation; HTTP is the
   preferred mode; no code change; not a deprecation of stdio.
+- [ISSUE-12-DEC-007](decisions/issue-12.md) (human, 2026-11-06, issue #12 only; item 2
+  one bounded run): remaining #12 scope after run 2: H02 UI comparison satisfied by
+  the controller endpoints the WLED UI renders; one owner-watched HTTP run for visible
+  effect animation and speed with capture/restore (run 3, expired after it); stdio H04,
+  host-level stdio drain and rate-limited stdio load through the hub are sufficient
+  for #12; live H07 moves to stage 2 (#25), mocked coverage remains.
 - [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
   the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
   (blending style) is light state; it joins the `state` allowlist and the save compare

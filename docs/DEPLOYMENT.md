@@ -19,7 +19,11 @@ compatibility claim; see [#67](https://github.com/descipar/wled-mcp/issues/67)).
 connections, an in-flight write drain, stdio H04-H06, rate-limited stdio load through the
 hub, a stdio drain finding (see the stdio notes below) and the hardware re-check of the
 fixed [#66](https://github.com/descipar/wled-mcp/issues/66) in
-[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06). Live update and
+[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06). A third, owner-watched
+HTTP run recorded visible effect animation, a speed change and a brightness transition,
+and ISSUE-12-DEC-007 settles the remaining #12 scope (live H07 moved to stage 2,
+[#25](https://github.com/descipar/wled-mcp/issues/25)) in
+[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06). Live update and
 rollback between two versions moved to stage 2
 ([#21](https://github.com/descipar/wled-mcp/issues/21),
 [#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
@@ -354,7 +358,7 @@ rely on a manually installed package in a container's disposable filesystem.
 4. From the actual WLED-MCP execution context, read `/json/info` and `/json/state` only for selected configured controllers. Check DNS/IP/port reachability without changing network settings.
 5. Start the HTTP service independently and verify its authenticated `/mcp` connection, or launch stdio via uvx. Check initialization, tool listing and a state read, then register the corresponding hub entry and repeat through the hub.
 6. Verify the backups path is writable and persistent without invoking a lighting write or preset delete.
-7. Run only specifically authorized hardware-write scenarios; record restoration and residual limitations.
+7. Run only specifically authorized hardware-write scenarios; record restoration and residual limitations. For a visual brightness or transition check, first read the controller's power estimate (`leds.pwr` in `/json/info`) and stay below its current-limiter (ABL) cap; at the cap the limiter scales the output and a brightness change is barely visible ([VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06)).
 8. Restart the independent HTTP service or stdio entry as appropriate. Test reconnect, shutdown and runtime recreation persistence when authorized and operationally appropriate; otherwise leave these items pending. Record which mode was exercised.
 
 Neither mode requires public router forwarding. Plain HTTP is limited to an explicitly

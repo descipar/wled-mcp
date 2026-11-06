@@ -115,6 +115,13 @@ Choose an explicitly authorized device and test ranges/slots first. Record the p
 
 H04: Change power/brightness/color and one effect's speed/intensity; verify state and visible behavior. Restore original configuration where supported.
 
+Visible brightness and transition checks must stay below the controller's current-limiter
+(ABL) cap. When the controller's power estimate (`leds.pwr` in `/json/info`) is at the
+configured limit, the limiter scales the output down, so a brightness change or transition
+above the cap is barely visible even though state and readback are correct. Before a visual
+brightness check, choose an effect, color and brightness whose power estimate stays below
+the limit (for example a solid color at a low brightness), then dim from there.
+
 H05: Patch one selected segment, confirm unrelated segments remain unchanged; replace with an agreed small layout, verify stale IDs removed, restore original layout. Account for timers, other API clients, playlists or realtime inputs if verification is affected; never disable them silently.
 
 H06: Save to an agreed unused persistent preset ID, activate, read back, test explicit overwrite with snapshot, then delete the test slot. Test explicit restoration of its saved contents if authorized. Confirm persistent data, not just the current live effect.
@@ -1066,6 +1073,112 @@ restored by activating the pre-existing preset 1 and switching off.
   the run-2 state baseline equals the run-1 end state.
 - Restoring preset contents from a snapshot (ISSUE-8-DEC-001); other controllers and
   firmware; live update/rollback between versions (stage 2).
+
+The visible effect, speed and brightness-transition items and the scope of the remaining
+items were settled afterwards in
+[run 3](#issue-12-hardware-acceptance-run-3-2026-11-06) and ISSUE-12-DEC-007.
+
+## Issue #12 hardware acceptance, run 3 (2026-11-06)
+
+A short owner-watched run on the same day, on the same test controller, through the
+deployed Streamable HTTP service and its hub entry, authorized for this run only by
+ISSUE-12-DEC-007 item 2 (capture before, restore after; ISSUE-12-DEC-001 conditions). It
+covers the visible H04 behavior that runs 1 and 2 did not observe: effect animation, a
+speed change and a brightness transition. The owner watched the strip and replied to
+each step. Sanitized from a local, git-ignored run record; host names, addresses, paths,
+user names, device and hub entry names are intentionally omitted. The results describe
+this one controller and this one firmware (WLED 16.0.1, one RGB-only strip, current
+limiter configured at 850 mA) only; no compatibility with other firmware, controllers or
+LED types is claimed.
+
+```text
+Date / operator / source commit: 2026-11-06 / project coordinator agent under the owner's
+  authorization / the HTTP deployment as left by run 2 (built from main commit b36f410);
+  run 3 made no deployment, service, hub or inventory change
+Package / Python / SDK / hub runtime: as run 2
+Transport mode / endpoint or uvx artifact / service lifecycle: Streamable HTTP through the
+  hub's HTTP entry; no service stop/start
+Sanitized device and firmware / relevant capabilities: as run 1 H01 (WLED 16.0.1,
+  ESP32-C3, 133 RGB LEDs, one bus, current limiter 850 mA)
+Scenario IDs run: P0, E1-E3 (H04 visible behavior), R1-R3
+Before state and snapshot references (local, no secrets): run-3 baseline of state,
+  configuration and preset file in the local run record
+Expected and observed results: tables below
+Restoration performed and verified: R1-R3 below
+Not run / reason / remaining risk: "Not run" list below
+```
+
+### Visible effect, speed and brightness transition (E1-E3)
+
+Every write was a typed tool call through the hub's HTTP entry (segment fields as a
+segment patch, master fields as a master state change) and was verified by the tool's
+readback unless stated otherwise.
+
+| Check | Command | Owner's observation (translated) |
+| --- | --- | --- |
+| E1 | segment 0 patch: effect ID 9 (Rainbow), speed 30; master on, brightness 120 | "yes": a slowly moving rainbow |
+| E2 | segment 0 patch: speed 240 only | "faster, clearly" |
+| E3 attempt 1 | master brightness 30 with `transition_ms` 3000 (rainbow) | no dimming visible |
+| E3 attempt 2 | master brightness 200, then on the owner's signal brightness 30 with `transition_ms` 5000 (rainbow; see the TIMEOUT note below) | no dimming visible |
+| E3 attempt 3 | solid red (effect ID 0) at master brightness 40, below the cap; then on the owner's signal brightness 2 with `transition_ms` 5000 | "yes, gently became darker" |
+
+Results:
+
+- E1 and E2: visible effect animation and a visible speed change of one effect
+  confirmed by the owner.
+- E3: a brightness transition confirmed by the owner (attempt 3, solid red dimming over
+  5 s). A visual intensity change was not part of this run.
+- Why attempts 1 and 2 showed no dimming: the controller's current limiter (ABL) was
+  capping the output. The power estimate was at the 850 mA limit for the rainbow at
+  brightness 200 and 30, and for solid red at brightness 80; for solid red at
+  brightness 40 it was 645 mA, below the cap. Above the cap the limiter scales the
+  output, so the requested brightness change was barely visible although state and
+  readback were correct. Visual brightness and transition checks therefore have to
+  start below the cap (see the H04 note under
+  [Opt-in physical write checks](#opt-in-physical-write-checks)).
+
+### TIMEOUT before dispatch (E3 attempt 2)
+
+The first call of the dimming write in attempt 2 (brightness 30, `transition_ms` 5000)
+returned `TIMEOUT` with application `not_attempted`: the operation deadline had expired
+before the write was dispatched. A direct state read showed the brightness unchanged at
+200 (the controller answered in 0.18 s), so the write had not been applied. After that
+read, the same write was issued once more as a new, deliberate call (not a blind replay
+of a possibly applied write) and was verified. The service and hub logs had no
+corresponding lines; the cause of the expired deadline is unknown.
+
+### Restoration (R1-R3)
+
+The controller was restored by activating the pre-existing preset 1 and switching off.
+Run 3 made no preset writes.
+
+| Check | Result |
+| --- | --- |
+| R1 preset file | byte-identical to the run-3 baseline |
+| R2 state | byte-identical to the run-3 baseline |
+| R3 configuration | byte-identical to the run-3 baseline |
+
+### Remaining #12 items after run 3 (ISSUE-12-DEC-007)
+
+| Item left open after run 2 | Resolution |
+| --- | --- |
+| H02 comparison with the WLED UI | satisfied by the comparison with the controller endpoints the WLED UI renders ([run 1 H02](#h02-reads)), per ISSUE-12-DEC-007 item 1 |
+| H04 visible effect animation, speed and brightness transition | E1-E3 above (HTTP), authorized by ISSUE-12-DEC-007 item 2 |
+| H04 in stdio mode | sufficient as exercised in run 2 (power/brightness rules and the layout writes), same domain code, per ISSUE-12-DEC-007 item 3 |
+| stdio drain on SIGTERM | the host-level record of run 2 is sufficient, per ISSUE-12-DEC-007 item 4 and ISSUE-12-DEC-006 |
+| stdio load beyond the hub's rate limit and without the hub hop | not required for #12; the rate-limited figures through the hub of run 2 are sufficient, per ISSUE-12-DEC-007 item 5 |
+| H07 offline device on hardware | moved to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-12-DEC-007 item 6; the simulated evidence T02/T09 remains |
+
+### Not run
+
+- A visual intensity change (not part of this run).
+- stdio mode in this run (HTTP only, per ISSUE-12-DEC-007 item 2).
+- H07 offline device on hardware (stage 2,
+  [#25](https://github.com/descipar/wled-mcp/issues/25)).
+- Controller reboot and power-cycle persistence (ISSUE-12-DEC-002 TD-12-3); restoring
+  preset contents from a snapshot (ISSUE-8-DEC-001); other controllers and firmware;
+  live update/rollback between versions (stage 2).
+- The cause of the `TIMEOUT` before dispatch was not investigated in this run.
 
 ## Evidence template
 
