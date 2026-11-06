@@ -219,3 +219,93 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Propagated to roles / packet references: coordinator to implementer; reviewer through
   the coordinator.
 - Revalidation needed / next action: none.
+
+## ISSUE-12-DEC-007 — Remaining #12 scope after the second run, and a third run
+
+- ID: ISSUE-12-DEC-007
+- Recorded date: 2026-11-06
+- Status: active for issue #12; item 2 (the run authorization) was used by the third
+  #12 live run on 2026-11-06 and expired after that run.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("stimme zu") to the
+  coordinator's six-point proposal, relayed by the coordinator and recorded in
+  coordinator comments on [#12](https://github.com/descipar/wled-mcp/issues/12) (the
+  decision, and a later clarification of the details of items 2 and 3) and, for item 6,
+  on [#25](https://github.com/descipar/wled-mcp/issues/25); no permalink to the original
+  message available.
+- Scope: the items left open after the second run by the post-merge completion record
+  of PR #71 (boxes 1, 3 and 7 of #12, and the relevance of H07 to #12).
+- Decision:
+  1. H02: the comparison "with the WLED UI" is satisfied by comparing the tool output
+     with the controller endpoints the WLED UI renders (state, info, effect, palette
+     and preset data); no separate screenshot or UI comparison is required.
+  2. A short owner-watched run through the deployed Streamable HTTP service on the
+     test controller of ISSUE-12-DEC-001 verifies visible effect animation and a speed
+     change; capture before and restore after apply. This agreement authorizes that
+     one run only (the third run). The accepted proposal covered the visible H04
+     behavior of that run, and the owner explicitly asked for the brightness and
+     dimming repeats during it, so the brightness transition (E3) falls under this
+     item.
+  3. stdio H04 is sufficient as exercised in the second run (power/brightness rules
+     plus the verified stdio color and effect writes: layout replacements through
+     `wled_replace_layout` that set segment colors and one effect, and a segment patch
+     through `wled_patch_segments` that changed a color and the speed while preserving
+     the other segments); the stdio mode uses the same domain code as HTTP.
+  4. stdio drain evidence at host level is sufficient for #12, consistent with
+     ISSUE-12-DEC-006; no dedicated server-side SIGTERM observation in stdio mode.
+  5. stdio load measured through the hub within its rate limit is sufficient for #12;
+     Streamable HTTP is the preferred mode and is fully measured. Load beyond the
+     hub's rate limit or without the hub hop is not required for #12.
+  6. The live H07 check (an unreachable configured controller on the deployed target)
+     moves to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)); the
+     mocked coverage (T02, T09) remains the stage-1 evidence. A live H07 run needs its
+     own authorization.
+- Applicability / conditions / expiry: issue #12 only. Item 2 is bounded to the third
+  run, the HTTP entry and the one test controller, with capture and restore; it is not
+  standing permission for later controller writes, service or hub operations. Items 1
+  and 3-5 define sufficiency for #12 and are not general rules for other issues or
+  later releases. Item 6 changes no other stage-2 scope.
+- Rationale supplied: HTTP is the preferred mode (see ISSUE-12-DEC-006); otherwise none
+  beyond the proposal.
+- Affected requirement IDs, files, issues and tests: H02, H04, H07; READ-02, CTRL-01,
+  SEG-04, DEV-02, REL-01, MCP-04, OPS-01, TEST-01;
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), README.md; #12, #25;
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none. Narrows the remaining #12 work under
+  ISSUE-12-DEC-004 (stdio stays in #12 scope) without removing stdio from #12;
+  ISSUE-12-DEC-001 conditions apply to the run of item 2.
+- Propagated to roles / packet references: coordinator comments on #12 and #25;
+  implementer and reviewer through the coordinator.
+- Revalidation needed / next action: post-merge completion review of #12 against the
+  run-3 record and this decision; any further controller write, deployment or live H07
+  run needs a new human instruction.
+
+## ISSUE-12-DEC-008 — No separate visual check of an intensity change for H04
+
+- ID: ISSUE-12-DEC-008
+- Recorded date: 2026-11-06
+- Status: active for issue #12 only.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("rückmeldung und
+  speedtest genügen"), relayed by the coordinator and recorded as a coordinator comment
+  on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
+  message available.
+- Scope: the H04 item "one effect's speed/intensity ... visible behavior" for #12 (the
+  visual intensity change left pending after run 3).
+- Decision: for H04 the visual intensity change does not need a separate visual check.
+  The verified readback of intensity writes (run 1 H04: a segment patch with effect,
+  speed and intensity, applied and matched on readback) plus the owner-confirmed visible
+  speed change of run 3 (E2) are sufficient.
+- Applicability / conditions / expiry: issue #12 only; not a general rule that readback
+  replaces visual checks for other issues, controllers or later releases. No new
+  hardware run is authorized or needed.
+- Rationale supplied: none beyond the reply.
+- Affected requirement IDs, files, issues and tests: H04; CTRL-01;
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md); `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none; complements ISSUE-12-DEC-007 item 2, which named
+  only a speed change.
+- Propagated to roles / packet references: coordinator comment on #12; implementer and
+  reviewer through the coordinator.
+- Revalidation needed / next action: post-merge completion review of #12.
