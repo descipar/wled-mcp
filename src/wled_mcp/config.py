@@ -15,6 +15,10 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 # label is 1-63 characters and starts and ends with a letter or digit (ISSUE-61-DEC-002).
 _HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,251}[A-Za-z0-9])?")
 _HOST_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9])?")
+# WHATWG "ends in a number": such a host is read as an IPv4 address, so it must be a
+# canonical dotted quad; resolvers would otherwise map 1.2.3, 0x7f.1 or 2130706433 to a
+# different address (ISSUE-74-DEC-002).
+_NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9a-fA-F]*")
 _DEVICE_FIELDS = ("id", "name", "base_url")
 _MAX_LOCATORS = 5
 
@@ -60,6 +64,11 @@ class Device(StrictModel):
         host = parts.hostname
         if ":" in host:
             ipaddress.IPv6Address(host)
+        elif _NUMERIC_LABEL.fullmatch(host.rsplit(".", 1)[-1]):
+            try:
+                ipaddress.IPv4Address(host)
+            except ValueError:
+                raise ValueError("Invalid host") from None
         elif not _HOST.fullmatch(host) or not all(
             _HOST_LABEL.fullmatch(label) for label in host.split(".")
         ):

@@ -23,7 +23,17 @@ dot-separated label has 1–63 characters from letters, digits, `-` and `_`, and
 and ends with a letter or digit. Interior underscores (for example the synthetic
 `http://wled_desk.example.invalid`, as some routers publish for DHCP clients) are
 accepted; `_wled`, `wled_` or `_` labels are rejected. Single-label names are
-accepted. IPv4 and bracketed IPv6 literals and percent-encoding rules are unchanged.
+accepted. Bracketed IPv6 literals and percent-encoding rules are unchanged.
+
+A host whose last dot-separated label is all decimal digits or `0x` followed by hex
+digits is read as an IPv4 address and must be a canonical dotted quad: exactly four
+decimal parts, each 0–255, without leading zeros (synthetic example:
+`http://192.0.2.10`). Shorter, hexadecimal, octal or single-number forms such as
+`1.2.3`, `127.1`, `0x7f.1`, `2130706433`, out-of-range parts such as `999.1.1.1` and
+names ending in a numeric label such as `desk.123` are rejected at startup, because a
+system resolver could otherwise silently map them to a different address. Names whose
+last label contains another letter (`123.example.invalid`, `desk.1a`, `1e3`) follow
+the DNS label rules above. Valid special addresses are not restricted further.
 The configured case is kept; the HTTP client sends the host lower-cased and unchanged
 otherwise (no IDNA conversion of ASCII names). Startup never resolves or probes names.
 
@@ -66,6 +76,10 @@ the client requests identity encoding and rejects other encodings before reading
 Limits count actual streamed bytes, independent of Content-Length. JSON must have
 finite values, at most 32 nesting levels/100000 nodes and the expected top-level
 object/catalog shape. Requests are validated/serialized/size-checked before send.
+If the HTTP client rejects a configured device address while building the request (a
+device that bypassed inventory validation), the call fails with `CONFIG_ERROR` before
+any request is sent, is not retried, and the message never echoes the URL or host; a
+write therefore ends as `not_attempted` and a probe reports the entry as `failed`.
 
 One monotonic operation deadline includes lock wait, fresh reads, preparation,
 POST and readback. An outer AnyIO deadline provides the total bound; HTTPX's
