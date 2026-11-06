@@ -88,7 +88,8 @@ def test_scanner_rule_block_is_the_only_exempt_text_of_its_own_file():
     block = scanner.rule_definition_lines(text)
     findings = scanner.scan_text(scanner.SELF.as_posix(), text)
     assert findings, "the rule block defines private ranges and must be recognized"
-    assert all(finding.line in block for finding in findings)
+    exempt = scanner.rule_definition_values()
+    assert all(finding.line in block and finding.value in exempt for finding in findings)
 
 
 # ------------------------------------------------------------ rules (R62-6 controls)
@@ -101,9 +102,12 @@ LEAKS = [
     ("ipv4-private", "overlay VPN 100.64" + ".0.9"),
     ("ipv6-private", "link-local fe80" + "::1%eth0"),
     ("ipv6-private", "unique-local fd00" + "::12"),
+    ("ipv6-private", "host:fd00" + "::1"),
     ("home-path", "backups in /ho" + "me/alex/wled"),
     ("home-path", "checkout /Us" + "ers/alex/src"),
+    ("home-path", "checkout /us" + "ers/alex"),
     ("home-path", "checkout C:\\Us" + "ers\\alex\\src"),
+    ("home-path", "checkout C:\\US" + "ERS\\ALEX"),
     ("local-hostname", "http://wled-desk" + ".local/json"),
     ("local-hostname", "host wled-desk" + ".lan"),
     ("local-hostname", "host wled-desk" + ".fritz.box"),
@@ -112,6 +116,7 @@ LEAKS = [
     ("mac-address", "MAC 02:42" + ":ac:11:00:02"),
     ("mac-address", "MAC 02-42" + "-AC-11-00-02"),
     ("mac-address", '{"mac": "0242ac11' + '0002"}'),
+    ("mac-address", "MAC 0242" + ".ac11.0002"),
     ("email", "contact alex.doe" + "@mail.com"),
     ("framing-phrase", "deploy it to the home" + " hub"),
     ("framing-phrase", "the house" + "hold presets"),
@@ -137,6 +142,8 @@ ALLOWED = [
     '{"mac": "00005e005301"}',
     "hosts wled-a.example.invalid, hub.test and wled.example",
     "mail ops@example.org, a@b.invalid and agent <noreply@anthropic.com>",
+    "mail admin@mail.example.com, x@lists.example.net and 123+bot@users.noreply.github.com",
+    "documentation MAC 0000.5e00.5301 and version 1.2.3.4",
     "commit db0b2edde4d20a07f789d7192314d1e606acb50f319a and time 12:34:56",
     "settings.local.json, .env.local, *.local and the .lan suffix",
     "https://example.com/home/alex and docs/home/readme",
@@ -165,6 +172,30 @@ def test_python_attribute_access_is_not_a_host_name():
 )
 def test_python_strings_with_local_host_names_are_reported(line):
     assert rules("src/module.py", line + "\n") == ["local-hostname"]
+
+
+HOST = "wled-kitchen" + ".lan"
+TRIPLE = "'" * 3
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        f"x = 1  # tested against {HOST}\n",
+        f"# tested against {HOST}\n",
+        f'def f():\n    """Reads the state.\n\n    See {HOST} for details.\n    """\n',
+        f"TEXT = (\n    {TRIPLE}first line\n    {HOST} second line{TRIPLE}\n)\n",
+        f'MESSAGE = f"{{name}} at {HOST}"\n',
+    ],
+    ids=["inline-comment", "comment", "docstring", "multi-line-string", "f-string"],
+)
+def test_python_comments_and_docstrings_are_checked_for_host_names(source):
+    assert rules("src/module.py", source) == ["local-hostname"]
+    assert rules("src/module.py", source.replace(HOST, "wled-kitchen.example")) == []
+
+
+def test_untokenizable_python_is_checked_as_plain_text():
+    assert rules("src/broken.py", f"x = (\nhost {HOST}\n") == ["local-hostname"]
 
 
 # ------------------------------------------------------- end-to-end (R62-6, R62-7)
@@ -297,6 +328,42 @@ def test_malformed_allowlist_entry_fails_closed(tmp_path):
     result = run(git_repo(tmp_path / "repo", files))
     assert result.returncode == 2
     assert "needs nonempty path, value and reason" in result.stderr
+
+
+def scanner_source(*, insert: str = "", end_at_bottom: bool = False) -> str:
+    """The scanner source with a line added inside its rule block, or the END moved."""
+    source = SCRIPT.read_text("utf-8")
+    marker = "\n" + scanner.RULES_END + "\n"
+    assert source.count(marker) == 1
+    if end_at_bottom:
+        return source.replace(marker, "\n") + scanner.RULES_END + "\n"
+    return source.replace(marker, "\n" + insert + scanner.RULES_END + "\n")
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        scanner_source(insert=f'_NOTE = "{HOST} at {PLANTED}"\n'),
+        scanner_source(end_at_bottom=True),
+    ],
+    ids=["extra-line-in-block", "end-marker-moved"],
+)
+def test_rule_block_cannot_be_widened(tmp_path, source):
+    result = run(git_repo(tmp_path / "repo", {scanner.SELF.as_posix(): source}))
+    assert result.returncode == 2
+    assert "rule-definition block holds more than the rule constants" in result.stderr
+
+
+def test_values_inside_the_rule_block_are_exempt_only_as_rule_definitions(tmp_path):
+    host_network = "192.168" + ".1.77/32"
+    last_range = '"' + str(scanner.PRIVATE_V4[-1]) + '",'
+    source = scanner_source(insert=f"# see {PLANTED}\n")
+    assert source.count(last_range) == 1
+    source = source.replace(last_range, f'{last_range}\n        "{host_network}",')
+    result = run(git_repo(tmp_path / "repo", {scanner.SELF.as_posix(): source}))
+    assert result.returncode == 1
+    reported = [line for line in result.stderr.splitlines() if line.startswith("ERROR")]
+    assert len(reported) == 2 and all(line.endswith(": ipv4-private") for line in reported)
 
 
 def test_rule_values_outside_the_scanner_rule_block_are_reported(tmp_path):

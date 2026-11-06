@@ -17,7 +17,7 @@
 
 ## Implementation discipline
 
-- Requirements marked confirmed reflect a recorded owner decision. Proposed defaults may be refined with a recorded rationale; do not present them as user-confirmed decisions.
+- Requirements marked confirmed reflect owner confirmation. Proposed defaults may be refined with a recorded rationale; do not present them as user-confirmed decisions.
 - Keep runtime configuration, backups, captures, logs, and build artifacts in this project or its designated deployment directory. Never commit secrets or a real device inventory.
 - Implement the documented distinction between patching selected segments and replacing the complete layout. Omitted fields are not reset requests.
 - Validate a complete request before sending a write. Treat a timed-out write as possibly applied; do not retry it blindly.

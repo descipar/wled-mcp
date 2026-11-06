@@ -127,7 +127,15 @@ def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
     ):
         if section + "\n" not in text:
             problems.append(f"README lacks section {section!r}")
-    for term in ("dry_run", "possibly applied", "snapshot", "No discovery", "WLED 16.0.1"):
+    for term in (
+        "dry_run",
+        "possibly applied",
+        "snapshot",
+        "No discovery",
+        "WLED 16.0.1",
+        "Hardware acceptance is partial",
+        "(H07) moved to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25))",
+    ):
         if term not in flat:
             problems.append(f"README safety/validation text lacks {term!r}")
     return problems
@@ -205,6 +213,11 @@ def test_link_check_rejects_missing_files_and_anchors():
             "It is not affiliated with",
             "It is affiliated with",
             "README lacks the non-affiliation statement",
+        ),
+        (
+            "Hardware acceptance is partial:",
+            "Hardware acceptance is complete:",
+            "README safety/validation text lacks 'Hardware acceptance is partial'",
         ),
         (
             "## Safety model",

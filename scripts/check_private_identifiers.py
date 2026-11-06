@@ -13,20 +13,26 @@ Rules (DEC-005, DEC-009, ISSUE-62-DEC-001):
   Loopback, ``0.0.0.0`` and the documentation ranges (TEST-NET-1/2/3) are allowed.
 - ``ipv6-private``: link-local and unique-local addresses. Loopback, the unspecified
   address and the documentation prefix 2001:db8::/32 are allowed.
-- ``home-path``: ``/home/<name>``, ``/Users/<name>`` and ``C:\\Users\\<name>``.
+- ``home-path``: ``/home/<name>``, ``/Users/<name>`` and ``C:\\Users\\<name>``, in any case.
 - ``local-hostname``: host names ending in a router- or site-local suffix (see
   ``LOCAL_SUFFIXES``). Synthetic examples use ``.example``, ``.invalid`` or ``.test``.
-  In ``*.py`` files only host names in strings, URLs or userinfo count, so attribute access
-  such as ``threading.local`` is not reported.
-- ``mac-address``: colon/dash MAC addresses and ``"mac": "<12 hex>"`` values outside
+  In ``*.py`` files only comments and string literals (including docstrings and
+  multi-line strings) are checked for host names, so attribute access in code such as
+  ``threading.local()`` is not reported.
+- ``mac-address``: colon/dash/dotted MAC addresses and ``"mac": "<12 hex>"`` values outside
   the RFC 7042 documentation block 00-00-5E-00-53-xx.
-- ``email``: addresses outside the reserved example/invalid/test domains, except
-  ``noreply`` addresses.
+- ``email``: addresses outside the reserved example/invalid/test domains (including
+  subdomains of example.com/net/org), except ``noreply`` addresses such as
+  ``<id>+<name>@users.noreply.github.com``.
 - ``framing-phrase``: wording that frames the project as one installation or one
   private conversation (see ``FRAMING_PHRASES``), matched case-insensitively across
   line breaks. Neutral roles are "owner", "maintainer" and "operator".
 - ``denylist``: optional case-insensitive literals from an untracked file, read from
   ``$WLED_MCP_PRIVATE_DENYLIST`` or ``runtime/private-denylist.txt`` (git-ignored).
+
+This file's own ``RULE DEFINITIONS`` block is checked like any other text, except for
+the base addresses of its ranges and its framing phrases; the block must hold exactly
+the ``RULE_CONSTANTS`` assignments, otherwise the check fails closed.
 
 Intended synthetic fixtures (negative controls) are exempted one path/value pair at a
 time by ``scripts/private_identifier_allowlist.toml``; an entry that no longer matches
@@ -35,17 +41,21 @@ report cannot re-leak it into CI logs; ``--show-values`` prints values for local
 
 Standard library only. Exit code 0 when clean, 1 with findings or stale allowlist
 entries, 2 when the input cannot be checked (no Git work tree, invalid allowlist or
-denylist).
+denylist, altered rule-definition block).
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
+import bisect
+import io
 import ipaddress
 import os
 import re
 import subprocess
 import sys
+import tokenize
 import tomllib
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -59,8 +69,18 @@ ALLOWLIST = Path("scripts/private_identifier_allowlist.toml")
 DENYLIST_ENV = "WLED_MCP_PRIVATE_DENYLIST"
 DEFAULT_DENYLIST = Path("runtime/private-denylist.txt")
 MIN_DENYLIST_LENGTH = 3
+RULE_CONSTANTS = (
+    "PRIVATE_V4",
+    "PRIVATE_V6",
+    "LOCAL_SUFFIXES",
+    "EXAMPLE_MAIL_DOMAINS",
+    "RESERVED_MAIL_SUFFIXES",
+    "DOCUMENTATION_MAC_PREFIX",
+    "FRAMING_PHRASES",
+)
 
-# The block below is the only exempted text of this file: it defines what to find.
+# The block below defines what to find. Only its own range base addresses and framing
+# phrases are exempt, and only while it holds exactly the RULE_CONSTANTS assignments.
 # BEGIN RULE DEFINITIONS
 PRIVATE_V4 = tuple(
     ipaddress.IPv4Network(network)
@@ -101,14 +121,17 @@ FRAMING_PHRASES = (
 # END RULE DEFINITIONS
 
 IPV4 = re.compile(r"(?<![\d.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.]*\d)")
-IPV6 = re.compile(r"(?<![\w:.])[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?:%[\w.-]+)?(?![\w:])")
-HOME_PATH = re.compile(r"(?<![\w.~-])(?:/home/|/Users/|[A-Za-z]:\\{1,2}[Uu]sers\\{1,2})\w[\w.-]*")
+IPV6 = re.compile(r"(?<![\w.])[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?:%[\w.-]+)?(?![\w:])")
+HOME_PATH = re.compile(
+    r"(?<![\w.~-])(?:/home/|/users/|[a-z]:\\{1,2}users\\{1,2})\w[\w.-]*", re.IGNORECASE
+)
 LOCAL_HOST = re.compile(
     r"(?<![\w.-])(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
     rf"(?:{'|'.join(LOCAL_SUFFIXES)})(?![\w-]|\.[\w-]|\()",
     re.IGNORECASE,
 )
 MAC = re.compile(r"(?<![\w:-])[0-9A-Fa-f]{2}([:-])[0-9A-Fa-f]{2}(?:\1[0-9A-Fa-f]{2}){4}(?![\w:-])")
+MAC_DOTTED = re.compile(r"(?<![\w.])[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}(?![\w]|\.\w)")
 MAC_FIELD = re.compile(r"""["']mac["']\s*[:=]\s*["']([0-9A-Fa-f]{12})["']""", re.IGNORECASE)
 FRAMING = re.compile(
     "|".join(r"\b" + r"\s+".join(map(re.escape, phrase.split())) for phrase in FRAMING_PHRASES),
@@ -158,29 +181,47 @@ def _ipv6(candidate: str) -> bool:
     return any(address in network for network in PRIVATE_V6)
 
 
-def _python_host_context(text: str, start: int) -> bool:
-    """In Python source only host names inside a string, URL or userinfo count.
+PYTHON_TEXT_TOKENS = frozenset({tokenize.COMMENT, tokenize.STRING, tokenize.FSTRING_MIDDLE})
 
-    A name counts when an odd number of quotes of one kind precedes it on its line, or
-    when it follows ``://`` or ``@``; ``threading.local`` or ``Path.home()`` do not.
+
+def _python_text_spans(text: str) -> list[tuple[int, int]] | None:
+    """Offsets of comments and string literals (docstrings, f-string text) in Python source.
+
+    ``None`` when the source does not tokenize; the caller then checks the whole text.
     """
-    if text[max(0, start - 3) : start] == "://" or text[start - 1 : start] == "@":
-        return True
-    prefix = text[text.rfind("\n", 0, start) + 1 : start]
-    return prefix.count('"') % 2 == 1 or prefix.count("'") % 2 == 1
+    starts = [0]
+    for line in text.split("\n")[:-1]:
+        starts.append(starts[-1] + len(line) + 1)
+
+    def offset(row: int, col: int) -> int:
+        return starts[row - 1] + col if row <= len(starts) else len(text)
+
+    spans = []
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type in PYTHON_TEXT_TOKENS:
+                spans.append((offset(*token.start), offset(*token.end)))
+    except (tokenize.TokenError, SyntaxError):
+        return None
+    return spans
+
+
+def _in_spans(spans: list[tuple[int, int]], position: int) -> bool:
+    index = bisect.bisect_right(spans, position, key=lambda span: span[0]) - 1
+    return index >= 0 and spans[index][0] <= position < spans[index][1]
 
 
 def _personal_email(local: str, domain: str) -> bool:
     domain = domain.lower()
-    if "noreply" in local.lower():
-        return False
+    if "noreply" in local.lower() or "noreply" in domain.split("."):
+        return False  # e.g. noreply@... and <id>+<name>@users.noreply.github.com
     if domain in EXAMPLE_MAIL_DOMAINS or domain.endswith(RESERVED_MAIL_SUFFIXES):
         return False
-    return True
+    return not domain.endswith(tuple("." + example for example in EXAMPLE_MAIL_DOMAINS))
 
 
 def _documentation_mac(value: str) -> bool:
-    return re.sub(r"[:-]", "", value).lower().startswith(DOCUMENTATION_MAC_PREFIX)
+    return re.sub(r"[:.-]", "", value).lower().startswith(DOCUMENTATION_MAC_PREFIX)
 
 
 def _matches(path: str, text: str) -> Iterator[tuple[int, str, str]]:
@@ -193,13 +234,16 @@ def _matches(path: str, text: str) -> Iterator[tuple[int, str, str]]:
             yield match.start(), "ipv6-private", match.group()
     for match in HOME_PATH.finditer(text):
         yield match.start(), "home-path", match.group()
-    python = path.endswith(".py")
+    # In Python source only comments and string literals carry host names; code such as
+    # ``threading.local()`` or ``Path.home()`` is attribute access.
+    spans = _python_text_spans(text) if path.endswith(".py") else None
     for match in LOCAL_HOST.finditer(text):
-        if not python or _python_host_context(text, match.start()):
+        if spans is None or _in_spans(spans, match.start()):
             yield match.start(), "local-hostname", match.group()
-    for match in MAC.finditer(text):
-        if not _documentation_mac(match.group()):
-            yield match.start(), "mac-address", match.group()
+    for pattern in (MAC, MAC_DOTTED):
+        for match in pattern.finditer(text):
+            if not _documentation_mac(match.group()):
+                yield match.start(), "mac-address", match.group()
     for match in MAC_FIELD.finditer(text):
         if not _documentation_mac(match.group(1)):
             yield match.start(1), "mac-address", match.group(1)
@@ -322,14 +366,43 @@ class Result:
 
 
 def rule_definition_lines(text: str) -> range:
-    """Line numbers of this scanner's own rule-definition block (exempt by definition)."""
+    """Line numbers of this scanner's own rule-definition block.
+
+    The block must exist once and hold exactly the ``RULE_CONSTANTS`` assignments, in that
+    order and nothing else, so it cannot be widened or used to park other text.
+    """
     lines = text.splitlines()
+    if lines.count(RULES_BEGIN) != 1 or lines.count(RULES_END) != 1:
+        raise CheckError(f"{SELF}: rule-definition markers missing or repeated")
+    begin, end = lines.index(RULES_BEGIN) + 1, lines.index(RULES_END) + 1
     try:
-        begin = lines.index(RULES_BEGIN) + 1
-        end = lines.index(RULES_END) + 1
-    except ValueError as exc:
-        raise CheckError(f"{SELF}: rule-definition markers missing") from exc
+        body = ast.parse("\n".join(lines[begin : end - 1])).body
+    except SyntaxError as exc:
+        raise CheckError(f"{SELF}: rule-definition block does not parse") from exc
+    names = [
+        statement.targets[0].id
+        for statement in body
+        if isinstance(statement, ast.Assign)
+        and len(statement.targets) == 1
+        and isinstance(statement.targets[0], ast.Name)
+    ]
+    if len(body) != len(RULE_CONSTANTS) or tuple(names) != RULE_CONSTANTS:
+        raise CheckError(f"{SELF}: rule-definition block holds more than the rule constants")
     return range(begin, end + 1)
+
+
+def rule_definition_values() -> frozenset[str]:
+    """The only values exempt inside the block: range base addresses and framing phrases."""
+    networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = (
+        *PRIVATE_V4,
+        *PRIVATE_V6,
+    )
+    bases = {
+        str(network.network_address)
+        for network in networks
+        if network.num_addresses > 256  # a range, never a single host
+    }
+    return frozenset(bases | {" ".join(phrase.split()) for phrase in FRAMING_PHRASES})
 
 
 def check(root: Path, allowlist: Path, denylist: list[str]) -> Result:
@@ -345,7 +418,7 @@ def check(root: Path, allowlist: Path, denylist: list[str]) -> Result:
         files += 1
         exempt = rule_definition_lines(text) if name == SELF.as_posix() else range(0)
         for finding in scan_text(name, text):
-            if finding.line in exempt:
+            if finding.line in exempt and finding.value in rule_definition_values():
                 continue
             if name == allowlist.as_posix() and finding.value in allowed_values:
                 continue  # the allowlist names only values it exempts elsewhere

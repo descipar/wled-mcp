@@ -234,11 +234,13 @@ without echoing values. Nothing is discovered automatically.
 ## Validation status and limitations
 
 Automated tests use mocked or synthetic loopback devices and run in CI without
-hardware. Hardware acceptance was recorded for one RGB controller on WLED 16.0.1 in both
-transports, and one deployment of both modes on one MCPHub host was checked; see
-[docs/VALIDATION.md](docs/VALIDATION.md) and the status summary in
-[docs/PROJECT.md](docs/PROJECT.md). No compatibility with other controllers or firmware
-versions is claimed.
+hardware. Hardware acceptance is partial: it was recorded for one RGB controller on WLED
+16.0.1 in both transports, and one deployment of both modes on one MCPHub host was
+checked. The live offline check (H07) moved to stage 2
+([#25](https://github.com/descipar/wled-mcp/issues/25)), and reboot persistence and the
+other "Not run" items remain pending; see [docs/VALIDATION.md](docs/VALIDATION.md) and
+the status summary in [docs/PROJECT.md](docs/PROJECT.md). No compatibility with other
+controllers or firmware versions is claimed.
 
 Known limitations:
 
