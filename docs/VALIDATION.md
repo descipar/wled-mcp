@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Requirement-to-evidence mapping: [TRACEABILITY.md](TRACEABILITY.md) links every Must requirement and T01–T21 to the automated tests and scripts that exercise them and keeps hardware/deployment evidence visibly pending; `scripts/check_traceability.py` enforces it in ordinary CI. The per-issue evidence sections below are historical per-candidate records: they state the results recorded for that candidate at that time and are not re-executed. Where they mention the wall-clock flake of `test_one_total_deadline_and_bounded_read_retry`, it is superseded by the controlled-time test from #55; the failing `test_stdio_ignores_ambient_http_token_and_binds_nothing` noted for #48/#52 is superseded by the socket guard from #53. Current results for the issue #10 candidate are in [its section](#issue-10-acceptance-evidence); deployment-artifact evidence for #11 is in [its section](#issue-11-deployment-artifact-evidence). Hardware checks H01–H07 remain pending.
+Requirement-to-evidence mapping: [TRACEABILITY.md](TRACEABILITY.md) links every Must requirement and T01–T21 to the automated tests and scripts that exercise them and keeps hardware/deployment evidence visibly pending; `scripts/check_traceability.py` enforces it in ordinary CI. The per-issue evidence sections below are historical per-candidate records: they state the results recorded for that candidate at that time and are not re-executed. Where they mention the wall-clock flake of `test_one_total_deadline_and_bounded_read_retry`, it is superseded by the controlled-time test from #55; the failing `test_stdio_ignores_ambient_http_token_and_binds_nothing` noted for #48/#52 is superseded by the socket guard from #53. Current results for the issue #10 candidate are in [its section](#issue-10-acceptance-evidence); deployment-artifact evidence for #11 is in [its section](#issue-11-deployment-artifact-evidence). Hardware acceptance for #12 is partly recorded for one controller and one firmware in [its section](#issue-12-hardware-acceptance-2026-11-06), without a compatibility claim beyond them; the items in its "Not run" list, including H07, remain pending.
 
 Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
@@ -648,6 +648,201 @@ and load measurements (parallel calls, peak connections, largest body), tracked 
 
 Not exercised and still pending: any other device, preset or segment writes, and
 H01/H04–H07 (#12).
+
+## Issue #12 hardware acceptance (2026-11-06)
+
+One authorized hardware acceptance run on one test controller (ISSUE-12-DEC-001) and on
+the deployed Streamable HTTP service of #11 (stop/start and load per ISSUE-12-DEC-003, a
+coordinator interpretation confirmed retroactively by the owner on 2026-11-06 for this run
+only), with the technical
+defaults of ISSUE-12-DEC-002, sanitized from a local, git-ignored run record. Host
+names, addresses, paths, user names, device names, MAC addresses and image IDs of the
+installation are intentionally omitted. The results describe this one controller and
+this one firmware only; no compatibility with other firmware, controllers or LED types
+is claimed.
+
+```text
+Date / operator / source commit: 2026-11-06 / project coordinator agent under the owner's
+  authorization / wled-mcp 0.1.0 image built from commit 0da1249 (unchanged since #11);
+  load and drain client scripts/hw_http_probe.py from commit 119229d
+Package / Python / SDK / hub runtime: wled-mcp 0.1.0, Python 3.13.18, mcp 2.3.0,
+  uvicorn 0.54.0, starlette 1.10.0, aarch64; MCPHub as in the #11 record
+Transport mode / endpoint or uvx artifact / service lifecycle: Streamable HTTP only
+  (ISSUE-12-DEC-002 TD-12-1), the #11 Compose service on the hub network, registered as
+  the hub's HTTP entry; stop/start of that service for D1/D2; no rebuild, no image,
+  inventory, secret, hub entry or hub container change
+Sanitized device and firmware / relevant capabilities: see H01
+Scenario IDs run: P0, I1-I3, H01, H02 (own context), L1-L6, D1, D2, H04, H05, H06, R1-R3
+Before state and snapshot references (local, no secrets): P0 baseline of state, info,
+  configuration, preset file, effect/palette names and effect metadata, each with a
+  SHA-256, kept in the local run record
+Expected and observed results: tables below
+Restoration performed and verified: R1-R3 below
+Not run / reason / remaining risk: "Not run" list below
+```
+
+### P0 baseline and interference (I1-I3)
+
+The baseline was read directly from the controller before any write. Preset slots 2 and
+250 were free; the preset file held only preset 1 (a state preset); no realtime input
+was active. Three state reads 30 s apart before the first write were equal, and again
+after the restoration (no external writer during the windows).
+
+Interference sources, read only and left as found (nothing was disabled): timers
+disabled; no countdown macro; boot preset 1; one push button without macros; no IR
+receiver; UDP sync receive on (brightness, color, effect, palette; one group) and send
+off; another WLED controller visible via the node list (node broadcast on); realtime
+input (E1.31/DDP) enabled but not active; Alexa emulation enabled; MQTT and Hue sync
+off; NTP on; nightlight off; the AudioReactive usermod disabled; one WebSocket client
+connected. The quiet windows before and after were unchanged and all write readbacks
+matched expectations; the sources were not monitored continuously.
+
+### H01 device facts
+
+| Fact | Result |
+| --- | --- |
+| Firmware | WLED 16.0.1 (outside the pinned v0.15.1 source review; the server has no version gate, so every result below is an observation for 16.0.1 only) |
+| Platform | ESP32-C3 |
+| LEDs | 133 RGB LEDs on one bus; RGB only (no white channel, no CCT) |
+| Segments | segment limit 32; one active segment in the baseline |
+| Power limiter | automatic brightness limiter configured |
+| Catalogs | 220 effects, 72 palettes |
+
+### H02 reads
+
+From the service's own execution context (an authenticated client inside the HTTP
+service container on its loopback interface, credential from the mounted secret file):
+
+| Tool | Result, compared with the controller's own endpoints |
+| --- | --- |
+| `wled_list_devices` (probe) | reachable |
+| `wled_get_state` | on, brightness, segments, ranges, colors, effect, palette and transition equal to `/json/state`; capabilities (LED count, segment limit, effect/palette counts, RGB only, firmware) equal to `/json/info`; MAC, address and BSSID redacted |
+| `wled_get_effects` (refresh) | 220 names equal to `/json/eff`; effect metadata available; no warnings |
+| `wled_get_palettes` (refresh) | 72 names equal to `/json/pal` |
+| `wled_list_presets` | one state preset (ID 1), the same IDs as `/presets.json` |
+| `wled_get_preset` 1 / 250 | the stored preset object / `PRESET_NOT_FOUND` |
+
+Through the hub: the H02 reads through the hub's entries for both modes are the
+[#11 records of the same day](#issue-11-live-deployment-check-2026-11-06) (same release
+and controller); in this run the H04-H06 tool calls went through the hub's HTTP entry.
+The comparison is with the WLED UI's data sources (`/json/state`, `/json/info`,
+`/json/eff`, `/json/pal`), not a visual inspection of the UI. In stdio mode the server's
+own execution context is the hub-managed process, so the #11 stdio hub reads are cited
+for it (ISSUE-12-DEC-002 TD-12-6).
+
+### H03 load (L1-L6), Streamable HTTP
+
+Client: `scripts/hw_http_probe.py` inside the service container against its loopback
+interface; one TCP connection per request (included in the latency); latencies in ms.
+
+| Check | Result |
+| --- | --- |
+| L1 idle | RSS 73,740 KiB, 1 thread (`ps` on the container process) |
+| L2 `ping`, concurrency 1 / 4 / 16 (100 / 200 / 400 requests) | 167 / 195 / 201 requests/s; p50 5.3 / 19 / 76; p95 6.5 / 23 / 97; max 48 at c1, p99 107 at c16; all HTTP 200 |
+| L2 `tools/list`, concurrency 1 / 4 / 16 (100 / 200 / 400 requests) | 9.1 / 9.2 / 9.2 requests/s; p50 106 / 425 / 1717; p95 117 / 470 / 1829; p99 1863 at c16; all HTTP 200; the service process used about 108-109 ms CPU per call (sampled), so the call is CPU-bound and concurrency only queues ([#67](https://github.com/descipar/wled-mcp/issues/67)) |
+| L3 `wled_get_state`, concurrency 1 (20) / 4 (40) | 13 / 13.4 requests/s; p50 67 / 282; p95 104 / 347; the per-device lock serializes the controller reads; all HTTP 200 |
+| L3 `wled_get_effects` (cached), concurrency 4 (40) | 19.4 requests/s; p50 201; p95 235; all HTTP 200 |
+| Peak RSS during the bursts | 76,512 KiB |
+| CPU per call (service process user + system time per burst) | `ping` about 5 ms; `tools/list` about 108-109 ms; `wled_get_state` about 21 ms; `wled_get_effects` (cached) about 22 ms |
+| L4 peak concurrent connections | not sampled; the client concurrency was at most 16 |
+| L5 sockets after the clients disconnected | 2 listening, 4 in TIME-WAIT, none established |
+| L6 request-body bound | 262,143 bytes: HTTP 200; 262,145 bytes: HTTP 413 |
+
+### Drain on SIGTERM (D1-D3), Streamable HTTP
+
+Stop with `docker compose -p wled-mcp-http ... stop wled-mcp` (SIGTERM, grace period
+130 s), start again in the same project. The drain client ran in a separate container on
+the hub network (so it survived the stop) and sent read-only `wled_get_effects`
+(refresh) calls at concurrency 4.
+
+| Check | Result |
+| --- | --- |
+| Attempt 1 | invalid as a drain sample: the client started only after the stop. As an idle stop: stop 1.26 s, exit code 0; start to listening 7.36 s |
+| D2 attempt 2, in-flight reads | three calls sent 0.53 / 0.35 / 0.15 s before the stop command's timestamp completed with HTTP 200 at +0.22 / +0.46 / +0.62 s (at least one, the last, certainly in flight at the signal; see the caveat); two calls sent +0.03 / +0.22 s after that timestamp were still admitted and completed with HTTP 200; calls sent from +0.46 s were refused (connection refused); the stop returned after 1.99 s with exit code 0; start to listening 6.30 s |
+| D3 in-flight write | not run (the probe is read-only); automated coverage T21 |
+
+Caveat: the reference time is the timestamp of the `compose stop` invocation on the CLI,
+not the moment the process received SIGTERM. Two calls sent after that timestamp were
+still admitted, so the signal arrived between +0.22 s and +0.46 s. Only the call
+completing at +0.62 s is therefore certainly in flight at the signal; the run plan's
+three in-flight samples are not strictly established.
+
+### H04 master and one effect (writes)
+
+| Step | Result |
+| --- | --- |
+| `wled_set_state` on with brightness 0 | `VALIDATION_ERROR`, no write |
+| `wled_set_state` brightness only while off | master stays off (targeted compensation `on:false`, ISSUE-52-DEC-001), readback matched |
+| `wled_set_state` on with `transition_ms` 1000 | on; wire transition 10; the persistent transition (7) untouched; readback matched |
+| `wled_patch_segments` segment 0 color slot 1 | applied, readback matched; color slots 2 and 3 kept |
+| `wled_patch_segments` segment 0 effect ID 9, speed 200, intensity 100 | applied, readback matched |
+| Proxy for visible output | `/json/info` reported 850 mA (the limiter's cap) and 43 frames/s while on |
+
+Observation (no issue opened): the dry-run plan's `resolved_segments` listed only the
+supplied color slot, while the device keeps the other two slots; the plan display is
+shorter than the device result, the actual write and readback were correct.
+
+### H05 segments and layout (writes)
+
+| Step | Result |
+| --- | --- |
+| `wled_replace_layout` dry run, two segments [0,66) and [66,133) | plan with two steps, no write |
+| `wled_replace_layout` live | segment 0 shortened to [0,66) keeping its effect and colors; segment 1 created at [66,133) with the supplied color and resolved defaults; both steps matched on readback; master unchanged |
+| `wled_patch_segments` segment 1 color and effect | applied, readback matched; segment 0 unchanged (`preserve_segment_ids` [0]) |
+| Original one-segment layout | restored by activating the pre-existing state preset 1, not by a second `wled_replace_layout`; stale-ID removal by the tool was therefore not exercised on hardware |
+
+### H06 presets, slot 250 (writes)
+
+| Step | Result |
+| --- | --- |
+| `wled_save_preset` slot 250, dry run | plan, no write |
+| `wled_save_preset` slot 250 | saved; present in `/presets.json` (persistence by readback); elapsed time and the active-preset marker not recorded |
+| Classification of the saved entry | `unknown`: WLED 16 stores an additional top-level `bs` key that the reviewed state shape does not contain ([#66](https://github.com/descipar/wled-mcp/issues/66)) |
+| `wled_activate_preset` 250 | refused with `UNSUPPORTED_CAPABILITY`, no write (consequence of #66) |
+| `wled_save_preset` slot 250 again without `overwrite` | `PRESET_CONFLICT`, no write |
+| `wled_save_preset` slot 250 with `overwrite=true` | saved after a snapshot; readback matched |
+| `wled_save_preset` without an ID | allocated ID 2 (lowest free); readback matched |
+| `wled_delete_preset` 250 | snapshot, then removed; absence matched on readback |
+| `wled_delete_preset` 250 again | `PRESET_NOT_FOUND`, no write |
+| `wled_delete_preset` 2 | snapshot, then removed; absence matched on readback |
+| `wled_activate_preset` 1 (pre-existing state preset) | activated; readback matched (this also restored the one-segment layout) |
+| `wled_set_state` off | readback matched |
+
+Activation was therefore exercised only with the pre-existing state preset; activating
+a preset saved by WLED 16 remains pending until #66 is resolved.
+
+Snapshots: three snapshot files (overwrite of 250, delete of 250, delete of 2) in the
+service data directory, directory mode 0700, files mode 0600, owned by the service user;
+envelope keys `backup_id`, `created_at`, `device_id`, `firmware`, `format_version`,
+`preset`, `preset_id`. They stay on the target and are not committed. Restoring saved
+contents from a snapshot was not run (ISSUE-8-DEC-001).
+
+### Restoration (R1-R3)
+
+| Check | Result |
+| --- | --- |
+| R1 preset file | JSON-equal to the baseline (only preset 1, identical object); bytes differ, 713 to 3,770 bytes, because the firmware blanks deleted entries with spaces instead of compacting the file; the original bytes cannot be restored through the API (no whole-file upload, per the contract) |
+| R2 state | byte-identical to the baseline |
+| R3 configuration | byte-identical to the baseline (no configuration touched) |
+| Quiet window after the restoration | three reads 30 s apart, equal |
+
+### Not run
+
+- Visual check of the LEDs and of the WLED UI (agents cannot see the LEDs; readback and
+  the power/frame-rate proxy only).
+- D3 drain of an in-flight write on the target.
+- L4 peak concurrent connections (not sampled).
+- stdio mode in this run: stdio drain, stdio load and stdio H04-H06 (HTTP only per
+  ISSUE-12-DEC-002; stdio startup/idle and hub reads are the #11 records).
+- H07 offline device on hardware (no unreachable device in the deployed inventory;
+  simulated evidence T02/T09 remains).
+- Controller reboot and power-cycle persistence (ISSUE-12-DEC-002 TD-12-3).
+- Activation of a preset saved by WLED 16 (blocked by
+  [#66](https://github.com/descipar/wled-mcp/issues/66)).
+- Stale-ID removal by `wled_replace_layout` on hardware (see H05).
+- Restoring preset contents from a snapshot (ISSUE-8-DEC-001).
+- Other controllers and firmware, RGBW/CCT, 2D and multi-bus setups, playlists (none on
+  the controller), live update/rollback (stage 2).
 
 ## Evidence template
 

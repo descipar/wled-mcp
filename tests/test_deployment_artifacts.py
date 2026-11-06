@@ -669,6 +669,7 @@ def test_documented_uvx_invocation_matches_the_stdio_hub_example():
 
 VALIDATION = ROOT / "docs/VALIDATION.md"
 LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
+HARDWARE_HEADING = "## Issue #12 hardware acceptance (2026-11-06)"
 # Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
 # home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
 PRIVATE_IDENTIFIER = re.compile(
@@ -684,6 +685,7 @@ LIVE_DOCUMENTS = [
     DEPLOYMENT,
     ROOT / "docs/TRACEABILITY.md",
     ROOT / "docs/decisions/issue-11.md",
+    ROOT / "docs/decisions/issue-12.md",
     ROOT / "deploy/operations-record.template.md",
 ]
 
@@ -718,8 +720,9 @@ def test_live_deployment_documents_carry_no_installation_identifiers(path):
         "image sha256:0123456789abcdef0123456789abcdef",
     ],
 )
-def test_private_identifier_detector_catches_installation_details(leak):
-    section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
+@pytest.mark.parametrize("heading", [LIVE_HEADING, HARDWARE_HEADING])
+def test_private_identifier_detector_catches_installation_details(leak, heading):
+    section = markdown_section(VALIDATION.read_text("utf-8"), heading)
     assert private_identifiers(section) == []
     assert private_identifiers(section + "\n" + leak) != []
 
@@ -901,6 +904,7 @@ def test_live_scope_check_rejects_regressions(mutate, expected):
 
 
 TRACEABILITY = ROOT / "docs/TRACEABILITY.md"
+HARDWARE_ANCHOR = "VALIDATION.md#issue-12-hardware-acceptance-2026-11-06"
 
 
 def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
@@ -922,12 +926,19 @@ def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{requirement} no longer names {item!r}")
         elif "(#11)" in clause or "issues/12" not in clause or "ISSUE-11-DEC-008" not in clause:
             problems.append(f"{requirement} does not track {item!r} by #12")
+        elif HARDWARE_ANCHOR not in clause:
+            problems.append(f"{requirement} does not link the #12 record for {item!r}")
     for name in ("README.md", "DEPLOYMENT.md"):
         flat = " ".join(texts[name].split())
         if "load measurements remain pending" in flat:
             problems.append(f"{name} still lists drain/load as pending")
         if "ISSUE-11-DEC-008" not in flat:
             problems.append(f"{name} does not reference ISSUE-11-DEC-008")
+        if HARDWARE_ANCHOR not in flat:
+            problems.append(f"{name} does not link the #12 hardware record")
+        for issue in ("issues/66", "issues/67"):
+            if issue not in flat:
+                problems.append(f"{name} does not reference {issue}")
     return problems
 
 
@@ -947,34 +958,59 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
     [
         (
             "TRACEABILITY.md",
-            "on the target, moved to [#12](https://github.com/descipar/wled-mcp/issues/12) "
-            "per ISSUE-11-DEC-008; version",
-            "on the target (#11); version",
+            "in stdio mode, tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
+            "per ISSUE-11-DEC-008, with the SIGTERM drain",
+            "in stdio mode (#11), with the SIGTERM drain",
             "MCP-04 does not track 'drain of an in-flight call' by #12",
         ),
         (
             "TRACEABILITY.md",
-            "load measurements on the target, moved to",
-            "load measurements on the target (#11), moved to",
+            "certainly in flight at the signal) recorded in "
+            "[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)",
+            "certainly in flight at the signal)",
+            "MCP-04 does not link the #12 record for 'drain of an in-flight call'",
+        ),
+        (
+            "TRACEABILITY.md",
+            "per ISSUE-12-DEC-002), tracked by",
+            "per ISSUE-12-DEC-002) (#11), tracked by",
             "OPS-01 does not track 'load measurements' by #12",
         ),
         (
             "TRACEABILITY.md",
-            "pending: load measurements on the target,",
-            "pending: resource figures on the target,",
+            "pending: load measurements on the target in stdio mode",
+            "pending: resource figures on the target in stdio mode",
             "OPS-01 no longer names 'load measurements'",
         ),
         (
             "README.md",
-            "load measurements are tracked by #12 per ISSUE-11-DEC-008",
+            "load measurements moved to #12 per ISSUE-11-DEC-008",
             "load measurements remain pending",
             "README.md still lists drain/load as pending",
         ),
         (
+            "README.md",
+            "docs/VALIDATION.md#issue-12-hardware-acceptance-2026-11-06",
+            "docs/VALIDATION.md",
+            "README.md does not link the #12 hardware record",
+        ),
+        (
+            "README.md",
+            "issues/66",
+            "issues",
+            "README.md does not reference issues/66",
+        ),
+        (
             "DEPLOYMENT.md",
-            "load measurements are tracked by",
+            "load measurements moved to",
             "load measurements remain pending; see",
             "DEPLOYMENT.md still lists drain/load as pending",
+        ),
+        (
+            "DEPLOYMENT.md",
+            "issues/67",
+            "issues",
+            "DEPLOYMENT.md does not reference issues/67",
         ),
     ],
 )
@@ -983,6 +1019,141 @@ def test_drain_load_tracking_check_rejects_regressions(name, old, new, expected)
     assert old in texts[name]
     texts[name] = texts[name].replace(old, new)
     assert expected in moved_drain_load_problems(texts)
+
+
+HARDWARE_FACTS = (
+    "WLED 16.0.1",
+    "no compatibility with other firmware, controllers or LED types",
+    "Streamable HTTP only",
+    "another WLED controller visible via the node list",
+    "nothing was disabled",
+    "issues/66",
+    "issues/67",
+    "`UNSUPPORTED_CAPABILITY`",
+    "pre-existing state preset",
+    "three snapshot files",
+    "files mode 0600",
+    "Attempt 1 | invalid as a drain sample",
+    "not the moment the process received SIGTERM",
+    "262,145 bytes: HTTP 413",
+)
+RESTORATION = {
+    "R1 preset file": ("JSON-equal to the baseline", "blanks deleted entries with spaces"),
+    "R2 state": ("byte-identical to the baseline",),
+    "R3 configuration": ("byte-identical to the baseline",),
+}
+NOT_RUN_ITEMS = (
+    "Visual check",
+    "D3 drain of an in-flight write",
+    "L4 peak concurrent connections",
+    "stdio mode",
+    "H07 offline device",
+    "Controller reboot",
+    "Activation of a preset saved by WLED 16",
+    "issues/66",
+)
+
+
+def hardware_section_problems(section: str) -> list[str]:
+    """What the #12 hardware record must state (ISSUE-12-DEC-001 to 003, TD-12-7)."""
+    problems = []
+    flat = " ".join(section.split())
+    if "```text" not in section or "Restoration performed and verified:" not in section:
+        problems.append("the evidence template is not used")
+    for fact in HARDWARE_FACTS:
+        if fact not in flat:
+            problems.append(f"hardware record lacks {fact!r}")
+    rows = {
+        cells[0]: " ".join(cells[1:])
+        for line in section.splitlines()
+        if line.startswith("| ")
+        for cells in [[cell.strip() for cell in line.strip().strip("|").split("|")]]
+    }
+    for check, facts in RESTORATION.items():
+        if check not in rows:
+            problems.append(f"restoration result {check!r} is missing")
+            continue
+        for fact in facts:
+            if fact not in rows[check]:
+                problems.append(f"{check} lacks {fact!r}")
+    if "### Not run\n" not in section:
+        return [*problems, "the not-run list is missing"]
+    not_run = " ".join(markdown_section(section, "### Not run").split())
+    for item in NOT_RUN_ITEMS:
+        if item not in not_run:
+            problems.append(f"not-run list lacks {item!r}")
+    if re.search(r"\b(?:all|every) (?:firmware|controllers?)\b[^.]*\bsupported\b", flat, re.I):
+        problems.append("the record makes a blanket compatibility claim")
+    return problems
+
+
+def test_hardware_section_records_restoration_not_run_list_and_findings():
+    section = markdown_section(VALIDATION.read_text("utf-8"), HARDWARE_HEADING)
+    assert hardware_section_problems(section) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "| R1 preset file | JSON-equal",
+            "| R1 preset file | restored",
+            "R1 preset file lacks 'JSON-equal to the baseline'",
+        ),
+        (
+            "| R2 state | byte-identical",
+            "| R2 state | similar",
+            "R2 state lacks 'byte-identical to the baseline'",
+        ),
+        (
+            "| R3 configuration |",
+            "| R3 config |",
+            "restoration result 'R3 configuration' is missing",
+        ),
+        ("### Not run\n", "### Remaining\n", "the not-run list is missing"),
+        (
+            "- Visual check of the LEDs",
+            "- Inspection of the LEDs",
+            "not-run list lacks 'Visual check'",
+        ),
+        (
+            "- Activation of a preset saved by WLED 16 (blocked by\n"
+            "  [#66](https://github.com/descipar/wled-mcp/issues/66)).\n",
+            "",
+            "not-run list lacks 'Activation of a preset saved by WLED 16'",
+        ),
+        (
+            "- L4 peak concurrent connections (not sampled).\n",
+            "",
+            "not-run list lacks 'L4 peak concurrent connections'",
+        ),
+        (
+            "- H07 offline device on hardware",
+            "- Offline device on hardware",
+            "not-run list lacks 'H07 offline device'",
+        ),
+        (
+            "Restoration performed and verified:",
+            "Restoration:",
+            "the evidence template is not used",
+        ),
+        (
+            "not the moment the process received SIGTERM",
+            "the moment of SIGTERM",
+            "hardware record lacks 'not the moment the process received SIGTERM'",
+        ),
+        (
+            "is claimed.",
+            "is claimed. All firmware versions are supported.",
+            "the record makes a blanket compatibility claim",
+        ),
+    ],
+)
+def test_hardware_section_check_rejects_regressions(old, new, expected):
+    section = markdown_section(VALIDATION.read_text("utf-8"), HARDWARE_HEADING)
+    assert hardware_section_problems(section) == []
+    assert old in section
+    assert expected in hardware_section_problems(section.replace(old, new))
 
 
 def test_hub_http_registration_points_to_owner_and_reload_requirements():

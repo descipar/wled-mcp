@@ -36,6 +36,12 @@ def row(text: str, first_cell: str) -> str:
     return line
 
 
+def set_hardware_cell(line: str, cell: str) -> str:
+    """The row with its last (hardware/deployment) cell replaced, whatever it holds."""
+    cells = line.rstrip().removesuffix("|").rstrip().split(" | ")
+    return " | ".join([*cells[:-1], cell]) + " |"
+
+
 def problems_for(traceability: str, requirements: str = REQUIREMENTS) -> list[str]:
     return list(checker.check_texts(requirements, traceability, ROOT))
 
@@ -116,7 +122,7 @@ def test_t17_needs_not_applicable_or_evidence():
 )
 def test_hardware_cell_outside_the_vocabulary_fails(cell):
     original = row(MATRIX, "SEG-02")
-    mutated = original.replace("pending: H05 (#12)", cell)
+    mutated = set_hardware_cell(original, cell)
     assert mutated != original
     found = problems_for(MATRIX.replace(original, mutated))
     assert any(problem.startswith("SEG-02: hardware/deployment cell") for problem in found)
@@ -190,7 +196,7 @@ def test_bare_test_file_alone_does_not_count_as_evidence(tmp_path):
 )
 def test_outcome_claim_inside_an_allowed_hardware_cell_fails(tmp_path, cell):
     original = row(MATRIX, "SEG-02")
-    mutated = original.replace("pending: H05 (#12)", cell)
+    mutated = set_hardware_cell(original, cell)
     assert mutated != original
     found = problems_from_copy(tmp_path, MATRIX.replace(original, mutated))
     assert any(p.startswith("SEG-02: hardware/deployment cell must not claim") for p in found)
@@ -217,7 +223,7 @@ def with_reference(reference: str) -> str:
 
 def with_hardware_cell(cell: str) -> str:
     original = row(MATRIX, "SEG-02")
-    mutated = original.replace("pending: H05 (#12)", cell)
+    mutated = set_hardware_cell(original, cell)
     assert mutated != original
     return MATRIX.replace(original, mutated)
 
