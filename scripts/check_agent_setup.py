@@ -65,6 +65,8 @@ def check(root: Path) -> list[str]:
     required = [
         root / "AGENTS.md",
         root / "CLAUDE.md",
+        root / "README.md",
+        root / "docs/PROJECT.md",
         root / "agents/README.md",
         root / "docs/AGENT-WORKFLOW.md",
         root / "docs/DECISIONS.md",

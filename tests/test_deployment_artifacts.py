@@ -35,6 +35,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 from deploy.stage_release import StageError, stage
 from tests.test_http_cli import CONSOLE, POSIX_ONLY, clean_env, free_port, wait_ready
+from tests.test_private_identifiers import scanner as identifier_scanner
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCKERFILE = ROOT / "deploy/http/Dockerfile"
@@ -671,17 +672,15 @@ VALIDATION = ROOT / "docs/VALIDATION.md"
 LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
 HARDWARE_HEADING = "## Issue #12 hardware acceptance (2026-11-06)"
 RUN2_HEADING = "## Issue #12 hardware acceptance, run 2 (2026-11-06)"
-# Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
-# home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
-PRIVATE_IDENTIFIER = re.compile(
-    r"(?<![\d.])(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168|169\.254)"
-    r"\.\d{1,3}\.\d{1,3}(?![\d.]*\d)"
-    r"|/home/|/Users/|\.fritz\.box\b|\.home\.arpa\b"
-    r"|\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"
-    r"|sha256:[0-9a-f]{12,}",
-)
+# Committed live evidence must stay impersonal (AGENTS.md, DEC-005, DEC-009): the
+# repository-wide rules of scripts/check_private_identifiers.py (private addresses, home
+# paths, router-local DNS names, MAC addresses, ...) plus, for these live documents only,
+# content-addressed image IDs (repository-wide they would hit uv.lock hashes).
+IMAGE_ID = re.compile(r"sha256:[0-9a-f]{12,}")
+PROJECT = ROOT / "docs/PROJECT.md"
 LIVE_DOCUMENTS = [
     ROOT / "README.md",
+    PROJECT,
     VALIDATION,
     DEPLOYMENT,
     ROOT / "docs/TRACEABILITY.md",
@@ -701,7 +700,8 @@ def markdown_section(text: str, heading: str) -> str:
 
 
 def private_identifiers(text: str) -> list[str]:
-    return [match.group() for match in PRIVATE_IDENTIFIER.finditer(text)]
+    rule_hits = [finding.value for finding in identifier_scanner.scan_text("live.md", text)]
+    return rule_hits + [match.group() for match in IMAGE_ID.finditer(text)]
 
 
 @pytest.mark.parametrize("path", LIVE_DOCUMENTS, ids=lambda path: path.name)
@@ -938,7 +938,7 @@ def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{requirement} does not track {item!r} by #12")
         elif HARDWARE_ANCHOR not in clause:
             problems.append(f"{requirement} does not link the #12 record for {item!r}")
-    for name in ("README.md", "DEPLOYMENT.md"):
+    for name in ("PROJECT.md", "DEPLOYMENT.md"):
         flat = " ".join(texts[name].split())
         if "load measurements remain pending" in flat:
             problems.append(f"{name} still lists drain/load as pending")
@@ -955,10 +955,7 @@ def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
 
 
 def drain_load_texts() -> dict[str, str]:
-    return {
-        path.name: path.read_text("utf-8")
-        for path in (TRACEABILITY, ROOT / "README.md", DEPLOYMENT)
-    }
+    return {path.name: path.read_text("utf-8") for path in (TRACEABILITY, PROJECT, DEPLOYMENT)}
 
 
 def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
@@ -998,22 +995,22 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
             "OPS-01 no longer names 'load measurements'",
         ),
         (
-            "README.md",
+            "PROJECT.md",
             "load measurements moved to #12 per ISSUE-11-DEC-008",
             "load measurements remain pending",
-            "README.md still lists drain/load as pending",
+            "PROJECT.md still lists drain/load as pending",
         ),
         (
-            "README.md",
-            "docs/VALIDATION.md#issue-12-hardware-acceptance-2026-11-06",
-            "docs/VALIDATION.md",
-            "README.md does not link the #12 hardware record",
+            "PROJECT.md",
+            "(VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)",
+            "(VALIDATION.md)",
+            "PROJECT.md does not link the #12 hardware record",
         ),
         (
-            "README.md",
+            "PROJECT.md",
             "issues/66",
             "issues",
-            "README.md does not reference issues/66",
+            "PROJECT.md does not reference issues/66",
         ),
         (
             "DEPLOYMENT.md",
@@ -1034,10 +1031,10 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
             "DEPLOYMENT.md does not reference issues/70",
         ),
         (
-            "README.md",
-            "docs/VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06",
-            "docs/VALIDATION.md",
-            "README.md does not link the #12 run-2 record",
+            "PROJECT.md",
+            "(VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)",
+            "(VALIDATION.md)",
+            "PROJECT.md does not link the #12 run-2 record",
         ),
     ],
 )
@@ -1612,14 +1609,14 @@ def dec007_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{requirement} does not link the #12 run-3 record")
     if "tracked by [#12](https://github.com/descipar/wled-mcp/issues/12)" in rows["OPS-01"]:
         problems.append("OPS-01 still tracks stdio load beyond the rate limit by #12")
-    for name in ("README.md", "DEPLOYMENT.md"):
+    for name in ("PROJECT.md", "DEPLOYMENT.md"):
         flat = " ".join(texts[name].split())
         if RUN3_ANCHOR not in flat:
             problems.append(f"{name} does not link the #12 run-3 record")
         if "issues/25" not in flat or "ISSUE-12-DEC-007" not in flat:
             problems.append(f"{name} does not state the DEC-007 scope with #25")
-    if "H07, the visual comparison with the WLED UI" in texts["README.md"]:
-        problems.append("README.md still lists the UI comparison as pending")
+    if "H07, the visual comparison with the WLED UI" in texts["PROJECT.md"]:
+        problems.append("PROJECT.md still lists the UI comparison as pending")
     if not re.search(r"current-limiter \(ABL\) cap", " ".join(texts["DEPLOYMENT.md"].split())):
         problems.append("DEPLOYMENT.md lacks the current-limiter guidance")
     h04 = " ".join(
@@ -1647,7 +1644,7 @@ def dec007_texts() -> dict[str, str]:
         path.name: path.read_text("utf-8")
         for path in (
             TRACEABILITY,
-            ROOT / "README.md",
+            PROJECT,
             DEPLOYMENT,
             VALIDATION,
             ROOT / "docs/decisions/issue-12.md",
@@ -1656,7 +1653,7 @@ def dec007_texts() -> dict[str, str]:
     }
 
 
-def test_dec007_resolutions_are_reflected_in_traceability_readme_and_guidance():
+def test_dec007_resolutions_are_reflected_in_traceability_project_and_guidance():
     assert dec007_problems(dec007_texts()) == []
 
 
@@ -1715,10 +1712,10 @@ def test_dec007_resolutions_are_reflected_in_traceability_readme_and_guidance():
             "DECISIONS.md lacks the ISSUE-12-DEC-008 pointer",
         ),
         (
-            "README.md",
-            "docs/VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06",
-            "docs/VALIDATION.md",
-            "README.md does not link the #12 run-3 record",
+            "PROJECT.md",
+            "(VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06)",
+            "(VALIDATION.md)",
+            "PROJECT.md does not link the #12 run-3 record",
         ),
         (
             "DEPLOYMENT.md",

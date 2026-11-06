@@ -6,7 +6,7 @@ Research date: 2026-11-04. Status: planning only. Owning issue [#24](https://git
 
 The product is a self-hosted WLED MCP package/service. Users provide their own WLED controller configuration. Stdio uses a public-consumption Python package via uvx; HTTP uses their own deployed instance and `/mcp` address. We are not planning a central cloud service that can reach everyone's LED controllers.
 
-A public package can support HTTP even if its registry package entry describes stdio execution. Do not publish a nonexistent shared `remotes` endpoint just to advertise HTTP, and never publish a home-network address or a placeholder as a working public endpoint.
+A public package can support HTTP even if its registry package entry describes stdio execution. Do not publish a nonexistent shared `remotes` endpoint just to advertise HTTP, and never publish a private network address or a placeholder as a working public endpoint.
 
 ## Separate discovery routes
 
@@ -32,7 +32,7 @@ The MCPM guide contains older CLI examples; validate the current schema/tools in
 
 ## Proposed identities and artifacts
 
-- Repository: currently private `descipar/wled-mcp`; later public visibility is a separate release decision.
+- Repository: `descipar/wled-mcp`; its visibility is an owner release decision ([#23](https://github.com/descipar/wled-mcp/issues/23), [#25](https://github.com/descipar/wled-mcp/issues/25)).
 - Registry namespace placeholder: `io.github.<publisher>/wled-mcp`; choose the publishing identity and verify ownership/current naming rules before preparing actual release metadata.
 - PyPI distribution and OCI repository names: decide/check before release; repository name alone proves neither ownership nor availability. PyPI `wled-mcp` returned 404 during this research, which reserves nothing and does not establish a final name.
 - Console command can remain `wled-mcp` even if a distinct distribution name is needed; use uvx `--from` explicitly where names differ.

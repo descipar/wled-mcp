@@ -8,7 +8,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #12 only.
 - Authority: human decision.
-- Source: owner instruction in the project conversation on 2026-11-06, recorded as a
+- Source: owner instruction in the coordinator session on 2026-11-06, recorded as a
   coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12); no
   permalink to the original message available.
 - Scope: one designated test controller (named only in the local, git-ignored run
@@ -38,7 +38,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #12 only, superseded in part (TD-12-1) by ISSUE-12-DEC-004.
 - Authority: technical proposal by the requirements agent, accepted by the coordinator.
-  This is not a human decision; the human did not choose these defaults and may veto
+  This is not a human decision; the owner did not choose these defaults and may veto
   them at review.
 - Source: requirements packet `.agent-runs/issue-12/packet.md`, sections 1, 2 and 4
   (TD-12-1 to TD-12-7), 2026-11-06, no permalink.
@@ -48,7 +48,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
     registering stdio as a second writer would be uncoordinated. stdio items are
     recorded explicitly as cited #11 observations (dated) or as not exercised.
   - TD-12-2 Preset tests use explicit slot 250 (highest reviewed ID, free in the
-    baseline, least collision risk with household saves), plus an optional
+    baseline, least collision risk with the operator's own saves), plus an optional
     lowest-free allocation check that is deleted immediately. Preset 1 is never
     written.
   - TD-12-3 No controller reboot. Persistence is the `/presets.json` readback defined
@@ -71,7 +71,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
     file hash equal to the baseline.
 - Applicability / conditions / expiry: bounded to the #12 run and its evidence. A
   material deviation during the run is recorded and returned to the coordinator.
-- Rationale supplied: none by the human. Agent rationale: see the packet.
+- Rationale supplied: none by the owner. Agent rationale: see the packet.
 - Affected requirement IDs, files, issues and tests: READ-01/02, SEG-04, PRE-05,
   OPS-01/02/05, MCP-03/04, TEST-01; `scripts/hw_http_probe.py`,
   `tests/test_hw_http_probe.py`, [VALIDATION.md](../VALIDATION.md),
@@ -90,7 +90,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: confirmed retroactively by the owner for the #12 run only (2026-11-06);
   issue #12 only.
-- Authority: coordinator interpretation of the human instruction to implement #12
+- Authority: coordinator interpretation of the owner's instruction to implement #12
   under the defined workflow and of #12 acceptance box 7 (drain and load per mode);
   not a human decision and not an explicit human answer.
   [ISSUE-11-DEC-008](issue-11.md#issue-11-dec-008--drain-and-load-live-checks-move-to-12)
@@ -101,12 +101,12 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   owner for confirmation.
 - Owner confirmation: confirmed retroactively on 2026-11-06 for that run only; not
   standing permission for future service operations. Source: owner reply "ja, war in
-  ordnung" in the project conversation on 2026-11-06, answering the coordinator's
+  ordnung" in the coordinator session on 2026-11-06, answering the coordinator's
   question whether stopping/starting the deployed HTTP service during the #12 tests
   (two short outages of about 2 s) was acceptable; also recorded as a coordinator
   comment on #12. No permalink.
 - Source: ISSUE-11-DEC-008, the #12 acceptance criteria and the coordinator's plan
-  announcement in the project conversation, 2026-11-06; no permalink.
+  announcement in the coordinator session, 2026-11-06; no permalink.
 - Scope: the deployed Streamable HTTP service of #11 (its own Compose project) on the
   existing target.
 - Decision: stopping and starting the deployed HTTP service (SIGTERM drain checks)
@@ -115,7 +115,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   other hosts or services.
 - Applicability / conditions / expiry: bounded to the #12 run; the service is left
   running as the one active mode (ISSUE-11-DEC-004). Not standing permission.
-- Rationale supplied: none by the human. Coordinator rationale: box 7 cannot be met
+- Rationale supplied: none by the owner. Coordinator rationale: box 7 cannot be met
   without stopping the deployed service and loading it.
 - Affected requirement IDs, files, issues and tests: MCP-04, OPS-01/05; drain D1-D3,
   load L1-L6; [VALIDATION.md](../VALIDATION.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
@@ -133,7 +133,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #12 only.
 - Authority: human decision.
-- Source: owner reply in the project conversation on 2026-11-06 ("nein, auch stdio in
+- Source: owner reply in the coordinator session on 2026-11-06 ("nein, auch stdio in
   #12", answering the coordinator's question on the stdio scope of #12), recorded as a
   coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12); no
   permalink to the original message available.
@@ -160,7 +160,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: used by the second #12 live run on 2026-11-06; expired after that run.
 - Authority: human decision.
-- Source: owner reply in the project conversation on 2026-11-06 ("ja zu den 3 fragen",
+- Source: owner reply in the coordinator session on 2026-11-06 ("ja zu den 3 fragen",
   answering the coordinator's three questions), recorded as a coordinator comment on
   [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
   message available.
@@ -196,7 +196,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active.
 - Authority: human decision.
-- Source: owner reply in the project conversation on 2026-11-06 to the coordinator's
+- Source: owner reply in the coordinator session on 2026-11-06 to the coordinator's
   question whether the stdio host-level no-drain is acceptable ("ja, ist in ordnung.
   stdio ist ja nur die zweite wahl für heute, ich bevorzuge http"), relayed by the
   coordinator; no permalink to the original message available.
@@ -227,7 +227,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Status: active for issue #12; item 2 (the run authorization) was used by the third
   #12 live run on 2026-11-06 and expired after that run.
 - Authority: human decision.
-- Source: owner reply in the project conversation on 2026-11-06 ("stimme zu") to the
+- Source: owner reply in the coordinator session on 2026-11-06 ("stimme zu") to the
   coordinator's six-point proposal, relayed by the coordinator and recorded in
   coordinator comments on [#12](https://github.com/descipar/wled-mcp/issues/12) (the
   decision, and a later clarification of the details of items 2 and 3) and, for item 6,
@@ -287,7 +287,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #12 only.
 - Authority: human decision.
-- Source: owner reply in the project conversation on 2026-11-06 ("rückmeldung und
+- Source: owner reply in the coordinator session on 2026-11-06 ("rückmeldung und
   speedtest genügen"), relayed by the coordinator and recorded as a coordinator comment
   on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
   message available.

@@ -10,7 +10,7 @@ Decision numbers refer to the open points OD-1 to OD-7 of the issue-9 work packe
 - Authority/source: the main session relayed a user chat message (2026-11-05)
   delegating content decisions for issue #9 to the main session; the main session
   then accepted the requirements agent's proposals. The content was decided by the
-  main session, not dictated by the human. The coordinator could not verify the
+  main session, not dictated by the owner. The coordinator could not verify the
   delegation independently; no permalink.
 - Scope/decision:
   - OD-1: PRE-03 (supplied-state save) and restore execution are not part of #9;

@@ -38,7 +38,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #74 only.
 - Authority: technical proposals TD-74-1 to TD-74-6 by the requirements agent, accepted
-  by the coordinator. Not a human decision; the human may veto them at review.
+  by the coordinator. Not a human decision; the owner may veto them at review.
 - Source: requirements packet `.agent-runs/issue-74/packet.md` (2026-11-06), including
   an offline comparison of host shapes against httpx2, `ipaddress`, `inet_aton`,
   numeric-only `getaddrinfo` and the WHATWG host parser.

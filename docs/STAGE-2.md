@@ -24,11 +24,11 @@ Priorities below:
 
 These are proposed product priorities, not individual user approvals of every technical choice. Both transports and the future public/marketplace direction are confirmed. Concrete names, support promises and license remain decisions to make with the owner.
 
-## A. Setup that works outside the original household
+## A. Setup that works outside the original installation
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-SETUP-01 | Launch | Noninteractive setup/config validation and portable paths. A user can configure an explicit controller, start either transport and read state without editing source or knowing the private chat. Local config writes are explicit and atomic; no light changes during setup. |
+| S2-SETUP-01 | Launch | Noninteractive setup/config validation and portable paths. A user can configure an explicit controller, start either transport and read state without editing source or access to project history. Local config writes are explicit and atomic; no light changes during setup. |
 | S2-SETUP-02 | Should | Optional, explicitly invoked bounded mDNS discovery returns candidate devices, deduplicates identities and requests explicit enrollment. Manual URLs remain fully supported. Explain multicast/VLAN/container limits; never silently scan subnets or enroll discovered devices. |
 | S2-SETUP-03 | Launch | A read-only `doctor`/diagnostic command distinguishes package/runtime/config problems, MCP connectivity/auth, device reachability/capabilities and backup permissions. Provide a sanitized diagnostic export suitable for bug reports, with no secrets, full private inventory or unexpected telemetry. |
 
@@ -97,8 +97,38 @@ Preparing workflows and artifacts is authorized planning/implementation work onl
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
 | S2-PUBLIC-01 | Launch | Decide project/package/container/registry identities, author attribution and outbound license with the owner. Review reused code notices and repository history/artifacts for private content before changing visibility. Do not mark the project as officially endorsed by WLED or a marketplace without actual authorization. |
-| S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without this chat or household-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
+| S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without access to project history or installation-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
 | S2-PUBLIC-03 | Launch | Prepare contribution guidance, security reporting/contact, support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
+
+### Open owner decisions before publication (from #62)
+
+Issue #62 prepared a public-ready baseline under
+[DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline): neutral tracked
+content, a user-facing README, synthetic example deployment files for both transports
+and the CI check `scripts/check_private_identifiers.py`. It changed no visibility,
+license, attribution or publication. The following decisions remain with the owner and
+are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01); none
+is resolved here:
+
+1. Outbound license, and whether third-party notices or a NOTICE file are needed.
+2. Project, package, container image and registry identities: repository name and
+   owner, PyPI/OCI names and the `io.github.<publisher>` namespace.
+3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
+   security contact).
+4. Acceptance of the existing commit history and author identities (owner identity
+   and agent noreply identity), or a history rewrite or a fresh public repository.
+5. Review of issue and PR bodies and comments, including closed ones and run evidence
+   links, for installation context before a visibility change; issue visibility
+   follows repository visibility.
+6. Whether German source quotes in decision records stay verbatim in a public
+   repository.
+7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
+   `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
+8. Whether CI gets a secret-backed private denylist for
+   `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
+   protection.
+9. Timing of the visibility change relative to the beta acceptance of
+   [#25](https://github.com/descipar/wled-mcp/issues/25).
 
 ## I. Marketplace discovery and actual publication evidence
 
@@ -148,7 +178,7 @@ Stage-1 Should issue #13 decided its scope in ISSUE-13-DEC-001: deferred work is
 | S2-T05 | Capability fixtures distinguish RGB/RGBW/CCT/2D and unknown fields; each advertised hardware capability links actual observations |
 | S2-T06 | Version/config/backup upgrade-downgrade matrix and public schema compatibility checks pass with previous fixtures |
 | S2-T07 | Clean artifact installs, wheel/sdist and declared OCI architectures start both transports; provenance/version/checksum metadata are consistent |
-| S2-T08 | Registry/MCPM metadata validates and generated config starts the real package in a clean MCPHub context; self-hosted HTTP recipe works without household data |
+| S2-T08 | Registry/MCPM metadata validates and generated config starts the real package in a clean MCPHub context; self-hosted HTTP recipe works without installation data |
 | S2-T09 | Public docs/history/artifact review, license/identity decision, secret-free diagnostics and exact release candidate are recorded |
 | S2-T10 | After authorized publication only: verify actual package/image installation and each selected discovery route's independent visibility/status |
 

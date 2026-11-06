@@ -46,7 +46,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #13 only.
 - Authority: technical proposal by the requirements agent, accepted by the coordinator.
-  Not a human decision; the human may veto it before #13 is closed.
+  Not a human decision; the owner may veto it before #13 is closed.
 - Source: requirements packet `.agent-runs/issue-13/packet.md`.
 - Scope: issue #13 completion.
 - Decision: acceptance boxes whose condition is shown to be false (raw state not

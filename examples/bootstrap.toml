@@ -1,3 +1,3 @@
-# Executable bootstrap profile. Inventory support follows in issue #4.
+# Executable empty-inventory profile; see devices.example.toml for configured devices.
 schema_version = 1
 devices = []

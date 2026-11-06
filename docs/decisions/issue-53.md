@@ -7,9 +7,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-05.
 - ID: ISSUE-53-DEC-001
 - Recorded date: 2026-11-05
 - Status: active for issue #53 only.
-- Authority: delegated decision. The human delegated the #52/#53 decisions to the
+- Authority: delegated decision. The owner delegated the #52/#53 decisions to the
   coordinator ("decide as much as possible yourself", 2026-11-05, no permalink). The
-  content was decided by the coordinator, not dictated by the human.
+  content was decided by the coordinator, not dictated by the owner.
 - Source: requirements packet for #53 with local Windows 11 / CPython 3.13.2 diagnostics:
   the only socket events during a default stdio start are the bind to 127.0.0.1:0 and the
   matching loopback connect made by `socket._fallback_socketpair` for the asyncio event

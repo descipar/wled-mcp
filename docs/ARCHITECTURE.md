@@ -62,9 +62,9 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 
 | Decision | Status | Rationale / consequence |
 | --- | --- | --- |
-| Independent private repository | Confirmed | Requested by the project owner; remains private |
+| Independent repository | Confirmed | Requested by the project owner as a private repository; [DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline) keeps its content public-ready, and visibility is an owner release decision ([#23](https://github.com/descipar/wled-mcp/issues/23)) |
 | Documentation and issue backlog before implementation | Confirmed | Current assignment ends with an actionable handoff |
-| Python, async HTTP, official MCP SDK | Proposed | Fits existing hub ecosystem and small adapter scope; choose maintained compatible versions at bootstrap |
+| Python, async HTTP, official MCP SDK | Proposed | Fits MCPHub-style hosts and small adapter scope; choose maintained compatible versions at bootstrap |
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |
 | Streamable HTTP plus stdio in v1 | Confirmed scope update | Independent service mode plus client-managed uvx mode; identical tools and domain layer |
 | One HTTP worker, SDK stateless JSON responses | Issue-2 technical design | No session IDs/replay store; shared process-wide resources and locks; bounded drain, access checks before device work; implemented in #14 ([decisions](decisions/issue-14.md)) |
@@ -73,13 +73,13 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 | Separate segment patch and layout replacement | Issue-2 technical design | Preserve existing omitted state; new IDs use explicit defaults; reject unrepresentable ID/preservation plans; see contract and decisions |
 | Typed operations before optional raw state | Proposed | Clear agent schemas and validation; raw tool must not bypass domain rules |
 | Direct implementation rather than upstream fork | Proposed | Existing candidates have useful ideas but material limitations; no upstream code copied |
-| No public license selected | Open | User requested private work; future reuse/publication needs a decision |
+| No public license selected | Open | License and publication remain owner decisions ([#23](https://github.com/descipar/wled-mcp/issues/23)) |
 
 ## Configuration
 
 See [example inventory](../examples/devices.example.toml). Configuration path is supplied explicitly through `--config`; data path through `--data-dir`. Paths must be absolute in deployed configuration. Startup validates configuration without probing or writing devices. Use atomic replacement for future reload support.
 
-Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`/`WLED_MCP_DATA_DIR`; absent values cause an actionable startup failure rather than guessing a household file. Do not embed actual URLs or credentials in source. HTTP(S) root URLs may use explicit ports. Disable redirects by default; do not follow a configured controller to an arbitrary host. Avoid implicit proxy environment routing for LAN calls unless deliberately configured.
+Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`/`WLED_MCP_DATA_DIR`; absent values cause an actionable startup failure rather than guessing an installation's file. Do not embed actual URLs or credentials in source. HTTP(S) root URLs may use explicit ports. Disable redirects by default; do not follow a configured controller to an arbitrary host. Avoid implicit proxy environment routing for LAN calls unless deliberately configured.
 
 ## Device operations
 

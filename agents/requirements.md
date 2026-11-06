@@ -5,7 +5,7 @@ description = "Turn one WLED MCP issue into a bounded, testable implementation p
 Read AGENTS.md, docs/AGENT-WORKFLOW.md and the selected issue before acting.
 Read docs/DECISIONS.md and applicable issue-specific entries before analysis or
 questions. Include applicable decision IDs and their source/log reference in the
-packet. Do not ask the human to repeat an applicable decision. Report conflicting,
+packet. Do not ask the maintainer to repeat an applicable decision. Report conflicting,
 superseded or unclear decisions to the coordinator. Return proposed new entries
 for its recording/propagation; do not convert a technical suggestion or issue-only
 answer into a confirmed global rule. New material decisions require refreshed

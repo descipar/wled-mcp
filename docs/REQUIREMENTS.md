@@ -2,11 +2,11 @@
 
 Version: 0.3, 2026-11-04. State: v1 design baseline refined by issue #2, with confirmed dual-transport scope. Runtime and hardware evidence remain pending.
 
-This document defines **stage 1**. Future public-release and product requirements use `S2-` IDs in [STAGE-2.md](STAGE-2.md) and separate tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Stage-2 direction does not change current private visibility or silently add release-publication requirements to stage 1.
+This document defines **stage 1**. Future public-release and product requirements use `S2-` IDs in [STAGE-2.md](STAGE-2.md) and separate tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Stage-2 direction does not change repository visibility or silently add release-publication requirements to stage 1.
 
 ## 1. Authority and meaning of priorities
 
-**Confirmed:** prepare a detailed, private GitHub project for a standalone WLED MCP server so a later agent can check it out and implement it. Documentation and actionable GitHub issues are required. MCPHub is the initial integration target. That original assignment covered planning, without implementation, installation or hardware mutation. The subsequent issue-2 instruction authorizes the scoped contract work and review workflow recorded in [issue decisions](decisions/issue-2.md); it does not commission all downstream issues.
+**Confirmed:** prepare a detailed GitHub project (originally requested as private; amended by [DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline) to keep its content public-ready without a visibility change) for a standalone WLED MCP server so a later agent can check it out and implement it. Documentation and actionable GitHub issues are required. MCPHub is the initial integration target. That original assignment covered planning, without implementation, installation or hardware mutation. The subsequent issue-2 instruction authorizes the scoped contract work and review workflow recorded in [issue decisions](decisions/issue-2.md); it does not commission all downstream issues.
 
 **Confirmed scope update:** v1 supports both Streamable HTTP for independent service operation and stdio for client-managed launch via uvx. Both expose identical WLED tools and domain behavior. The original stdio-only transport proposal is superseded. Updating this scope/backlog does not commission runtime implementation or deployment.
 
@@ -20,7 +20,7 @@ Target deployments include self-hosted MCPHub instances on small Linux hosts usi
 
 Several agent clients can use the hub. This server connects directly to WLED controllers and exposes their capabilities through a consistent MCP interface: device inspection, lighting controls, segment layout editing and preset management. It operates independently of other home-automation systems. Feature scope is determined by WLED capabilities and this project's requirements.
 
-Primary user: a household owner asking an agent for lighting changes. Secondary user: the implementing/maintaining agent, who needs stable contracts, helpful errors, reproducible installation, and a narrow operational footprint.
+Primary user: a person operating one or more WLED controllers who asks an agent for lighting changes. Secondary user: the implementing/maintaining agent, who needs stable contracts, helpful errors, reproducible installation, and a narrow operational footprint.
 
 ## 3. User scenarios
 
@@ -89,20 +89,20 @@ Primary user: a household owner asking an agent for lighting changes. Secondary 
 
 ## 6. Explicit non-goals
 
-No independent automation scheduler, cloud remote access, OAuth server, graphics editor, public package publishing, or guarantee of simultaneous multi-controller frames. No blanket “supports all WLED versions/features” claim. No automatic reconfiguration of the existing hub or device firmware as a prerequisite.
+No independent automation scheduler, cloud remote access, OAuth server, graphics editor, public package publishing, or guarantee of simultaneous multi-controller frames. No blanket “supports all WLED versions/features” claim. No automatic reconfiguration of an MCPHub-style host or device firmware as a prerequisite.
 
 ## 7. Open inputs and defaults
 
 | Input | Current state | Effect / progress without answer |
 | --- | --- | --- |
-| Device names/URLs, count, firmware | Unknown | Implement against fixtures; do not invent household inventory |
+| Device names/URLs, count, firmware | Unknown | Implement against fixtures; do not invent a real device inventory |
 | LED count/type, RGBW/CCT, 1D/2D | Unknown | Core RGB/RGBW contracts; gate extra capabilities; real acceptance pending |
 | Existing presets/playlists worth preserving | Unknown | Mock preset behavior; require selected test slots before destructive hardware tests |
 | Device reachability from actual WLED-MCP runtime | Not checked for WLED | Check the stdio execution context or independent HTTP-service context as appropriate; no network topology change assumed |
 | HTTP service topology and credential storage | To choose during integration | Prepare private network/bind/Host/Origin configuration and runtime credential injection; no public exposure assumed |
 | Authentication/OTA lock/API restrictions | Unknown | Surface firmware/API refusal; no password bypass or lock changes |
 | Final Python/SDK versions | To select at bootstrap | Check upstream support and hub runtime; record locked versions |
-| License and public release intent | Not selected / private requested | Original private work only; do not choose a license or publish |
+| License and public release intent | Not selected; originally requested as private work, content kept public-ready per DEC-009 | Do not choose a license, change visibility or publish; owner decisions tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) |
 | Backup location/retention | Proposed project data path, default 20 snapshots per device | Validate persistent writable path before enabling destructive preset tools |
 | Resource acceptance target | No measured budget agreed | Record idle/startup measurements and discuss material impact if high |
 

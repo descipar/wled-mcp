@@ -6,7 +6,7 @@ Recorded 2026-11-04. Read with [DECISIONS.md](../DECISIONS.md).
 
 - Status: active for #3 candidate delivery; merge approval remains separate.
 - Authority/source: actual human request to implement #3 with the defined workflow
-  in the project conversation on 2026-11-04; no chat permalink available.
+  in the coordinator session on 2026-11-04; no chat permalink available.
 - Scope: implementation/tests, independent review, reviewable PR. No merge,
   deployment, physical-device actions, license selection or publication.
 - Rationale supplied: follow the workflow; no additional rationale supplied.

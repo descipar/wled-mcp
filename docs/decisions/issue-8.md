@@ -33,10 +33,10 @@ Decision numbers refer to the open points OD-1 to OD-10 of the issue-8 work pack
 ## ISSUE-8-DEC-003 — Delegated: layout, ID, envelope, compatibility, errors, retention, guard, fsync, source
 
 - Status: active for issue #8 only.
-- Authority/source: the human delegated OD-3 to OD-10 to the main session in
+- Authority/source: the owner delegated OD-3 to OD-10 to the main session in
   the main session's chat, 2026-11-05, scoped to the open points of issue #8. The
   main session accepted the requirements agent's proposed defaults. The content
-  was decided by the main session, not personally dictated by the human; no permalink.
+  was decided by the main session, not personally dictated by the owner; no permalink.
 - Scope/decision:
   - OD-3: layout `backups/<device_id>/<backup_id>.json`; ID `b-<UTC>-<12 hex>`;
     exclusive create, never overwrite.
