@@ -1,0 +1,7 @@
+# Allowlist build context for deploy/http/Dockerfile (copied as .dockerignore into the
+# staged release directory). Everything is excluded except the pinned release inputs, so
+# inventories, data, backups, .env files and secrets can never enter an image layer.
+*
+!wled_mcp-0.1.0-py3-none-any.whl
+!requirements-runtime.txt
+!SHA256SUMS

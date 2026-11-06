@@ -3,8 +3,13 @@
     "wled": {
       "command": "uvx",
       "args": [
+        "--isolated",
+        "--python",
+        "3.13",
+        "--constraints",
+        "/app/binaries/wled-mcp/0.1.0/requirements-runtime.txt",
         "--from",
-        "/app/binaries/wled-mcp/REPLACE_WITH_VERSIONED_WHEEL.whl",
+        "/app/binaries/wled-mcp/0.1.0/wled_mcp-0.1.0-py3-none-any.whl",
         "wled-mcp",
         "--transport",
         "stdio",
@@ -12,7 +17,12 @@
         "/app/data/wled-mcp/config/devices.toml",
         "--data-dir",
         "/app/data/wled-mcp"
-      ]
+      ],
+      "env": {
+        "UV_CACHE_DIR": "/app/data/wled-mcp-uv/cache",
+        "UV_TOOL_DIR": "/app/data/wled-mcp-uv/tools",
+        "UV_PYTHON_INSTALL_DIR": "/app/data/wled-mcp-uv/python"
+      }
     }
   }
 }

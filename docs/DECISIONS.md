@@ -176,6 +176,14 @@ can explicitly amend them.
   `docs/TRACEABILITY.md`, enforced by `scripts/check_traceability.py` through a pytest
   test; hardware/deployment cells may only say `pending: ...` or `not applicable: ...`.
 
+- [ISSUE-11-DEC-001](decisions/issue-11.md) (human, 2026-11-06, issue #11 only):
+  implementation, tests, docs, review and a reviewable PR; no merge, deployment, hub
+  registration, LAN/device contact, publication or license selection.
+- [ISSUE-11-DEC-002](decisions/issue-11.md) (agent technical proposal accepted by the
+  coordinator, 2026-11-06, issue #11 only; not a human decision): deployment defaults
+  TD-1 to TD-9 (pre-staged wheel, pinned slim base image, separate Compose project,
+  file secret, persistent uv paths).
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

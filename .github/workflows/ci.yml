@@ -26,8 +26,8 @@ jobs:
         with:
           version: "0.11.14"
       - run: uv sync --locked
-      - run: uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
-      - run: uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
       - run: uv run --frozen mypy
       - run: uv run --frozen python scripts/check_agent_setup.py
       - run: uv run --frozen python scripts/check_lock.py
