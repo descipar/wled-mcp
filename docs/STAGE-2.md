@@ -135,7 +135,7 @@ See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “La
 
 Start with portable setup and the compatibility/public-identity decisions. Product features can progress independently on the relevant stage-1 foundation. #22 needs #21; #24 needs the chosen identity/artifacts/docs; #25 assembles launch evidence after required tasks and stage-1 acceptance. #17–#19 do not automatically block #25 if explicitly deferred.
 
-Existing stage-1 Should issue #13 remains a scope register. Link its proposed work to these owning issues; do not implement the same feature twice or quietly weaken stage-1 Must behavior.
+Stage-1 Should issue #13 decided its scope in ISSUE-13-DEC-001: deferred work is owned by #16, #18 and #19; do not implement the same feature twice or quietly weaken stage-1 Must behavior.
 
 ## Stage-2 validation scenarios
 
