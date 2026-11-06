@@ -254,6 +254,9 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #61 only; not a human decision): host labels use
   `[A-Za-z0-9_-]` and must start/end alphanumeric; the startup diagnostic names
   `devices[i]` and the field, never values or the device id.
+- [ISSUE-74-DEC-001](decisions/issue-74.md) (human, 2026-11-06, issue #74 only): both
+  options — inventory rejects invalid IPv4-like hosts at startup, and client-side URL
+  errors map to a safe domain error; no URL or host in diagnostics.
 
 ## Still unresolved
 
