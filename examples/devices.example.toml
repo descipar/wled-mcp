@@ -1,4 +1,5 @@
 # Executable synthetic inventory; startup/listing without probe performs no HTTP.
+# base_url host labels may also contain interior underscores (wled_desk.example.invalid).
 schema_version = 1
 
 [http]

@@ -18,6 +18,23 @@ ports and bracketed IPv6 are accepted. Credentials, query/fragment, nonroot path
 unknown fields and unsupported types/features fail before device access. TOML is
 limited to 64 KiB; absolute path and CLI-over-environment rules are unchanged.
 
+A `base_url` host name is ASCII, at most 253 characters, without a trailing dot. Each
+dot-separated label has 1–63 characters from letters, digits, `-` and `_`, and starts
+and ends with a letter or digit. Interior underscores (for example the synthetic
+`http://wled_desk.example.invalid`, as some routers publish for DHCP clients) are
+accepted; `_wled`, `wled_` or `_` labels are rejected. Single-label names are
+accepted. IPv4 and bracketed IPv6 literals and percent-encoding rules are unchanged.
+The configured case is kept; the HTTP client sends the host lower-cased and unchanged
+otherwise (no IDNA conversion of ASCII names). Startup never resolves or probes names.
+
+When a device entry is rejected, the startup error names it by its zero-based position
+in the `[[devices]]` list and the field, for example
+`Invalid inventory configuration (devices[1].base_url: invalid): ...`. Categories are
+`missing`, `invalid` and `unsupported field` (an unknown key, whose name is not shown).
+At most five entries are listed, followed by `and N more`. Values, URLs, host names,
+IDs and names are never echoed. Errors that are not tied to one entry (schema version,
+duplicate IDs, settings sections, TOML syntax) keep the generic message.
+
 | HTTP setting | Default | Allowed bounds |
 | --- | --- | --- |
 | connect_timeout_seconds | 3 | 0.05–30, finite |

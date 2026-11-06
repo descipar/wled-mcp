@@ -21,7 +21,7 @@ credentials, private hostnames or the real inventory in a shared copy.
 - HTTP: `--allowed-host` entries / `--allowed-origin` entries / credential source (file path only):
 - Hub entry type and URL or command (sanitized); where the hub stores the header value:
 - Hub entry owner (HTTP: an admin user, see DEPLOYMENT.md "MCPHub notes") / entry reloaded after each edit:
-- Inventory `base_url` hosts are RFC 1123 names resolving to one address, or addresses:
+- Inventory `base_url` hosts are names resolving to one address, or addresses:
 - Backups path writable and on a hard-link-capable filesystem (how checked):
 
 ## Checks

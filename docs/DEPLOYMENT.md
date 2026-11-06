@@ -59,11 +59,13 @@ the hub container itself, never the separate wled-mcp service.
 | wled-mcp service container | Binds `0.0.0.0:8000`; `127.0.0.1:8000` only for the healthcheck and exec checks, still sending `Host: wled-mcp:8000` | `/app/data/wled-mcp/` (bind mount of the host directory) |
 | stdio subprocess | No address, no listener | Paths inside the hub container |
 
-Inventory `base_url` hosts must be valid RFC 1123 host labels: letters, digits and
-hyphens, no underscore (an underscore name is currently rejected at startup, see
-[#61](https://github.com/descipar/wled-mcp/issues/61)). Use a reserved DNS name that
-resolves to exactly one address from the service's context, or the controller's
-address; a name resolving to several addresses makes requests ambiguous.
+Inventory `base_url` host labels may contain letters, digits, hyphens and interior
+underscores; each label starts and ends with a letter or digit (see
+[INVENTORY-CLIENT.md](INVENTORY-CLIENT.md#configuration-and-limits)). A rejected entry
+is named in the startup error by its zero-based `devices[<index>]` position and field.
+Use a reserved DNS name that resolves to exactly one address from the service's
+context, or the controller's address; a name resolving to several addresses makes
+requests ambiguous.
 
 The hub URL authority (`wled-mcp:8000`) must equal an `--allowed-host` entry exactly
 (case-insensitive). If the actual service name, alias or port differs, change the
