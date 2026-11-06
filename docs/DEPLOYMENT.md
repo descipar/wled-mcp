@@ -3,11 +3,13 @@
 **Status: one live check of both modes on one target.** The artifacts and procedures
 below (#11) are covered by device-free tests and were exercised once on one MCPHub target
 for both modes (build, start, hub registration, reads, recreation, restart, idle
-measurements, stdio entry removal, removal and redeploy of the HTTP service, and an
+measurements, stdio entry removal, removal and redeploy of the HTTP service, catalog
+and preset reads, a stdio environment rebuild, a hub container recreation, and an
 authorized power on/off on one test controller); see
-[VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Hub container
-recreation has not been run yet and remains pending. Live update and rollback between
-two versions moved to stage 2 ([#21](https://github.com/descipar/wled-mcp/issues/21),
+[VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Drain of an
+in-flight call on the target and load measurements remain pending. Live update and
+rollback between two versions moved to stage 2
+([#21](https://github.com/descipar/wled-mcp/issues/21),
 [#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
 procedures below remain part of #11. All names, paths and networks below are
 synthetic placeholders; confirm them on the actual installation. Any further deployment
@@ -203,6 +205,17 @@ Observed with MCPHub 1.2.1 in the live check:
   entry, not the hub container.
 - The example [mcphub.http.example.json](../examples/mcphub.http.example.json) carries no
   owner field; ownership is hub-side state, not part of the entry schema used here.
+- Hub container recreation: recreating the hub container interrupts every hub entry,
+  not only wled-mcp, for the time the hub needs to start again (about 30 s in the live
+  check, with all hub servers starting concurrently); schedule it accordingly. Hub
+  entries, including their owner, live in the hub's persisted settings and come back
+  after the recreation. The independent HTTP service keeps running and the hub
+  reconnects to it. For stdio, the uv tree under `/app/data/wled-mcp-uv/` and the data
+  directory survive when they are on mounted persistent storage, so the entry restarts
+  without downloading dependencies again. Other hub servers whose package caches live
+  in the container filesystem (for example servers launched through `npx`) download
+  their packages again; this is independent of wled-mcp. Recreating the hub is a hub
+  operation and is never part of the wled-mcp update, rollback or removal procedures.
 
 ## HTTP service: update, rollback, recreation, removal
 

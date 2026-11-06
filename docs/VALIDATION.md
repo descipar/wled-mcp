@@ -505,7 +505,8 @@ update/rollback/recreation, Linux x86-64 image build, stdio start/idle measureme
 
 ## Issue #11 live deployment check (2026-11-06)
 
-One authorized live check of both modes on one target (ISSUE-11-DEC-003), sanitized
+One authorized live check of both modes on one target (ISSUE-11-DEC-003) with
+follow-up checks on the same target (ISSUE-11-DEC-006, ISSUE-11-DEC-007), sanitized
 from a local, git-ignored run record. Host names, addresses, paths, user names, device
 names and image IDs of the installation are intentionally omitted.
 
@@ -563,9 +564,68 @@ the hub configuration was backed up first.
 
 No device writes were part of this operation.
 
+### Catalog/preset reads, stdio rebuild and hub container recreation (ISSUE-11-DEC-007)
+
+Run after the removal test on the same target and the same single test controller;
+the hub configuration was backed up first. A restorable baseline of the controller
+(state, info, configuration, preset file, effect, palette and effect metadata data) was
+recorded locally before any check. No device writes were needed or performed.
+
+H02 reads through the hub, per mode:
+
+| Check | Streamable HTTP | stdio via uvx |
+| --- | --- | --- |
+| `wled_list_devices` probe | reachable | reachable |
+| `wled_get_state` | read | read, 203 ms |
+| `wled_get_effects` (refresh) | 220 effects; see the fail-safe note below | succeeded with effect metadata available, 520 ms |
+| `wled_get_palettes` | 72 palettes | succeeded, 286 ms |
+| `wled_list_presets` | one state preset (ID 1) | succeeded, 139 ms |
+| `wled_get_preset` 1 | the stored preset object | succeeded, 133 ms |
+
+Comparison with the WLED UI data source: the controller's own catalog endpoints that the
+WLED web UI reads (`/json/eff`, `/json/pal`) were read directly and their counts and
+names match the HTTP-mode catalogs (220 effects, 72 palettes). This is a comparison
+with the UI's data source, not a visual inspection of the UI; the stdio-mode catalog
+counts were not recorded separately.
+
+Fail-safe observation: on the first HTTP-mode effect refresh the controller returned a
+truncated effect metadata body (`/json/fxdata`, about 5.5 kB of invalid JSON). The
+server returned the complete effect names, reported the metadata as unavailable
+(`INVALID_RESPONSE`) with a warning and did not fail the call; the retry returned the
+metadata. This matches the optional-metadata behavior covered by
+`test_optional_fxdata_failure_keeps_names_and_succeeds`.
+
+stdio re-registration, environment rebuild and removal:
+
+| Check | Result |
+| --- | --- |
+| Re-registration (arguments as [mcphub.example.json](../examples/mcphub.example.json), warm uv cache) | connected 3.7 s |
+| Environment rebuild following [DEPLOYMENT.md](DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal) | entry disabled (no stdio process left), only the uv cache directory (49 MB) deleted, entry enabled: connected 9.2 s including the dependency re-download, 12 tools, cache 49 MB again; inventory/data directory untouched |
+| Removal again (ISSUE-11-DEC-004) | only the stdio entry deleted; all other hub entries present; no stdio process left |
+
+Hub container recreation (stdio entry registered, HTTP service running):
+
+| Check | Result |
+| --- | --- |
+| Command | the hub's own Compose project, hub service only, `--force-recreate --no-deps --pull never` |
+| Hub image | same image before and after (no hub update) |
+| Timings | Compose 14.7 s; hub HTTP ready 25.1 s; hub outage for all hub entries about 30 s |
+| HTTP entry | reconnected 3.1 s after the client's `initialize`; the admin entry owner persisted |
+| stdio entry | reconnected about 26 s after `initialize` (startup contention with all other hub servers); no dependency download: the uv tree (49 MB) survived; inventory survived |
+| HTTP service | container not restarted (start time unchanged) |
+| Hub entries | all present after recreation |
+
+Observation, not wled-mcp behavior: other hub servers launched through `npx` downloaded
+their packages again after the recreation because their caches live in the container
+filesystem.
+
+Final check: the controller state and preset file read after the run were identical to
+the baseline.
+
 Mode remaining active: Streamable HTTP (ISSUE-11-DEC-004), redeployed after the removal
-test. Both entries were registered at the same time during the run until the stdio
-entry was removed.
+test. Both entries were registered at the same time during the first run until the
+stdio entry was removed, and again during the ISSUE-11-DEC-007 checks until its second
+removal; no device writes were issued while both were registered in the second run.
 
 Findings fed back into [DEPLOYMENT.md](DEPLOYMENT.md#mcphub-notes): the MCPHub entry
 owner requirement and reload step, RSS measurement without a memory cgroup, and RFC 1123
@@ -578,10 +638,9 @@ Moved to stage 2 per ISSUE-11-DEC-005: live update and rollback between two rele
 (S2-COMPAT-03) and [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01);
 the documented procedures remain #11 scope.
 
-Not exercised and still pending: hub container recreation, graceful drain of an
-in-flight call on the target, load measurements (parallel calls, peak connections,
-largest body), catalog and preset reads through the hub (H02 for presets), any other
-device, preset or segment writes, and H01/H04–H07 (#12).
+Not exercised and still pending: graceful drain of an in-flight call on the target,
+load measurements (parallel calls, peak connections, largest body), any other device,
+preset or segment writes, and H01/H04–H07 (#12).
 
 ## Evidence template
 
