@@ -710,10 +710,11 @@ matched expectations; the sources were not monitored continuously.
 | --- | --- |
 | Firmware | WLED 16.0.1 (outside the pinned v0.15.1 source review; the server has no version gate, so every result below is an observation for 16.0.1 only) |
 | Platform | ESP32-C3 |
-| LEDs | 133 RGB LEDs on one bus; RGB only (no white channel, no CCT) |
+| LEDs | 133 RGB LEDs on one bus; RGB only (no white channel, no CCT); 1D (no matrix in info) |
 | Segments | segment limit 32; one active segment in the baseline |
 | Power limiter | automatic brightness limiter configured |
 | Catalogs | 220 effects, 72 palettes |
+| Locks | OTA lock and Wi-Fi settings lock off in the before and after configuration captures of runs 1-3; no settings PIN present in the captured configuration; no WLED API read or write refused by the controller in runs 1-3 (the #66 activation refusal came from this server, the run-3 `TIMEOUT` occurred before dispatch) |
 
 ### H02 reads
 
