@@ -31,7 +31,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   no storage-only preset path proven; raw patch needs a demonstrated gap) is agent
   analysis, not a human statement.
 - Affected requirement IDs, files, issues and tests: DEV-03, SEG-05, SEG-06, PRE-03,
-  PLAY-01, ADV-01, ADV-02, T17; docs/REQUIREMENTS.md, docs/TOOL-CONTRACT.md,
+  PRE-04 (restore tool pointer), PLAY-01, ADV-01, ADV-02, T17; docs/REQUIREMENTS.md, docs/TOOL-CONTRACT.md,
   docs/IMPLEMENTATION-PLAN.md, docs/VALIDATION.md, docs/TRACEABILITY.md,
   docs/DEPLOYMENT.md, README.md; issues #16, #18, #19.
 - Supersedes / superseded by: none. Resolves the "deferred to #13" items of
