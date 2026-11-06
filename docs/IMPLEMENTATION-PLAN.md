@@ -22,7 +22,7 @@ Status, 2026-11-04: #2 is merged through PR #33. #3 supplies the installed stdio
 | 8 | [#10 — Acceptance tests and evidence traceability](https://github.com/descipar/wled-mcp/issues/10) | #7, #9, #14 | TEST-01 and all Must software behavior; T01–T16, T18–T21 |
 | 9 | [#11 — HTTP-service and uvx/stdio integration](https://github.com/descipar/wled-mcp/issues/11) | #10, #14 | OPS-01–05, MCP-01–04; T14/T16/T18–T21, authorized H02/H03 |
 | 10 | [#12 — Device inputs and hardware acceptance](https://github.com/descipar/wled-mcp/issues/12) | #11 for final execution | Relevant Must hardware evidence; H01–H07 as applicable |
-| Optional | [#13 — Should/Later feature decisions](https://github.com/descipar/wled-mcp/issues/13) | #2 | DEV-03, SEG-05–06, PRE-03, PLAY-01, ADV-01–02; T17 if raw tool included |
+| Optional | [#13 — Should/Later feature decisions](https://github.com/descipar/wled-mcp/issues/13) | #2 | DEV-03, SEG-05–06, PRE-03, PLAY-01, ADV-01–02; T17 if raw tool included. Decided by ISSUE-13-DEC-001: DEV-03 documented restart (in-process reload to #16); SEG-05 CCT/2D/remaining fields to #19; PRE-03, restore tool and playlist authoring to #18; ADV-01, ADV-02 timers and SEG-06 excluded; raw tool not included, T17 not applicable |
 
 Each issue contains its own scope, acceptance checklist, dependencies and relevant requirement IDs. #8 and #14 can proceed after #4 while read/control work progresses. Inventory collection for #12 can start earlier; only final integration/hardware execution depends on #11. The optional issue is not a requirement to build all later features before v1. Streamable HTTP is required scope, not an optional enhancement in #13.
 

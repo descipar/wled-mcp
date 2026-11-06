@@ -9,7 +9,9 @@ and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
 service; #9 adds the five persistent-preset tools (see
 [Persistent presets, implementation](#persistent-presets-implemented-in-9)).
 `wled_restore_preset` and `wled_patch_raw_state` remain design requirements, not
-executable behavior. Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
+executable behavior: the restore tool is deferred to
+[#18](https://github.com/descipar/wled-mcp/issues/18) and the raw state patch is excluded from stage 1
+(ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06);
 activating a preset saved by WLED 16 is refused there
 ([#66](https://github.com/descipar/wled-mcp/issues/66)). With the #66 fix, saving and
@@ -59,8 +61,8 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | `wled_activate_preset` | `device_id`, `preset_id`, `dry_run` | Activate supported existing state/playlist entry, no storage edit | Must |
 | `wled_save_preset` | `device_id`, `name`, optional `preset_id`, `overwrite=false`, `dry_run` | Save current state; lowest free ID if omitted; persistent verification | Must |
 | `wled_delete_preset` | `device_id`, `preset_id`, `dry_run` | Snapshot first; delete exactly that ID; verify absence | Must |
-| `wled_restore_preset` | `device_id`, `backup_id`, `preset_id`, `overwrite=false`, `dry_run` | Explicit single-entry storage restoration | Should; execution deferred pending safe adapter |
-| `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; default disabled, allowlist belongs to #13 |
+| `wled_restore_preset` | `device_id`, `backup_id`, `preset_id`, `overwrite=false`, `dry_run` | Explicit single-entry storage restoration | Should; execution deferred to #18 pending safe adapter (ISSUE-13-DEC-001) |
+| `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; excluded from stage 1, `raw_state_patch = true` rejected at startup, no owning issue (ISSUE-13-DEC-001) |
 
 Tool descriptions state physical output, playback and storage effects. State/layout
 changes may clear the active-preset marker or interrupt playback without editing
@@ -457,8 +459,8 @@ Activation verifies supported state/playlist acceptance through bounded readback
 playlist identity/status replaces invariant frame equality. Missing acceptance
 observability gives uncertainty, and saved contents stay unchanged.
 
-PRE-03 supplied-state save remains a capability-gated Should deferred to #13 and is not
-part of #9 (ISSUE-9-DEC-001):
+PRE-03 supplied-state save remains a capability-gated Should deferred to #18
+(ISSUE-13-DEC-001) and is not part of #9 (ISSUE-9-DEC-001):
 no proven no-live-output route in the reviewed source, no implicit apply/save/
 restore workaround. Restore execution is also deferred until a safe single-entry
 storage adapter exists; do not upload a whole filesystem or execute stored commands

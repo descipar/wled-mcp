@@ -84,7 +84,7 @@ Mock/tmp_path only; no LAN, device or hardware access. H06 is not run and stays
 separately authorized and pending; nothing here is hardware acceptance. Tests in
 `tests/test_presets.py` with the stateful fake `tests/preset_support.py` (which models
 only the facts in SOURCES.md "Issue-9 preset evidence"); executed results are
-recorded in the PR, not here. PRE-03 stays deferred to #13 and is not covered.
+recorded in the PR, not here. PRE-03 stays deferred to #18 (ISSUE-13-DEC-001) and is not covered.
 
 | Criteria | Test coverage |
 | --- | --- |
@@ -97,7 +97,7 @@ recorded in the PR, not here. PRE-03 stays deferred to #13 and is not covered.
 
 C2-07 (ID range, occupancy, allocation, names) and C2-09 (backup before destructive
 writes) have mock evidence; C2-08 (persistent full-field verification) has mock
-evidence for save-current, deferred supplied-state stays with #13. Real flash-write
+evidence for save-current, deferred supplied-state stays with #18 (ISSUE-13-DEC-001). Real flash-write
 timing, post-delete file layout, whether saving moves the active-preset marker, and
 real playlist behavior are not established by mocks.
 
@@ -451,7 +451,7 @@ CPython 3.13.2, uv 0.11.14, MCP SDK 2.3.0, commands from the repository root:
 Linux CI (3.13) is recorded from the pull request run, not here. Pending and not claimed:
 H01–H07 (#12), H02/H03, deployment, hub integration, resource measurements and
 update/rollback (#11), Windows signal delivery (the POSIX signal tests stay skipped on
-Windows), T17/raw state (#13) and restore execution (ISSUE-8-DEC-001).
+Windows), T17/raw state (excluded, ISSUE-13-DEC-001) and restore execution (ISSUE-8-DEC-001; deferred to #18 by ISSUE-13-DEC-001).
 
 ## Issue #11 deployment-artifact evidence
 

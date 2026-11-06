@@ -332,6 +332,43 @@ before retrying it, and stop or disable the entry only when no write is in fligh
 ISSUE-12-DEC-006 accepts this as a documented limitation of stdio mode; Streamable HTTP
 is the preferred mode where in-flight calls must drain.
 
+## Changing the inventory
+
+The inventory file is read once at startup in both modes; there is no in-process reload
+and no separate validate command (both deferred to
+[#16](https://github.com/descipar/wled-mcp/issues/16), ISSUE-13-DEC-001). A change takes
+effect through a restart (DEV-03):
+
+1. Keep a copy of the working file next to it, for example
+   `devices.toml` -> `devices.toml.previous`, in the same config directory
+   (`./data/wled-mcp/config/` next to `compose.yaml` for HTTP,
+   `/app/data/wled-mcp/config/` in the hub container for stdio).
+2. Edit `devices.toml`. Use synthetic or reserved names when sharing it, for example
+   `base_url = "http://wled-desk.example"`.
+3. Restart only this server, when no write is in flight:
+   - Streamable HTTP:
+     `docker compose -p wled-mcp-http -f compose.yaml restart wled-mcp`, then repeat
+     `ps`, `logs` and the authenticated `ping`.
+   - stdio via uvx: restart only this hub entry; the hub starts a new subprocess that
+     reads the file. The hub does not drain in-flight calls on stop (ISSUE-12-DEC-006).
+4. Confirm with `wled_list_devices` that the expected device IDs are listed.
+
+An invalid file never partially replaces the inventory: startup stops with exit code 2
+before listening or writing to the data directory, and stderr carries
+`Startup configuration error: ...`. A rejected device entry is named by position and
+field only, for example `devices[1].base_url: invalid` or `devices[0].id: missing`;
+values, URLs and credentials are not echoed (tests
+`tests/test_bootstrap.py::test_invalid_configuration_is_safe`,
+`test_console_names_rejected_device_entry_without_values` and
+`test_console_rejects_non_canonical_ipv4_host_without_echo`). The previous process is
+already stopped at that point, so the server is unavailable until rolled back or fixed.
+With `restart: unless-stopped` the HTTP container keeps restarting and failing until the
+file is valid.
+
+Rollback: copy `devices.toml.previous` back to `devices.toml` and restart the same way,
+then confirm with `wled_list_devices`. Snapshots stay under `backups/<device_id>/`; a
+changed device `id` does not move or rename the existing snapshots of the old ID.
+
 ## Device restoration
 
 Code update or rollback does not undo lighting or preset changes on a device. Restoring
