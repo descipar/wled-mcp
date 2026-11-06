@@ -247,6 +247,13 @@ can explicitly amend them.
   (blending style) is light state; it joins the `state` allowlist and the save compare
   (only when live state has it); a saved entry that is not `state` gets a key-name-only
   warning. Amends the issue-9 allowlist without superseding ISSUE-9-DEC-001.
+- [ISSUE-61-DEC-001](decisions/issue-61.md) (human, 2026-11-06, issue #61 only): option
+  A — underscores are accepted in `base_url` host labels; all other URL checks stay
+  fail-closed; a rejected inventory names the offending device entry without secrets.
+- [ISSUE-61-DEC-002](decisions/issue-61.md) (agent technical proposals accepted by the
+  coordinator, 2026-11-06, issue #61 only; not a human decision): host labels use
+  `[A-Za-z0-9_-]` and must start/end alphanumeric; the startup diagnostic names
+  `devices[i]` and the field, never values or the device id.
 
 ## Still unresolved
 
