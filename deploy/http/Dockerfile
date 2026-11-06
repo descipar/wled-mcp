@@ -24,10 +24,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY wled_mcp-0.1.0-py3-none-any.whl requirements-runtime.txt SHA256SUMS /tmp/wled-mcp-release/
 
-# Verify the staged artifacts, install only the pinned wheel with the exported runtime
-# constraints, then remove the build inputs. No index package named wled-mcp is used.
+# Verify the staged artifacts: SHA256SUMS must list both the wheel and the constraints
+# exactly once each and both must match (a missing or duplicated line fails the build).
+# Then install only the pinned wheel with the exported runtime constraints and remove
+# the build inputs. No index package named wled-mcp is used.
 RUN cd /tmp/wled-mcp-release \
-    && sha256sum --strict --ignore-missing -c SHA256SUMS \
+    && grep -E '^[0-9a-f]{64}  (wled_mcp-0\.1\.0-py3-none-any\.whl|requirements-runtime\.txt)$' SHA256SUMS > required.sha256 \
+    && test "$(cut -c67- required.sha256 | sort)" = "$(printf '%s\n' requirements-runtime.txt wled_mcp-0.1.0-py3-none-any.whl)" \
+    && sha256sum --strict -c required.sha256 \
     && python -m pip install --no-cache-dir --root-user-action=ignore \
         --constraint requirements-runtime.txt \
         ./wled_mcp-0.1.0-py3-none-any.whl \

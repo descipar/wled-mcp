@@ -30,7 +30,7 @@ the hub container itself, never the separate wled-mcp service.
 
 | Seen from | HTTP service endpoint | Inventory / data directory |
 | --- | --- | --- |
-| Host shell | Not reachable: no host port is published. Use `docker compose ... exec` for checks. | `./data/wled-mcp/` next to the deployed `compose.yaml` |
+| Host shell | Not reachable: no host port is published. Use `docker compose -p wled-mcp-http -f compose.yaml exec` for checks. | `./data/wled-mcp/` next to the deployed `compose.yaml` |
 | MCPHub container (same Docker network) | `http://wled-mcp:8000/mcp` (Compose service name and container port) | stdio mode: `/app/data/wled-mcp/` as mounted into the hub container |
 | wled-mcp service container | Binds `0.0.0.0:8000`; `127.0.0.1:8000` only for the healthcheck and exec checks, still sending `Host: wled-mcp:8000` | `/app/data/wled-mcp/` (bind mount of the host directory) |
 | stdio subprocess | No address, no listener | Paths inside the hub container |
@@ -90,8 +90,10 @@ sha256sum -c SHA256SUMS
 cat RELEASE
 ```
 
-Record the source commit, wheel and constraints SHA-256 values and, for HTTP, the image
-ID in the [operations record](../deploy/operations-record.template.md). Keep the
+The checksums travel with the artifacts, so they detect transit corruption, not a
+replaced directory: compare the wheel and constraints values with those printed by
+`stage_release.py` on the build machine. Record the source commit, wheel and
+constraints SHA-256 values and, for HTTP, the image ID in the [operations record](../deploy/operations-record.template.md). Keep the
 previous release directory until the new one is confirmed; it is the rollback source.
 
 Alternatives, not the default: a private Git source pinned to a full 40-hex commit
@@ -113,8 +115,9 @@ docker image inspect --format '{{.Id}}' wled-mcp:0.1.0
 ```
 
 The Dockerfile pins `python:3.13.18-slim-trixie` by tag and multi-architecture index
-digest, verifies the staged checksums, installs only the copied wheel with
-`--constraint requirements-runtime.txt` and creates `/app/data/wled-mcp` for the non-root
+digest, requires `SHA256SUMS` to list the wheel and `requirements-runtime.txt` exactly
+once each and both to match (otherwise the build fails), installs only the copied
+wheel with `--constraint requirements-runtime.txt` and creates `/app/data/wled-mcp` for the non-root
 user. The allowlist `.dockerignore` keeps everything except the wheel, constraints and
 `SHA256SUMS` out of the build context, so inventories, data, backups, `.env` files and
 secrets cannot enter an image layer. To move to a newer Python 3.13 patch image, change

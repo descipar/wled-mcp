@@ -452,8 +452,10 @@ Prepared artifacts only (ISSUE-11-DEC-001): Dockerfile with allowlist build cont
 Compose example, both hub examples, `deploy/stage_release.py`, procedures in
 [DEPLOYMENT.md](DEPLOYMENT.md) and an operations record template. Nothing was deployed,
 registered in a hub, pushed or published; no LAN device was contacted. 2026-11-06,
-macOS (arm64) / CPython 3.13.2, uv 0.11.7, MCP SDK 2.3.0, implementation commit
-`cd0795b`, commands from the repository root:
+macOS (arm64) / CPython 3.13.2, uv 0.11.7, MCP SDK 2.3.0, commands from the repository
+root. Results were first recorded at `cd0795b` and re-run unchanged in outcome on the
+review correction round 1 (strict image checksum step, inline-command scoping check;
+parent `c75b468`); the exact candidate commit is stated in the pull request:
 
 | Command | Result recorded for this candidate |
 | --- | --- |
@@ -462,7 +464,7 @@ macOS (arm64) / CPython 3.13.2, uv 0.11.7, MCP SDK 2.3.0, implementation commit
 | `uv run --frozen mypy` | no issues in 21 source files (incl. `deploy/stage_release.py`) |
 | `uv run --frozen python scripts/check_agent_setup.py`; `python scripts/sync_agents.py --check` | valid; adapters synchronized |
 | `uv run --frozen python scripts/check_lock.py` | lock/export consistent; `requirements-runtime.txt` unchanged |
-| `uv run --frozen pytest` | 735 passed, 1 skipped (opt-in Docker check) |
+| `uv run --frozen pytest` | 745 passed, 1 skipped (opt-in Docker check), 8 subtests passed |
 | `uv run --frozen python scripts/check_distribution.py` | PASS incl. the stdio hub example through uvx with only paths replaced; 29 exact runtime versions on this platform |
 | `uv run --frozen python scripts/check_traceability.py` | 26 Must requirements and T01–T21 mapped |
 | `WLED_MCP_DOCKER_CHECKS=1 uv run --frozen pytest tests/test_deployment_artifacts.py -k docker_compose` | passed (local Docker CLI) |
@@ -472,9 +474,9 @@ macOS (arm64) / CPython 3.13.2, uv 0.11.7, MCP SDK 2.3.0, implementation commit
 | C11-01/02/05/14 | `test_hub_http_url_names_the_compose_service_and_its_allowed_host`, `test_compose_is_a_separate_single_process_project_without_host_ports` |
 | C11-03/04 | `test_compose_command_accepts_the_hub_example_connection` (compose argv with paths, bind and port replaced; hub Host and header shape: SDK handshake in both modes, 403 for the loopback authority, 401 without credential, SIGTERM exit 0, empty stdout, credential not logged), `test_compose_substitution_keeps_every_other_argument`, `test_credential_only_from_a_git_ignored_runtime_secret_file`, `test_no_credential_literal_in_deployment_files` and its detector control |
 | C11-06/07 | `test_stdio_hub_example_runs_the_staged_release_with_constraints`, `test_documented_uvx_invocation_matches_the_stdio_hub_example`, `scripts/check_distribution.py` `hub_example_uvx`; listener-free stdio stays covered by `test_stdio_ignores_ambient_http_token_and_binds_nothing` |
-| C11-08 | `test_dockerfile_pins_base_image_wheel_and_constraints`, `test_build_context_is_an_allowlist_of_the_release_inputs` and its negative control, `test_no_unpinned_artifact_reference_in_deployment_files`, `test_stage_release_*` |
+| C11-08 | `test_dockerfile_pins_base_image_wheel_and_constraints`, `test_image_checksum_step_requires_both_staged_inputs` (runs the image's checksum step: missing, duplicated or modified wheel/constraints entries fail), `test_build_context_is_an_allowlist_of_the_release_inputs` and its negative control, `test_no_unpinned_artifact_reference_in_deployment_files`, `test_stage_release_*` |
 | C11-09/10 | `test_data_mount_matches_the_data_dir_and_holds_the_config`, `test_compose_is_a_separate_single_process_project_without_host_ports`, `test_healthcheck_is_a_credential_free_tcp_check_of_the_service_port` |
-| C11-11/12 | DEPLOYMENT.md procedures; `test_documented_container_commands_touch_only_the_wled_mcp_project`, `test_documented_console_flags_exist_in_the_installed_console` |
+| C11-11/12 | DEPLOYMENT.md procedures; `test_documented_container_commands_touch_only_the_wled_mcp_project` (code blocks and inline code spans) with `test_container_command_check_rejects_unscoped_commands`, `test_documented_console_flags_exist_in_the_installed_console` |
 | C11-13 | this section; TRACEABILITY deployment cells unchanged (`pending: ...`) |
 
 Local developer machine, not target (Docker Desktop 29.9.2, linux/arm64 VM; no hub, no
@@ -489,7 +491,11 @@ authenticated in-container `ping` with Host `wled-mcp:8000` with 200 (also for
 `WLED-MCP:8000`), 401 without credential and 403 for Host `127.0.0.1:8000`; idle memory
 53 MiB (`docker stats`, one process) 20 s after the checks; `stop` took 0.52 s, exit
 code 0; the credential did not appear in the logs; the data directory held only
-`config/`. These values are not target measurements.
+`config/`. Correction round 1, same machine, release staged from the corrected tree:
+`docker build --pull` succeeded (user `10001:10001`, `wled-mcp 0.1.0`); builds failed at
+the checksum step for a `SHA256SUMS` without the wheel line (with and without a
+modified wheel), without the constraints line, and for a modified wheel. Check images
+were removed. These values are not target measurements.
 
 Pending and not claimed: actual deployment of either mode, MCPHub registration and
 connection, the hub's real network/service name/Host match, stdio launched by the real

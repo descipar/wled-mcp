@@ -263,7 +263,11 @@ def test_dockerfile_pins_base_image_wheel_and_constraints():
     sources = copies[0][:-1]
     assert sources == [wheel_name(), CONSTRAINTS, "SHA256SUMS"]
     run = " ".join(rest for keyword, rest in instructions if keyword == "RUN")
-    assert "sha256sum --strict --ignore-missing -c SHA256SUMS" in run
+    verify = " && ".join(image_checksum_commands())
+    assert "--ignore-missing" not in verify, "unlisted inputs must not pass verification"
+    for name in (wheel_name(), CONSTRAINTS):  # both pinned by name in the grep pattern
+        assert name.replace(".", "\\.") in verify, name
+    assert verify.endswith("sha256sum --strict -c required.sha256")
     install = re.search(r"pip install (?P<args>.*?) &&", run)
     assert install is not None
     tokens = install.group("args").split()
@@ -522,6 +526,71 @@ def test_stage_release_rejects_a_wheel_of_another_version(tmp_path, wheel_versio
     assert not (tmp_path / "releases" / version()).exists()
 
 
+def image_checksum_commands() -> list[str]:
+    """Shell steps of the Dockerfile RUN that verify the copied release inputs."""
+    joined = re.sub(r"\\\n", " ", DOCKERFILE.read_text("utf-8"))
+    run = next(line for line in joined.splitlines() if line.startswith("RUN cd /tmp/wled-mcp-"))
+    steps = [step.strip() for step in run.removeprefix("RUN ").split(" && ")]
+    end = next(i for i, step in enumerate(steps) if step.startswith("python -m pip"))
+    return steps[1:end]
+
+
+def sums_without(sums: str, name: str) -> str:
+    return "".join(line for line in sums.splitlines(True) if not line.endswith(f"  {name}\n"))
+
+
+@pytest.mark.skipif(
+    os.name == "nt" or shutil.which("sh") is None or shutil.which("sha256sum") is None,
+    reason="runs the image's POSIX checksum step; needs sh and sha256sum",
+)
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        "none",
+        "wheel line missing",
+        "wheel line missing, wheel modified",
+        "constraints line missing, constraints modified",
+        "wheel line duplicated",
+        "wheel modified",
+        "only build-context lines",
+    ],
+)
+def test_image_checksum_step_requires_both_staged_inputs(tmp_path, tamper):
+    staged = stage(ROOT, synthetic_wheel(tmp_path, version()), tmp_path / "out", "0" * 40, "clean")
+    # The image only receives the COPY sources, exactly as in /tmp/wled-mcp-release.
+    work = tmp_path / "wled-mcp-release"
+    work.mkdir()
+    for name in (wheel_name(), CONSTRAINTS, "SHA256SUMS"):
+        shutil.copyfile(staged / name, work / name)
+    sums = (work / "SHA256SUMS").read_text("utf-8")
+    wheel_line = next(
+        line for line in sums.splitlines(True) if line.endswith(f"  {wheel_name()}\n")
+    )
+    if "wheel line missing" in tamper:
+        sums = sums_without(sums, wheel_name())
+    if "constraints line missing" in tamper:
+        sums = sums_without(sums, CONSTRAINTS)
+    if tamper == "wheel line duplicated":
+        sums += wheel_line
+    if tamper == "only build-context lines":
+        sums = sums_without(sums_without(sums, wheel_name()), CONSTRAINTS)
+    (work / "SHA256SUMS").write_text(sums, encoding="utf-8", newline="\n")
+    if "wheel modified" in tamper:
+        with (work / wheel_name()).open("ab") as stream:
+            stream.write(b"tampered")
+    if "constraints modified" in tamper:
+        with (work / CONSTRAINTS).open("a", encoding="utf-8") as stream:
+            stream.write("extra==1.0\n")
+    result = subprocess.run(
+        ["sh", "-c", " && ".join(image_checksum_commands())],
+        cwd=work,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert (result.returncode == 0) is (tamper == "none"), result.stdout + result.stderr
+
+
 # --------------------------------------------------------------- documented procedures
 
 
@@ -530,19 +599,63 @@ def code_lines(text: str) -> list[str]:
     return [line for block in blocks for line in re.sub(r"\\\n", " ", block).splitlines()]
 
 
+def inline_code_spans(text: str) -> list[str]:
+    prose = re.sub(r"```.*?```", "", text, flags=re.S)
+    return [" ".join(span.split()) for span in re.findall(r"`([^`]+)`", prose)]
+
+
+def container_command_problems(text: str, project: str) -> list[str]:
+    """Scoping problems in fenced code lines and inline code spans of a document."""
+    lines = code_lines(text) + inline_code_spans(text)
+    problems = []
+    for line in lines:
+        if "docker compose" in line:
+            if f"-p {project} " not in line:
+                problems.append(f"unscoped compose command: {line}")
+            if re.search(r"\s(-v|--volumes|--remove-orphans)\b", line):
+                problems.append(f"volume/orphan removal: {line}")
+        if "prune" in line:
+            problems.append(f"prune: {line}")
+        for image in re.findall(r"docker (?:rmi|image rm)\s+(\S+)", line):
+            if not image.startswith("wled-mcp:"):
+                problems.append(f"foreign image removal: {line}")
+        if re.search(r"rm\s+-[a-z]*r[a-z]*\s+\S*backups", line):
+            problems.append(f"backup removal: {line}")
+    return problems
+
+
 def test_documented_container_commands_touch_only_the_wled_mcp_project():
     project = compose()["name"]
-    lines = code_lines(DEPLOYMENT.read_text("utf-8"))
-    compose_lines = [line for line in lines if "docker compose" in line]
-    assert len(compose_lines) >= 5, "start, update, rollback, stop and removal are documented"
-    for line in compose_lines:
-        assert f"-p {project} " in line, f"unscoped compose command: {line}"
-        assert not re.search(r"\s(-v|--volumes|--remove-orphans)\b", line), line
-    for line in lines:
-        assert "prune" not in line, line
-        for image in re.findall(r"docker (?:rmi|image rm)\s+(\S+)", line):
-            assert image.startswith("wled-mcp:"), line
-        assert not re.search(r"rm\s+-[a-z]*r[a-z]*\s+\S*backups", line), line
+    text = DEPLOYMENT.read_text("utf-8")
+    fenced = [line for line in code_lines(text) if "docker compose" in line]
+    inline = [span for span in inline_code_spans(text) if "docker compose" in span]
+    assert len(fenced) >= 5, "start and inspection commands are documented in code blocks"
+    assert len(inline) >= 2, "update and stop commands are documented inline"
+    assert container_command_problems(text, project) == []
+
+
+@pytest.mark.parametrize(
+    ("scoped", "unscoped"),
+    [
+        (  # inline update command in prose
+            "`docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps wled-mcp`",
+            "`docker compose up -d`",
+        ),
+        (  # inline stop command in prose
+            "`docker compose -p wled-mcp-http -f compose.yaml stop wled-mcp`",
+            "`docker compose -p mcphub stop`",
+        ),
+        (  # fenced recreation command
+            "  docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps --force-recreate",
+            "  docker compose up -d --force-recreate",
+        ),
+    ],
+)
+def test_container_command_check_rejects_unscoped_commands(scoped, unscoped):
+    text = DEPLOYMENT.read_text("utf-8")
+    assert scoped in text
+    problems = container_command_problems(text.replace(scoped, unscoped, 1), compose()["name"])
+    assert any(p.startswith("unscoped compose command") for p in problems), problems
 
 
 def test_documented_uvx_invocation_matches_the_stdio_hub_example():
