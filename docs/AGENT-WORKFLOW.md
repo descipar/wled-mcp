@@ -73,8 +73,9 @@ Prepare only the requirements for issue #2 using the defined workflow.
 Only the issue identifier is needed; the coordinator derives stage context from
 current labels, parent/ancestor trackers and the repository roadmap. Record that
 evidence in the packet. Ask only for conflicting relevant metadata or genuinely
-unclear scope, not for an unambiguous stage. Tooling issues outside the product
-roadmap can be recorded as cross-stage without blocking otherwise clear work.
+unclear scope, not for an unambiguous stage. Every issue carries exactly one stage
+(DEC-010): a `Stage N: ` title prefix, one `stage:N` label and a sub-issue link to the
+stage tracker; workflow/tooling issues take the stage in which they are worked on.
 
 Substitute the issue deliberately; these examples are not implementation
 authorization from merely reading this file. Already accepted scope decisions

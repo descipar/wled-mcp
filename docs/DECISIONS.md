@@ -53,6 +53,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
+| DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix (`Stage N epic: ` for a stage tracker) plus exactly one `stage:N` label; workflow/tooling issues are assigned to the stage in which they are done. | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -145,6 +146,27 @@ can explicitly amend them.
 - Supersedes: amends earlier "private project" framing in REQUIREMENTS.md and
   ARCHITECTURE.md going forward; historical records keep their meaning.
 - Affected: README.md, docs, examples, agent roles, pyproject.toml, CI; issue #62.
+
+### DEC-010 — Stage in every issue title
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-06 (no
+  permalink): every issue must have a stage, and the stage must be visible in the issue
+  title. In the same session the owner assigned the workflow-tooling issues #34 and #37,
+  previously described as cross-stage, to stage 1 because they were delivered then.
+- Scope/decision: each issue carries exactly one stage, shown as a `Stage N: ` title
+  prefix (`Stage N epic: ` for the stage tracker) and exactly one `stage:N` label, and is
+  linked as a sub-issue of that stage's tracker (#1, #15 or #26). Workflow or tooling
+  issues get the stage in which they are worked on instead of "cross-stage". Agents that
+  create issues apply this; the coordinator fixes a missing or mismatched stage before
+  starting work and asks the owner only when the stage is genuinely unclear.
+- Conditions: changing an issue's stage remains an owner decision; DEC-002 still governs
+  deriving stage context, but no longer allows leaving an issue without a stage.
+- Rationale supplied: none beyond the instruction.
+- Supersedes: the "may be recorded as cross-stage" allowance in agents/coordinator.md and
+  docs/AGENT-WORKFLOW.md.
+- Affected: AGENTS.md, agents/coordinator.md, agents/requirements.md, generated adapters,
+  docs/AGENT-WORKFLOW.md; all GitHub issues (retitled and labelled 2026-11-06).
 
 ## Issue-specific decisions (pointers)
 

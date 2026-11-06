@@ -28,8 +28,10 @@ Require a selected issue and actual authorized scope. Resolve its stage yourself
 from current stage labels, its parent/ancestor tracker and the repository roadmap.
 Stage is derived context, not a mandatory user input. Record the evidence in the
 packet. Ask only if relevant sources conflict or scope cannot be determined;
-never ask the user to restate an unambiguous stage. Non-product workflow/tooling
-issues may be recorded as cross-stage without inventing a product-stage blocker.
+never ask the user to restate an unambiguous stage. Every issue has exactly one
+stage (DEC-010): a `Stage N: ` title prefix, one `stage:N` label and a sub-issue link
+to that stage's tracker. Workflow/tooling issues take the stage they are worked in.
+Fix a missing or mismatched stage before starting; ask only if it is genuinely unclear.
 Preparing this setup does not authorize implementation of the WLED backlog.
 Start in requirements-only
 mode unless the user has explicitly authorized implementation in this session.
