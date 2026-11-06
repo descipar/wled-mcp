@@ -1448,6 +1448,8 @@ def run3_section_problems(section: str) -> list[str]:
     for item in ("intensity", "H07 offline device", "Controller reboot", "cause of the `TIMEOUT`"):
         if item not in not_run:
             problems.append(f"not-run list lacks {item!r}")
+    if "not needed for #12 per ISSUE-12-DEC-008" not in not_run:
+        problems.append("the intensity item does not cite ISSUE-12-DEC-008")
     if re.search(r"\b(?:all|every) (?:firmware|controllers?)\b[^.]*\bsupported\b", flat, re.I):
         problems.append("the record makes a blanket compatibility claim")
     return problems
@@ -1534,9 +1536,17 @@ def test_run3_section_records_visible_checks_limiter_timeout_and_resolutions():
             "the H07 move does not reference issues/25",
         ),
         (
-            "- A visual intensity change (not part of this run).\n",
+            "- A visual intensity change (not part of this run; not needed for #12 per\n"
+            "  ISSUE-12-DEC-008, which accepts the verified intensity readback of run 1 H04 "
+            "plus the\n"
+            "  visible speed change E2).\n",
             "",
             "not-run list lacks 'intensity'",
+        ),
+        (
+            "(not part of this run; not needed for #12 per\n  ISSUE-12-DEC-008,",
+            "(not part of this run; pending,",
+            "the intensity item does not cite ISSUE-12-DEC-008",
         ),
         (
             "- The cause of the `TIMEOUT` before dispatch",
@@ -1587,8 +1597,13 @@ def dec007_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{requirement} still tracks H07 by #12")
         if "issues/25" not in cell or "ISSUE-12-DEC-007" not in cell:
             problems.append(f"{requirement} does not move H07 to #25 per ISSUE-12-DEC-007")
-    if "visual intensity change" not in rows["CTRL-01"].split(";")[0]:
-        problems.append("CTRL-01 no longer keeps the visual intensity change pending")
+    intensity = next(
+        (part for part in rows["CTRL-01"].split(";") if "visual intensity change" in part), ""
+    )
+    if "ISSUE-12-DEC-008" not in intensity:
+        problems.append("CTRL-01 does not resolve the visual intensity change per ISSUE-12-DEC-008")
+    if "visual intensity change" in rows["CTRL-01"].split(";")[0]:
+        problems.append("CTRL-01 still lists the visual intensity change as pending")
     for requirement in ("READ-02", "CTRL-01", "MCP-04", "OPS-01"):
         if "ISSUE-12-DEC-007" not in rows[requirement]:
             problems.append(f"{requirement} does not cite ISSUE-12-DEC-007")
@@ -1618,6 +1633,12 @@ def dec007_problems(texts: dict[str, str]) -> list[str]:
         problems.append("issue-12.md lacks the human ISSUE-12-DEC-007 entry")
     if "[ISSUE-12-DEC-007](decisions/issue-12.md)" not in texts["DECISIONS.md"]:
         problems.append("DECISIONS.md lacks the ISSUE-12-DEC-007 pointer")
+    if "[ISSUE-12-DEC-008](decisions/issue-12.md)" not in texts["DECISIONS.md"]:
+        problems.append("DECISIONS.md lacks the ISSUE-12-DEC-008 pointer")
+    heading8 = re.search(r"^## ISSUE-12-DEC-008 .*$", texts["issue-12.md"], flags=re.M)
+    entry8 = markdown_section(texts["issue-12.md"], heading8.group()) if heading8 else ""
+    if "Authority: human decision." not in entry8:
+        problems.append("issue-12.md lacks the human ISSUE-12-DEC-008 entry")
     return problems
 
 
@@ -1677,9 +1698,21 @@ def test_dec007_resolutions_are_reflected_in_traceability_readme_and_guidance():
         ),
         (
             "TRACEABILITY.md",
-            ", and a visual intensity change (not observed separately);",
-            ";",
-            "CTRL-01 no longer keeps the visual intensity change pending",
+            "a visual intensity change is not required for #12 per ISSUE-12-DEC-008",
+            "a visual intensity change is not required for #12",
+            "CTRL-01 does not resolve the visual intensity change per ISSUE-12-DEC-008",
+        ),
+        (
+            "TRACEABILITY.md",
+            "(one RGB-only controller only); a visual intensity change",
+            "(one RGB-only controller only), a visual intensity change",
+            "CTRL-01 still lists the visual intensity change as pending",
+        ),
+        (
+            "DECISIONS.md",
+            "[ISSUE-12-DEC-008](decisions/issue-12.md)",
+            "ISSUE-12-DEC-008",
+            "DECISIONS.md lacks the ISSUE-12-DEC-008 pointer",
         ),
         (
             "README.md",

@@ -239,6 +239,9 @@ can explicitly amend them.
   effect animation and speed with capture/restore (run 3, expired after it); stdio H04,
   host-level stdio drain and rate-limited stdio load through the hub are sufficient
   for #12; live H07 moves to stage 2 (#25), mocked coverage remains.
+- [ISSUE-12-DEC-008](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): H04
+  needs no separate visual check of an intensity change; verified readback of intensity
+  writes plus the owner-confirmed visible speed change are sufficient.
 - [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
   the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
   (blending style) is light state; it joins the `state` allowlist and the save compare

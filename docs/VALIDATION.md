@@ -1133,7 +1133,9 @@ Results:
 - E1 and E2: visible effect animation and a visible speed change of one effect
   confirmed by the owner.
 - E3: a brightness transition confirmed by the owner (attempt 3, solid red dimming over
-  5 s). A visual intensity change was not part of this run.
+  5 s). A visual intensity change was not part of this run and is not needed for #12
+  per ISSUE-12-DEC-008 (verified intensity readback in run 1 H04 plus the visible speed
+  change E2); it is not claimed as visually observed.
 - Why attempts 1 and 2 showed no dimming (analysis, not a measurement): the most
   likely cause is the controller's current limiter (ABL) capping the output, which
   compresses the visible range of the dim. Run 3 read the power estimate only twice:
@@ -1180,7 +1182,9 @@ Run 3 made no preset writes.
 
 ### Not run
 
-- A visual intensity change (not part of this run).
+- A visual intensity change (not part of this run; not needed for #12 per
+  ISSUE-12-DEC-008, which accepts the verified intensity readback of run 1 H04 plus the
+  visible speed change E2).
 - stdio mode in this run (HTTP only, per ISSUE-12-DEC-007 item 2).
 - H07 offline device on hardware (stage 2,
   [#25](https://github.com/descipar/wled-mcp/issues/25)).

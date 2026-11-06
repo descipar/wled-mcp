@@ -280,3 +280,32 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Revalidation needed / next action: post-merge completion review of #12 against the
   run-3 record and this decision; any further controller write, deployment or live H07
   run needs a new human instruction.
+
+## ISSUE-12-DEC-008 — No separate visual check of an intensity change for H04
+
+- ID: ISSUE-12-DEC-008
+- Recorded date: 2026-11-06
+- Status: active for issue #12 only.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("rückmeldung und
+  speedtest genügen"), relayed by the coordinator and recorded as a coordinator comment
+  on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
+  message available.
+- Scope: the H04 item "one effect's speed/intensity ... visible behavior" for #12 (the
+  visual intensity change left pending after run 3).
+- Decision: for H04 the visual intensity change does not need a separate visual check.
+  The verified readback of intensity writes (run 1 H04: a segment patch with effect,
+  speed and intensity, applied and matched on readback) plus the owner-confirmed visible
+  speed change of run 3 (E2) are sufficient.
+- Applicability / conditions / expiry: issue #12 only; not a general rule that readback
+  replaces visual checks for other issues, controllers or later releases. No new
+  hardware run is authorized or needed.
+- Rationale supplied: none beyond the reply.
+- Affected requirement IDs, files, issues and tests: H04; CTRL-01;
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md); `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none; complements ISSUE-12-DEC-007 item 2, which named
+  only a speed change.
+- Propagated to roles / packet references: coordinator comment on #12; implementer and
+  reviewer through the coordinator.
+- Revalidation needed / next action: post-merge completion review of #12.
