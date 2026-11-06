@@ -1368,6 +1368,7 @@ RUN3_FACTS = (
     "no deployment, service, hub or inventory change",
     "Authorization basis for E3",
     "explicitly asked for the repeats of E3",
+    "The only exception is the first dimming call of attempt 2",
 )
 RUN3_VISUAL = {
     "E1": ("effect ID 9", "slowly moving rainbow"),
@@ -1378,9 +1379,11 @@ RUN3_VISUAL = {
 }
 RUN3_RESULTS = {
     "current-limiter explanation": (
-        "current limiter (ABL) was capping the output",
-        "at the 850 mA limit",
-        "645 mA, below the cap",
+        "analysis, not a measurement",
+        "most likely cause is the controller's current limiter (ABL)",
+        "850 mA (the configured limit) for solid red at brightness 80",
+        "645 mA, below the cap, for solid red at brightness 40",
+        "No power reading was taken for the rainbow in run 3",
         "have to start below the cap",
     ),
     "TIMEOUT note": (
@@ -1472,15 +1475,26 @@ def test_run3_section_records_visible_checks_limiter_timeout_and_resolutions():
             "check E3 attempt 3 lacks 'gently became darker'",
         ),
         (
-            "current limiter (ABL) was\n  capping the output",
-            "cause was not found",
-            "run-3 current-limiter explanation lacks "
-            "'current limiter (ABL) was capping the output'",
+            "(analysis, not a measurement)",
+            "(measured)",
+            "run-3 current-limiter explanation lacks 'analysis, not a measurement'",
         ),
         (
-            "it was 645 mA, below the cap",
-            "it was not read",
-            "run-3 current-limiter explanation lacks '645 mA, below the cap'",
+            "No power reading was taken for the rainbow in\n  run 3",
+            "The power estimate was at the cap for the rainbow in\n  run 3",
+            "run-3 current-limiter explanation lacks "
+            "'No power reading was taken for the rainbow in run 3'",
+        ),
+        (
+            "and 645 mA, below the\n  cap, for solid red",
+            "and 700 mA, below the\n  cap, for solid red",
+            "run-3 current-limiter explanation lacks "
+            "'645 mA, below the cap, for solid red at brightness 40'",
+        ),
+        (
+            "The only exception is the first dimming\ncall of attempt 2",
+            "All writes were\ncalls of attempt 2",
+            "run-3 record lacks 'The only exception is the first dimming call of attempt 2'",
         ),
         (
             "(not a blind replay\nof a possibly applied write)",
@@ -1573,6 +1587,8 @@ def dec007_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{requirement} still tracks H07 by #12")
         if "issues/25" not in cell or "ISSUE-12-DEC-007" not in cell:
             problems.append(f"{requirement} does not move H07 to #25 per ISSUE-12-DEC-007")
+    if "visual intensity change" not in rows["CTRL-01"].split(";")[0]:
+        problems.append("CTRL-01 no longer keeps the visual intensity change pending")
     for requirement in ("READ-02", "CTRL-01", "MCP-04", "OPS-01"):
         if "ISSUE-12-DEC-007" not in rows[requirement]:
             problems.append(f"{requirement} does not cite ISSUE-12-DEC-007")
@@ -1658,6 +1674,12 @@ def test_dec007_resolutions_are_reflected_in_traceability_readme_and_guidance():
             "them), after the load measurements moved to",
             "(not exercised), tracked by",
             "OPS-01 still tracks stdio load beyond the rate limit by #12",
+        ),
+        (
+            "TRACEABILITY.md",
+            ", and a visual intensity change (not observed separately);",
+            ";",
+            "CTRL-01 no longer keeps the visual intensity change pending",
         ),
         (
             "README.md",

@@ -1114,16 +1114,19 @@ Not run / reason / remaining risk: "Not run" list below
 ### Visible effect, speed and brightness transition (E1-E3)
 
 Every write was a typed tool call through the hub's HTTP entry (segment fields as a
-segment patch, master fields as a master state change) and was verified by the tool's
-readback unless stated otherwise.
+segment patch, master fields as a master state change) and was applied and verified by
+the tool's readback unless stated otherwise: the E1 and E2 patches and master writes,
+every E3 write including the setup writes of attempts 2 and 3 and the re-issued
+dimming write, and the restoration writes. The only exception is the first dimming
+call of attempt 2 (`TIMEOUT`, see below).
 
 | Check | Command | Owner's observation (translated) |
 | --- | --- | --- |
 | E1 | segment 0 patch: effect ID 9 (Rainbow), speed 30; master on, brightness 120 | "yes": a slowly moving rainbow |
 | E2 | segment 0 patch: speed 240 only | "faster, clearly" |
 | E3 attempt 1 | master brightness 30 with `transition_ms` 3000 (rainbow) | no dimming visible |
-| E3 attempt 2 | master brightness 200, then on the owner's signal brightness 30 with `transition_ms` 5000 (rainbow; see the TIMEOUT note below) | no dimming visible |
-| E3 attempt 3 | solid red (effect ID 0) at master brightness 40, below the cap; then on the owner's signal brightness 2 with `transition_ms` 5000 | "yes, gently became darker" |
+| E3 attempt 2 | master brightness 200 without transition, then on the owner's signal brightness 30 with `transition_ms` 5000 (rainbow; see the TIMEOUT note below) | no dimming visible |
+| E3 attempt 3 | segment 0 solid red (effect ID 0); master brightness 80 (power estimate at the cap), then 40 (below the cap), both without transition; then on the owner's signal brightness 2 with `transition_ms` 5000 | "yes, gently became darker" |
 
 Results:
 
@@ -1131,14 +1134,17 @@ Results:
   confirmed by the owner.
 - E3: a brightness transition confirmed by the owner (attempt 3, solid red dimming over
   5 s). A visual intensity change was not part of this run.
-- Why attempts 1 and 2 showed no dimming: the controller's current limiter (ABL) was
-  capping the output. The power estimate was at the 850 mA limit for the rainbow at
-  brightness 200 and 30, and for solid red at brightness 80; for solid red at
-  brightness 40 it was 645 mA, below the cap. Above the cap the limiter scales the
-  output, so the requested brightness change was barely visible although state and
-  readback were correct. Visual brightness and transition checks therefore have to
-  start below the cap (see the H04 note under
-  [Opt-in physical write checks](#opt-in-physical-write-checks)).
+- Why attempts 1 and 2 showed no dimming (analysis, not a measurement): the most
+  likely cause is the controller's current limiter (ABL) capping the output, which
+  compresses the visible range of the dim. Run 3 read the power estimate only twice:
+  850 mA (the configured limit) for solid red at brightness 80, and 645 mA, below the
+  cap, for solid red at brightness 40. No power reading was taken for the rainbow in
+  run 3; run 1 read 850 mA for the rainbow at another brightness (see
+  [run 1 H04](#h04-master-and-one-effect-writes)). Above the cap the limiter scales
+  the output, so a requested brightness change can be barely visible although state
+  and readback are correct; dimming solid red from below the cap was visible.
+  Visual brightness and transition checks therefore have to start below the cap (see
+  the H04 note under [Opt-in physical write checks](#opt-in-physical-write-checks)).
 
 ### TIMEOUT before dispatch (E3 attempt 2)
 

@@ -228,10 +228,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   #12 live run on 2026-11-06 and expired after that run.
 - Authority: human decision.
 - Source: owner reply in the project conversation on 2026-11-06 ("stimme zu") to the
-  coordinator's six-point proposal, relayed by the coordinator and recorded as a
-  coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12) and, for
-  item 6, on [#25](https://github.com/descipar/wled-mcp/issues/25); no permalink to the
-  original message available.
+  coordinator's six-point proposal, relayed by the coordinator and recorded in
+  coordinator comments on [#12](https://github.com/descipar/wled-mcp/issues/12) (the
+  decision, and a later clarification of the details of items 2 and 3) and, for item 6,
+  on [#25](https://github.com/descipar/wled-mcp/issues/25); no permalink to the original
+  message available.
 - Scope: the items left open after the second run by the post-merge completion record
   of PR #71 (boxes 1, 3 and 7 of #12, and the relevance of H07 to #12).
 - Decision:
