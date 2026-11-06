@@ -219,6 +219,11 @@ can explicitly amend them.
   without objection but without separate explicit approval. Confirmed retroactively by
   the owner on 2026-11-06 for that run only; not standing permission for future service
   operations.
+- [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
+  the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
+  (blending style) is light state; it joins the `state` allowlist and the save compare
+  (only when live state has it); a saved entry that is not `state` gets a key-name-only
+  warning. Amends the issue-9 allowlist without superseding ISSUE-9-DEC-001.
 
 ## Still unresolved
 

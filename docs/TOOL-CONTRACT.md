@@ -476,7 +476,7 @@ Entry types (positive evidence only, `type` in list/get):
 
 | Type | Recognized as | Activation |
 | --- | --- | --- |
-| `state` | object whose top-level keys are all within the allowlist `on`, `bri`, `transition`, `mainseg`, `seg`, `n`, `ql`, `ledmap` (what a firmware save emits) and that has at least one of `on`, `bri`, `seg` (so activation is observable) | yes |
+| `state` | object whose top-level keys are all within the allowlist `on`, `bri`, `transition`, `bs`, `mainseg`, `seg`, `n`, `ql`, `ledmap` (what a firmware save emits; `bs` is the WLED 16 blending style, ISSUE-66-DEC-001) and that has at least one of `on`, `bri`, `seg` (so activation is observable) | yes |
 | `playlist` | object whose `playlist.ps` is a nonempty list of integers 1-250, no other stored control key (`psave`, `pdel`, `ps`, `pd`, `rb`, `win`, `live`, `time`, `bootps`) | yes, if every member (`playlist.ps` and a persistent `playlist.end` of 1-250) exists and is a `state` entry; `end=255` (restore previous preset) and any integer `end` outside 0-255 (the firmware keeps `end` in a byte, so it wraps onto another preset) are refused |
 | `api-command` | object with a string-valued `win` key | `UNSUPPORTED_CAPABILITY` |
 | `unknown` | any other object, including state-shaped objects with extra keys (`rmcpal`, `wifi`, `np`, `nl`, `lor`, `udpn`, vendor keys, control keys) | `UNSUPPORTED_CAPABILITY` |
@@ -518,15 +518,20 @@ POSTs.
 
 Verification polls the persistent file every 100 ms (default) under the one 10 second
 deadline, reserving at most one second for readback. The save compares name `n`,
-master `on`, `bri`, `transition`, `mainseg` and, per active live segment, `id`,
-`start`, `stop`, `on`, `bri`, `col`, `fx`, `sx`, `ix`, `pal`, `n`, `grp`, `spc`, `of`,
-`rev`, `mi`, `sel` against the pre-dispatch state; inactive-slot markers
+master `on`, `bri`, `transition`, `bs`, `mainseg` (each only when present in the
+live state, so `bs` is compared on WLED 16 and not on 0.15.x) and, per active live
+segment, `id`, `start`, `stop`, `on`, `bri`, `col`, `fx`, `sx`, `ix`, `pal`, `n`,
+`grp`, `spc`, `of`, `rev`, `mi`, `sel` against the pre-dispatch state; inactive-slot markers
 (`{"stop": 0}`) are ignored and the set of stored segment IDs must equal the live
 set. Any difference at the deadline is `VERIFICATION_MISMATCH` (`unknown/mismatch`)
 with `data.observed` (observed entry) and `data.differences` (field names, bounded).
 A match is success with the standing warning that capture is asynchronous and not an
-atomic photograph. Unrelated entries that differ from the pre-dispatch reading are
-`data.interference` plus a warning (outcome stays verified, no corrective write).
+atomic photograph. A verified save whose stored entry does not classify as `state`
+(for example because of a future firmware key) adds a warning that it will not be
+activated by this server, naming only the unexpected top-level keys (no values or
+preset name); the outcome is unchanged and nothing is rewritten. Unrelated entries
+that differ from the pre-dispatch reading are `data.interference` plus a warning
+(outcome stays verified, no corrective write).
 A failed POST whose target stays unchanged is `WRITE_OUTCOME_UNKNOWN` (cannot be told
 from an unapplied write); unreadable readback at the deadline is
 `WRITE_OUTCOME_UNKNOWN`; a verified postcondition after a failed POST succeeds with a

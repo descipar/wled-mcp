@@ -21,6 +21,7 @@ import pytest
 from pydantic import ValidationError
 
 from tests.preset_support import PresetDevice, PresetFleet, playlist_entry, state_entry
+from tests.state_catalog_support import make_state
 from tests.test_inventory_client import config, device
 from wled_mcp.models import Outcome
 from wled_mcp.operations import build_operations
@@ -976,3 +977,172 @@ async def test_non_integer_playlist_end_is_ignored_like_zero(tmp_path, end):
     async with open_resources(tmp_path, fleet_of(desk)) as resources:
         outcome = await call(resources, "wled_activate_preset", preset_id=4)
     assert outcome.ok and desk.posts == [{"ps": 4}]
+
+
+# ================================================ issue #66: WLED 16 state presets (bs)
+
+
+def wled16_entry(name: str = "Synthetic", **extra: Any) -> dict[str, Any]:
+    """Top-level shape of a v16.0.1 state-preset save (synthetic values)."""
+    entry: dict[str, Any] = {
+        "on": True,
+        "bri": 120,
+        "transition": 7,
+        "bs": 0,
+        "mainseg": 0,
+        "seg": [{"id": 0, "start": 0, "stop": 30, "col": [[255, 160, 0]], "fx": 0, "bm": 0}],
+        "n": name,
+    }
+    entry.update(extra)
+    return entry
+
+
+def wled16_desk(store: dict[str, Any] | None = None, bs: int = 3) -> PresetDevice:
+    return desk_with(store or {}, state=make_state(bs=bs))
+
+
+def test_wled16_state_preset_with_bs_classifies_as_state():
+    # S66-1: the WLED 16 shape is a plain state preset; the 0.15 shape still is.
+    assert classify(wled16_entry()) == ("state", False)
+    without_bs = wled16_entry()
+    del without_bs["bs"]
+    assert classify(without_bs) == ("state", False)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"rmcpal": True},
+        {"nl": {"on": True}},
+        {"lor": 1},
+        {"udpn": {"send": True}},
+        {"np": True},
+        {"xq": 1},
+    ],
+)
+def test_wled16_entry_with_any_other_key_stays_unknown(extra):
+    # S66-2: bs extends the allowlist by exactly one key, nothing else.
+    assert classify(wled16_entry(**extra)) == ("unknown", False)
+
+
+def test_bs_alone_is_not_an_observable_state_preset():
+    # S66-2: bs (like transition) cannot be observed after activation.
+    assert classify({"bs": 0, "n": "x"}) == ("unknown", False)
+    assert classify({"bs": 0, "transition": 5}) == ("unknown", False)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("extra", [{"rmcpal": True}, {"nl": {"on": True}}, {"xq": 1}])
+async def test_wled16_entry_with_side_effect_key_is_refused_with_zero_posts(tmp_path, extra):
+    desk = wled16_desk({"6": wled16_entry(**extra)})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_activate_preset", preset_id=6)
+    assert outcome.error.code == "UNSUPPORTED_CAPABILITY"
+    assert outcome.application == "not_attempted" and desk.posts == []
+
+
+@pytest.mark.anyio
+async def test_wled16_entry_is_listed_and_read_as_state_with_exact_object(tmp_path):
+    # S66-3
+    original = wled16_entry("Synthetic")
+    desk = wled16_desk({"2": original})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        listing = await call(resources, "wled_list_presets")
+        got = await call(resources, "wled_get_preset", preset_id=2)
+    assert [(p["id"], p["type"]) for p in listing.data["presets"]] == [(2, "state")]
+    assert got.data["type"] == "state" and got.data["preset"] == original
+    assert got.data["preset"]["bs"] == 0 and desk.posts == []
+
+
+@pytest.mark.anyio
+async def test_wled16_state_preset_activates_with_one_ps_post(tmp_path):
+    # S66-4
+    desk = wled16_desk({"2": wled16_entry()})
+    before = copy.deepcopy(desk.store)
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_activate_preset", preset_id=2)
+    assert outcome.ok and (outcome.application, outcome.verification) == ("applied", "verified")
+    assert outcome.data["type"] == "state"
+    assert desk.posts == [{"ps": 2}] and desk.store == before
+
+
+@pytest.mark.anyio
+async def test_playlist_of_wled16_state_presets_is_activatable(tmp_path):
+    # S66-5: members and the end preset are WLED 16 state presets.
+    playlist = playlist_entry([1, 2])
+    playlist["playlist"]["end"] = 3
+    desk = wled16_desk(
+        {"1": wled16_entry("A"), "2": wled16_entry("B"), "3": wled16_entry("C"), "4": playlist}
+    )
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_activate_preset", preset_id=4)
+    assert outcome.ok and outcome.verification == "verified"
+    assert outcome.data["type"] == "playlist"
+    assert desk.posts == [{"ps": 4}] and desk.state["pl"] == 4
+
+
+def _type_warnings(outcome: Outcome) -> list[str]:
+    return [w for w in outcome.warnings if "not a plain state preset" in w]
+
+
+@pytest.mark.anyio
+async def test_wled16_save_verifies_bs_and_saved_preset_activates(tmp_path):
+    # S66-6: end-to-end mock of the failure seen in the #12 hardware run (H06).
+    desk = wled16_desk(bs=3)
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        saved = await call(resources, "wled_save_preset", name="Synthetic")
+        assert saved.ok and (saved.application, saved.verification) == ("applied", "verified")
+        assert saved.data["type"] == "state" and saved.data["preset"]["bs"] == 3
+        assert _type_warnings(saved) == []
+        preset_id = saved.data["preset_id"]
+        activated = await call(resources, "wled_activate_preset", preset_id=preset_id)
+    assert activated.ok and activated.verification == "verified"
+    assert desk.posts[-1] == {"ps": preset_id}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "mutate",
+    [lambda e: e.update({"bs": 4}), lambda e: e.pop("bs")],
+    ids=["differs", "missing"],
+)
+async def test_wled16_save_with_stored_bs_differing_from_live_is_a_mismatch(tmp_path, mutate):
+    # S66-7
+    desk = wled16_desk(bs=3)
+    desk.entry_mutator = mutate
+    async with open_resources(tmp_path, fleet_of(desk), operation_timeout_seconds=0.8) as resources:
+        outcome = await call(resources, "wled_save_preset", name="Drift")
+    assert outcome.error.code == "VERIFICATION_MISMATCH"
+    assert outcome.data["differences"] == ["bs"]
+    assert outcome.data["no_replay"] is True and desk.psave_count() == 1
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "mutate", [None, lambda e: e.update({"bs": 5})], ids=["no-bs", "stored-bs-only"]
+)
+async def test_wled015_save_without_live_bs_does_not_compare_bs(tmp_path, mutate):
+    # S66-8: the 0.15 control; a stored bs without a live bs is tolerated.
+    desk = desk_with({})
+    assert "bs" not in desk.state
+    desk.entry_mutator = mutate
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_save_preset", name="Control")
+    assert outcome.ok and outcome.verification == "verified"
+    assert outcome.data["type"] == "state" and _type_warnings(outcome) == []
+    assert ("bs" in desk.store["1"]) is (mutate is not None)
+
+
+@pytest.mark.anyio
+async def test_saved_entry_with_unknown_key_is_verified_but_warned(tmp_path):
+    # S66-9: a future firmware key yields a warning, not a silent unactivatable preset.
+    desk = wled16_desk(bs=1)
+    desk.entry_mutator = lambda e: e.update({"xq": {"secret-value": 77}})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        outcome = await call(resources, "wled_save_preset", name="PRIVATE-NAME")
+    assert outcome.ok and (outcome.application, outcome.verification) == ("applied", "verified")
+    assert outcome.data["type"] == "unknown" and desk.psave_count() == 1
+    (warning,) = _type_warnings(outcome)
+    assert "'unknown'" in warning and "xq" in warning
+    assert "PRIVATE" not in warning and "secret" not in warning and "77" not in warning
+    assert warning.endswith("(unexpected top-level keys: xq).")  # allowlisted keys unnamed

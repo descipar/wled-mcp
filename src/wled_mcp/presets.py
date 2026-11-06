@@ -5,6 +5,8 @@ Source facts (pinned v0.15.1, see docs/SOURCES.md "Issue-9 preset evidence"):
 persistent IDs are 1-250, ``/presets.json`` keys the entries by decimal ID and keeps a
 ``"0"`` initializer, a deleted entry is removed from the file, a saved state entry is
 serialized by ``serializeState(forPreset=true)`` and a saved name is cut at 32 bytes.
+WLED v16.0.1 (docs/SOURCES.md "Issue-66 WLED 16 preset evidence") additionally emits the
+top-level light-state key ``bs`` (blending style) in saved state presets and live state.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ MAX_PERSISTENT_ID: Final = 250
 NAME_MAX_BYTES: Final = 32
 MAX_DIFFERENCES: Final = 20
 MAX_LISTED_IDS: Final = 20
+KEY_NAME_MAX: Final = 32
 
 # Keys that make a stored entry do more than set light state when it is applied
 # (deserializeState in json.cpp). An entry containing one is never a plain state preset.
@@ -30,16 +33,21 @@ CONTROL_KEYS: Final = frozenset(
     {"psave", "pdel", "ps", "pd", "rb", "win", "playlist", "live", "time", "bootps"}
 )
 # A plain state preset carries only what serializeState/doSaveState emit for a save
-# (json.cpp, presets.cpp). Any other top-level key (rmcpal, wifi, np, nl, lor, udpn, ...)
-# is acted on by deserializeState beyond light state, so the entry is `unknown`.
+# (json.cpp, presets.cpp at v0.15.1 and v16.0.1). Any other top-level key (rmcpal, wifi,
+# np, nl, lor, udpn, ...) is acted on by deserializeState beyond light state, so the
+# entry is `unknown`. ``bs`` (v16.0.1 blending style) only selects the transition style
+# used by rendering, like ``transition`` (ISSUE-66-DEC-001).
 STATE_ALLOWED_KEYS: Final = frozenset(
-    {"on", "bri", "transition", "mainseg", "seg", "n", "ql", "ledmap"}
+    {"on", "bri", "transition", "bs", "mainseg", "seg", "n", "ql", "ledmap"}
 )
-# At least one of these is needed so activation can be observed and verified.
+# At least one of these is needed so activation can be observed and verified
+# (``bs`` or ``transition`` alone is not observable).
 STATE_REQUIRED_ANY: Final = frozenset({"on", "bri", "seg"})
 END_RESTORE_ID: Final = 255
 
-MASTER_KEYS: Final = ("on", "bri", "transition", "mainseg")
+# Compared on save only when present in the live state (capture_reference), so ``bs`` is
+# not expected from firmware whose live state lacks it.
+MASTER_KEYS: Final = ("on", "bri", "transition", "bs", "mainseg")
 SEGMENT_KEYS: Final = (
     "start",
     "stop",
@@ -216,6 +224,14 @@ def classify(entry: JsonValue) -> tuple[str, bool]:
     if entry.keys() <= STATE_ALLOWED_KEYS and STATE_REQUIRED_ANY & entry.keys():
         return "state", False
     return "unknown", False
+
+
+def unexpected_state_keys(entry: JsonValue) -> list[str]:
+    """Sorted top-level key names outside the plain-state allowlist (names only)."""
+    if not isinstance(entry, dict):
+        return []
+    keys = sorted(str(key)[:KEY_NAME_MAX] for key in entry.keys() - STATE_ALLOWED_KEYS)
+    return keys[:MAX_DIFFERENCES]
 
 
 def entry_name(entry: JsonValue) -> str | None:
