@@ -665,6 +665,95 @@ def test_documented_uvx_invocation_matches_the_stdio_hub_example():
     assert expected in lines
 
 
+# ------------------------------------------------------------- live-check documentation
+
+VALIDATION = ROOT / "docs/VALIDATION.md"
+LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
+# Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
+# home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
+PRIVATE_IDENTIFIER = re.compile(
+    r"(?<![\d.])(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168|169\.254)"
+    r"\.\d{1,3}\.\d{1,3}(?![\d.]*\d)"
+    r"|/home/|/Users/|\.fritz\.box\b|\.home\.arpa\b"
+    r"|\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"
+    r"|sha256:[0-9a-f]{12,}",
+)
+LIVE_DOCUMENTS = [
+    VALIDATION,
+    DEPLOYMENT,
+    ROOT / "docs/TRACEABILITY.md",
+    ROOT / "docs/decisions/issue-11.md",
+    ROOT / "deploy/operations-record.template.md",
+]
+
+
+def markdown_section(text: str, heading: str) -> str:
+    """The body of one second- or third-level section, up to the next heading of that level."""
+    level = heading.split(" ", 1)[0]
+    start = text.index(heading + "\n")
+    following = re.search(rf"^{level} ", text[start + len(heading) :], flags=re.M)
+    end = start + len(heading) + following.start() if following else len(text)
+    return text[start:end]
+
+
+def private_identifiers(text: str) -> list[str]:
+    return [match.group() for match in PRIVATE_IDENTIFIER.finditer(text)]
+
+
+@pytest.mark.parametrize("path", LIVE_DOCUMENTS, ids=lambda path: path.name)
+def test_live_deployment_documents_carry_no_installation_identifiers(path):
+    assert private_identifiers(path.read_text("utf-8")) == []
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "base_url http://192.168.250.9",
+        "blocked address 172.16.250.9",
+        "address 10.0.0.7",
+        "backup in /home/operator/backups",
+        "host wled-desk.fritz.box",
+        "MAC 02:00:5e:aa:bb:cc",
+        "image sha256:0123456789abcdef0123456789abcdef",
+    ],
+)
+def test_private_identifier_detector_catches_installation_details(leak):
+    section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
+    assert private_identifiers(section) == []
+    assert private_identifiers(section + "\n" + leak) != []
+
+
+def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes():
+    allowed = (
+        "127.0.0.1:8000 0.0.0.0 wled-mcp:8000 Python 3.10.0.1 "
+        "db0b2edde4d20a07f789d7192314d1e606acb50f319a"
+    )
+    assert private_identifiers(allowed) == []
+
+
+def test_live_section_covers_both_modes_and_keeps_version_changes_pending():
+    section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
+    assert markdown_section(section, "### Streamable HTTP service")
+    assert markdown_section(section, "### stdio via uvx")
+    commit = re.search(r"from commit `([0-9a-f]{7,40})`", section)
+    assert commit is not None, "the live record names the exercised source commit"
+    pending = section[section.index("Not exercised and still pending:") :]
+    for item in ("update and rollback between two releases", "removal of the HTTP service"):
+        assert item in pending
+    assert "Mode remaining active: Streamable HTTP" in section
+
+
+def test_hub_http_registration_points_to_owner_and_reload_requirements():
+    text = DEPLOYMENT.read_text("utf-8")
+    registration = markdown_section(text, "## HTTP service: build, start, verify")
+    assert "(#mcphub-notes)" in registration
+    notes = markdown_section(text, "### MCPHub notes")
+    assert re.search(r"owner[^.]*admin user", notes), "SSRF guard needs an admin-owned entry"
+    assert re.search(r"reload[^.]*entry", notes), "an edited entry needs a reload"
+    assert "Do not disable the hub's guard" in notes
+    assert "owner" not in json.dumps(hub_http()), "ownership is hub-side, not in the example"
+
+
 @pytest.mark.skipif(
     os.environ.get("WLED_MCP_DOCKER_CHECKS") != "1" or shutil.which("docker") is None,
     reason="opt-in local Docker check (WLED_MCP_DOCKER_CHECKS=1); never required in CI",
