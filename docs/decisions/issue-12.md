@@ -189,3 +189,33 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   reviewer through the coordinator.
 - Revalidation needed / next action: any further deployment, hub change or controller
   write needs a new human instruction.
+
+## ISSUE-12-DEC-006 — stdio host-level no-drain accepted as a documented limitation
+
+- ID: ISSUE-12-DEC-006
+- Recorded date: 2026-11-06
+- Status: active.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 to the coordinator's
+  question whether the stdio host-level no-drain is acceptable ("ja, ist in ordnung.
+  stdio ist ja nur die zweite wahl für heute, ich bevorzuge http"), relayed by the
+  coordinator; no permalink to the original message available.
+- Scope: issue #12, the stdio-via-uvx mode and its host-owned subprocess lifecycle
+  (MCP-04 drain evidence).
+- Decision: the behavior observed in the second #12 run, that the MCP host (MCPHub)
+  closes the stdio connection on entry disable or stop without draining in-flight
+  calls, is accepted as a documented limitation of stdio mode for #12. Streamable HTTP
+  is the owner's preferred mode. No code change is requested.
+- Applicability / conditions / expiry: #12 and the stdio host lifecycle only. Not a
+  deprecation of stdio, not a change to the confirmed two-transport scope, and no
+  acceptance of other host behavior. The documented guidance stays: read the state
+  before retrying a write cut off this way.
+- Rationale supplied: stdio is the second choice for the current use; HTTP is preferred.
+- Affected requirement IDs, files, issues and tests: MCP-04;
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
+- Supersedes / superseded by: none; resolves the open question of the MCP-04 cell
+  raised after the second run. ISSUE-12-DEC-004 (stdio stays in #12 scope) is unchanged.
+- Propagated to roles / packet references: coordinator to implementer; reviewer through
+  the coordinator.
+- Revalidation needed / next action: none.

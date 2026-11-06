@@ -876,8 +876,8 @@ Transport mode / endpoint or uvx artifact / service lifecycle: Streamable HTTP (
   list, HTTP entry disabled meanwhile, removed afterwards)
 Sanitized device and firmware / relevant capabilities: as run 1 H01 (WLED 16.0.1,
   ESP32-C3, 133 RGB LEDs, one bus)
-Scenario IDs run: P0, HTTP update, L4, D3, visual A-C (H04-H06 writes through the HTTP
-  entry), stdio H04-H06, stdio load, stdio drain, R1-R3
+Scenario IDs run: P0, HTTP update, L4, D3, visual A-C (H04-H06 writes through the hub's
+  HTTP entry), stdio H04-H06, stdio load, stdio drain, R1-R3
 Before state and snapshot references (local, no secrets): run-2 baseline of state,
   info, configuration and preset file with SHA-256 values in the local run record; the
   state hash equals the run-1 baseline
@@ -946,20 +946,25 @@ admitted write was cut off or left uncertain.
 ### Visual checks (owner)
 
 The owner observed the strip and confirmed each pattern with a delayed reply. The
-checks ran before the stdio phase, while the HTTP entry was the active mode. The run
-record maps them to the visible behavior of the H04-H06 writes.
+checks and their setup writes ran through the hub's HTTP entry, before the stdio phase;
+every write was verified by the tool's readback. The run record maps them to the
+visible behavior of the H04-H06 writes.
 
 | Check | Command | Owner's observation (translated) |
 | --- | --- | --- |
-| A | two segments, one half red and one half blue | "left blue, right red": both halves as commanded; the strip starts (LED 0) on the right-hand side from the owner's view |
-| B | `wled_replace_layout` to one segment, green; the stale segment ID 1 is removed by the single-segment payload (readback matched) | "all green" |
-| C | `wled_activate_preset` 250, a preset saved by this server on WLED 16 (stored with `bs`), classified `state` | "left blue, right red" (pattern A again) |
+| A | `wled_patch_segments`, `wled_replace_layout` and `wled_set_state` (brightness 120): segment 0 LEDs [0, 66) red, segment 1 LEDs [66, 133) blue; all verified | "left blue, right red": both halves as commanded; the strip starts (LED 0) on the right-hand side from the owner's view |
+| B | `wled_replace_layout` to one segment LEDs [0, 133), green; the stale segment ID 1 is removed by the single-segment payload (verified) | "all green" |
+| C | `wled_activate_preset` 250 (saved after A, see below): applied and verified by the tool's state readback, type `state` | "left blue, right red" (pattern A again) |
+
+Directly after check A, `wled_save_preset` saved the pattern as preset 250 through the
+same entry: verified, classified `state` on WLED 16 (the stored preset contains `bs`).
 
 Results:
 
 - [#66](https://github.com/descipar/wled-mcp/issues/66) hardware re-check: save then
-  activate of a preset saved on WLED 16.0.1 passed (check C; classification `state`,
-  activation confirmed visually; the stdio H06 below adds a readback).
+  activate of a preset saved on WLED 16.0.1 passed (preset 250 and check C over HTTP:
+  classification `state`, activation applied and verified by readback and confirmed
+  visually; the stdio H06 below repeats it in stdio mode).
 - H05 stale-ID removal on hardware passed: `wled_replace_layout` removed segment ID 1
   (check B; readback and visual).
 - Visible behavior confirmed by the owner for colors, segment extents and preset
@@ -993,21 +998,26 @@ run-1 snapshot files of the HTTP service are unchanged. Not committed.
 ### stdio load (through the hub)
 
 Client: a load script against the hub's MCP endpoint for the temporary stdio entry with
-a temporary hub API key (removed afterwards). Figures include the hub hop; CPU is the
+a temporary hub system key (removed afterwards). Temporary hub system keys, each created
+and removed within its script, were the mechanism for all hub API operations in #11 and
+#12 (register, toggle, reload, remove, probes); they fall under the owner's
+authorization to register and remove the stdio entry and toggle the HTTP entry
+(ISSUE-12-DEC-005). Figures include the hub hop; CPU is the
 user + system time of the stdio Python process (not the uv wrapper) per run.
 
 | Check | Result |
 | --- | --- |
 | `ping` and `tools/list` | answered by the hub itself; the stdio process used no CPU for them, so they do not measure the server |
 | Hub rate limit | MCPHub 1.2.1 returned HTTP 429 "Too many requests" after about 200 requests in its window; no load beyond that limit was possible through the hub |
-| `wled_get_state`, concurrency 1 (20) | all returned; 4 requests/s; p50 107; p95 319; max 2,537; about 20 ms CPU per call |
-| `wled_get_state`, concurrency 4 (40) | all returned; 2.2 requests/s; p50 394; p95 7,884 |
-| `wled_get_effects` (refresh), concurrency 4 (20) | all returned; p50 1,940; p95 3,247; about 38 ms CPU per call |
+| `wled_get_state`, concurrency 1 (20) | all `ok`, no HTTP 429; 4 requests/s; p50 107; p95 319; max 2,537; about 20 ms CPU per call |
+| `wled_get_state`, concurrency 4 (40) | all `ok`, no HTTP 429; 2.2 requests/s; p50 394; p95 7,884 |
+| `wled_get_effects` (refresh), concurrency 4 (20) | all `ok`, no HTTP 429; p50 1,940; p95 3,247; about 38 ms CPU per call |
 | Process | stdio Python process RSS 77.5 MiB, 3 threads, no listening socket; uv wrapper RSS 36 MiB |
 
 Disclosure: the first load attempts were invalid and are not counted: a wrong tool-name
 prefix in the load script, CPU sampled from the uv wrapper instead of the Python
-process, and runs that hit the hub's rate limit. Only the runs above are valid. They
+process, and runs that hit the hub's rate limit. Only the runs above are valid; none of
+them received an HTTP 429. They
 are shaped by the hub (rate limit, hub-side handling) and are not comparable with the
 in-container HTTP figures of run 1.
 
@@ -1027,14 +1037,16 @@ Finding: in stdio mode the host (here the hub) owns the subprocess lifecycle. On
 it closed the connection without draining in-flight calls. Whether and when the server
 process received a signal is not recorded; with the connection closed, a result could
 not reach the client in any case, so the server's own SIGTERM drain (T21) does not help
-at the host level. The calls in this check were reads; an
+at the host level. ISSUE-12-DEC-006 accepts this host behavior as a documented
+limitation of stdio mode (Streamable HTTP is the preferred mode; no code change). The
+calls in this check were reads; an
 in-flight write cut off this way is possibly applied, so a client has to read the state
 before retrying it (see [DEPLOYMENT.md](DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal)).
 
 ### Cleanup and restoration (R1-R3)
 
 The temporary stdio entry was removed (only that entry), the HTTP entry was re-enabled
-by its admin owner, and the temporary hub API key was removed. The controller was
+by its admin owner, and the temporary hub system key was removed. The controller was
 restored by activating the pre-existing preset 1 and switching off.
 
 | Check | Result |
@@ -1050,7 +1062,8 @@ restored by activating the pre-existing preset 1 and switching off.
 - stdio load beyond the hub's rate limit, and per-request stdio latency without the
   hub (no direct client for the hub-managed subprocess).
 - Visual comparison with the WLED UI (H02); the visual checks above covered the LEDs.
-- Interference inventory and quiet windows were not repeated for this run (run 1 I1-I3).
+- Interference inventory and quiet windows were not repeated for this run (run 1 I1-I3);
+  the run-2 state baseline equals the run-1 end state.
 - Restoring preset contents from a snapshot (ISSUE-8-DEC-001); other controllers and
   firmware; live update/rollback between versions (stage 2).
 

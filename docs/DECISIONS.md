@@ -229,6 +229,10 @@ can explicitly amend them.
   it; temporary stdio hub entry with the HTTP entry disabled, then restored; the same
   test controller with capture and restore; the owner observes with delayed replies, no
   test relies on a quick reaction; this run only, not standing permission.
+- [ISSUE-12-DEC-006](decisions/issue-12.md) (human, 2026-11-06, issue #12 and stdio host
+  lifecycle only): the host closing the stdio connection on entry disable/stop without
+  draining in-flight calls is accepted as a documented stdio limitation; HTTP is the
+  preferred mode; no code change; not a deprecation of stdio.
 - [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
   the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
   (blending style) is light state; it joins the `state` allowlist and the save compare

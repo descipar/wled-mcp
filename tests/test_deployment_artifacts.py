@@ -962,9 +962,9 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
     [
         (
             "TRACEABILITY.md",
-            "meets MCP-04, tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
-            "per ISSUE-11-DEC-008, with the SIGTERM drain",
-            "meets MCP-04 (#11), with the SIGTERM drain",
+            "tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
+            "per ISSUE-11-DEC-008 (the stdio host",
+            "(#11) (the stdio host",
             "MCP-04 does not track 'drain of an in-flight call' by #12",
         ),
         (
@@ -1192,6 +1192,7 @@ RUN2_RESULTS = {
         "closed the connection without draining in-flight calls",
         "Connection closed",
         "read the state before retrying",
+        "ISSUE-12-DEC-006 accepts this host behavior as a documented limitation of stdio mode",
     ),
 }
 RUN2_RESTORATION = {
@@ -1283,6 +1284,12 @@ def test_run2_section_records_rechecks_visual_checks_stdio_drain_and_restoration
             "so a client has to read the state\nbefore retrying it",
             "so a client may retry it",
             "run-2 stdio drain finding lacks 'read the state before retrying'",
+        ),
+        (
+            "ISSUE-12-DEC-006 accepts this host behavior",
+            "The host behavior is open",
+            "run-2 stdio drain finding lacks 'ISSUE-12-DEC-006 accepts this host behavior "
+            "as a documented limitation of stdio mode'",
         ),
         (
             "JSON-equal to the run-2 baseline",

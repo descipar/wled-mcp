@@ -321,6 +321,8 @@ from the hub, later calls "Tool not available", and the process was gone after a
 0.9 s ([VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)). A write cut off this way may have been applied on the device while the
 client sees only an error; read the state with `wled_get_state` (or the preset list)
 before retrying it, and stop or disable the entry only when no write is in flight.
+ISSUE-12-DEC-006 accepts this as a documented limitation of stdio mode; Streamable HTTP
+is the preferred mode where in-flight calls must drain.
 
 ## Device restoration
 
