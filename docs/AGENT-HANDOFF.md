@@ -2,7 +2,7 @@
 
 ## Assignment to use later
 
-> Implement the proposed first usable WLED MCP release in this repository. Read AGENTS.md, README.md and docs/REQUIREMENTS.md, then follow the GitHub backlog linked from docs/IMPLEMENTATION-PLAN.md. Start with contract decisions and packaging. Implement and mock-test the server before requesting device information needed only for hardware validation. Keep runtime/hardware work within the user's actual authorization. Deliver a reviewable implementation with honest evidence and pending items.
+> Implement the proposed first usable WLED MCP release in this repository. Read AGENTS.md, README.md, docs/PROJECT.md and docs/REQUIREMENTS.md, then follow the GitHub backlog linked from docs/IMPLEMENTATION-PLAN.md. Start with contract decisions and packaging. Implement and mock-test the server before requesting device information needed only for hardware validation. Keep runtime/hardware work within the user's actual authorization. Deliver a reviewable implementation with honest evidence and pending items.
 
 This is a ready-to-use future prompt, not an instruction that implementation has already been commissioned in the original documentation session.
 

@@ -100,6 +100,36 @@ Preparing workflows and artifacts is authorized planning/implementation work onl
 | S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without access to project history or installation-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
 | S2-PUBLIC-03 | Launch | Prepare contribution guidance, security reporting/contact, support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
 
+### Open owner decisions before publication (from #62)
+
+Issue #62 prepared a public-ready baseline under
+[DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline): neutral tracked
+content, a user-facing README, synthetic example deployment files for both transports
+and the CI check `scripts/check_private_identifiers.py`. It changed no visibility,
+license, attribution or publication. The following decisions remain with the owner and
+are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01); none
+is resolved here:
+
+1. Outbound license, and whether third-party notices or a NOTICE file are needed.
+2. Project, package, container image and registry identities: repository name and
+   owner, PyPI/OCI names and the `io.github.<publisher>` namespace.
+3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
+   security contact).
+4. Acceptance of the existing commit history and author identities (owner identity
+   and agent noreply identity), or a history rewrite or a fresh public repository.
+5. Review of issue and PR bodies and comments, including closed ones and run evidence
+   links, for installation context before a visibility change; issue visibility
+   follows repository visibility.
+6. Whether German source quotes in decision records stay verbatim in a public
+   repository.
+7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
+   `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
+8. Whether CI gets a secret-backed private denylist for
+   `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
+   protection.
+9. Timing of the visibility change relative to the beta acceptance of
+   [#25](https://github.com/descipar/wled-mcp/issues/25).
+
 ## I. Marketplace discovery and actual publication evidence
 
 | ID | Priority | Requirement and observable outcome |
