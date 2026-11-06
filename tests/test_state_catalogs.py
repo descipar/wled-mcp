@@ -545,6 +545,11 @@ async def test_empty_catalog_and_effect_count_mismatch(tmp_path):
             httpx.Response(200, headers=json_headers(), content=b'["' + b"x" * 5000 + b'"]'),
             "INVALID_RESPONSE",
         ),
+        # truncated, invalid JSON below the size limit, as observed live in #11
+        (
+            httpx.Response(200, headers=json_headers(), content=b'["a","b","c'),
+            "INVALID_RESPONSE",
+        ),
         (["only", "two"], "length_mismatch"),
     ],
 )

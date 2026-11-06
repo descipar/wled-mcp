@@ -841,6 +841,20 @@ def test_live_section_records_removal_hub_recreation_and_stage_2_move():
             lambda text: text.replace("docker image rm", "image deletion"),
             "removal record lacks 'docker image rm'",
         ),
+        (
+            lambda text: text.replace("load measurements", "load notes"),
+            "'load measurements' is no longer listed as pending",
+        ),
+        (
+            lambda text: text.replace(
+                "No device writes were needed or performed", "Device writes were performed"
+            ),
+            "follow-up record lacks 'No device writes were needed or performed'",
+        ),
+        (
+            lambda text: text.replace("were identical to", "differed from"),
+            "follow-up record lacks 'identical to the baseline'",
+        ),
     ],
 )
 def test_live_scope_check_rejects_regressions(mutate, expected):

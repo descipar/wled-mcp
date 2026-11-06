@@ -228,7 +228,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Decision: the checks above were authorized. The run recorded a baseline first,
   performed no device writes and compared the final state and preset file equal to
   the baseline. The hub container recreation interrupted all hub entries for about
-  30 s and was done under this instruction. Not authorized: other controllers, other
+  30 s and was done under this instruction; before the run, the coordinator announced to
+  the human that the hub container would be recreated and that all hub services would
+  be briefly unavailable. Not authorized: other controllers, other
   hosts, hub image updates, device configuration changes, deleting the data directory,
   publication, merge.
 - Applicability / conditions / expiry: bounded to that run; not standing permission

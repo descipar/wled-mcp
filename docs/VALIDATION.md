@@ -586,7 +586,10 @@ Comparison with the WLED UI data source: the controller's own catalog endpoints 
 WLED web UI reads (`/json/eff`, `/json/pal`) were read directly and their counts and
 names match the HTTP-mode catalogs (220 effects, 72 palettes). This is a comparison
 with the UI's data source, not a visual inspection of the UI; the stdio-mode catalog
-counts were not recorded separately.
+counts were not recorded separately. Not performed in this run and still pending
+([#12](https://github.com/descipar/wled-mcp/issues/12)): H02 reads from the server's own
+execution context (the HTTP service container or the hub-managed stdio process)
+separately from the hub, and a comparison of capability interpretation with the WLED UI.
 
 Fail-safe observation: on the first HTTP-mode effect refresh the controller returned a
 truncated effect metadata body (`/json/fxdata`, about 5.5 kB of invalid JSON). The
