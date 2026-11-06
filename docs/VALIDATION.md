@@ -1085,7 +1085,10 @@ deployed Streamable HTTP service and its hub entry, authorized for this run only
 ISSUE-12-DEC-007 item 2 (capture before, restore after; ISSUE-12-DEC-001 conditions). It
 covers the visible H04 behavior that runs 1 and 2 did not observe: effect animation, a
 speed change and a brightness transition. The owner watched the strip and replied to
-each step. Sanitized from a local, git-ignored run record; host names, addresses, paths,
+each step. Authorization basis for E3: the owner's agreement covered the visible H04
+behavior of this run, and the owner explicitly asked for the repeats of E3 (first fully
+bright and then dimming, then with a single color). Sanitized from a local, git-ignored
+run record; host names, addresses, paths,
 user names, device and hub entry names are intentionally omitted. The results describe
 this one controller and this one firmware (WLED 16.0.1, one RGB-only strip, current
 limiter configured at 850 mA) only; no compatibility with other firmware, controllers or
@@ -1164,7 +1167,7 @@ Run 3 made no preset writes.
 | --- | --- |
 | H02 comparison with the WLED UI | satisfied by the comparison with the controller endpoints the WLED UI renders ([run 1 H02](#h02-reads)), per ISSUE-12-DEC-007 item 1 |
 | H04 visible effect animation, speed and brightness transition | E1-E3 above (HTTP), authorized by ISSUE-12-DEC-007 item 2 |
-| H04 in stdio mode | sufficient as exercised in run 2 (power/brightness rules and the layout writes), same domain code, per ISSUE-12-DEC-007 item 3 |
+| H04 in stdio mode | sufficient as exercised in run 2 (power/brightness rules, and verified color and effect writes: layout replacements that set segment colors and one effect, and a segment patch that changed a color and the speed while preserving the other segments), same domain code, per ISSUE-12-DEC-007 item 3 |
 | stdio drain on SIGTERM | the host-level record of run 2 is sufficient, per ISSUE-12-DEC-007 item 4 and ISSUE-12-DEC-006 |
 | stdio load beyond the hub's rate limit and without the hub hop | not required for #12; the rate-limited figures through the hub of run 2 are sufficient, per ISSUE-12-DEC-007 item 5 |
 | H07 offline device on hardware | moved to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-12-DEC-007 item 6; the simulated evidence T02/T09 remains |

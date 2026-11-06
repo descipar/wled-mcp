@@ -1366,6 +1366,8 @@ RUN3_FACTS = (
     "WLED 16.0.1",
     "no compatibility with other firmware, controllers or LED types",
     "no deployment, service, hub or inventory change",
+    "Authorization basis for E3",
+    "explicitly asked for the repeats of E3",
 )
 RUN3_VISUAL = {
     "E1": ("effect ID 9", "slowly moving rainbow"),
@@ -1458,6 +1460,11 @@ def test_run3_section_records_visible_checks_limiter_timeout_and_resolutions():
     [
         ('"yes": a slowly moving rainbow', '"no reply"', "check E1 lacks 'slowly moving rainbow'"),
         ('"faster, clearly"', '"no change"', "check E2 lacks 'faster, clearly'"),
+        (
+            "Authorization basis for E3: the owner's agreement",
+            "Note: the owner's agreement",
+            "run-3 record lacks 'Authorization basis for E3'",
+        ),
         ("| E3 attempt 3 |", "| E3 attempt 4 |", "check E3 attempt 3 is missing"),
         (
             '"yes, gently became darker"',

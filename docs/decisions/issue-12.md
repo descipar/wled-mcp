@@ -241,11 +241,15 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   2. A short owner-watched run through the deployed Streamable HTTP service on the
      test controller of ISSUE-12-DEC-001 verifies visible effect animation and a speed
      change; capture before and restore after apply. This agreement authorizes that
-     one run only (the third run). The coordinator's run plan for that run also
-     included a brightness transition on the same controller.
+     one run only (the third run). The accepted proposal covered the visible H04
+     behavior of that run, and the owner explicitly asked for the brightness and
+     dimming repeats during it, so the brightness transition (E3) falls under this
+     item.
   3. stdio H04 is sufficient as exercised in the second run (power/brightness rules
-     plus color/effect writes via `wled_replace_layout`, in the proposal's words); the
-     stdio mode uses the same domain code as HTTP.
+     plus the verified stdio color and effect writes: layout replacements through
+     `wled_replace_layout` that set segment colors and one effect, and a segment patch
+     through `wled_patch_segments` that changed a color and the speed while preserving
+     the other segments); the stdio mode uses the same domain code as HTTP.
   4. stdio drain evidence at host level is sufficient for #12, consistent with
      ISSUE-12-DEC-006; no dedicated server-side SIGTERM observation in stdio mode.
   5. stdio load measured through the hub within its rate limit is sufficient for #12;
