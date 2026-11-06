@@ -5,8 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "wled-mcp"
 version = "0.1.0"
-description = "Private WLED MCP server bootstrap"
+description = "MCP server for controlling WLED LED controllers over stdio or Streamable HTTP"
 readme = "README.md"
+keywords = ["wled", "mcp", "led", "lighting"]
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "mcp==2.3.0",
@@ -15,6 +16,11 @@ dependencies = [
     "starlette==1.10.0",
     "uvicorn==0.54.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/descipar/wled-mcp"
+Issues = "https://github.com/descipar/wled-mcp/issues"
+Documentation = "https://github.com/descipar/wled-mcp#readme"
 
 [project.scripts]
 wled-mcp = "wled_mcp.cli:main"
@@ -49,6 +55,7 @@ files = [
     "src",
     "scripts/check_distribution.py",
     "scripts/check_lock.py",
+    "scripts/check_private_identifiers.py",
     "scripts/check_traceability.py",
     "scripts/hw_http_probe.py",
     "deploy/stage_release.py",

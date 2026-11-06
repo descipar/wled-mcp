@@ -18,11 +18,12 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
-uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
+uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
+uv run --frozen python scripts/check_private_identifiers.py
 uv run --frozen pytest
 uv run --frozen python scripts/check_distribution.py
 ```
@@ -30,6 +31,15 @@ uv run --frozen python scripts/check_distribution.py
 POSIX shells: `export UV_CACHE_DIR="$PWD/.uv-cache"` and
 `export UV_PYTHON_DOWNLOADS=never`; remaining commands are identical. Dependency
 installation may access PyPI. Tests use synthetic subprocesses, no LAN/devices.
+
+`scripts/check_private_identifiers.py` scans every tracked (and untracked, non-ignored)
+text file for private addresses, home paths, router-local host names, MAC addresses
+and personal e-mail addresses. Findings name `path:line: rule` without the value;
+`--show-values` prints values locally. Intended synthetic fixtures need an entry with a
+reason in `scripts/private_identifier_allowlist.toml`; an unused entry fails. Values of
+a real installation never go there: list them one per line in the git-ignored
+`runtime/private-denylist.txt` (or a file named by `WLED_MCP_PRIVATE_DENYLIST`) so the
+check also finds those literals.
 
 Build separately with `uv build --wheel --no-build-isolation --python
 .venv/Scripts/python.exe` (use `.venv/bin/python` on POSIX), after locked sync.

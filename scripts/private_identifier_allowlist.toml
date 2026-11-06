@@ -1,0 +1,33 @@
+# Synthetic values that intentionally look private (negative controls of the checks).
+# One path/value pair per entry; an entry that matches nothing fails the check.
+# Never add a real installation value here: use the untracked denylist for those.
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "192.168.250.9"
+reason = "planted private IPv4 proving the live-document check detects it"
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "172.16.250.9"
+reason = "planted private IPv4 proving the live-document check detects it"
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "10.0.0.7"
+reason = "planted private IPv4 proving the live-document check detects it"
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "/home/operator"
+reason = "planted home path proving the live-document check detects it"
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "02:00:5e:aa:bb:cc"
+reason = "planted locally administered MAC proving the live-document check detects it"
+
+[[allow]]
+path = "tests/test_deployment_artifacts.py"
+value = "wled-desk.fritz.box"
+reason = "planted router-local host name proving the live-document check detects it"

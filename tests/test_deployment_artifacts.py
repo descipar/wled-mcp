@@ -35,6 +35,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 from deploy.stage_release import StageError, stage
 from tests.test_http_cli import CONSOLE, POSIX_ONLY, clean_env, free_port, wait_ready
+from tests.test_private_identifiers import scanner as identifier_scanner
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCKERFILE = ROOT / "deploy/http/Dockerfile"
@@ -671,15 +672,11 @@ VALIDATION = ROOT / "docs/VALIDATION.md"
 LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
 HARDWARE_HEADING = "## Issue #12 hardware acceptance (2026-11-06)"
 RUN2_HEADING = "## Issue #12 hardware acceptance, run 2 (2026-11-06)"
-# Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
-# home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
-PRIVATE_IDENTIFIER = re.compile(
-    r"(?<![\d.])(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168|169\.254)"
-    r"\.\d{1,3}\.\d{1,3}(?![\d.]*\d)"
-    r"|/home/|/Users/|\.fritz\.box\b|\.home\.arpa\b"
-    r"|\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"
-    r"|sha256:[0-9a-f]{12,}",
-)
+# Committed live evidence must stay impersonal (AGENTS.md, DEC-005, DEC-009): the
+# repository-wide rules of scripts/check_private_identifiers.py (private addresses, home
+# paths, router-local DNS names, MAC addresses, ...) plus, for these live documents only,
+# content-addressed image IDs (repository-wide they would hit uv.lock hashes).
+IMAGE_ID = re.compile(r"sha256:[0-9a-f]{12,}")
 LIVE_DOCUMENTS = [
     ROOT / "README.md",
     VALIDATION,
@@ -701,7 +698,8 @@ def markdown_section(text: str, heading: str) -> str:
 
 
 def private_identifiers(text: str) -> list[str]:
-    return [match.group() for match in PRIVATE_IDENTIFIER.finditer(text)]
+    rule_hits = [finding.value for finding in identifier_scanner.scan_text("live.md", text)]
+    return rule_hits + [match.group() for match in IMAGE_ID.finditer(text)]
 
 
 @pytest.mark.parametrize("path", LIVE_DOCUMENTS, ids=lambda path: path.name)
