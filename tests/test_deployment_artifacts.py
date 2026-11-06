@@ -670,6 +670,7 @@ def test_documented_uvx_invocation_matches_the_stdio_hub_example():
 VALIDATION = ROOT / "docs/VALIDATION.md"
 LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
 HARDWARE_HEADING = "## Issue #12 hardware acceptance (2026-11-06)"
+RUN2_HEADING = "## Issue #12 hardware acceptance, run 2 (2026-11-06)"
 # Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
 # home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
 PRIVATE_IDENTIFIER = re.compile(
@@ -720,7 +721,7 @@ def test_live_deployment_documents_carry_no_installation_identifiers(path):
         "image sha256:0123456789abcdef0123456789abcdef",
     ],
 )
-@pytest.mark.parametrize("heading", [LIVE_HEADING, HARDWARE_HEADING])
+@pytest.mark.parametrize("heading", [LIVE_HEADING, HARDWARE_HEADING, RUN2_HEADING])
 def test_private_identifier_detector_catches_installation_details(leak, heading):
     section = markdown_section(VALIDATION.read_text("utf-8"), heading)
     assert private_identifiers(section) == []
@@ -905,6 +906,7 @@ def test_live_scope_check_rejects_regressions(mutate, expected):
 
 TRACEABILITY = ROOT / "docs/TRACEABILITY.md"
 HARDWARE_ANCHOR = "VALIDATION.md#issue-12-hardware-acceptance-2026-11-06"
+RUN2_ANCHOR = "VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06"
 
 
 def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
@@ -936,7 +938,9 @@ def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
             problems.append(f"{name} does not reference ISSUE-11-DEC-008")
         if HARDWARE_ANCHOR not in flat:
             problems.append(f"{name} does not link the #12 hardware record")
-        for issue in ("issues/66", "issues/67"):
+        if RUN2_ANCHOR not in flat:
+            problems.append(f"{name} does not link the #12 run-2 record")
+        for issue in ("issues/66", "issues/67", "issues/70"):
             if issue not in flat:
                 problems.append(f"{name} does not reference {issue}")
     return problems
@@ -958,22 +962,22 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
     [
         (
             "TRACEABILITY.md",
-            "in stdio mode, tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
-            "per ISSUE-11-DEC-008, with the SIGTERM drain",
-            "in stdio mode (#11), with the SIGTERM drain",
+            "tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
+            "per ISSUE-11-DEC-008 (the stdio host",
+            "(#11) (the stdio host",
             "MCP-04 does not track 'drain of an in-flight call' by #12",
         ),
         (
             "TRACEABILITY.md",
             "certainly in flight at the signal) recorded in "
-            "[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)",
-            "certainly in flight at the signal)",
+            "[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06) and",
+            "certainly in flight at the signal) and",
             "MCP-04 does not link the #12 record for 'drain of an in-flight call'",
         ),
         (
             "TRACEABILITY.md",
-            "per ISSUE-12-DEC-002), tracked by",
-            "per ISSUE-12-DEC-002) (#11), tracked by",
+            "without the hub hop (not exercised), tracked by",
+            "without the hub hop (not exercised) (#11), tracked by",
             "OPS-01 does not track 'load measurements' by #12",
         ),
         (
@@ -1011,6 +1015,18 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
             "issues/67",
             "issues",
             "DEPLOYMENT.md does not reference issues/67",
+        ),
+        (
+            "DEPLOYMENT.md",
+            "issues/70",
+            "issues",
+            "DEPLOYMENT.md does not reference issues/70",
+        ),
+        (
+            "README.md",
+            "docs/VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06",
+            "docs/VALIDATION.md",
+            "README.md does not link the #12 run-2 record",
         ),
     ],
 )
@@ -1154,6 +1170,180 @@ def test_hardware_section_check_rejects_regressions(old, new, expected):
     assert hardware_section_problems(section) == []
     assert old in section
     assert expected in hardware_section_problems(section.replace(old, new))
+
+
+RUN2_FACTS = (
+    "ISSUE-12-DEC-005",
+    "ISSUE-12-DEC-004",
+    "WLED 16.0.1",
+    "no compatibility with other firmware, controllers or LED types",
+    "issues/70",
+    "peak 64 established",
+    "no write reported `uncertain`",
+    "not the moment the process received SIGTERM",
+    "HTTP 429",
+    "answered by the hub itself",
+    "the first load attempts were invalid",
+)
+RUN2_RESULTS = {
+    "#66 re-check": ("issues/66", "hardware re-check: save then activate"),
+    "stale-ID removal": ("H05 stale-ID removal on hardware passed",),
+    "stdio drain finding": (
+        "closed the connection without draining in-flight calls",
+        "Connection closed",
+        "read the state before retrying",
+        "ISSUE-12-DEC-006 accepts this host behavior as a documented limitation of stdio mode",
+    ),
+}
+RUN2_RESTORATION = {
+    "R1 preset file": ("JSON-equal to the run-2 baseline", "blanks deleted entries with spaces"),
+    "R2 state": ("byte-identical to the run-2 baseline",),
+    "R3 configuration": ("byte-identical to the run-2 baseline",),
+}
+RUN2_VISUAL = {"A": "left blue, right red", "B": "all green", "C": "left blue, right red"}
+RUN2_NOT_RUN = ("H07 offline device", "Controller reboot", "beyond the hub's rate limit")
+
+
+def table_rows(section: str) -> dict[str, str]:
+    return {
+        cells[0]: " ".join(cells[1:])
+        for line in section.splitlines()
+        if line.startswith("| ")
+        for cells in [[cell.strip() for cell in line.strip().strip("|").split("|")]]
+    }
+
+
+def run2_section_problems(section: str) -> list[str]:
+    """What the #12 run-2 record must state (ISSUE-12-DEC-004/005, TD-12-7)."""
+    problems = []
+    flat = " ".join(section.split())
+    if "```text" not in section or "Restoration performed and verified:" not in section:
+        problems.append("the evidence template is not used")
+    for fact in RUN2_FACTS:
+        if fact not in flat:
+            problems.append(f"run-2 record lacks {fact!r}")
+    for result, facts in RUN2_RESULTS.items():
+        for fact in facts:
+            if fact not in flat:
+                problems.append(f"run-2 {result} lacks {fact!r}")
+    rows = table_rows(section)
+    for check, reply in RUN2_VISUAL.items():
+        if check not in rows:
+            problems.append(f"visual check {check} is missing")
+        elif reply not in rows[check]:
+            problems.append(f"visual check {check} lacks the owner's observation")
+    for check, facts in RUN2_RESTORATION.items():
+        if check not in rows:
+            problems.append(f"restoration result {check!r} is missing")
+            continue
+        for fact in facts:
+            if fact not in rows[check]:
+                problems.append(f"{check} lacks {fact!r}")
+    if "### Not run\n" not in section:
+        return [*problems, "the not-run list is missing"]
+    not_run = " ".join(markdown_section(section, "### Not run").split())
+    for item in RUN2_NOT_RUN:
+        if item not in not_run:
+            problems.append(f"not-run list lacks {item!r}")
+    if re.search(r"\b(?:all|every) (?:firmware|controllers?)\b[^.]*\bsupported\b", flat, re.I):
+        problems.append("the record makes a blanket compatibility claim")
+    return problems
+
+
+def test_run2_section_records_rechecks_visual_checks_stdio_drain_and_restoration():
+    section = markdown_section(VALIDATION.read_text("utf-8"), RUN2_HEADING)
+    assert run2_section_problems(section) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "hardware re-check: save then\n  activate",
+            "hardware re-check: deferred,\n  activate",
+            "run-2 #66 re-check lacks 'hardware re-check: save then activate'",
+        ),
+        (
+            "- H05 stale-ID removal on hardware passed",
+            "- H05 stale-ID removal on hardware pending",
+            "run-2 stale-ID removal lacks 'H05 stale-ID removal on hardware passed'",
+        ),
+        (
+            "| C | `wled_activate_preset`",
+            "| D | `wled_activate_preset`",
+            "visual check C is missing",
+        ),
+        ('"all green"', '"no reply"', "visual check B lacks the owner's observation"),
+        (
+            "it closed the connection without draining in-flight calls",
+            "it drained in-flight calls",
+            "run-2 stdio drain finding lacks "
+            "'closed the connection without draining in-flight calls'",
+        ),
+        (
+            "so a client has to read the state\nbefore retrying it",
+            "so a client may retry it",
+            "run-2 stdio drain finding lacks 'read the state before retrying'",
+        ),
+        (
+            "ISSUE-12-DEC-006 accepts this host behavior",
+            "The host behavior is open",
+            "run-2 stdio drain finding lacks 'ISSUE-12-DEC-006 accepts this host behavior "
+            "as a documented limitation of stdio mode'",
+        ),
+        (
+            "JSON-equal to the run-2 baseline",
+            "equal to the run-2 baseline",
+            "R1 preset file lacks 'JSON-equal to the run-2 baseline'",
+        ),
+        (
+            "| R2 state | byte-identical to the run-2 baseline",
+            "| R2 state | byte-identical to the run-1 baseline",
+            "R2 state lacks 'byte-identical to the run-2 baseline'",
+        ),
+        (
+            "| R3 configuration |",
+            "| R3 config |",
+            "restoration result 'R3 configuration' is missing",
+        ),
+        (
+            "- Controller reboot and power-cycle",
+            "- Power-cycle",
+            "not-run list lacks 'Controller reboot'",
+        ),
+        (
+            "Disclosure: the first load attempts were invalid",
+            "Disclosure: all load attempts were valid",
+            "run-2 record lacks 'the first load attempts were invalid'",
+        ),
+        (
+            "tracked by\n[#70](https://github.com/descipar/wled-mcp/issues/70)",
+            "tracked later",
+            "run-2 record lacks 'issues/70'",
+        ),
+        (
+            "is claimed.\n",
+            "is claimed. Every controller is supported.\n",
+            "the record makes a blanket compatibility claim",
+        ),
+    ],
+)
+def test_run2_section_check_rejects_regressions(old, new, expected):
+    section = markdown_section(VALIDATION.read_text("utf-8"), RUN2_HEADING)
+    assert run2_section_problems(section) == []
+    assert old in section
+    assert expected in run2_section_problems(section.replace(old, new))
+
+
+RUN2_FORWARD_REFERENCE = "[run 2](#issue-12-hardware-acceptance-run-2-2026-11-06)"
+
+
+def test_run1_not_run_list_points_forward_to_run2():
+    run1 = markdown_section(VALIDATION.read_text("utf-8"), HARDWARE_HEADING)
+    assert RUN2_FORWARD_REFERENCE in markdown_section(run1, "### Not run")
+    assert RUN2_HEADING not in run1
+    # Run-1 history stays: its not-run items are not removed by the forward reference.
+    assert hardware_section_problems(run1) == []
 
 
 def test_hub_http_registration_points_to_owner_and_reload_requirements():

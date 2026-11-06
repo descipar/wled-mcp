@@ -211,6 +211,7 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #12 only; not a human decision): HTTP only, preset slot
   250, no controller reboot, opt-in read-only HTTP probe, restoration criteria R1-R3,
   stdio context interpretation; TRACEABILITY cell forms unchanged (ISSUE-10-DEC-001).
+  Superseded in part: TD-12-1 (HTTP only) by ISSUE-12-DEC-004.
 - [ISSUE-12-DEC-003](decisions/issue-12.md) (coordinator interpretation of the human
   #12 implementation instruction and #12 acceptance box 7, 2026-11-06, issue #12 only;
   not a human decision): stop/start of the deployed HTTP service and load against it
@@ -219,6 +220,19 @@ can explicitly amend them.
   without objection but without separate explicit approval. Confirmed retroactively by
   the owner on 2026-11-06 for that run only; not standing permission for future service
   operations.
+- [ISSUE-12-DEC-004](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): stdio
+  via uvx stays in #12 scope; stdio-mode drain, load and H04-H06 live checks are
+  required for #12; supersedes TD-12-1 (HTTP only) of ISSUE-12-DEC-002 for the remaining
+  #12 work (ISSUE-12-DEC-002 is superseded in part).
+- [ISSUE-12-DEC-005](decisions/issue-12.md) (human, 2026-11-06, one bounded run): second
+  #12 live run: update the HTTP deployment to a build from current main and stop/start
+  it; temporary stdio hub entry with the HTTP entry disabled, then restored; the same
+  test controller with capture and restore; the owner observes with delayed replies, no
+  test relies on a quick reaction; this run only, not standing permission.
+- [ISSUE-12-DEC-006](decisions/issue-12.md) (human, 2026-11-06, issue #12 and stdio host
+  lifecycle only): the host closing the stdio connection on entry disable/stop without
+  draining in-flight calls is accepted as a documented stdio limitation; HTTP is the
+  preferred mode; no code change; not a deprecation of stdio.
 - [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
   the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
   (blending style) is light state; it joins the `state` allowlist and the save compare

@@ -36,7 +36,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 
 - ID: ISSUE-12-DEC-002
 - Recorded date: 2026-11-06
-- Status: active for issue #12 only.
+- Status: active for issue #12 only, superseded in part (TD-12-1) by ISSUE-12-DEC-004.
 - Authority: technical proposal by the requirements agent, accepted by the coordinator.
   This is not a human decision; the human did not choose these defaults and may veto
   them at review.
@@ -76,7 +76,10 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   OPS-01/02/05, MCP-03/04, TEST-01; `scripts/hw_http_probe.py`,
   `tests/test_hw_http_probe.py`, [VALIDATION.md](../VALIDATION.md),
   [TRACEABILITY.md](../TRACEABILITY.md).
-- Supersedes / superseded by: none; ISSUE-10-DEC-001 remains in force unchanged.
+- Supersedes / superseded by: superseded in part: TD-12-1 (HTTP only) is superseded by
+  [ISSUE-12-DEC-004](#issue-12-dec-004--stdio-via-uvx-stays-in-12-scope) for the
+  remaining #12 work; TD-12-2 to TD-12-7 stay active. ISSUE-10-DEC-001 remains in force
+  unchanged.
 - Propagated to roles / packet references: implementer and reviewer through the
   coordinator.
 - Revalidation needed / next action: independent review of the candidate.
@@ -123,3 +126,96 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Revalidation needed / next action: none for the #12 run (owner confirmation
   recorded above). Any further service stop/start, load run or operation outside this
   list needs a new human instruction.
+
+## ISSUE-12-DEC-004 — stdio via uvx stays in #12 scope
+
+- ID: ISSUE-12-DEC-004
+- Recorded date: 2026-11-06
+- Status: active for issue #12 only.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("nein, auch stdio in
+  #12", answering the coordinator's question on the stdio scope of #12), recorded as a
+  coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12); no
+  permalink to the original message available.
+- Scope: the remaining #12 acceptance work.
+- Decision: stdio via uvx stays in #12 scope. The stdio-mode live checks (drain of an
+  in-flight call when the entry is stopped, load measurements, and the H04-H06
+  scenarios as applicable) are required for #12 and are not moved to stage 2.
+- Applicability / conditions / expiry: issue #12 only. It defines scope, not an
+  operation approval: each live run still needs its own authorization (for the second
+  run, ISSUE-12-DEC-005).
+- Rationale supplied: none beyond the reply.
+- Affected requirement IDs, files, issues and tests: MCP-04, OPS-01/02/05, CTRL-01,
+  SEG-01-04, PRE-01-05, TEST-01; [VALIDATION.md](../VALIDATION.md),
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md).
+- Supersedes / superseded by: supersedes TD-12-1 (HTTP only) of ISSUE-12-DEC-002 for
+  the remaining #12 work; the first run's HTTP-only scope stays as recorded.
+- Propagated to roles / packet references: coordinator comment on #12; implementer and
+  reviewer through the coordinator.
+- Revalidation needed / next action: none.
+
+## ISSUE-12-DEC-005 — Authorization of the second #12 live run
+
+- ID: ISSUE-12-DEC-005
+- Recorded date: 2026-11-06
+- Status: used by the second #12 live run on 2026-11-06; expired after that run.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 ("ja zu den 3 fragen",
+  answering the coordinator's three questions), recorded as a coordinator comment on
+  [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
+  message available.
+- Scope: the deployed Streamable HTTP service of #11 and its hub entry on the existing
+  target, a temporary stdio hub entry on the same hub, and the test controller of
+  ISSUE-12-DEC-001.
+- Decision:
+  1. Update the HTTP deployment on the target to a build from current main, and stop
+     and start the HTTP service.
+  2. Temporarily register a stdio hub entry and temporarily disable the HTTP hub entry
+     during the stdio tests, then remove the stdio entry and re-enable the HTTP entry.
+  3. Use the same designated test controller again, with state, segment layout and
+     presets file captured beforehand and restored afterwards.
+  The owner is within sight for visual checks but may reply with delay; no test may
+  depend on a quick human reaction.
+- Applicability / conditions / expiry: this run only; not standing permission for later
+  deployments, hub changes, service operations or controller writes. Device and host
+  names stay in the local run record.
+- Rationale supplied: none beyond the reply.
+- Affected requirement IDs, files, issues and tests: as ISSUE-12-DEC-004, plus OPS-02;
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
+- Supersedes / superseded by: none. ISSUE-12-DEC-001 conditions apply to the controller
+  writes; ISSUE-11-DEC-004 (one active mode) holds because the HTTP entry was disabled
+  while the stdio entry was registered.
+- Propagated to roles / packet references: coordinator comment on #12; implementer and
+  reviewer through the coordinator.
+- Revalidation needed / next action: any further deployment, hub change or controller
+  write needs a new human instruction.
+
+## ISSUE-12-DEC-006 — stdio host-level no-drain accepted as a documented limitation
+
+- ID: ISSUE-12-DEC-006
+- Recorded date: 2026-11-06
+- Status: active.
+- Authority: human decision.
+- Source: owner reply in the project conversation on 2026-11-06 to the coordinator's
+  question whether the stdio host-level no-drain is acceptable ("ja, ist in ordnung.
+  stdio ist ja nur die zweite wahl für heute, ich bevorzuge http"), relayed by the
+  coordinator; no permalink to the original message available.
+- Scope: issue #12, the stdio-via-uvx mode and its host-owned subprocess lifecycle
+  (MCP-04 drain evidence).
+- Decision: the behavior observed in the second #12 run, that the MCP host (MCPHub)
+  closes the stdio connection on entry disable or stop without draining in-flight
+  calls, is accepted as a documented limitation of stdio mode for #12. Streamable HTTP
+  is the owner's preferred mode. No code change is requested.
+- Applicability / conditions / expiry: #12 and the stdio host lifecycle only. Not a
+  deprecation of stdio, not a change to the confirmed two-transport scope, and no
+  acceptance of other host behavior. The documented guidance stays: read the state
+  before retrying a write cut off this way.
+- Rationale supplied: stdio is the second choice for the current use; HTTP is preferred.
+- Affected requirement IDs, files, issues and tests: MCP-04;
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
+  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
+- Supersedes / superseded by: none; resolves the open question of the MCP-04 cell
+  raised after the second run. ISSUE-12-DEC-004 (stdio stays in #12 scope) is unchanged.
+- Propagated to roles / packet references: coordinator to implementer; reviewer through
+  the coordinator.
+- Revalidation needed / next action: none.

@@ -12,7 +12,10 @@ service; #9 adds the five persistent-preset tools (see
 executable behavior. Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06);
 activating a preset saved by WLED 16 is refused there
-([#66](https://github.com/descipar/wled-mcp/issues/66)) and remains pending.
+([#66](https://github.com/descipar/wled-mcp/issues/66)). With the #66 fix, saving and
+activating such a preset was verified on that controller in
+[run 2](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06) (classification
+`state`, readback matched).
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their

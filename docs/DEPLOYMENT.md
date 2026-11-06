@@ -14,9 +14,12 @@ with HTTP 200 and at least one was certainly in flight at the signal, and the #1
 hardware acceptance on one
 controller and firmware are recorded in
 [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06) (no blanket
-compatibility claim; the in-flight write drain, peak concurrent connections and stdio-mode load were not run; see
-[#66](https://github.com/descipar/wled-mcp/issues/66) and
-[#67](https://github.com/descipar/wled-mcp/issues/67)). Live update and
+compatibility claim; see [#67](https://github.com/descipar/wled-mcp/issues/67)). A second
+#12 run updated the HTTP service to a newer main build and recorded peak concurrent
+connections, an in-flight write drain, stdio H04-H06, rate-limited stdio load through the
+hub, a stdio drain finding (see the stdio notes below) and the hardware re-check of the
+fixed [#66](https://github.com/descipar/wled-mcp/issues/66) in
+[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06). Live update and
 rollback between two versions moved to stage 2
 ([#21](https://github.com/descipar/wled-mcp/issues/21),
 [#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
@@ -128,6 +131,12 @@ Constraints pin versions but do not enforce artifact hashes; keep the trusted wh
 Never point a deployment at an editable checkout, `@latest`, an unpinned Git branch or
 an index package of the same name.
 
+Staging a non-release build (a newer commit with an unchanged package version) is not yet
+defined: `stage_release.py` correctly refuses to overwrite the existing `<version>/`
+directory, and the ad-hoc directory and image names used once in the second #12 run are
+not a documented procedure. Tracked by
+[#70](https://github.com/descipar/wled-mcp/issues/70).
+
 ## HTTP service: build, start, verify
 
 The image is built locally on the target from the staged directory and never pushed:
@@ -225,6 +234,11 @@ Observed with MCPHub 1.2.1 in the live check:
   in the container filesystem (for example servers launched through `npx`) download
   their packages again; this is independent of wled-mcp. Recreating the hub is a hub
   operation and is never part of the wled-mcp update, rollback or removal procedures.
+- Hub-side handling: through the hub's MCP endpoint, `ping` and `tools/list` are
+  answered by the hub itself, so they do not reach or measure a stdio server process.
+- Rate limit: MCPHub 1.2.1 returned HTTP 429 ("Too many requests") after about 200
+  requests within its window in the second #12 run; load through the hub is bounded by
+  that limit, not by the server.
 
 ## HTTP service: update, rollback, recreation, removal
 
@@ -300,6 +314,16 @@ uvx --isolated --python 3.13 \
 The distribution check runs this exact argument list through uvx with only the
 wheel, constraints, config and data paths replaced by local ones.
 
+Host-owned lifecycle: in stdio mode the host (here the hub) starts and stops the
+subprocess and may not drain in-flight calls. In the second #12 run, disabling the entry
+closed the connection at once: calls in flight got a "Connection closed" protocol error
+from the hub, later calls "Tool not available", and the process was gone after about
+0.9 s ([VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)). A write cut off this way may have been applied on the device while the
+client sees only an error; read the state with `wled_get_state` (or the preset list)
+before retrying it, and stop or disable the entry only when no write is in flight.
+ISSUE-12-DEC-006 accepts this as a documented limitation of stdio mode; Streamable HTTP
+is the preferred mode where in-flight calls must drain.
+
 ## Device restoration
 
 Code update or rollback does not undo lighting or preset changes on a device. Restoring
@@ -348,4 +372,4 @@ Measure idle RSS with `ps` on the container's process (for example via the PID f
 cgroup. Measurements from the live check are in
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06).
 
-Resource measurements to collect on the actual target (moved to [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008; the HTTP-mode figures, including CPU time per call, are in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06); peak concurrent connections (L4) were not sampled and stdio-mode load is not measured): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.
+Resource measurements to collect on the actual target (moved to [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008; the HTTP-mode figures, including CPU time per call, are in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06); peak concurrent connections and stdio-mode figures through the hub, limited by the hub's rate limit, are in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.

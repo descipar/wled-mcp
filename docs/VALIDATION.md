@@ -1,6 +1,6 @@
 # Validation and acceptance plan
 
-Requirement-to-evidence mapping: [TRACEABILITY.md](TRACEABILITY.md) links every Must requirement and T01–T21 to the automated tests and scripts that exercise them and keeps hardware/deployment evidence visibly pending; `scripts/check_traceability.py` enforces it in ordinary CI. The per-issue evidence sections below are historical per-candidate records: they state the results recorded for that candidate at that time and are not re-executed. Where they mention the wall-clock flake of `test_one_total_deadline_and_bounded_read_retry`, it is superseded by the controlled-time test from #55; the failing `test_stdio_ignores_ambient_http_token_and_binds_nothing` noted for #48/#52 is superseded by the socket guard from #53. Current results for the issue #10 candidate are in [its section](#issue-10-acceptance-evidence); deployment-artifact evidence for #11 is in [its section](#issue-11-deployment-artifact-evidence). Hardware acceptance for #12 is partly recorded for one controller and one firmware in [its section](#issue-12-hardware-acceptance-2026-11-06), without a compatibility claim beyond them; the items in its "Not run" list, including H07, remain pending.
+Requirement-to-evidence mapping: [TRACEABILITY.md](TRACEABILITY.md) links every Must requirement and T01–T21 to the automated tests and scripts that exercise them and keeps hardware/deployment evidence visibly pending; `scripts/check_traceability.py` enforces it in ordinary CI. The per-issue evidence sections below are historical per-candidate records: they state the results recorded for that candidate at that time and are not re-executed. Where they mention the wall-clock flake of `test_one_total_deadline_and_bounded_read_retry`, it is superseded by the controlled-time test from #55; the failing `test_stdio_ignores_ambient_http_token_and_binds_nothing` noted for #48/#52 is superseded by the socket guard from #53. Current results for the issue #10 candidate are in [its section](#issue-10-acceptance-evidence); deployment-artifact evidence for #11 is in [its section](#issue-11-deployment-artifact-evidence). Hardware acceptance for #12 is partly recorded for one controller and one firmware in [its section](#issue-12-hardware-acceptance-2026-11-06), without a compatibility claim beyond them; a [second run](#issue-12-hardware-acceptance-run-2-2026-11-06) added both modes, the #66 hardware re-check, visual checks and the remaining drain/load items, and the items in its "Not run" list, including H07, remain pending.
 
 Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> startup/CLI tests; C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 -> [DEVELOPMENT.md](DEVELOPMENT.md). Remaining contract scenarios retain downstream ownership.
 
@@ -847,6 +847,225 @@ contents from a snapshot was not run (ISSUE-8-DEC-001).
 - Restoring preset contents from a snapshot (ISSUE-8-DEC-001).
 - Other controllers and firmware, RGBW/CCT, 2D and multi-bus setups, playlists (none on
   the controller), live update/rollback (stage 2).
+
+Several of these items were run later the same day in
+[run 2](#issue-12-hardware-acceptance-run-2-2026-11-06).
+
+## Issue #12 hardware acceptance, run 2 (2026-11-06)
+
+A second authorized run on the same day, on the same test controller and target, under
+ISSUE-12-DEC-005 (HTTP deployment update and stop/start, a temporary stdio hub entry
+with the HTTP entry disabled, controller writes with capture and restore) and
+ISSUE-12-DEC-001 (controller conditions). ISSUE-12-DEC-004 keeps stdio via uvx in #12
+scope, so this run exercised both modes. The owner was within sight for visual checks
+and replied with delay; no step depended on a quick reaction. Sanitized from a local,
+git-ignored run record; host names, addresses, paths, user names, device and hub entry
+names, MAC addresses and image IDs are intentionally omitted. The results describe this
+one controller and this one firmware (WLED 16.0.1, unchanged since
+[run 1](#issue-12-hardware-acceptance-2026-11-06)) only; no compatibility with other
+firmware, controllers or LED types is claimed.
+
+```text
+Date / operator / source commit: 2026-11-06 / project coordinator agent under the owner's
+  authorization / wled-mcp 0.1.0 built from main commit b36f410 (includes the #66 fix)
+Package / Python / SDK / hub runtime: wled-mcp 0.1.0 (package version not bumped, see
+  "Build identification"), Python 3.13, aarch64; MCPHub 1.2.1
+Transport mode / endpoint or uvx artifact / service lifecycle: Streamable HTTP (the #11
+  Compose service, updated to the b36f410 image, stop/start for D3) and stdio via uvx (a
+  temporary hub entry running the staged b36f410 wheel with the documented argument
+  list, HTTP entry disabled meanwhile, removed afterwards)
+Sanitized device and firmware / relevant capabilities: as run 1 H01 (WLED 16.0.1,
+  ESP32-C3, 133 RGB LEDs, one bus)
+Scenario IDs run: P0, HTTP update, L4, D3, visual A-C (H04-H06 writes through the hub's
+  HTTP entry), stdio H04-H06, stdio load, stdio drain, R1-R3
+Before state and snapshot references (local, no secrets): run-2 baseline of state,
+  info, configuration and preset file with SHA-256 values in the local run record; the
+  state hash equals the run-1 baseline
+Expected and observed results: tables below
+Restoration performed and verified: R1-R3 below
+Not run / reason / remaining risk: "Not run" list below
+```
+
+### Build identification and HTTP update
+
+The package version on main was still 0.1.0, and the documented staging keys release
+directories and image tags on the version alone (`<version>/`, `wled-mcp:<version>`),
+whose existing 0.1.0 directory must not be overwritten. The b36f410 build was therefore
+staged under an ad-hoc release directory `0.1.0+b36f410` and image tag
+`wled-mcp:0.1.0-b36f410`. This is a deviation from the documented procedure; a defined
+identification scheme for non-release builds is tracked by
+[#70](https://github.com/descipar/wled-mcp/issues/70). The previous 0.1.0 release
+directory and image were kept as the rollback source.
+
+| Step | Result |
+| --- | --- |
+| HTTP update | `image:` in the Compose file changed to the b36f410 tag (the previous file kept as a backup), `up -d` for the service only: start to listening 7.53 s |
+| Hub reconnection | the hub's HTTP entry reconnected without any hub action (a preset list call through it returned normally) |
+| Remaining deployment | the b36f410 image stays the active HTTP deployment (authorized update) |
+
+### L4 peak concurrent connections, Streamable HTTP
+
+Client: `scripts/hw_http_probe.py` inside the service container against its loopback
+interface, `ping`, one TCP connection per request; peak established connections on the
+service port sampled during each burst; latencies in ms.
+
+| Concurrency (requests) | Result |
+| --- | --- |
+| 16 (400) | 204 requests/s; p50 76; peak 16 established; all HTTP 200 |
+| 32 (800) | 203 requests/s; p50 153; peak 32 established; all HTTP 200 |
+| 64 (1,600) | 198 requests/s; p50 307; p95 412; peak 64 established; all HTTP 200 |
+| Memory | RSS at most 75,656 KiB |
+| Sockets after the clients disconnected | 2 listening, 2,731 in TIME-WAIT (one connection per request over all bursts), none established |
+
+Peak connections followed the client concurrency up to 64; throughput stayed at about
+200 requests/s, so additional concurrency only queued.
+
+### D3 drain of an in-flight write, Streamable HTTP
+
+A writer client in a separate container on the hub network sent brightness-only
+`wled_set_state` calls back to back while the controller was off (the master stays off,
+ISSUE-52-DEC-001); the service was then stopped as in run 1 (SIGTERM). Times relative to
+the `compose stop` invocation (t0).
+
+| Check | Result |
+| --- | --- |
+| Write i=6, sent -0.118 s | HTTP 200 at +0.049 s, applied and verified by readback |
+| Write i=7, sent +0.050 s | HTTP 200 at +0.242 s, applied and verified |
+| Write i=8, sent +0.242 s | HTTP 200 at +0.417 s, applied and verified |
+| Write i=9 and later, from +0.417 s | connection refused (no request reached the service) |
+| Uncertain writes | none; no write reported `uncertain` |
+| Stop / start | stop returned after 1.42 s with exit code 0; start to listening 6.45 s |
+
+Caveat on signal timing: as in run 1, t0 is the CLI invocation, not the moment the
+process received SIGTERM. Writes sent after t0 were still admitted, so the signal arrived
+between +0.242 s and +0.417 s. Write i=8 was admitted at +0.242 s and answered at
++0.417 s, so it was in flight at the signal unless the signal fell between its answer
+and the next connection attempt, which the record's resolution cannot separate. No
+admitted write was cut off or left uncertain.
+
+### Visual checks (owner)
+
+The owner observed the strip and confirmed each pattern with a delayed reply. The
+checks and their setup writes ran through the hub's HTTP entry, before the stdio phase;
+every write was verified by the tool's readback. The run record maps them to the
+visible behavior of the H04-H06 writes.
+
+| Check | Command | Owner's observation (translated) |
+| --- | --- | --- |
+| A | `wled_patch_segments`, `wled_replace_layout` and `wled_set_state` (brightness 120): segment 0 LEDs [0, 66) red, segment 1 LEDs [66, 133) blue; all verified | "left blue, right red": both halves as commanded; the strip starts (LED 0) on the right-hand side from the owner's view |
+| B | `wled_replace_layout` to one segment LEDs [0, 133), green; the stale segment ID 1 is removed by the single-segment payload (verified) | "all green" |
+| C | `wled_activate_preset` 250 (saved after A, see below): applied and verified by the tool's state readback, type `state` | "left blue, right red" (pattern A again) |
+
+Directly after check A, `wled_save_preset` saved the pattern as preset 250 through the
+same entry: verified, classified `state` on WLED 16 (the stored preset contains `bs`).
+
+Results:
+
+- [#66](https://github.com/descipar/wled-mcp/issues/66) hardware re-check: save then
+  activate of a preset saved on WLED 16.0.1 passed (preset 250 and check C over HTTP:
+  classification `state`, activation applied and verified by readback and confirmed
+  visually; the stdio H06 below repeats it in stdio mode).
+- H05 stale-ID removal on hardware passed: `wled_replace_layout` removed segment ID 1
+  (check B; readback and visual).
+- Visible behavior confirmed by the owner for colors, segment extents and preset
+  recall (checks A-C). Effect animation, speed, brightness level and transition were
+  not observed separately.
+
+### stdio via uvx: H04-H06
+
+The HTTP hub entry was disabled, and a temporary stdio entry was registered with the
+staged b36f410 release and the documented argument list; it connected after 8 s and
+listed 12 tools. All calls went through the hub.
+
+| Scenario | Result |
+| --- | --- |
+| H04 `wled_set_state` on with brightness 0 | `VALIDATION_ERROR`, no write |
+| H04 brightness only while off | master stays off (targeted compensation), readback matched |
+| H05 `wled_replace_layout` two segments to one | stale segment ID 1 removed; readback matched |
+| H05 `wled_replace_layout` one segment to three | segments 1 and 2 created; readback matched |
+| H05 `wled_patch_segments` segment 1 | applied; segments 0 and 2 unchanged |
+| H05 `wled_replace_layout` three segments to one | stale segment IDs 1 and 2 removed; readback matched |
+| H06 `wled_save_preset` 250 without `overwrite` | `PRESET_CONFLICT`, no write |
+| H06 `wled_save_preset` 250 with `overwrite=true` | snapshot, then saved; classification `state` on WLED 16; readback matched |
+| H06 `wled_activate_preset` 250 | activated (type `state`); readback matched |
+| H06 `wled_delete_preset` 250 | snapshot, then removed; absence matched; warning that the deleted preset carried the currently active preset marker |
+| H06 `wled_delete_preset` 250 again | `PRESET_NOT_FOUND`, no write |
+
+Snapshots: two snapshot files in the stdio data directory inside the hub's persistent
+data (directory mode 0700, files mode 0600, owned by the hub's process user); the three
+run-1 snapshot files of the HTTP service are unchanged. Not committed.
+
+### stdio load (through the hub)
+
+Client: a load script against the hub's MCP endpoint for the temporary stdio entry with
+a temporary hub system key (removed afterwards). Temporary hub system keys, each created
+and removed within its script, were the mechanism for all hub API operations in #11 and
+#12 (register, toggle, reload, remove, probes); they fall under the owner's
+authorization to register and remove the stdio entry and toggle the HTTP entry
+(ISSUE-12-DEC-005). Figures include the hub hop; CPU is the
+user + system time of the stdio Python process (not the uv wrapper) per run.
+
+| Check | Result |
+| --- | --- |
+| `ping` and `tools/list` | answered by the hub itself; the stdio process used no CPU for them, so they do not measure the server |
+| Hub rate limit | MCPHub 1.2.1 returned HTTP 429 "Too many requests" after about 200 requests in its window; no load beyond that limit was possible through the hub |
+| `wled_get_state`, concurrency 1 (20) | all `ok`, no HTTP 429; 4 requests/s; p50 107; p95 319; max 2,537; about 20 ms CPU per call |
+| `wled_get_state`, concurrency 4 (40) | all `ok`, no HTTP 429; 2.2 requests/s; p50 394; p95 7,884 |
+| `wled_get_effects` (refresh), concurrency 4 (20) | all `ok`, no HTTP 429; p50 1,940; p95 3,247; about 38 ms CPU per call |
+| Process | stdio Python process RSS 77.5 MiB, 3 threads, no listening socket; uv wrapper RSS 36 MiB |
+
+Disclosure: the first load attempts were invalid and are not counted: a wrong tool-name
+prefix in the load script, CPU sampled from the uv wrapper instead of the Python
+process, and runs that hit the hub's rate limit. Only the runs above are valid; none of
+them received an HTTP 429. They
+are shaped by the hub (rate limit, hub-side handling) and are not comparable with the
+in-container HTTP figures of run 1.
+
+### stdio drain (entry disabled while calls were in flight)
+
+The stdio entry was disabled through the hub API while `wled_get_effects` (refresh) calls
+were in flight.
+
+| Check | Result |
+| --- | --- |
+| Calls finished before the disable | 3, normal results |
+| Calls in flight at the disable | 2, answered by the hub with "ProtocolError, Connection closed"; the client cannot tell the server-side outcome |
+| Later calls | "Tool not available" |
+| Process exit | the stdio Python process was gone 0.88 s after the disable; no stdio process left |
+
+Finding: in stdio mode the host (here the hub) owns the subprocess lifecycle. On disable
+it closed the connection without draining in-flight calls. Whether and when the server
+process received a signal is not recorded; with the connection closed, a result could
+not reach the client in any case, so the server's own SIGTERM drain (T21) does not help
+at the host level. ISSUE-12-DEC-006 accepts this host behavior as a documented
+limitation of stdio mode (Streamable HTTP is the preferred mode; no code change). The
+calls in this check were reads; an
+in-flight write cut off this way is possibly applied, so a client has to read the state
+before retrying it (see [DEPLOYMENT.md](DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal)).
+
+### Cleanup and restoration (R1-R3)
+
+The temporary stdio entry was removed (only that entry), the HTTP entry was re-enabled
+by its admin owner, and the temporary hub system key was removed. The controller was
+restored by activating the pre-existing preset 1 and switching off.
+
+| Check | Result |
+| --- | --- |
+| R1 preset file | JSON-equal to the run-2 baseline (only preset 1); bytes grew from 3,770 to 6,105 because the firmware blanks deleted entries with spaces instead of compacting the file |
+| R2 state | byte-identical to the run-2 baseline |
+| R3 configuration | byte-identical to the run-2 baseline |
+
+### Not run
+
+- H07 offline device on hardware (simulated evidence T02/T09 remains).
+- Controller reboot and power-cycle persistence (ISSUE-12-DEC-002 TD-12-3).
+- stdio load beyond the hub's rate limit, and per-request stdio latency without the
+  hub (no direct client for the hub-managed subprocess).
+- Visual comparison with the WLED UI (H02); the visual checks above covered the LEDs.
+- Interference inventory and quiet windows were not repeated for this run (run 1 I1-I3);
+  the run-2 state baseline equals the run-1 end state.
+- Restoring preset contents from a snapshot (ISSUE-8-DEC-001); other controllers and
+  firmware; live update/rollback between versions (stage 2).
 
 ## Evidence template
 
