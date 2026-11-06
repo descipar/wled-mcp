@@ -45,7 +45,7 @@ and handed off/committed through the current branch and PR workflow.
 | ID | Scope | Decision | Authority / record |
 | --- | --- | --- | --- |
 | DEC-001 | Workflow | A short issue implementation request starts the defined workflow by default. The user need not repeat roles, paths, testing or review steps. | Confirmed human instruction, project workflow discussion, 2026-11-04; implemented in [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
-| DEC-002 | Workflow | Derive stage from issue labels, ancestor tracker and roadmap; stage is not a mandatory user input. Ask only for relevant conflict or genuinely unclear scope. | Confirmed human correction, project workflow discussion, 2026-11-04; [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
+| DEC-002 | Workflow | Derive stage from issue labels, ancestor tracker and roadmap; stage is not a mandatory user input. Ask only for relevant conflict or genuinely unclear scope. Amended by DEC-010: every issue must carry a stage. | Confirmed human correction, project workflow discussion, 2026-11-04; [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
 | DEC-003 | Project / transport scope | Support both Streamable HTTP and client-managed stdio via uvx, sharing the WLED tool/domain contract. | Confirmed human scope instruction, transport discussion, 2026-11-04; [requirements](REQUIREMENTS.md), [issue #14](https://github.com/descipar/wled-mcp/issues/14) |
 | DEC-004 | Stage 3 | Named zones, temporary signals, static previews, lighting explanations and effect-property search belong to stage 3 and do not block stage-2 publication. | Confirmed human stage assignment, roadmap discussion, 2026-11-04; [stage-3 roadmap](STAGE-3.md), [tracker #26](https://github.com/descipar/wled-mcp/issues/26) |
 | DEC-005 | Project documentation / issues | Use neutral roles and synthetic examples. Exclude personal names, private hostnames and installation-specific personal context unless explicitly requested. | Existing governing [AGENTS.md](../AGENTS.md) rule, recorded 2026-11-04 |
@@ -53,7 +53,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
-| DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix (`Stage N epic: ` for a stage tracker) plus exactly one `stage:N` label; workflow/tooling issues are assigned to the stage in which they are done. | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
+| DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -150,23 +150,29 @@ can explicitly amend them.
 ### DEC-010 — Stage in every issue title
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-06 (no
-  permalink): every issue must have a stage, and the stage must be visible in the issue
-  title. In the same session the owner assigned the workflow-tooling issues #34 and #37,
-  previously described as cross-stage, to stage 1 because they were delivered then.
-- Scope/decision: each issue carries exactly one stage, shown as a `Stage N: ` title
-  prefix (`Stage N epic: ` for the stage tracker) and exactly one `stage:N` label, and is
-  linked as a sub-issue of that stage's tracker (#1, #15 or #26). Workflow or tooling
-  issues get the stage in which they are worked on instead of "cross-stage". Agents that
-  create issues apply this; the coordinator fixes a missing or mismatched stage before
-  starting work and asks the owner only when the stage is genuinely unclear.
-- Conditions: changing an issue's stage remains an owner decision; DEC-002 still governs
-  deriving stage context, but no longer allows leaving an issue without a stage.
-- Rationale supplied: none beyond the instruction.
+- Authority/source: owner instructions in the coordinator session on 2026-11-06 (no
+  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein";
+  the owner then confirmed recording the rule "jedes Issue hat genau eine Stage, sichtbar
+  als 'Stage N: …' im Titel plus Label stage:N", and chose stage 1 for the workflow-tooling
+  issues #34 and #37 (previously described as cross-stage), including their link as
+  sub-issues of #1.
+- Owner decision: every issue has exactly one stage, shown as a `Stage N: ` title prefix
+  and exactly one `stage:N` label. #34 and #37 belong to stage 1.
+- Coordinator-derived conventions (not owner statements; the owner may amend them):
+  stage trackers use `Stage N epic: `; each issue is linked as a sub-issue of its stage
+  tracker (#1, #15 or #26); a new workflow/tooling issue is assigned a stage like any
+  other issue instead of being left cross-stage, and the coordinator asks the owner when
+  the stage is not clear from labels, tracker and roadmap.
+- Conditions: DEC-002 still governs deriving stage context; it no longer permits leaving
+  an issue without a stage. Moving an issue to a different stage than the one evident
+  from its labels, tracker or an owner note needs the owner; adding a missing prefix,
+  label or tracker link for an evident stage does not.
+- Rationale supplied: none.
 - Supersedes: the "may be recorded as cross-stage" allowance in agents/coordinator.md and
-  docs/AGENT-WORKFLOW.md.
+  docs/AGENT-WORKFLOW.md (introduced with DEC-002, PR #32).
 - Affected: AGENTS.md, agents/coordinator.md, agents/requirements.md, generated adapters,
-  docs/AGENT-WORKFLOW.md; all GitHub issues (retitled and labelled 2026-11-06).
+  docs/AGENT-WORKFLOW.md, docs/IMPLEMENTATION-PLAN.md, docs/PROJECT.md; all GitHub issues
+  (retitled, labelled and linked 2026-11-06).
 
 ## Issue-specific decisions (pointers)
 

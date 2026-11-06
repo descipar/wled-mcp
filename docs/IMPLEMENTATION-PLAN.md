@@ -4,7 +4,7 @@ Status, 2026-11-04: #2 is merged through PR #33. #3 supplies the installed stdio
 
 ## Delivery tracker
 
-[Issue #1 — Epic: deliver the first usable WLED MCP server](https://github.com/descipar/wled-mcp/issues/1) is the parent of issues #2–#14. Its closure requires the release evidence described in REQUIREMENTS.md, including both confirmed transports; merely closing software tasks does not prove hardware acceptance.
+[Issue #1 — Stage 1 epic: deliver the first usable WLED MCP server](https://github.com/descipar/wled-mcp/issues/1) is the parent of the stage-1 issues (#2–#14 and the follow-ups #34, #37, #48, #52, #53, #55, #61, #62, #66, #74). Its closure requires the release evidence described in REQUIREMENTS.md, including both confirmed transports; merely closing software tasks does not prove hardware acceptance.
 
 ## Work packages
 

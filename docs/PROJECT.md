@@ -82,7 +82,7 @@ completion.
 - **Stage 2** — reusable public project: portable setup, groups/scenes, preset
   portability, advanced segments, tool profiles, compatibility policy, release pipeline,
   public documentation and marketplace listings. Tracker
-  [#15](https://github.com/descipar/wled-mcp/issues/15) with child issues #16-#25
+  [#15](https://github.com/descipar/wled-mcp/issues/15) with child issues #16-#25, #44, #67 and #70
   (label `stage:2`); see [STAGE-2.md](STAGE-2.md) and [MARKETPLACE.md](MARKETPLACE.md).
   These do not silently expand stage-1 acceptance.
 - **Stage 3** — named lighting zones, temporary signals, static layout previews,
