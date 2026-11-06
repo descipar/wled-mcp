@@ -257,6 +257,10 @@ can explicitly amend them.
 - [ISSUE-74-DEC-001](decisions/issue-74.md) (human, 2026-11-06, issue #74 only): both
   options — inventory rejects invalid IPv4-like hosts at startup, and client-side URL
   errors map to a safe domain error; no URL or host in diagnostics.
+- [ISSUE-74-DEC-002](decisions/issue-74.md) (agent technical proposals accepted by the
+  coordinator, 2026-11-06, issue #74 only; not a human decision): a host whose last
+  label is numeric or `0x`-hex must be a canonical dotted-quad IPv4 address; client
+  `InvalidURL` maps to `CONFIG_ERROR`; exception suppression is tested.
 
 ## Still unresolved
 
