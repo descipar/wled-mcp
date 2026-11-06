@@ -714,7 +714,7 @@ matched expectations; the sources were not monitored continuously.
 | Segments | segment limit 32; one active segment in the baseline |
 | Power limiter | automatic brightness limiter configured |
 | Catalogs | 220 effects, 72 palettes |
-| Locks | OTA lock and Wi-Fi settings lock off in the before and after configuration captures of runs 1-3; no settings PIN present in the captured configuration; no WLED API read or write refused by the controller in runs 1-3 (the #66 activation refusal came from this server, the run-3 `TIMEOUT` occurred before dispatch) |
+| Locks | OTA lock and Wi-Fi settings lock off in the before and after configuration captures of runs 1-3; settings PIN state not captured (not part of the configuration export); no WLED API read or write refused by the controller in runs 1-3 (the #66 activation refusal came from this server, the run-3 `TIMEOUT` occurred before dispatch) |
 
 ### H02 reads
 
