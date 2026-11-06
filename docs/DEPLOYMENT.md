@@ -9,10 +9,12 @@ authorized power on/off on one test controller); see
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Drain of an
 in-flight call on the target and load measurements moved to
 [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008; HTTP-mode load
-figures, drain of in-flight reads on SIGTERM and the #12 hardware acceptance on one
+figures, a SIGTERM drain in which read calls sent before the stop command completed
+with HTTP 200 and at least one was certainly in flight at the signal, and the #12
+hardware acceptance on one
 controller and firmware are recorded in
 [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06) (no blanket
-compatibility claim; the in-flight write drain and stdio-mode load were not run; see
+compatibility claim; the in-flight write drain, peak concurrent connections and stdio-mode load were not run; see
 [#66](https://github.com/descipar/wled-mcp/issues/66) and
 [#67](https://github.com/descipar/wled-mcp/issues/67)). Live update and
 rollback between two versions moved to stage 2
@@ -346,4 +348,4 @@ Measure idle RSS with `ps` on the container's process (for example via the PID f
 cgroup. Measurements from the live check are in
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06).
 
-Resource measurements to collect on the actual target (moved to [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008; the HTTP-mode figures are in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06), stdio-mode load is not measured): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.
+Resource measurements to collect on the actual target (moved to [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008; the HTTP-mode figures, including CPU time per call, are in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06); peak concurrent connections (L4) were not sampled and stdio-mode load is not measured): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.

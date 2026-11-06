@@ -652,7 +652,9 @@ H01/H04–H07 (#12).
 ## Issue #12 hardware acceptance (2026-11-06)
 
 One authorized hardware acceptance run on one test controller (ISSUE-12-DEC-001) and on
-the deployed Streamable HTTP service of #11 (ISSUE-12-DEC-003), with the technical
+the deployed Streamable HTTP service of #11 (stop/start and load per ISSUE-12-DEC-003, a
+coordinator interpretation that is presented to the owner for confirmation at merge
+review), with the technical
 defaults of ISSUE-12-DEC-002, sanitized from a local, git-ignored run record. Host
 names, addresses, paths, user names, device names, MAC addresses and image IDs of the
 installation are intentionally omitted. The results describe this one controller and
@@ -692,7 +694,8 @@ receiver; UDP sync receive on (brightness, color, effect, palette; one group) an
 off; another WLED controller visible via the node list (node broadcast on); realtime
 input (E1.31/DDP) enabled but not active; Alexa emulation enabled; MQTT and Hue sync
 off; NTP on; nightlight off; the AudioReactive usermod disabled; one WebSocket client
-connected. None of them changed the controller during the run.
+connected. The quiet windows before and after were unchanged and all write readbacks
+matched expectations; the sources were not monitored continuously.
 
 ### H01 device facts
 
@@ -736,11 +739,12 @@ interface; one TCP connection per request (included in the latency); latencies i
 | --- | --- |
 | L1 idle | RSS 73,740 KiB, 1 thread (`ps` on the container process) |
 | L2 `ping`, concurrency 1 / 4 / 16 (100 / 200 / 400 requests) | 167 / 195 / 201 requests/s; p50 5.3 / 19 / 76; p95 6.5 / 23 / 97; max 48 at c1, p99 107 at c16; all HTTP 200 |
-| L2 `tools/list`, concurrency 1 / 4 / 16 (100 / 200 / 400 requests) | 9.1 / 9.2 / 9.2 requests/s; p50 106 / 425 / 1717; p95 117 / 470 / 1829; p99 1863 at c16; all HTTP 200; CPU-bound at about 106 ms CPU per call, so concurrency only queues ([#67](https://github.com/descipar/wled-mcp/issues/67)) |
+| L2 `tools/list`, concurrency 1 / 4 / 16 (100 / 200 / 400 requests) | 9.1 / 9.2 / 9.2 requests/s; p50 106 / 425 / 1717; p95 117 / 470 / 1829; p99 1863 at c16; all HTTP 200; the service process used about 108-109 ms CPU per call (sampled), so the call is CPU-bound and concurrency only queues ([#67](https://github.com/descipar/wled-mcp/issues/67)) |
 | L3 `wled_get_state`, concurrency 1 (20) / 4 (40) | 13 / 13.4 requests/s; p50 67 / 282; p95 104 / 347; the per-device lock serializes the controller reads; all HTTP 200 |
 | L3 `wled_get_effects` (cached), concurrency 4 (40) | 19.4 requests/s; p50 201; p95 235; all HTTP 200 |
 | Peak RSS during the bursts | 76,512 KiB |
-| L4 peak connections | not sampled separately; bounded by the client concurrency of 16 |
+| CPU per call (service process user + system time per burst) | `ping` about 5-6 ms; `tools/list` about 108-109 ms; `wled_get_state` about 21 ms; `wled_get_effects` (cached) about 22 ms |
+| L4 peak concurrent connections | not sampled; the client concurrency was at most 16 |
 | L5 sockets after the clients disconnected | 2 listening, 4 in TIME-WAIT, none established |
 | L6 request-body bound | 262,143 bytes: HTTP 200; 262,145 bytes: HTTP 413 |
 
@@ -754,7 +758,7 @@ the hub network (so it survived the stop) and sent read-only `wled_get_effects`
 | Check | Result |
 | --- | --- |
 | Attempt 1 | invalid as a drain sample: the client started only after the stop. As an idle stop: stop 1.26 s, exit code 0; start to listening 7.36 s |
-| D2 attempt 2, in-flight reads | three calls sent 0.53 / 0.35 / 0.15 s before the stop command's timestamp completed with HTTP 200 and full results at +0.22 / +0.46 / +0.62 s; two calls sent +0.03 / +0.22 s after that timestamp were still admitted and completed with HTTP 200; calls sent from +0.46 s were refused (connection refused); the stop returned after 1.99 s with exit code 0; start to listening 6.30 s |
+| D2 attempt 2, in-flight reads | three calls sent 0.53 / 0.35 / 0.15 s before the stop command's timestamp completed with HTTP 200 at +0.22 / +0.46 / +0.62 s (at least one, the last, certainly in flight at the signal; see the caveat); two calls sent +0.03 / +0.22 s after that timestamp were still admitted and completed with HTTP 200; calls sent from +0.46 s were refused (connection refused); the stop returned after 1.99 s with exit code 0; start to listening 6.30 s |
 | D3 in-flight write | not run (the probe is read-only); automated coverage T21 |
 
 Caveat: the reference time is the timestamp of the `compose stop` invocation on the CLI,
@@ -827,6 +831,7 @@ contents from a snapshot was not run (ISSUE-8-DEC-001).
 - Visual check of the LEDs and of the WLED UI (agents cannot see the LEDs; readback and
   the power/frame-rate proxy only).
 - D3 drain of an in-flight write on the target.
+- L4 peak concurrent connections (not sampled).
 - stdio mode in this run: stdio drain, stdio load and stdio H04-H06 (HTTP only per
   ISSUE-12-DEC-002; stdio startup/idle and hub reads are the #11 records).
 - H07 offline device on hardware (no unreachable device in the deployed inventory;

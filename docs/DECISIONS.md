@@ -211,10 +211,13 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #12 only; not a human decision): HTTP only, preset slot
   250, no controller reboot, opt-in read-only HTTP probe, restoration criteria R1-R3,
   stdio context interpretation; TRACEABILITY cell forms unchanged (ISSUE-10-DEC-001).
-- [ISSUE-12-DEC-003](decisions/issue-12.md) (human authority implicit in #12 acceptance
-  box 7 via ISSUE-11-DEC-008, 2026-11-06, issue #12 only): stop/start of the deployed
-  HTTP service and load against it are in scope; no rebuild, inventory/secret edit or
-  hub change.
+- [ISSUE-12-DEC-003](decisions/issue-12.md) (coordinator interpretation of the human
+  #12 implementation instruction and #12 acceptance box 7, 2026-11-06, issue #12 only;
+  not a human decision): stop/start of the deployed HTTP service and load against it
+  are in scope; no rebuild, inventory/secret edit or hub change. ISSUE-11-DEC-008 asked
+  for an instruction naming target and operations; the plan was announced to the owner
+  without objection but without separate explicit approval; presented to the owner at
+  merge review for confirmation.
 
 ## Still unresolved
 

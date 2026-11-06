@@ -959,15 +959,15 @@ def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
         (
             "TRACEABILITY.md",
             "in stdio mode, tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) "
-            "per ISSUE-11-DEC-008, with in-flight",
-            "in stdio mode (#11), with in-flight",
+            "per ISSUE-11-DEC-008, with the SIGTERM drain",
+            "in stdio mode (#11), with the SIGTERM drain",
             "MCP-04 does not track 'drain of an in-flight call' by #12",
         ),
         (
             "TRACEABILITY.md",
-            "drained on SIGTERM of the HTTP service recorded in "
+            "certainly in flight at the signal) recorded in "
             "[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)",
-            "drained on SIGTERM of the HTTP service",
+            "certainly in flight at the signal)",
             "MCP-04 does not link the #12 record for 'drain of an in-flight call'",
         ),
         (
@@ -1045,6 +1045,7 @@ RESTORATION = {
 NOT_RUN_ITEMS = (
     "Visual check",
     "D3 drain of an in-flight write",
+    "L4 peak concurrent connections",
     "stdio mode",
     "H07 offline device",
     "Controller reboot",
@@ -1120,6 +1121,11 @@ def test_hardware_section_records_restoration_not_run_list_and_findings():
             "  [#66](https://github.com/descipar/wled-mcp/issues/66)).\n",
             "",
             "not-run list lacks 'Activation of a preset saved by WLED 16'",
+        ),
+        (
+            "- L4 peak concurrent connections (not sampled).\n",
+            "",
+            "not-run list lacks 'L4 peak concurrent connections'",
         ),
         (
             "- H07 offline device on hardware",

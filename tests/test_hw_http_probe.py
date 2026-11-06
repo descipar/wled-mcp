@@ -59,7 +59,9 @@ class StubLog:
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
-def make_handler(log: StubLog, *, limit: int, slow_seconds: float) -> type:
+def make_handler(
+    log: StubLog, *, limit: int, slow_seconds: float, accepted_status: int | None = None
+) -> type:
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args: Any) -> None:  # keep test output quiet
             return
@@ -73,6 +75,9 @@ def make_handler(log: StubLog, *, limit: int, slow_seconds: float) -> type:
                 )
             if length > limit:
                 self._reply(413, {"error": "too large"})
+                return
+            if accepted_status is not None:
+                self._reply(accepted_status, {"error": "synthetic failure"})
                 return
             body = json.loads(self.rfile.read(length))
             if auth != f"Bearer {STUB_TOKEN}":
@@ -117,11 +122,14 @@ def make_handler(log: StubLog, *, limit: int, slow_seconds: float) -> type:
 
 
 @contextmanager
-def stub_server(*, limit: int = 4096, slow_seconds: float = 1.0) -> Iterator[tuple[str, StubLog]]:
+def stub_server(
+    *, limit: int = 4096, slow_seconds: float = 1.0, accepted_status: int | None = None
+) -> Iterator[tuple[str, StubLog]]:
     log = StubLog()
-    server = ThreadingHTTPServer(
-        ("127.0.0.1", 0), make_handler(log, limit=limit, slow_seconds=slow_seconds)
+    handler = make_handler(
+        log, limit=limit, slow_seconds=slow_seconds, accepted_status=accepted_status
     )
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
     assert server.server_address[0] == "127.0.0.1"
     thread = threading.Thread(target=server.serve_forever, args=(0.05,), daemon=True)
@@ -381,6 +389,24 @@ def test_body_bound_probe_classifies_413(server_limit, under_met, over_met):
     assert probes["under"]["met"] is under_met
     assert probes["over"]["met"] is over_met
     assert json.loads(out)["body_bound"]["met"] is (under_met and over_met)
+
+
+@pytest.mark.parametrize("status", [500, 400])
+def test_body_bound_under_probe_needs_a_successful_ping(status):
+    # The server answers 413 above the bound but fails below it for another reason:
+    # that is not evidence that a body just under the bound is accepted.
+    with stub_server(accepted_status=status) as (url, _):
+        code, out, _ = run_probe(
+            ["--url", url, "--token-env", "T", "body-bound", "--limit", "4096"],
+            {"T": STUB_TOKEN},
+        )
+    bound = json.loads(out)["body_bound"]
+    probes = {p["label"]: p for p in bound["probes"]}
+    assert code == 0
+    assert probes["under"]["status"] == status
+    assert probes["under"]["met"] is False
+    assert probes["over"]["met"] is True
+    assert bound["met"] is False
 
 
 # ------------------------------------------------------------------------ timeout

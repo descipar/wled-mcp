@@ -361,14 +361,16 @@ def run_burst(
 def run_body_bound(target: Target, limit: int) -> dict[str, Any]:
     probes = []
     for label, size, expectation in (
-        ("under", limit - 1, "not_413"),
+        ("under", limit - 1, "200_ok"),
         ("over", limit + 1, "413"),
     ):
         sample = send(target, 0, padded_ping(size), False)
+        # Below the bound only a successful ping proves acceptance; a 400/401/500 would
+        # hide a bound that rejects too early behind an unrelated failure.
         met = (
             sample.status == 413
             if expectation == "413"
-            else (sample.status is not None and sample.status != 413)
+            else (sample.status == 200 and sample.outcome == "ok")
         )
         probes.append(
             {

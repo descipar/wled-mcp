@@ -86,12 +86,17 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - ID: ISSUE-12-DEC-003
 - Recorded date: 2026-11-06
 - Status: active for issue #12 only.
-- Authority: human decision, implicit in #12 acceptance box 7, which the owner added
-  through ISSUE-11-DEC-008 (drain and load live checks move to #12), together with
-  the owner's instruction to implement #12 under the defined workflow. The reading
-  below is the coordinator's; it is not a separate human answer.
-- Source: [ISSUE-11-DEC-008](issue-11.md#issue-11-dec-008--drain-and-load-live-checks-move-to-12)
-  and the #12 acceptance criteria, 2026-11-06; no permalink.
+- Authority: coordinator interpretation of the human instruction to implement #12
+  under the defined workflow and of #12 acceptance box 7 (drain and load per mode);
+  not a human decision and not an explicit human answer.
+  [ISSUE-11-DEC-008](issue-11.md#issue-11-dec-008--drain-and-load-live-checks-move-to-12)
+  asked for an own instruction naming target and permitted operations. The
+  coordinator announced the stop/start and load plan (including stopping the service
+  while a call is in flight) to the owner before the run; the owner did not object but
+  gave no separate explicit approval. This interpretation is presented to the owner at
+  merge review for confirmation.
+- Source: ISSUE-11-DEC-008, the #12 acceptance criteria and the coordinator's plan
+  announcement in the project conversation, 2026-11-06; no permalink.
 - Scope: the deployed Streamable HTTP service of #11 (its own Compose project) on the
   existing target.
 - Decision: stopping and starting the deployed HTTP service (SIGTERM drain checks)
@@ -100,12 +105,15 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   other hosts or services.
 - Applicability / conditions / expiry: bounded to the #12 run; the service is left
   running as the one active mode (ISSUE-11-DEC-004). Not standing permission.
-- Rationale supplied: none beyond the acceptance criterion.
+- Rationale supplied: none by the human. Coordinator rationale: box 7 cannot be met
+  without stopping the deployed service and loading it.
 - Affected requirement IDs, files, issues and tests: MCP-04, OPS-01/05; drain D1-D3,
   load L1-L6; [VALIDATION.md](../VALIDATION.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
   [TRACEABILITY.md](../TRACEABILITY.md).
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: implementer and reviewer through the
   coordinator.
-- Revalidation needed / next action: any operation outside this list needs a new
+- Revalidation needed / next action: owner confirmation of this interpretation at
+  merge review; if the owner rejects it, the D1/D2 and L1-L6 evidence is reported as
+  gathered without explicit authorization. Any operation outside this list needs a new
   human instruction.
