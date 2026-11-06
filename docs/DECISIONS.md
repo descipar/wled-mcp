@@ -261,6 +261,13 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #74 only; not a human decision): a host whose last
   label is numeric or `0x`-hex must be a canonical dotted-quad IPv4 address; client
   `InvalidURL` maps to `CONFIG_ERROR`; exception suppression is tested.
+- [ISSUE-13-DEC-001](decisions/issue-13.md) (human, 2026-11-06, stage-1 scope): DEV-03
+  is a documented restart procedure (reload/validate to #16); SEG-05 counts as
+  delivered (CCT/2D to #19); PRE-03, restore and playlist authoring to #18; raw state
+  patch, timers and pixel/realtime streaming are excluded.
+- [ISSUE-13-DEC-002](decisions/issue-13.md) (agent proposal accepted by the coordinator,
+  2026-11-06, #13 only; not a human decision): conditional acceptance boxes shown not to
+  apply are checked as "not applicable" with evidence.
 
 ## Still unresolved
 
