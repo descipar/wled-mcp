@@ -5,6 +5,8 @@ The fake models only facts recorded in docs/SOURCES.md ("Issue-9 preset evidence
 entry (inactive slots as ``{"stop": 0}`` markers), ``pdel`` removes the key, ``ps``
 selects a preset in the main loop, and a POST of ``psave`` never changes live state.
 Persistence is delayed by a configurable number of readbacks of the affected resource.
+A WLED 16 profile is modelled by a live state carrying ``bs`` (docs/SOURCES.md "Issue-66
+WLED 16 preset evidence"): only then does a saved entry carry ``bs`` too.
 """
 
 from __future__ import annotations
@@ -95,10 +97,10 @@ class PresetDevice:
             "on": self.state["on"],
             "bri": self.state["bri"],
             "transition": self.state["transition"],
-            "mainseg": self.state["mainseg"],
-            "seg": segments,
-            "n": name,
         }
+        if "bs" in self.state:  # v16.0.1 emits bs next to transition (includeBri block)
+            entry["bs"] = self.state["bs"]
+        entry.update({"mainseg": self.state["mainseg"], "seg": segments, "n": name})
         if self.entry_mutator is not None:
             self.entry_mutator(entry)
         return entry

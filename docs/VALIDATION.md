@@ -811,6 +811,10 @@ shorter than the device result, the actual write and readback were correct.
 Activation was therefore exercised only with the pre-existing state preset; activating
 a preset saved by WLED 16 remains pending until #66 is resolved.
 
+Note added after this run (not part of its results): the classification fix for #66
+(ISSUE-66-DEC-001, `bs` accepted as state) is mock-tested only; the hardware re-check
+of save then activate on WLED 16 is pending as a separately authorized #12 follow-up.
+
 Snapshots: three snapshot files (overwrite of 250, delete of 250, delete of 2) in the
 service data directory, directory mode 0700, files mode 0600, owned by the service user;
 envelope keys `backup_id`, `created_at`, `device_id`, `firmware`, `format_version`,

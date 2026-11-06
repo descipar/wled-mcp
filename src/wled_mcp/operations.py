@@ -43,6 +43,7 @@ from wled_mcp.presets import (
     playlist_end_unsafe,
     playlist_members,
     referencing_playlists,
+    unexpected_state_keys,
     unsafe_playlist_members,
 )
 from wled_mcp.readmodels import (
@@ -490,6 +491,17 @@ ACTIVATION_NOOP_WARNING = (
 PLAYLIST_RUNNING_WARNING = (
     "This playlist is already running; a verified result cannot prove that it was restarted."
 )
+
+
+def saved_type_warning(kind: str, unexpected: list[str]) -> str:
+    """Names only the unexpected top-level keys; never the preset name or any value."""
+    keys = ", ".join(unexpected) if unexpected else "none"
+    return (
+        f"The stored entry is classified '{kind}', not a plain state preset on this firmware, "
+        f"and will not be activated by this server (unexpected top-level keys: {keys})."
+    )
+
+
 PRESET_RECONCILE = (
     "Read the presets with wled_list_presets or wled_get_preset before any new attempt; "
     "do not replay the write."
@@ -822,14 +834,19 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
                 interference=tuple(changed),
             )
         differences = compare_capture(entry, request.name, plan.reference)
+        kind = classify(entry)[0]
+        warnings: tuple[str, ...] = (CAPTURE_WARNING,)
+        if kind != "state":
+            # Reported, never corrected: no extra write and no change to the outcome.
+            warnings += (saved_type_warning(kind, unexpected_state_keys(entry)),)
         return Verdict(
             matched=not differences,
             observed=entry,
             unchanged=before is not None and json_equal(entry, before),
             differences=tuple(differences),
             interference=tuple(changed),
-            warnings=(CAPTURE_WARNING,),
-            data={"preset": entry, "type": classify(entry)[0]},
+            warnings=warnings,
+            data={"preset": entry, "type": kind},
         )
 
     def save_postconditions(request: SavePresetRequest, plan: SavePlan) -> list[JsonValue]:
