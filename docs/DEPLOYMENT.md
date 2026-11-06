@@ -7,7 +7,8 @@ measurements, stdio entry removal, removal and redeploy of the HTTP service, cat
 and preset reads, a stdio environment rebuild, a hub container recreation, and an
 authorized power on/off on one test controller); see
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Drain of an
-in-flight call on the target and load measurements remain pending. Live update and
+in-flight call on the target and load measurements are tracked by
+[#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008. Live update and
 rollback between two versions moved to stage 2
 ([#21](https://github.com/descipar/wled-mcp/issues/21),
 [#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
@@ -339,4 +340,4 @@ Measure idle RSS with `ps` on the container's process (for example via the PID f
 cgroup. Measurements from the live check are in
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06).
 
-Resource measurements to collect on the actual target (load figures not yet measured): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.
+Resource measurements to collect on the actual target (load figures not yet measured; the live load and drain measurements are tracked by [#12](https://github.com/descipar/wled-mcp/issues/12) per ISSUE-11-DEC-008): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.

@@ -641,9 +641,13 @@ Moved to stage 2 per ISSUE-11-DEC-005: live update and rollback between two rele
 (S2-COMPAT-03) and [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01);
 the documented procedures remain #11 scope.
 
-Not exercised and still pending: graceful drain of an in-flight call on the target,
-load measurements (parallel calls, peak connections, largest body), any other device,
-preset or segment writes, and H01/H04–H07 (#12).
+Moved to #12 per ISSUE-11-DEC-008: graceful drain of an in-flight call on the target
+and load measurements (parallel calls, peak connections, largest body), tracked by
+[#12](https://github.com/descipar/wled-mcp/issues/12); the automated drain coverage
+(T21) remains the #11 evidence for the drain behavior.
+
+Not exercised and still pending: any other device, preset or segment writes, and
+H01/H04–H07 (#12).
 
 ## Evidence template
 

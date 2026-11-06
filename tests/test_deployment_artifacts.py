@@ -733,14 +733,16 @@ def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes
 
 
 STAGE_2_MOVE = "Moved to stage 2 per ISSUE-11-DEC-005:"
+MOVED_TO_12 = "Moved to #12 per ISSUE-11-DEC-008:"
 STILL_PENDING = "Not exercised and still pending:"
+MOVED_LIVE_CHECKS = ("drain of an in-flight call", "load measurements")
 FOLLOW_UP_HEADING = (
     "### Catalog/preset reads, stdio rebuild and hub container recreation (ISSUE-11-DEC-007)"
 )
 
 
 def live_scope_problems(section: str) -> list[str]:
-    """What the #11 live section must state after ISSUE-11-DEC-005/006/007."""
+    """What the #11 live section must state after ISSUE-11-DEC-005 to 008."""
     problems = []
     for heading in ("### Streamable HTTP service", "### stdio via uvx"):
         if heading + "\n" not in section:
@@ -756,7 +758,12 @@ def live_scope_problems(section: str) -> list[str]:
             problems.append(f"removal record lacks {step!r}")
     if STAGE_2_MOVE not in section or STILL_PENDING not in section:
         return [*problems, "stage-2 move or remaining-pending paragraph missing"]
-    moved = section[section.index(STAGE_2_MOVE) : section.index(STILL_PENDING)]
+    if MOVED_TO_12 not in section:
+        return [*problems, "drain/load move to #12 is not recorded"]
+    moved = section[section.index(STAGE_2_MOVE) : section.index(MOVED_TO_12)]
+    moved_to_12 = " ".join(
+        section[section.index(MOVED_TO_12) : section.index(STILL_PENDING)].split()
+    )
     if "update and rollback between two releases" not in moved:
         problems.append("version update/rollback is not marked as moved to stage 2")
     for issue in ("issues/21", "issues/25"):
@@ -768,9 +775,15 @@ def live_scope_problems(section: str) -> list[str]:
             problems.append(f"{item!r} is still listed as pending in #11")
     if "hub container recreation" in pending.lower():
         problems.append("hub container recreation is still listed as pending in #11")
-    for item in ("drain of an in-flight call", "load measurements"):
-        if item not in pending:
-            problems.append(f"{item!r} is no longer listed as pending")
+    for item in MOVED_LIVE_CHECKS:
+        if item in pending:
+            problems.append(f"{item!r} is still listed as pending in #11")
+        if item not in moved_to_12:
+            problems.append(f"{item!r} is not recorded as moved to #12")
+    if "issues/12" not in moved_to_12:
+        problems.append("drain/load move does not reference issues/12")
+    if "(T21) remains the #11 evidence" not in moved_to_12:
+        problems.append("automated drain coverage T21 is not kept as #11 evidence")
     if FOLLOW_UP_HEADING + "\n" not in section:
         return [*problems, "hub container recreation is not recorded as exercised"]
     follow_up = " ".join(markdown_section(section, FOLLOW_UP_HEADING).split())
@@ -835,7 +848,31 @@ def test_live_section_records_removal_hub_recreation_and_stage_2_move():
         ),
         (
             lambda text: text.replace("graceful drain of an in-flight call", "graceful shutdown"),
-            "'drain of an in-flight call' is no longer listed as pending",
+            "'drain of an in-flight call' is not recorded as moved to #12",
+        ),
+        (
+            lambda text: text.replace(
+                STILL_PENDING, STILL_PENDING + " drain of an in-flight call on the target,"
+            ),
+            "'drain of an in-flight call' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace(STILL_PENDING, STILL_PENDING + " load measurements,"),
+            "'load measurements' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace(MOVED_TO_12, "Deferred elsewhere:"),
+            "drain/load move to #12 is not recorded",
+        ),
+        (
+            lambda text: text.replace(
+                "tracked by\n[#12](https://github.com/descipar/wled-mcp/issues/12)", "tracked later"
+            ),
+            "drain/load move does not reference issues/12",
+        ),
+        (
+            lambda text: text.replace("(T21) remains the #11 evidence", "(T21) is dropped"),
+            "automated drain coverage T21 is not kept as #11 evidence",
         ),
         (
             lambda text: text.replace("docker image rm", "image deletion"),
@@ -843,7 +880,7 @@ def test_live_section_records_removal_hub_recreation_and_stage_2_move():
         ),
         (
             lambda text: text.replace("load measurements", "load notes"),
-            "'load measurements' is no longer listed as pending",
+            "'load measurements' is not recorded as moved to #12",
         ),
         (
             lambda text: text.replace(
@@ -861,6 +898,91 @@ def test_live_scope_check_rejects_regressions(mutate, expected):
     section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
     assert live_scope_problems(section) == []
     assert expected in live_scope_problems(mutate(section))
+
+
+TRACEABILITY = ROOT / "docs/TRACEABILITY.md"
+
+
+def moved_drain_load_problems(texts: dict[str, str]) -> list[str]:
+    """Drain/load live checks are tracked by #12 (ISSUE-11-DEC-008), not pending in #11."""
+    problems = []
+    rows = {
+        line.split("|")[1].strip(): line
+        for line in texts["TRACEABILITY.md"].splitlines()
+        if line.startswith("| ")
+    }
+    for requirement, item in (
+        ("MCP-04", "drain of an in-flight call"),
+        ("OPS-01", "load measurements"),
+    ):
+        cells = [cell.strip() for cell in rows[requirement].split("|")]
+        status = next((cell for cell in cells if cell.startswith("pending:")), "")
+        clause = next((part for part in status.split(";") if item in part), "")
+        if not clause:
+            problems.append(f"{requirement} no longer names {item!r}")
+        elif "(#11)" in clause or "issues/12" not in clause or "ISSUE-11-DEC-008" not in clause:
+            problems.append(f"{requirement} does not track {item!r} by #12")
+    for name in ("README.md", "DEPLOYMENT.md"):
+        flat = " ".join(texts[name].split())
+        if "load measurements remain pending" in flat:
+            problems.append(f"{name} still lists drain/load as pending")
+        if "ISSUE-11-DEC-008" not in flat:
+            problems.append(f"{name} does not reference ISSUE-11-DEC-008")
+    return problems
+
+
+def drain_load_texts() -> dict[str, str]:
+    return {
+        path.name: path.read_text("utf-8")
+        for path in (TRACEABILITY, ROOT / "README.md", DEPLOYMENT)
+    }
+
+
+def test_drain_and_load_are_tracked_by_issue_12_not_pending_in_11():
+    assert moved_drain_load_problems(drain_load_texts()) == []
+
+
+@pytest.mark.parametrize(
+    ("name", "old", "new", "expected"),
+    [
+        (
+            "TRACEABILITY.md",
+            "on the target, moved to [#12](https://github.com/descipar/wled-mcp/issues/12) "
+            "per ISSUE-11-DEC-008; version",
+            "on the target (#11); version",
+            "MCP-04 does not track 'drain of an in-flight call' by #12",
+        ),
+        (
+            "TRACEABILITY.md",
+            "load measurements on the target, moved to",
+            "load measurements on the target (#11), moved to",
+            "OPS-01 does not track 'load measurements' by #12",
+        ),
+        (
+            "TRACEABILITY.md",
+            "pending: load measurements on the target,",
+            "pending: resource figures on the target,",
+            "OPS-01 no longer names 'load measurements'",
+        ),
+        (
+            "README.md",
+            "load measurements are tracked by #12 per ISSUE-11-DEC-008",
+            "load measurements remain pending",
+            "README.md still lists drain/load as pending",
+        ),
+        (
+            "DEPLOYMENT.md",
+            "load measurements are tracked by",
+            "load measurements remain pending; see",
+            "DEPLOYMENT.md still lists drain/load as pending",
+        ),
+    ],
+)
+def test_drain_load_tracking_check_rejects_regressions(name, old, new, expected):
+    texts = drain_load_texts()
+    assert old in texts[name]
+    texts[name] = texts[name].replace(old, new)
+    assert expected in moved_drain_load_problems(texts)
 
 
 def test_hub_http_registration_points_to_owner_and_reload_requirements():

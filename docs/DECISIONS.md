@@ -199,6 +199,9 @@ can explicitly amend them.
   remaining box 5/6 live checks on the same target and test controller (catalog and
   preset reads, stdio rebuild, hub container recreation); writes only after a
   restorable baseline, none performed; not standing permission.
+- [ISSUE-11-DEC-008](decisions/issue-11.md) (human, 2026-11-06, issue #11 only): live
+  drain of an in-flight call on the target and load measurements move from #11 to #12;
+  automated T21 drain coverage stays the #11 evidence; no live operation authorized.
 
 ## Still unresolved
 
