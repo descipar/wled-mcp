@@ -1,11 +1,17 @@
 # Deployment and operations
 
-**Prepared, not deployed.** The artifacts and procedures below exist in this repository
-(#11) and are checked by device-free tests, but no command in this document has been run
-against an actual hub, server or WLED device. All names, paths and networks are synthetic
-placeholders; confirm them on the actual installation when a deployment is requested.
-Read-only hub checks (H02), startup/idle measurements and executed update/rollback (H03)
-remain pending and need a separate instruction naming the mode and target.
+**Status: one live check of both modes on one target.** The artifacts and procedures
+below (#11) are covered by device-free tests and were exercised once on one MCPHub target
+for both modes (build, start, hub registration, reads, recreation, restart, idle
+measurements, stdio entry removal, removal and redeploy of the HTTP service, and an
+authorized power on/off on one test controller); see
+[VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Hub container
+recreation has not been run yet and remains pending. Live update and rollback between
+two versions moved to stage 2 ([#21](https://github.com/descipar/wled-mcp/issues/21),
+[#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
+procedures below remain part of #11. All names, paths and networks below are
+synthetic placeholders; confirm them on the actual installation. Any further deployment
+needs its own instruction naming the mode and target.
 
 ## Two supported modes
 
@@ -34,6 +40,12 @@ the hub container itself, never the separate wled-mcp service.
 | MCPHub container (same Docker network) | `http://wled-mcp:8000/mcp` (Compose service name and container port) | stdio mode: `/app/data/wled-mcp/` as mounted into the hub container |
 | wled-mcp service container | Binds `0.0.0.0:8000`; `127.0.0.1:8000` only for the healthcheck and exec checks, still sending `Host: wled-mcp:8000` | `/app/data/wled-mcp/` (bind mount of the host directory) |
 | stdio subprocess | No address, no listener | Paths inside the hub container |
+
+Inventory `base_url` hosts must be valid RFC 1123 host labels: letters, digits and
+hyphens, no underscore (an underscore name is currently rejected at startup, see
+[#61](https://github.com/descipar/wled-mcp/issues/61)). Use a reserved DNS name that
+resolves to exactly one address from the service's context, or the controller's
+address; a name resolving to several addresses makes requests ambiguous.
 
 The hub URL authority (`wled-mcp:8000`) must equal an `--allowed-host` entry exactly
 (case-insensitive). If the actual service name, alias or port differs, change the
@@ -173,7 +185,24 @@ Expected output: `200` and an empty JSON-RPC result. Then register the hub entry
 example value `REPLACE_WITH_PRIVATE_SERVICE_TOKEN` is literal text; the hub does not
 expand placeholders or environment variables there. Hub authentication does not protect
 the independently reachable endpoint; the bearer credential is mandatory. Check the
-actual MCPHub field names before registration.
+actual MCPHub field names before registration, and the entry owner and reload steps in
+[MCPHub notes](#mcphub-notes).
+
+### MCPHub notes
+
+Observed with MCPHub 1.2.1 in the live check:
+
+- Entry owner: the hub's SSRF guard refuses `streamable-http` entries whose URL resolves
+  to a private or container address unless the entry's owner is an admin user. An entry
+  created with a system API key gets the owner `system` and fails with a message that the
+  host "resolves to blocked address". Create the entry through the admin UI, or set its
+  owner to an admin user, and then reload the entry. Do not disable the hub's guard
+  globally to work around this.
+- Reload: an edited entry reconnects only after a reload of that entry (the hub's
+  `POST /api/servers/<name>/reload` route or the UI equivalent); this touches only that
+  entry, not the hub container.
+- The example [mcphub.http.example.json](../examples/mcphub.http.example.json) carries no
+  owner field; ownership is hub-side state, not part of the entry schema used here.
 
 ## HTTP service: update, rollback, recreation, removal
 
@@ -292,4 +321,9 @@ Use [deploy/operations-record.template.md](../deploy/operations-record.template.
 deployment and mode. Evidence from one live deployment does not prove the other mode was
 deployed. Keep sensitive inventory outside Git and publish sanitized summaries only.
 
-Resource measurements to collect on the actual target (none are claimed yet): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.
+Measure idle RSS with `ps` on the container's process (for example via the PID from
+`docker inspect`): `docker stats` may report 0 B memory on hosts without the memory
+cgroup. Measurements from the live check are in
+[VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06).
+
+Resource measurements to collect on the actual target (load figures not yet measured): start-to-ready time, idle RSS, RSS and CPU under N parallel `tools/call` and `ping`, latency percentiles for `tools/list` and a read, open sockets after clients disconnect, signal-to-exit time idle and with an in-flight call, peak concurrent connections, the largest legitimate request body (to confirm the 256 KiB bound) and Python/SDK/uvicorn versions and architecture.

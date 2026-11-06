@@ -665,6 +665,167 @@ def test_documented_uvx_invocation_matches_the_stdio_hub_example():
     assert expected in lines
 
 
+# ------------------------------------------------------------- live-check documentation
+
+VALIDATION = ROOT / "docs/VALIDATION.md"
+LIVE_HEADING = "## Issue #11 live deployment check (2026-11-06)"
+# Committed live evidence must stay impersonal (AGENTS.md, DEC-005): no private addresses,
+# home paths, router-local DNS names, MAC addresses or content-addressed image IDs.
+PRIVATE_IDENTIFIER = re.compile(
+    r"(?<![\d.])(?:10\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])|192\.168|169\.254)"
+    r"\.\d{1,3}\.\d{1,3}(?![\d.]*\d)"
+    r"|/home/|/Users/|\.fritz\.box\b|\.home\.arpa\b"
+    r"|\b[0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5}\b"
+    r"|sha256:[0-9a-f]{12,}",
+)
+LIVE_DOCUMENTS = [
+    ROOT / "README.md",
+    VALIDATION,
+    DEPLOYMENT,
+    ROOT / "docs/TRACEABILITY.md",
+    ROOT / "docs/decisions/issue-11.md",
+    ROOT / "deploy/operations-record.template.md",
+]
+
+
+def markdown_section(text: str, heading: str) -> str:
+    """The body of one second- or third-level section, up to the next heading of that level."""
+    level = heading.split(" ", 1)[0]
+    start = text.index(heading + "\n")
+    following = re.search(rf"^{level} ", text[start + len(heading) :], flags=re.M)
+    end = start + len(heading) + following.start() if following else len(text)
+    return text[start:end]
+
+
+def private_identifiers(text: str) -> list[str]:
+    return [match.group() for match in PRIVATE_IDENTIFIER.finditer(text)]
+
+
+@pytest.mark.parametrize("path", LIVE_DOCUMENTS, ids=lambda path: path.name)
+def test_live_deployment_documents_carry_no_installation_identifiers(path):
+    assert private_identifiers(path.read_text("utf-8")) == []
+
+
+@pytest.mark.parametrize(
+    "leak",
+    [
+        "base_url http://192.168.250.9",
+        "blocked address 172.16.250.9",
+        "address 10.0.0.7",
+        "backup in /home/operator/backups",
+        "host wled-desk.fritz.box",
+        "MAC 02:00:5e:aa:bb:cc",
+        "image sha256:0123456789abcdef0123456789abcdef",
+    ],
+)
+def test_private_identifier_detector_catches_installation_details(leak):
+    section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
+    assert private_identifiers(section) == []
+    assert private_identifiers(section + "\n" + leak) != []
+
+
+def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes():
+    allowed = (
+        "127.0.0.1:8000 0.0.0.0 wled-mcp:8000 Python 3.10.0.1 "
+        "db0b2edde4d20a07f789d7192314d1e606acb50f319a"
+    )
+    assert private_identifiers(allowed) == []
+
+
+STAGE_2_MOVE = "Moved to stage 2 per ISSUE-11-DEC-005:"
+STILL_PENDING = "Not exercised and still pending:"
+
+
+def live_scope_problems(section: str) -> list[str]:
+    """What the #11 live section must state after ISSUE-11-DEC-005/006."""
+    problems = []
+    for heading in ("### Streamable HTTP service", "### stdio via uvx"):
+        if heading + "\n" not in section:
+            problems.append(f"missing mode: {heading}")
+    if not re.search(r"from commit `([0-9a-f]{7,40})`", section):
+        problems.append("the live record names no exercised source commit")
+    removal_heading = "### HTTP service removal and redeploy (ISSUE-11-DEC-006)"
+    if removal_heading + "\n" not in section:
+        return [*problems, "HTTP service removal is not recorded as exercised"]
+    removal = markdown_section(section, removal_heading)
+    for step in ("rm --stop --force wled-mcp", "docker image rm", "Retained", "re-registration"):
+        if step not in removal:
+            problems.append(f"removal record lacks {step!r}")
+    if STAGE_2_MOVE not in section or STILL_PENDING not in section:
+        return [*problems, "stage-2 move or remaining-pending paragraph missing"]
+    moved = section[section.index(STAGE_2_MOVE) : section.index(STILL_PENDING)]
+    if "update and rollback between two releases" not in moved:
+        problems.append("version update/rollback is not marked as moved to stage 2")
+    for issue in ("issues/21", "issues/25"):
+        if issue not in moved:
+            problems.append(f"stage-2 move does not reference {issue}")
+    pending = section[section.index(STILL_PENDING) :]
+    for item in ("rollback", "removal of the HTTP service"):
+        if item in pending:
+            problems.append(f"{item!r} is still listed as pending in #11")
+    if "hub container recreation" not in pending:
+        problems.append("hub container recreation is no longer listed as pending")
+    if "Mode remaining active: Streamable HTTP" not in section:
+        problems.append("the remaining active mode is not stated")
+    return problems
+
+
+def test_live_section_records_http_removal_and_moves_version_changes_to_stage_2():
+    assert live_scope_problems(markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)) == []
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (
+            lambda text: text.replace("### HTTP service removal and redeploy", "### Removal"),
+            "HTTP service removal is not recorded as exercised",
+        ),
+        (
+            lambda text: text.replace(
+                STILL_PENDING, STILL_PENDING + " removal of the HTTP service,"
+            ),
+            "'removal of the HTTP service' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace(STILL_PENDING, STILL_PENDING + " update and rollback,"),
+            "'rollback' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace("issues/25", "issues/99"),
+            "stage-2 move does not reference issues/25",
+        ),
+        (
+            lambda text: text.replace(STAGE_2_MOVE, "Deferred:"),
+            "stage-2 move or remaining-pending paragraph missing",
+        ),
+        (
+            lambda text: text.replace("hub container recreation, graceful", "graceful"),
+            "hub container recreation is no longer listed as pending",
+        ),
+        (
+            lambda text: text.replace("docker image rm", "image deletion"),
+            "removal record lacks 'docker image rm'",
+        ),
+    ],
+)
+def test_live_scope_check_rejects_regressions(mutate, expected):
+    section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
+    assert live_scope_problems(section) == []
+    assert expected in live_scope_problems(mutate(section))
+
+
+def test_hub_http_registration_points_to_owner_and_reload_requirements():
+    text = DEPLOYMENT.read_text("utf-8")
+    registration = markdown_section(text, "## HTTP service: build, start, verify")
+    assert "(#mcphub-notes)" in registration
+    notes = markdown_section(text, "### MCPHub notes")
+    assert re.search(r"owner[^.]*admin user", notes), "SSRF guard needs an admin-owned entry"
+    assert re.search(r"reload[^.]*entry", notes), "an edited entry needs a reload"
+    assert "Do not disable the hub's guard" in notes
+    assert "owner" not in json.dumps(hub_http()), "ownership is hub-side, not in the example"
+
+
 @pytest.mark.skipif(
     os.environ.get("WLED_MCP_DOCKER_CHECKS") != "1" or shutil.which("docker") is None,
     reason="opt-in local Docker check (WLED_MCP_DOCKER_CHECKS=1); never required in CI",

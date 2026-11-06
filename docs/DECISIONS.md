@@ -183,6 +183,18 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #11 only; not a human decision): deployment defaults
   TD-1 to TD-9 (pre-staged wheel, pinned slim base image, separate Compose project,
   file secret, persistent uv paths).
+- [ISSUE-11-DEC-003](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
+  test installation of both modes on the hub host with read checks and power on/off on
+  one authorized test controller; not standing permission.
+- [ISSUE-11-DEC-004](decisions/issue-11.md) (human approval of coordinator proposals,
+  2026-11-06, issue #11 only; mode choice by the coordinator): keep one mode active
+  (HTTP), remove the stdio hub entry, follow-up documentation PR, issue #61.
+- [ISSUE-11-DEC-005](decisions/issue-11.md) (human, 2026-11-06, issue #11 only): live
+  version-to-version update/rollback moves to stage 2 (#21, #25); the documented
+  procedures remain #11 scope.
+- [ISSUE-11-DEC-006](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
+  live removal test of the HTTP service on the same target, followed by a redeploy so
+  HTTP stays the active mode; not standing permission.
 
 ## Still unresolved
 
