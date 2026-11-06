@@ -679,6 +679,7 @@ PRIVATE_IDENTIFIER = re.compile(
     r"|sha256:[0-9a-f]{12,}",
 )
 LIVE_DOCUMENTS = [
+    ROOT / "README.md",
     VALIDATION,
     DEPLOYMENT,
     ROOT / "docs/TRACEABILITY.md",

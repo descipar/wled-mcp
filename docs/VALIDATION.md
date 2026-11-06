@@ -544,7 +544,7 @@ limited to one authorized test controller: reads and master power on/off.
 | Listeners | 0 listening sockets for the entry's processes |
 | Reload | leaves a single server instance |
 | Through the hub | `wled_list_devices` reached the test controller; `wled_set_state` `on=true` and `on=false` verified by readback; restored to off |
-| Removal (ISSUE-11-DEC-004) | only the stdio hub entry was deleted; release directory, uv tree and data directory were retained |
+| Removal (ISSUE-11-DEC-004) | only the stdio hub entry was deleted; no stdio server process was left; the hub data/config directory, the uv cache and the staged release directory were retained |
 
 Mode remaining active: Streamable HTTP (ISSUE-11-DEC-004). Both entries were registered
 at the same time during the run until the stdio entry was removed.
