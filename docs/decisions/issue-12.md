@@ -85,7 +85,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 
 - ID: ISSUE-12-DEC-003
 - Recorded date: 2026-11-06
-- Status: active for issue #12 only.
+- Status: confirmed retroactively by the owner for the #12 run only (2026-11-06);
+  issue #12 only.
 - Authority: coordinator interpretation of the human instruction to implement #12
   under the defined workflow and of #12 acceptance box 7 (drain and load per mode);
   not a human decision and not an explicit human answer.
@@ -93,8 +94,14 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   asked for an own instruction naming target and permitted operations. The
   coordinator announced the stop/start and load plan (including stopping the service
   while a call is in flight) to the owner before the run; the owner did not object but
-  gave no separate explicit approval. This interpretation is presented to the owner at
-  merge review for confirmation.
+  gave no separate explicit approval. This interpretation was then presented to the
+  owner for confirmation.
+- Owner confirmation: confirmed retroactively on 2026-11-06 for that run only; not
+  standing permission for future service operations. Source: owner reply "ja, war in
+  ordnung" in the project conversation on 2026-11-06, answering the coordinator's
+  question whether stopping/starting the deployed HTTP service during the #12 tests
+  (two short outages of about 2 s) was acceptable; also recorded as a coordinator
+  comment on #12. No permalink.
 - Source: ISSUE-11-DEC-008, the #12 acceptance criteria and the coordinator's plan
   announcement in the project conversation, 2026-11-06; no permalink.
 - Scope: the deployed Streamable HTTP service of #11 (its own Compose project) on the
@@ -113,7 +120,6 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: implementer and reviewer through the
   coordinator.
-- Revalidation needed / next action: owner confirmation of this interpretation at
-  merge review; if the owner rejects it, the D1/D2 and L1-L6 evidence is reported as
-  gathered without explicit authorization. Any operation outside this list needs a new
-  human instruction.
+- Revalidation needed / next action: none for the #12 run (owner confirmation
+  recorded above). Any further service stop/start, load run or operation outside this
+  list needs a new human instruction.

@@ -653,8 +653,8 @@ H01/H04–H07 (#12).
 
 One authorized hardware acceptance run on one test controller (ISSUE-12-DEC-001) and on
 the deployed Streamable HTTP service of #11 (stop/start and load per ISSUE-12-DEC-003, a
-coordinator interpretation that is presented to the owner for confirmation at merge
-review), with the technical
+coordinator interpretation confirmed retroactively by the owner on 2026-11-06 for this run
+only), with the technical
 defaults of ISSUE-12-DEC-002, sanitized from a local, git-ignored run record. Host
 names, addresses, paths, user names, device names, MAC addresses and image IDs of the
 installation are intentionally omitted. The results describe this one controller and
@@ -743,7 +743,7 @@ interface; one TCP connection per request (included in the latency); latencies i
 | L3 `wled_get_state`, concurrency 1 (20) / 4 (40) | 13 / 13.4 requests/s; p50 67 / 282; p95 104 / 347; the per-device lock serializes the controller reads; all HTTP 200 |
 | L3 `wled_get_effects` (cached), concurrency 4 (40) | 19.4 requests/s; p50 201; p95 235; all HTTP 200 |
 | Peak RSS during the bursts | 76,512 KiB |
-| CPU per call (service process user + system time per burst) | `ping` about 5-6 ms; `tools/list` about 108-109 ms; `wled_get_state` about 21 ms; `wled_get_effects` (cached) about 22 ms |
+| CPU per call (service process user + system time per burst) | `ping` about 5 ms; `tools/list` about 108-109 ms; `wled_get_state` about 21 ms; `wled_get_effects` (cached) about 22 ms |
 | L4 peak concurrent connections | not sampled; the client concurrency was at most 16 |
 | L5 sockets after the clients disconnected | 2 listening, 4 in TIME-WAIT, none established |
 | L6 request-body bound | 262,143 bytes: HTTP 200; 262,145 bytes: HTTP 413 |

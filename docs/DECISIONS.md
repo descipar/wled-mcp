@@ -216,8 +216,9 @@ can explicitly amend them.
   not a human decision): stop/start of the deployed HTTP service and load against it
   are in scope; no rebuild, inventory/secret edit or hub change. ISSUE-11-DEC-008 asked
   for an instruction naming target and operations; the plan was announced to the owner
-  without objection but without separate explicit approval; presented to the owner at
-  merge review for confirmation.
+  without objection but without separate explicit approval. Confirmed retroactively by
+  the owner on 2026-11-06 for that run only; not standing permission for future service
+  operations.
 
 ## Still unresolved
 
