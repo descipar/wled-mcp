@@ -195,6 +195,10 @@ can explicitly amend them.
 - [ISSUE-11-DEC-006](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
   live removal test of the HTTP service on the same target, followed by a redeploy so
   HTTP stays the active mode; not standing permission.
+- [ISSUE-11-DEC-007](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
+  remaining box 5/6 live checks on the same target and test controller (catalog and
+  preset reads, stdio rebuild, hub container recreation); writes only after a
+  restorable baseline, none performed; not standing permission.
 
 ## Still unresolved
 

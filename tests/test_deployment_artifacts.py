@@ -734,10 +734,13 @@ def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes
 
 STAGE_2_MOVE = "Moved to stage 2 per ISSUE-11-DEC-005:"
 STILL_PENDING = "Not exercised and still pending:"
+FOLLOW_UP_HEADING = (
+    "### Catalog/preset reads, stdio rebuild and hub container recreation (ISSUE-11-DEC-007)"
+)
 
 
 def live_scope_problems(section: str) -> list[str]:
-    """What the #11 live section must state after ISSUE-11-DEC-005/006."""
+    """What the #11 live section must state after ISSUE-11-DEC-005/006/007."""
     problems = []
     for heading in ("### Streamable HTTP service", "### stdio via uvx"):
         if heading + "\n" not in section:
@@ -763,14 +766,33 @@ def live_scope_problems(section: str) -> list[str]:
     for item in ("rollback", "removal of the HTTP service"):
         if item in pending:
             problems.append(f"{item!r} is still listed as pending in #11")
-    if "hub container recreation" not in pending:
-        problems.append("hub container recreation is no longer listed as pending")
+    if "hub container recreation" in pending.lower():
+        problems.append("hub container recreation is still listed as pending in #11")
+    for item in ("drain of an in-flight call", "load measurements"):
+        if item not in pending:
+            problems.append(f"{item!r} is no longer listed as pending")
+    if FOLLOW_UP_HEADING + "\n" not in section:
+        return [*problems, "hub container recreation is not recorded as exercised"]
+    follow_up = " ".join(markdown_section(section, FOLLOW_UP_HEADING).split())
+    for fact in (
+        "Hub container recreation",
+        "same image before and after",
+        "uv tree (49 MB) survived",
+        "HTTP service | container not restarted",
+        "`wled_list_presets`",
+        "`wled_get_palettes`",
+        "/json/eff",
+        "No device writes were needed or performed",
+        "identical to the baseline",
+    ):
+        if fact not in follow_up:
+            problems.append(f"follow-up record lacks {fact!r}")
     if "Mode remaining active: Streamable HTTP" not in section:
         problems.append("the remaining active mode is not stated")
     return problems
 
 
-def test_live_section_records_http_removal_and_moves_version_changes_to_stage_2():
+def test_live_section_records_removal_hub_recreation_and_stage_2_move():
     assert live_scope_problems(markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)) == []
 
 
@@ -800,12 +822,38 @@ def test_live_section_records_http_removal_and_moves_version_changes_to_stage_2(
             "stage-2 move or remaining-pending paragraph missing",
         ),
         (
-            lambda text: text.replace("hub container recreation, graceful", "graceful"),
-            "hub container recreation is no longer listed as pending",
+            lambda text: text.replace(STILL_PENDING, STILL_PENDING + " hub container recreation,"),
+            "hub container recreation is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace(FOLLOW_UP_HEADING, "### Further checks"),
+            "hub container recreation is not recorded as exercised",
+        ),
+        (
+            lambda text: text.replace("uv tree (49 MB) survived", "uv tree was rebuilt"),
+            "follow-up record lacks 'uv tree (49 MB) survived'",
+        ),
+        (
+            lambda text: text.replace("graceful drain of an in-flight call", "graceful shutdown"),
+            "'drain of an in-flight call' is no longer listed as pending",
         ),
         (
             lambda text: text.replace("docker image rm", "image deletion"),
             "removal record lacks 'docker image rm'",
+        ),
+        (
+            lambda text: text.replace("load measurements", "load notes"),
+            "'load measurements' is no longer listed as pending",
+        ),
+        (
+            lambda text: text.replace(
+                "No device writes were needed or performed", "Device writes were performed"
+            ),
+            "follow-up record lacks 'No device writes were needed or performed'",
+        ),
+        (
+            lambda text: text.replace("were identical to", "differed from"),
+            "follow-up record lacks 'identical to the baseline'",
         ),
     ],
 )

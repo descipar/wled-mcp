@@ -207,3 +207,44 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   (correction round 2 of the live-evidence pull request).
 - Revalidation needed / next action: any further live operation needs a new
   instruction naming mode, target and permitted operations.
+
+## ISSUE-11-DEC-007 — Remaining box 5/6 live checks on the test controller
+
+- ID: ISSUE-11-DEC-007
+- Recorded date: 2026-11-06
+- Status: active for issue #11 only; the operation it authorized has taken place.
+- Authority: human decision.
+- Source: human instruction in the project conversation on 2026-11-06 ("5 und 6
+  testen, dafür ist das bekannte [test controller] gerät freigegeben. wenn du dir
+  merkst wie das aktuelle preset dort ist, ist auch das schreiben zum testen
+  freigegeben"; the device name is replaced by its role, the known test controller of
+  ISSUE-11-DEC-003). No permalink available.
+- Scope: one bounded operation on the same target and the same single test controller
+  as ISSUE-11-DEC-003: the remaining #11 live checks of acceptance boxes 5 and 6 (H02
+  catalog and preset reads per mode, comparison with the device's own catalog data,
+  stdio re-registration and environment rebuild, hub container recreation, removal of
+  the stdio entry again). Device reads were authorized; device writes for testing only
+  after recording a restorable baseline of the current state and presets.
+- Decision: the checks above were authorized. The run recorded a baseline first,
+  performed no device writes and compared the final state and preset file equal to
+  the baseline. The hub container recreation interrupted all hub entries for about
+  30 s and was done under this instruction; before the run, the coordinator announced to
+  the human that the hub container would be recreated and that all hub services would
+  be briefly unavailable. Not authorized: other controllers, other
+  hosts, hub image updates, device configuration changes, deleting the data directory,
+  publication, merge.
+- Applicability / conditions / expiry: bounded to that run; not standing permission
+  for further hub recreations, deployments, writes or devices. Device and host names
+  stay in the local, git-ignored run record.
+- Rationale supplied: none beyond the instruction.
+- Affected requirement IDs, files, issues and tests: READ-01/02, PRE-01, OPS-01/02/05,
+  MCP-01/04; H02/H03;
+  [VALIDATION.md](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md), README,
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none; ISSUE-11-DEC-004 (HTTP stays the one active mode)
+  remains in force, so the stdio entry was removed again after the checks.
+- Propagated to roles / packet references: implementer through the coordinator.
+- Revalidation needed / next action: independent review of the documentation change;
+  human merge decision; then completion re-run. Drain of an in-flight call on the
+  target and load measurements remain pending.
