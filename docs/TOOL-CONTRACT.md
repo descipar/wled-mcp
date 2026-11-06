@@ -9,7 +9,10 @@ and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
 service; #9 adds the five persistent-preset tools (see
 [Persistent presets, implementation](#persistent-presets-implemented-in-9)).
 `wled_restore_preset` and `wled_patch_raw_state` remain design requirements, not
-executable behavior. Hardware acceptance of the preset tools (H06) is pending.
+executable behavior. Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
+16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06);
+activating a preset saved by WLED 16 is refused there
+([#66](https://github.com/descipar/wled-mcp/issues/66)) and remains pending.
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2), not
 an implemented API or hardware compatibility claim. Technical choices and their
@@ -310,7 +313,10 @@ Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus the REL-0
 uncertain-write rules and the MCP-02 envelope); decisions
 [ISSUE-7-DEC-001–007](decisions/issue-7.md) and, for the shared segment limits,
 [ISSUE-48-DEC-001](decisions/issue-48.md). Evidence is mock-only and source-derived
-([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 has not run.
+([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 is
+recorded for one controller in
+[VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06), without stale-ID
+removal by this tool on hardware.
 
 **`wled_replace_layout(device_id, segments, dry_run=false)`**. Strict input
 (`segments`: 1-64 entries, unknown fields rejected). Each entry needs `id`, `start`,
