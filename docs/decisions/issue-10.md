@@ -8,8 +8,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-05.
 - Recorded date: 2026-11-05
 - Status: active for issue #10 only.
 - Authority: technical proposal by the requirements agent (packet technical defaults TD-1
-  and TD-2), accepted by the coordinator within the human instruction to implement #10
-  following the defined workflow (DEC-001). This is not a human decision; the human did
+  and TD-2), accepted by the coordinator within the owner's instruction to implement #10
+  following the defined workflow (DEC-001). This is not a human decision; the owner did
   not choose the file layout, the checker or the vocabulary.
 - Source: requirements packet `.agent-runs/issue-10/packet.md` (sections 3 W6/W7 and 8),
   2026-11-05, no permalink.
@@ -27,7 +27,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-05.
   pending. When #11 or #12 records actual evidence, that work may extend the cell
   vocabulary with an evidence link through its own reviewed change; this entry does not
   pre-approve any hardware or deployment claim.
-- Rationale supplied: none by the human. Agent rationale: VALIDATION.md already combines
+- Rationale supplied: none by the owner. Agent rationale: VALIDATION.md already combines
   the plan with historical per-candidate records, and a mechanical check keeps the matrix
   from drifting or overstating evidence.
 - Affected requirement IDs, files, issues and tests: TEST-01 and every Must requirement;

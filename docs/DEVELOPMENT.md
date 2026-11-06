@@ -1,4 +1,4 @@
-# Bootstrap development and private launch
+# Local development and launch
 
 Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
@@ -92,7 +92,7 @@ data directory. `tests/test_acceptance_parity.py` drives the installed console o
 stdio and HTTP against a synthetic `127.0.0.1` device. Run just these tests with
 `uv run --frozen pytest tests/test_http_service.py tests/test_http_cli.py`.
 
-## Private local wheel launch
+## Local wheel launch
 
 Use `examples/bootstrap.toml`: `schema_version = 1` and `devices = []`.
 For configured devices use the executable synthetic `examples/devices.example.toml`.

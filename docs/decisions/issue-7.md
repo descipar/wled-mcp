@@ -43,7 +43,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Status: active for issue #7 only, accepted by delegated decision (2026-11-05). History:
   proposed agent baseline (implementer proposals PD-1, PD-2, PD-4 of the requirements
   packet, recorded with the implementation, 2026-11-05; then NOT human-confirmed).
-- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Resolution: accepted as is. Rationale: conservative and fail-closed (no temporary segment,
   no bulk purge, cycles rejected). Revisit with H05 hardware evidence or stage-2 #19
   (advanced/2D layouts).
@@ -63,7 +63,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 
 - Status: active for issue #7 only, accepted by delegated decision (2026-11-05). History:
   proposed agent baseline (implementer proposal PD-3, 2026-11-05; then NOT human-confirmed).
-- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Resolution: accepted as is. Rationale: profile-0 uniform RGB-only evidence, otherwise
   `UNSUPPORTED_CAPABILITY`; stage-2 #19 (CCT/white) extends it deliberately.
 - Scope/decision: colors for a new range are accepted only under profile-0 uniform
@@ -82,7 +82,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 - Status: active for issue #7 only, accepted by delegated decision (2026-11-05) only for the
   parts compatible with ISSUE-7-DEC-006. History: proposed agent baseline (implementer
   proposals PD-5 to PD-8, PD-11, PD-12, 2026-11-05; then NOT human-confirmed).
-- Authority/source: delegated decision. The human delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the choice to the main session in two genuine chat messages of 2026-11-05 (no permalink): "entscheide du bei dec 003 bis 005 wie du es am besten findest in hinblick auf das ganze projekte und zukünftige stages" and "sorg dafür dec 003 bis 005 nun gemacht wird". The content below was decided by the main session under that delegation; it was NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Resolution: accepted: no-op behavior (unchanged IDs get no POST; a fully unchanged request is
   `ok` with zero POSTs), reused inactive slots forced to documented defaults, effect/palette
   as IDs only, `destructive_hint=true`. The three points superseded by ISSUE-7-DEC-006
@@ -114,7 +114,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   (#6: 32 characters); (2) `grouping`/`spacing` upper bound 255 (#6: no upper bound);
   (3) the resolved `on` was sent alongside `bri` (#6 sends `bri` alone).
 - Options were: (A) accept the divergences and open a follow-up to align #6; (B) align
-  #7 to #6. The human chose (B) in DEC-006.
+  #7 to #6. The owner chose (B) in DEC-006.
 - Later: ISSUE-7-DEC-003, -004 and -005 were accepted by delegated decision (2026-11-05,
   see there).
 
@@ -127,7 +127,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   for the name limit, the grouping/spacing bounds and the `bri` sending rule; kept for
   history. Its new-ID defaults condition remains valid for #7.
 - Authority: human decision.
-- Source: the human chat message "B" in the current issue-7 workflow session,
+- Source: the owner's chat message "B" in the current issue-7 workflow session,
   2026-11-05, answering ISSUE-7-OPEN-001 (relayed by the coordinator); no permalink.
 - Scope: issue #7 / `wled_replace_layout` only. Not a project default and not a change
   to #6.
@@ -160,7 +160,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 ## ISSUE-7-DEC-007 — Narrow reading of DEC-006 confirmed
 
 - Status: active for issue #7 only (2026-11-05).
-- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Decision: confirmed. #7 shares the `bri` sending behavior with #6 but keeps its stricter
   validation: it rejects `brightness=0` without `on=false` on an enabled segment, and `on=true`
   with `brightness=0`. Rationale: fails early before any write, consistent with the general
@@ -170,7 +170,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 ## ISSUE-7-DEC-008 — check_distribution.py edit accepted
 
 - Status: active for issue #7 only (2026-11-05).
-- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Decision: the `scripts/check_distribution.py` edit (tool list and count), outside the
   packet path list, is accepted as a necessary mechanical consequence of adding a tool.
 - Supersession: none.
@@ -178,7 +178,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 ## ISSUE-7-DEC-009 — Follow-up issue for shared #6/#7 limits
 
 - Status: active for issue #7 only (2026-11-05).
-- Authority/source: delegated decision. The human delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the human. Scope is issue #7 only; never generalized to other issues or stages.
+- Authority/source: delegated decision. The owner delegated the remaining open points to the main session in a chat message of 2026-11-05 (no permalink), relayed to the implementer by an agent message: "bei den weiteren offen delegiere ich das auch an dich zum entscheiden". The content was decided by the main session, NOT personally dictated by the owner. Scope is issue #7 only; never generalized to other issues or stages.
 - Decision: a follow-up issue for the shared #6/#7 firmware limits (name truncation,
   grouping/spacing `uint8_t` wrap, `bri > 0` switching an off segment on) and the #6
   `on:true` + `bri:0` defect is decided. It was created by the main session as

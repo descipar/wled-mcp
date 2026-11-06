@@ -9,7 +9,7 @@ veto any of them at review.
 
 - Status: active for the #14 candidate; merge approval remains separate.
 - Authority/source: actual human request to implement #14 with the defined workflow
-  (DEC-001) in the project conversation on 2026-11-05; no chat permalink available.
+  (DEC-001) in the coordinator session on 2026-11-05; no chat permalink available.
 - Scope: implementation, tests, documentation, independent review and a reviewable
   PR. No merge, deployment, physical-device or LAN action, publication, license
   selection or image/registry release.

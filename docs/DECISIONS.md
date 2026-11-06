@@ -56,7 +56,7 @@ and handed off/committed through the current branch and PR workflow.
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
-The conversation has no source permalink available in these files. PR/issue links
+The source sessions have no permalink available in these files. PR/issue links
 locate the durable project restatement, not an invented original-message URL.
 The entries are active only within their described scope. A later human decision
 can explicitly amend them.
@@ -65,7 +65,7 @@ can explicitly amend them.
 
 - Status: active workflow intent; implementation and its merge remain subject to
   the normal branch, independent review and human merge process.
-- Authority/source: human request in the current project conversation on
+- Authority/source: human request in the current coordinator session on
   2026-11-04 following observation that PR #33 was merged while issue #2 remained
   open with unchecked criteria. No source-message permalink is available;
   [issue #34](https://github.com/descipar/wled-mcp/issues/34) records the work scope.
@@ -89,7 +89,7 @@ can explicitly amend them.
 
 - Status: active workflow intent; the changed candidate requires refreshed
   independent review and the normal human merge decision.
-- Authority/source: human request in the current project conversation on
+- Authority/source: human request in the current coordinator session on
   2026-11-04 to rewrite the agents so Claude and Codex share definitions. No
   source-message permalink is available; [issue #37](https://github.com/descipar/wled-mcp/issues/37)
   records the implementation scope.
@@ -164,8 +164,8 @@ can explicitly amend them.
   It does not apply to other issues.
 - [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
   #7 only): step order/allocation bound, range-capability evidence and no-op/limit
-  behavior accepted. The human delegated the choice to the main session; the content was
-  decided by the main session, not personally dictated by the human. Not generalized to
+  behavior accepted. The owner delegated the choice to the main session; the content was
+  decided by the main session, not personally dictated by the owner. Not generalized to
   other issues or stages.
 - [ISSUE-7-DEC-007 to -009](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
   #7 only, content decided by the main session): narrow reading of DEC-006 confirmed,
@@ -232,7 +232,7 @@ can explicitly amend them.
   250, no controller reboot, opt-in read-only HTTP probe, restoration criteria R1-R3,
   stdio context interpretation; TRACEABILITY cell forms unchanged (ISSUE-10-DEC-001).
   Superseded in part: TD-12-1 (HTTP only) by ISSUE-12-DEC-004.
-- [ISSUE-12-DEC-003](decisions/issue-12.md) (coordinator interpretation of the human
+- [ISSUE-12-DEC-003](decisions/issue-12.md) (coordinator interpretation of the owner's
   #12 implementation instruction and #12 acceptance box 7, 2026-11-06, issue #12 only;
   not a human decision): stop/start of the deployed HTTP service and load against it
   are in scope; no rebuild, inventory/secret edit or hub change. ISSUE-11-DEC-008 asked
@@ -306,7 +306,7 @@ readiness under the existing issue scope.
 1. Read this log plus any issue-specific entries relevant to the selected issue,
    ancestor/stage and dependencies. Check current source/conditions, not keywords
    alone. Record the applicable IDs and log commit/reference in the work packet.
-2. Before asking the human, check whether an active decision answers the question.
+2. Before asking the owner, check whether an active decision answers the question.
    If it does, apply and cite it in the packet rather than ask again.
 3. After a new answer, classify scope and source, save the decision and update the
    packet and relevant issue/contract documentation. Do not automatically edit

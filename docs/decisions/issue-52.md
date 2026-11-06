@@ -7,9 +7,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-05.
 - ID: ISSUE-52-DEC-001
 - Recorded date: 2026-11-05
 - Status: active for issue #52 only.
-- Authority: delegated decision. The human delegated the #52/#53 decisions to the
+- Authority: delegated decision. The owner delegated the #52/#53 decisions to the
   coordinator ("decide as much as possible yourself", 2026-11-05, no permalink). The
-  content was decided by the coordinator, not dictated by the human.
+  content was decided by the coordinator, not dictated by the owner.
 - Source: requirements packet `.agent-runs/issue-52/packet.md` (recommendations D1-D8),
   pinned v0.15.1 source reading (`json.cpp` master `on = root["on"] | (bri > 0)`,
   `led.cpp` `toggleOnOff`); no hardware observation.

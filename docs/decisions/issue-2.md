@@ -9,7 +9,7 @@ claim. An active technical choice is not a new human-confirmed requirement.
 
 - Status: active.
 - Authority: human instruction plus governing workflow rules DEC-001/002/005.
-- Source: current issue-2 implementation kickoff in the project conversation,
+- Source: current issue-2 implementation kickoff in the coordinator session,
   2026-11-04; no source permalink is available. The live issue has no prerequisites
   and belongs to stage 1 through parent #1.
 - Scope/decision: implement issue #2's contract documentation and synthetic
@@ -66,7 +66,7 @@ claim. An active technical choice is not a new human-confirmed requirement.
   polling. Snapshot inspection/export is not actual restore acceptance.
 - Design rationale: avoid accidental slot reuse, unbacked loss, duplicate saves
   and hidden live-output changes; reviewed source does not prove a safe supplied-
-  state/restore path. No rationale is attributed to the human for these defaults.
+  state/restore path. No rationale is attributed to the owner for these defaults.
 - Affected: PRE-01–05, PLAY-01, REL-02; contract/requirements/architecture; preset,
   snapshot/error examples; T11–T13; #8/#9/#10/#13.
 - Supersession: settles provisional ranges/defaults; none of DEC-001–005 superseded.

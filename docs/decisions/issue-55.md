@@ -7,7 +7,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-05.
 - ID: ISSUE-55-DEC-001
 - Recorded date: 2026-11-05
 - Status: active for issue #55 only.
-- Authority: technical decision by the coordinator within the human's instruction to
+- Authority: technical decision by the coordinator within the owner's instruction to
   implement #55 following the workflow (2026-11-05, no permalink). The earlier human
   delegation for #52/#53 is not reused or generalized; no product behavior changes.
 - Source: requirements packet `.agent-runs/issue-55/packet.md` with Windows 11 / CPython

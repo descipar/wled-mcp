@@ -8,7 +8,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #66 only.
 - Authority: technical determination and proposal by the requirements agent (TD-66-1
-  to TD-66-5), accepted by the coordinator. This is not a human decision; the human
+  to TD-66-5), accepted by the coordinator. This is not a human decision; the owner
   did not choose these defaults and may veto them at review. Human authority for the
   implementation itself: owner instruction "#66 nach workflow umsetzen" on 2026-11-06,
   relayed by the coordinator (DEC-001); no permalink.

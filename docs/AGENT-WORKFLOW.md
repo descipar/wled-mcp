@@ -85,7 +85,7 @@ tests and a reviewable PR. It does not automatically merge the PR, deploy servic
 change physical devices or publish packages. Those boundaries are defined here,
 not extra wording the user must append to the kickoff sentence.
 
-The primary session is the coordinator so it can talk directly to the human.
+The primary session is the coordinator so it can talk directly to the maintainer.
 Reading the shared coordinator source is explicit main-session guidance, independent
 of any client-specific root-agent flag. Delegate to named roles when the client supports
 selection. If a client's delegation tools cannot select custom names, explicitly
@@ -116,7 +116,7 @@ flowchart TD
 1. Read current issue/comments, dependencies, docs and repository changes; derive
    stage context from labels/ancestor tracker/roadmap rather than user input.
 2. Requirements agent creates a bounded packet. It identifies behavior decisions,
-   not arbitrary additional approval gates. Reuse the human's accepted scope.
+   not arbitrary additional approval gates. Reuse the maintainer's accepted scope.
 3. Implementer owns one branch/checkout and adds meaningful tests with changes.
    Missing device inventory does not block mockable work.
 4. Once a candidate is committed, freeze its writes and review its full SHA.
@@ -125,7 +125,7 @@ flowchart TD
    separate assigned checkout; the reviewer does not repair production and
    approve the repair itself.
 5. Route findings back for at most two correction rounds by default. If the same
-   problem remains, return concrete findings/options to the human. Do not loop
+   problem remains, return concrete findings/options to the maintainer. Do not loop
    indefinitely, weaken requirements or remove tests merely to obtain PASS.
 6. A passing review and human merge decision refer to the actual candidate. New
    commits invalidate previous review; refresh affected checks and approval as
@@ -134,7 +134,7 @@ flowchart TD
    full current acceptance and verified issue body/state; a merged PR alone is
    insufficient. Partial completion keeps exact outstanding criteria visible.
 
-The human accepts scope/important decisions, reviews the concrete final PR and
+The maintainer accepts scope/important decisions, reviews the concrete final PR and
 separately authorizes operational actions when wanted. Ordinary edits/tests within
 accepted scope do not require repeated confirmation. Creating these agent files
 does not commission the WLED backlog or start a workflow run.
@@ -218,7 +218,7 @@ older entries with a history link. Personal details and raw transcripts are not
 copied into versioned records.
 
 Routine recording within the current authorized workflow does not need another
-confirmation for each entry. Material uncertainty about what the human decided
+confirmation for each entry. Material uncertainty about what the maintainer decided
 still needs clarification. A bounded merge/hardware/release permission cannot be
 reused for a different candidate or a future operation merely because it is logged.
 

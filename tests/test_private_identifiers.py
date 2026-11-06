@@ -113,6 +113,11 @@ LEAKS = [
     ("mac-address", "MAC 02-42" + "-AC-11-00-02"),
     ("mac-address", '{"mac": "0242ac11' + '0002"}'),
     ("email", "contact alex.doe" + "@mail.com"),
+    ("framing-phrase", "deploy it to the home" + " hub"),
+    ("framing-phrase", "the house" + "hold presets"),
+    ("framing-phrase", "agreed in the project\n" + "conversation"),
+    ("framing-phrase", "the repository remains" + " private"),
+    ("framing-phrase", "Private WLED" + " MCP server"),
 ]
 
 
@@ -135,6 +140,7 @@ ALLOWED = [
     "commit db0b2edde4d20a07f789d7192314d1e606acb50f319a and time 12:34:56",
     "settings.local.json, .env.local, *.local and the .lan suffix",
     "https://example.com/home/alex and docs/home/readme",
+    "a human merge decision; the owner, maintainer and operator; MCPHub on a small host",
 ]
 
 

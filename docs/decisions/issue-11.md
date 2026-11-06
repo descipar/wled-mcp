@@ -8,7 +8,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only.
 - Authority: human decision.
-- Source: human request in the project conversation on 2026-11-06 to start #11
+- Source: human request in the coordinator session on 2026-11-06 to start #11
   following the defined workflow (DEC-001); no permalink available.
 - Scope: issue #11 implementation work on its feature branch: deployment artifacts
   (Dockerfile, Compose and hub examples, staging helper), documentation, routine
@@ -37,7 +37,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only.
 - Authority: technical proposal by the requirements agent, accepted by the coordinator
-  within ISSUE-11-DEC-001. This is not a human decision; the human did not choose these
+  within ISSUE-11-DEC-001. This is not a human decision; the owner did not choose these
   defaults and may veto them at review.
 - Source: requirements packet `.agent-runs/issue-11/packet.md`, section "Technical
   defaults", 2026-11-06, no permalink.
@@ -73,7 +73,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   a staging helper `deploy/stage_release.py`). Actual network name, service name,
   credential storage, hub field schema and target architecture remain deployment-time
   facts to be confirmed when a deployment is requested.
-- Rationale supplied: none by the human. Agent rationale: see the packet; pre-staged
+- Rationale supplied: none by the owner. Agent rationale: see the packet; pre-staged
   wheels avoid Git credentials on the target, slim Debian has glibc wheels for the
   compiled dependencies, and the separate Compose project keeps the hub untouched.
 - Affected requirement IDs, files, issues and tests: OPS-01–05, MCP-01/03/04;
@@ -92,7 +92,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only; the operation it authorized has taken place.
 - Authority: human decision.
-- Source: human instruction in the project conversation on 2026-11-06 to install the
+- Source: human instruction in the coordinator session on 2026-11-06 to install the
   #11 artifacts on the project's hub host as a test and run the coordinator's tests
   there; no permalink available.
 - Scope: one bounded operation: a test installation of release 0.1.0 (source commit
@@ -125,7 +125,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Status: active for issue #11 only.
 - Authority: human decision accepting coordinator proposals ("setze deine Vorschläge
   um", 2026-11-06); the choice of mode is an agent choice inside that approval.
-- Source: human instruction in the project conversation on 2026-11-06; no permalink
+- Source: human instruction in the coordinator session on 2026-11-06; no permalink
   available.
 - Scope: issue #11 live installation from ISSUE-11-DEC-003 and its documentation.
 - Decision: keep exactly one mode active against the controllers (the coordinator
@@ -154,7 +154,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only.
 - Authority: human decision.
-- Source: human scope decision in the project conversation on 2026-11-06 ("rollback und
+- Source: human scope decision in the coordinator session on 2026-11-06 ("rollback und
   update sehe ich erst in stage 2, das kann hier raus"); no permalink available.
 - Scope: the live-evidence expectation of issue #11.
 - Decision: live execution of a version-to-version update and rollback is not part of
@@ -188,7 +188,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only; the operation it authorized has taken place.
 - Authority: human decision.
-- Source: human instruction in the project conversation on 2026-11-06 ("entfernen des
+- Source: human instruction in the coordinator session on 2026-11-06 ("entfernen des
   http dienstes teste doch einfach mal"); no permalink available.
 - Scope: one bounded operation on the same target as ISSUE-11-DEC-003: remove the HTTP
   hub entry, the HTTP service container and its image following
@@ -216,7 +216,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only; the operation it authorized has taken place.
 - Authority: human decision.
-- Source: human instruction in the project conversation on 2026-11-06 ("5 und 6
+- Source: human instruction in the coordinator session on 2026-11-06 ("5 und 6
   testen, dafür ist das bekannte [test controller] gerät freigegeben. wenn du dir
   merkst wie das aktuelle preset dort ist, ist auch das schreiben zum testen
   freigegeben"; the device name is replaced by its role, the known test controller of
@@ -231,7 +231,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   performed no device writes and compared the final state and preset file equal to
   the baseline. The hub container recreation interrupted all hub entries for about
   30 s and was done under this instruction; before the run, the coordinator announced to
-  the human that the hub container would be recreated and that all hub services would
+  the owner that the hub container would be recreated and that all hub services would
   be briefly unavailable. Not authorized: other controllers, other
   hosts, hub image updates, device configuration changes, deleting the data directory,
   publication, merge.
@@ -259,7 +259,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only.
 - Authority: human decision.
-- Source: human answer "b" in the project conversation on 2026-11-06 to the
+- Source: human answer "b" in the coordinator session on 2026-11-06 to the
   coordinator's options after the post-merge completion run for pull request #64
   returned NEEDS_DECISION (the open drain/load items were recorded as pending #11 items
   by ISSUE-11-DEC-005/007 and TRACEABILITY MCP-04/OPS-01); no permalink available.

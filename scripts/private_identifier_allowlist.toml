@@ -31,3 +31,8 @@ reason = "planted locally administered MAC proving the live-document check detec
 path = "tests/test_deployment_artifacts.py"
 value = "wled-desk.fritz.box"
 reason = "planted router-local host name proving the live-document check detects it"
+
+[[allow]]
+path = "docs/decisions/issue-62.md"
+value = "project conversation"
+reason = "ISSUE-62-DEC-001 names the retired term it replaces"

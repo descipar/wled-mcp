@@ -8,11 +8,11 @@ The repository also includes [shared Codex and Claude Code roles](agents/README.
 
 ## Goal
 
-Let an agent inspect and control several WLED controllers by meaningful names, create and modify segment layouts, and manage presets through clear MCP tools. Reuse WLED's built-in effects rather than building an animation engine. Keep operation lightweight enough for the existing Raspberry Pi hub.
+Let an agent inspect and control several WLED controllers by meaningful names, create and modify segment layouts, and manage presets through clear MCP tools. Reuse WLED's built-in effects rather than building an animation engine. Keep operation lightweight enough for small hosts.
 
 **Confirmed transport scope:** support Streamable HTTP as an independent service and stdio for client-managed launch via `uvx`. Both modes expose the same tools. This supersedes the initial stdio-only proposal; [issue #14](https://github.com/descipar/wled-mcp/issues/14) tracks HTTP implementation.
 
-**Stage 2:** plan a reusable public project with additional WLED workflows, distributable releases and MCPHub marketplace discovery. See the [stage-2 roadmap](docs/STAGE-2.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). The repository remains private; public release and external submissions have not been performed.
+**Stage 2:** plan a reusable public project with additional WLED workflows, distributable releases and MCPHub marketplace discovery. See the [stage-2 roadmap](docs/STAGE-2.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). Public release and external submissions have not been performed.
 
 **Stage 3:** named lighting zones, temporary signals, static layout previews, explanations of ineffective changes and property-based effect search. See the [stage-3 roadmap](docs/STAGE-3.md) and [tracker #26](https://github.com/descipar/wled-mcp/issues/26). These extensions do not block stage-2 publication.
 
@@ -43,7 +43,7 @@ Let an agent inspect and control several WLED controllers by meaningful names, c
 | [Stage 2](docs/STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
 | [Stage 3](docs/STAGE-3.md) | Five additional usability features, dependencies and acceptance scenarios |
 | [Marketplace plan](docs/MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
-| [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual home-network configuration |
+| [Configuration example](examples/devices.example.toml) | Synthetic device inventory, never an actual installation's configuration |
 | [Stdio hub example](examples/mcphub.example.json) | Proposed uvx entry with separate arguments and placeholder artifact path |
 | [HTTP hub example](examples/mcphub.http.example.json) | Streamable HTTP URL (default port 8000) and placeholder service credential |
 
@@ -64,8 +64,7 @@ The package has locked development/build/runtime dependencies and installed-whee
 
 - No cloud account, public endpoint, web interface, or MQTT broker required for v1.
 - The server controls WLED directly through its API and works independently of other home-automation systems.
-- Device inventory, firmware versions, topology, RGBW/CCT/2D needs, and test-device availability are still unknown.
-- Repository remains private. A distribution license has not been selected; upstream code has not been copied.
+- A distribution license has not been selected; upstream code has not been copied.
 - GitHub issues track implementation status. This repository documents the contract and decisions; neither an unchecked issue nor a planning paragraph proves completion.
 
 Repository: https://github.com/descipar/wled-mcp

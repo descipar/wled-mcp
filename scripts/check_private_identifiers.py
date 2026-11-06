@@ -1,4 +1,6 @@
-"""Fail when repository text carries private identifiers of an installation (issue #62).
+"""Fail when repository text carries private identifiers or framing of one installation.
+
+Issue #62.
 
 Scans every tracked file plus untracked, non-ignored files of the Git work tree
 (``git ls-files``); outside a Git work tree the check fails closed. Files that are not
@@ -20,6 +22,9 @@ Rules (DEC-005, DEC-009, ISSUE-62-DEC-001):
   the RFC 7042 documentation block 00-00-5E-00-53-xx.
 - ``email``: addresses outside the reserved example/invalid/test domains, except
   ``noreply`` addresses.
+- ``framing-phrase``: wording that frames the project as one installation or one
+  private conversation (see ``FRAMING_PHRASES``), matched case-insensitively across
+  line breaks. Neutral roles are "owner", "maintainer" and "operator".
 - ``denylist``: optional case-insensitive literals from an untracked file, read from
   ``$WLED_MCP_PRIVATE_DENYLIST`` or ``runtime/private-denylist.txt`` (git-ignored).
 
@@ -83,6 +88,16 @@ LOCAL_SUFFIXES = (
 EXAMPLE_MAIL_DOMAINS = ("example.com", "example.net", "example.org")
 RESERVED_MAIL_SUFFIXES = (".example", ".invalid", ".test", ".localhost")
 DOCUMENTATION_MAC_PREFIX = "00005e0053"
+FRAMING_PHRASES = (
+    "home hub",
+    "household",
+    "project conversation",
+    "private chat",
+    "this chat",
+    "remains private",
+    "Raspberry Pi hub",
+    "Private WLED MCP",
+)
 # END RULE DEFINITIONS
 
 IPV4 = re.compile(r"(?<![\d.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.]*\d)")
@@ -95,6 +110,10 @@ LOCAL_HOST = re.compile(
 )
 MAC = re.compile(r"(?<![\w:-])[0-9A-Fa-f]{2}([:-])[0-9A-Fa-f]{2}(?:\1[0-9A-Fa-f]{2}){4}(?![\w:-])")
 MAC_FIELD = re.compile(r"""["']mac["']\s*[:=]\s*["']([0-9A-Fa-f]{12})["']""", re.IGNORECASE)
+FRAMING = re.compile(
+    "|".join(r"\b" + r"\s+".join(map(re.escape, phrase.split())) for phrase in FRAMING_PHRASES),
+    re.IGNORECASE,
+)
 EMAIL = re.compile(
     r"(?<![\w.+%-])([A-Za-z0-9._%+-]+)@((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})(?![\w-]|\.[\w-])"
 )
@@ -187,6 +206,8 @@ def _matches(path: str, text: str) -> Iterator[tuple[int, str, str]]:
     for match in EMAIL.finditer(text):
         if _personal_email(match.group(1), match.group(2)):
             yield match.start(), "email", match.group()
+    for match in FRAMING.finditer(text):
+        yield match.start(), "framing-phrase", " ".join(match.group().split())
 
 
 def _line(text: str, offset: int) -> int:

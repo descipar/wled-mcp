@@ -2,9 +2,9 @@
 
 ## Assignment to use later
 
-> Implement the proposed first usable WLED MCP release in this private repository. Read AGENTS.md, README.md and docs/REQUIREMENTS.md, then follow the GitHub backlog linked from docs/IMPLEMENTATION-PLAN.md. Start with contract decisions and packaging. Implement and mock-test the server before requesting device information needed only for hardware validation. Keep runtime/hardware work within the user's actual authorization. Deliver a reviewable implementation with honest evidence and pending items.
+> Implement the proposed first usable WLED MCP release in this repository. Read AGENTS.md, README.md and docs/REQUIREMENTS.md, then follow the GitHub backlog linked from docs/IMPLEMENTATION-PLAN.md. Start with contract decisions and packaging. Implement and mock-test the server before requesting device information needed only for hardware validation. Keep runtime/hardware work within the user's actual authorization. Deliver a reviewable implementation with honest evidence and pending items.
 
-This is a ready-to-use future prompt, not an instruction that implementation has already been commissioned in the original documentation chat.
+This is a ready-to-use future prompt, not an instruction that implementation has already been commissioned in the original documentation session.
 
 For a later stage-2 assignment, also read [STAGE-2.md](STAGE-2.md), [MARKETPLACE.md](MARKETPLACE.md) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15). Keep Launch requirements and optional product features distinct. Public artifacts/submission drafts must be concrete and reviewable before the final release decision; do not publish from a planning instruction.
 
@@ -17,7 +17,7 @@ git status --short
 git remote -v
 ```
 
-Authenticate with the agent's existing authorized GitHub mechanism. Do not paste tokens into clone URLs, repository files or issue comments. The repository is private; inability to access it is an access issue, not a reason to make it public.
+Authenticate with the agent's existing authorized GitHub mechanism. Do not paste tokens into clone URLs, repository files or issue comments. Repository visibility is an owner release decision ([DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline), [#23](https://github.com/descipar/wled-mcp/issues/23)); inability to access it is an access issue, not a reason to change its visibility.
 
 ## First work session
 
@@ -58,7 +58,7 @@ tests do not establish actual WLED domain-control or hardware acceptance.
 - Are CCT, 2D matrix, playlist editing or timers concrete needs? These are not inferred Must features.
 - Is code reuse or eventual publication desired, and under what license? No license was selected in planning.
 
-Do not block mocked implementation on access to the home network. Do not fabricate addresses, tests or device capabilities. Do not copy private context from unrelated DIY projects into this repository.
+Do not block mocked implementation on access to a real device network. Do not fabricate addresses, tests or device capabilities. Do not copy context from unrelated projects into this repository.
 
 ## Expected final delivery
 
@@ -66,4 +66,4 @@ Do not block mocked implementation on access to the home network. Do not fabrica
 - Requirements-to-test traceability, passing automated checks and relevant fixtures.
 - Clear tool behavior for patch/replace, backups, persistence, concurrency and uncertain writes.
 - Reproducible hub integration and rollback instructions with concrete paths chosen from observed runtime facts.
-- Updated issue status, validation evidence and a concise German handoff to the user stating what works, what was tested and what remains unverified.
+- Updated issue status, validation evidence and a concise handoff to the maintainer in the maintainer's language stating what works, what was tested and what remains unverified.

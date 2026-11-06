@@ -2,8 +2,8 @@
 
 ## Project and communication
 
-- This is the standalone `descipar/wled-mcp` repository. Inspect `git status`, remotes, and existing changes before editing. Do not initialize Git in the surrounding DIY directory.
-- Discuss work with the user in German. Keep committed documentation, code identifiers, issue text, and PR descriptions in English unless asked otherwise.
+- This is the standalone `descipar/wled-mcp` repository. Inspect `git status`, remotes, and existing changes before editing. Do not initialize Git in a parent directory.
+- Use the maintainer's language in discussion. Keep committed documentation, code identifiers, issue text, and PR descriptions in English unless asked otherwise.
 - Keep documentation and issues impersonal: use neutral roles and synthetic examples. Do not include personal names, private hostnames or details of an individual installation unless explicitly requested. Actual repository/issue URLs remain valid project references.
 - Start with README.md and docs/AGENT-HANDOFF.md. Use GitHub issues and requirement IDs for scope and progress.
 - Read docs/DECISIONS.md and applicable docs/decisions/issue-<number>.md entries at startup/resume and before repeated questions. The coordinator records clear human answers with source/scope/status, propagates them to the other roles and updates affected requirements/tests. Reuse applicable decisions; never generalize an issue answer into a global rule or reuse an expired operation approval. See the log's recording rules.
@@ -13,12 +13,12 @@
 - Stage 1 is tracked by #1; future product/public-release work is tracked separately by #15 and docs/STAGE-2.md. Prepare public-ready artifacts and listing drafts when commissioned, but do not infer a visibility change, license choice, package publication or external submission from the roadmap alone.
 - The five additional usability features are stage 3, tracked by #26 and docs/STAGE-3.md. They do not block stage-2 publication; do not merge the stages' acceptance criteria implicitly.
 - Define scope from WLED capabilities and this project's requirements. Do not make features conditional on what a separate home-automation integration already provides.
-- The original assignment created specifications and a backlog only. A later implementation instruction authorizes code work; it does not implicitly authorize deployment to the home hub or physical lighting changes. Follow the actual later instruction and do not ask again for actions already authorized.
+- The original assignment created specifications and a backlog only. A later implementation instruction authorizes code work; it does not implicitly authorize deployment to an MCP hub or physical lighting changes. Follow the actual later instruction and do not ask again for actions already authorized.
 
 ## Implementation discipline
 
-- Requirements marked confirmed reflect the conversation. Proposed defaults may be refined with a recorded rationale; do not present them as user-confirmed decisions.
-- Keep runtime configuration, backups, captures, logs, and build artifacts in this project or its designated deployment directory. Never commit secrets or real household inventory.
+- Requirements marked confirmed reflect a recorded owner decision. Proposed defaults may be refined with a recorded rationale; do not present them as user-confirmed decisions.
+- Keep runtime configuration, backups, captures, logs, and build artifacts in this project or its designated deployment directory. Never commit secrets or a real device inventory.
 - Implement the documented distinction between patching selected segments and replacing the complete layout. Omitted fields are not reset requests.
 - Validate a complete request before sending a write. Treat a timed-out write as possibly applied; do not retry it blindly.
 - No silent preset overwrite, delete, arbitrary endpoint forwarding, device discovery scan, or configuration migration. Explicit requested operations can run without adding an interactive approval mechanism inside the plugin.

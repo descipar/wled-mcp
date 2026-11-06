@@ -111,7 +111,7 @@ H03: Start/restart the independent HTTP service or stdio entry as appropriate, r
 
 ## Opt-in physical write checks
 
-Choose an explicitly authorized device and test ranges/slots first. Record the pre-test state and relevant persistent preset snapshots. A visually animated state is not necessarily restorable frame-for-frame; preserve its configuration and note limits. Do not edit existing household presets for convenience when an agreed unused slot works.
+Choose an explicitly authorized device and test ranges/slots first. Record the pre-test state and relevant persistent preset snapshots. A visually animated state is not necessarily restorable frame-for-frame; preserve its configuration and note limits. Do not edit the operator's existing presets for convenience when an agreed unused slot works.
 
 H04: Change power/brightness/color and one effect's speed/intensity; verify state and visible behavior. Restore original configuration where supported.
 
@@ -263,8 +263,8 @@ no 255 bounds and `bri` without an extra `on` are known limits shared with #6 (s
 firmware name truncation, `uint8_t` wrap, an off segment switched on by `bri > 0`,
 reported as `VERIFICATION_MISMATCH`). The agent technical baselines
 [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) are accepted by delegated decision
-(issue #7 only; decided by the main session under the human's delegation, not personally
-dictated by the human). The narrow `brightness=0` reading (DEC-007) and the follow-up
+(issue #7 only; decided by the main session under the owner's delegation, not personally
+dictated by the owner). The narrow `brightness=0` reading (DEC-007) and the follow-up
 issue #48 for the shared #6/#7 limits are recorded the same way. The name, 255-bound and
 `bri` points above (and the tests that pinned them) are superseded by issue #48; see the
 next section.
