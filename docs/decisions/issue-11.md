@@ -167,6 +167,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   it does not authorize any live operation and does not change other #11 criteria
   (for example hub container recreation, drain on the target, load measurements, H02
   catalog/preset reads).
+  Superseded in part by ISSUE-11-DEC-008: drain on the target and load measurements are
+  no longer #11 items; they are tracked by #12.
 - Rationale supplied: none beyond the statement; only release 0.1.0 exists.
 - Affected requirement IDs, files, issues and tests: OPS-02/05, MCP-01/03/04, READ-01
   (deployment cells); #11, #21, #25;
@@ -248,3 +250,40 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Revalidation needed / next action: independent review of the documentation change;
   human merge decision; then completion re-run. Drain of an in-flight call on the
   target and load measurements remain pending.
+  Superseded in part by ISSUE-11-DEC-008: these two checks moved to #12 and are no
+  longer pending in #11.
+
+## ISSUE-11-DEC-008 — Drain and load live checks move to #12
+
+- ID: ISSUE-11-DEC-008
+- Recorded date: 2026-11-06
+- Status: active for issue #11 only.
+- Authority: human decision.
+- Source: human answer "b" in the project conversation on 2026-11-06 to the
+  coordinator's options after the post-merge completion run for pull request #64
+  returned NEEDS_DECISION (the open drain/load items were recorded as pending #11 items
+  by ISSUE-11-DEC-005/007 and TRACEABILITY MCP-04/OPS-01); no permalink available.
+- Scope: the live-evidence expectation of issue #11 for two checks.
+- Decision: two remaining live checks move from #11 to
+  [#12](https://github.com/descipar/wled-mcp/issues/12): (1) drain of an in-flight tool
+  call on SIGTERM on the target; (2) load measurements on the target, as listed under
+  resource measurements in [DEPLOYMENT.md](../DEPLOYMENT.md). The automated drain
+  coverage (T21) remains the #11 evidence for the drain behavior.
+- Applicability / conditions / expiry: narrows only the #11 pending list. It does not
+  authorize any live operation, does not change the authority or bounded operations of
+  ISSUE-11-DEC-005/007 and does not add to #12's acceptance criteria beyond carrying
+  these two checks; running them needs its own instruction naming target and permitted
+  operations.
+- Rationale supplied: none beyond choosing option "b".
+- Affected requirement IDs, files, issues and tests: MCP-04, OPS-01; #11, #12;
+  [VALIDATION.md](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md), README,
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: supersedes only the wording that lists drain on the
+  target and load measurements as remaining #11 items in ISSUE-11-DEC-005
+  ("Applicability") and ISSUE-11-DEC-007 ("Revalidation needed / next action"); both
+  entries otherwise stay in force.
+- Propagated to roles / packet references: implementer through the coordinator; the
+  #11 completion run is to be repeated.
+- Revalidation needed / next action: independent review of this documentation change;
+  human merge decision; then completion re-run for #11.
