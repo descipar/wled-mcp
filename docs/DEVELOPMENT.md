@@ -4,7 +4,9 @@ Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
 The production registry contains `wled_list_devices`, the three read tools from #5, `wled_set_state` and `wled_patch_segments` (#6) and `wled_replace_layout` (#7) and the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9; mock-tested, H06 pending). `--transport streamable-http` starts the
 authenticated stateless HTTP service from #14 (see below); its software evidence is
-mock/loopback only; deployment and hub integration of both modes (#11) are pending.
+mock/loopback only. Deployment artifacts for both modes (#11: Dockerfile, Compose
+and hub examples, staging helper) are prepared and statically checked; actual
+deployment and hub integration remain pending.
 [TRACEABILITY.md](TRACEABILITY.md) maps requirements and T01–T21 to the automated
 evidence; `tests/test_traceability.py` runs `scripts/check_traceability.py` in CI.
 
@@ -16,8 +18,8 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
-uv run --frozen ruff format --check src tests scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
+uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -106,11 +108,24 @@ matching constraints together; no public PyPI project package is assumed. stdio
 waits for its MCP host on stdin. stdout is protocol only; diagnostics use stderr;
 EOF closes the process. `--help`/`--version` need no configuration paths.
 
+## Deployment artifact checks
+
+`tests/test_deployment_artifacts.py` cross-checks the HTTP image
+(`deploy/http/Dockerfile` and its allowlist build context), the Compose example, both
+hub examples, `deploy/stage_release.py` and the commands in
+[DEPLOYMENT.md](DEPLOYMENT.md) without Docker, a hub or a LAN device. It also runs the
+Compose command (paths, bind and port replaced; `127.0.0.1` only) with the hub
+example's Host and Authorization header shape against the installed console. The
+distribution check runs the stdio hub example through uvx with only its paths
+replaced. An optional `docker compose config` check runs only with
+`WLED_MCP_DOCKER_CHECKS=1` and a local Docker CLI; it is never required in CI. Image
+builds are a manual, local step (see DEPLOYMENT.md) and nothing is pushed.
+
 ## License and remaining scope
 
 No outbound project license is selected and no package is published. Official
 SDK package metadata declares MIT; dependencies retain their own notices and
 license metadata. This does not license this repository or complete a distribution
 license review. No upstream WLED server code was copied. T18–T21 and the device tools
-are covered by mock/loopback tests; deployment, resource measurements and hardware
-evidence remain pending.
+are covered by mock/loopback tests; deployment artifacts are prepared, while actual
+deployment, resource measurements and hardware evidence remain pending.

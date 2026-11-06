@@ -20,7 +20,13 @@ dependencies = [
 wled-mcp = "wled_mcp.cli:main"
 
 [dependency-groups]
-dev = ["hatchling==1.27.0", "pytest>=8.4,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]
+dev = [
+    "hatchling==1.27.0",
+    "pytest>=8.4,<10",
+    "ruff>=0.11,<1",
+    "mypy>=1.15,<2",
+    "pyyaml>=6.0.2,<7",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wled_mcp"]
@@ -44,4 +50,5 @@ files = [
     "scripts/check_distribution.py",
     "scripts/check_lock.py",
     "scripts/check_traceability.py",
+    "deploy/stage_release.py",
 ]

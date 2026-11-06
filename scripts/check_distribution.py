@@ -13,7 +13,7 @@ import sys
 import tempfile
 import threading
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import anyio
 import httpx2
@@ -136,6 +136,35 @@ def http_restart(console: Path, config: Path, data: Path, cwd: Path, env: dict[s
         assert leftovers == [], f"HTTP start/stop left unexpected data files: {leftovers}"
 
 
+def hub_example_uvx(
+    root: Path, wheel: Path, constraints: Path, data: Path, env: dict[str, str]
+) -> tuple[str, list[str], dict[str, str]]:
+    """The stdio hub example (#11) with only its paths replaced by local ones."""
+    example = json.loads((root / "examples/mcphub.example.json").read_text("utf-8"))
+    entry = example["mcpServers"]["wled"]
+    args: list[str] = list(entry["args"])
+    data.mkdir()
+    (data / "config").mkdir()
+    config = data / "config" / "devices.toml"
+    config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
+    replacements = {"--constraints": constraints, "--from": wheel, "--config": config}
+    replacements["--data-dir"] = data
+    for index, token in enumerate(args[:-1]):
+        if token in replacements:
+            documented = PurePosixPath(args[index + 1])
+            local = replacements[token]
+            assert documented.is_absolute(), f"{token} path in the hub example is absolute"
+            if token in ("--constraints", "--from"):
+                assert documented.name == local.name, f"{token} names the staged {local.name}"
+            args[index + 1] = str(local)
+    assert sum(token in replacements for token in args) == len(replacements)
+    hub_env = dict(env)
+    for name, value in entry["env"].items():
+        assert PurePosixPath(value).is_absolute() and name in env, name
+        hub_env[name] = env[name]  # persistent uv paths -> this check's local paths
+    return str(entry["command"]), args, hub_env
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     artifacts = root / ".artifacts"
@@ -221,8 +250,13 @@ def main() -> None:
         assert str(root / "src").casefold() not in tool[1].casefold()
         assert run([*uvx, "wled-mcp", "--version"], outside, env) == "wled-mcp 0.1.0"
         anyio.run(handshake, uvx[0], [*uvx[1:], "wled-mcp", *args], outside, env)
+        hub_data = outside / "hub-data"
+        command, hub_args, hub_env = hub_example_uvx(root, wheel, constraints, hub_data, env)
+        anyio.run(handshake, command, hub_args, outside, hub_env)
+        leftovers = sorted(path.name for path in hub_data.iterdir())
+        assert leftovers == ["config"], f"stdio hub example left data files: {leftovers}"
     print(
-        "Wheel/clean install/stdio/HTTP restart/uvx: PASS; "
+        "Wheel/clean install/stdio/HTTP restart/uvx/stdio hub example: PASS; "
         f"{len(expected)} exact runtime versions verified"
     )
 

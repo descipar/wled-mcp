@@ -1,0 +1,76 @@
+# Synthetic example: independent Streamable HTTP service for wled-mcp (issue #11).
+# Not deployed anywhere. Copy it as compose.yaml into the service's own deployment
+# directory and replace REPLACE_WITH_HUB_NETWORK with the hub's existing network.
+#
+# This is a separate Compose project: it never edits, restarts or recreates the hub.
+# Manage it only with `docker compose -p wled-mcp-http -f compose.yaml ...`.
+#
+# Address of the service:
+#   from MCPHub (same network):   http://wled-mcp:8000/mcp  (service name, not localhost)
+#   inside this container:        127.0.0.1:8000 (healthcheck only)
+#   from the host shell:          not reachable; no host port is published
+name: wled-mcp-http
+
+services:
+  wled-mcp:
+    # Local tag built from the staged release directory; never pulled or pushed.
+    image: wled-mcp:0.1.0
+    pull_policy: never
+    command:
+      - --config
+      - /app/data/wled-mcp/config/devices.toml
+      - --data-dir
+      - /app/data/wled-mcp
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --allowed-host
+      - wled-mcp:8000
+      - --http-token-file
+      - /run/secrets/wled_mcp_http_token
+    # One process, one worker: never scale this service or run a second writer
+    # (another HTTP instance or a stdio entry) against the same controllers.
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 130s
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      # Host directory owned by the container UID (default 10001); holds
+      # config/devices.toml and the persistent backups/ snapshots. Must support hard links.
+      - ./data/wled-mcp:/app/data/wled-mcp
+    secrets:
+      - source: wled_mcp_http_token
+        target: wled_mcp_http_token
+    networks:
+      - hub
+    # Liveness without credentials or device access: TCP connect to the service port.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import socket; socket.create_connection(("127.0.0.1", 8000), 3).close()
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+networks:
+  hub:
+    external: true
+    name: REPLACE_WITH_HUB_NETWORK
+
+secrets:
+  wled_mcp_http_token:
+    # Git-ignored file with the bearer credential (32-512 printable ASCII characters),
+    # readable by the container UID. Generate it; never commit or echo it.
+    file: ./secrets/wled_mcp_http_token
