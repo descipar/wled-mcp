@@ -1,6 +1,6 @@
 # Requirements specification
 
-Version: 0.4, 2026-11-06. State: v1 design baseline refined by issue #2, with confirmed dual-transport scope. All stage-1 work packages under tracker [#1](https://github.com/descipar/wled-mcp/issues/1) are closed; the tracker close-out is pending. Hardware evidence covers one controller on one firmware (see [VALIDATION.md](VALIDATION.md) and [TRACEABILITY.md](TRACEABILITY.md)); the items listed there as pending stay pending.
+Version: 0.4, 2026-11-06. State: v1 design baseline refined by issue #2, with confirmed dual-transport scope. All stage-1 work packages under tracker [#1](https://github.com/descipar/wled-mcp/issues/1) are closed, and the tracker itself was closed as completed on 2026-11-06. Hardware evidence covers one controller on one firmware (see [VALIDATION.md](VALIDATION.md) and [TRACEABILITY.md](TRACEABILITY.md)); the items listed there as pending stay pending.
 
 This document defines **stage 1**. Future public-release and product requirements use `S2-` IDs in [STAGE-2.md](STAGE-2.md) and separate tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Stage-2 direction does not change repository visibility or silently add release-publication requirements to stage 1.
 
