@@ -147,3 +147,63 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
   `.agent-runs/issue-11/packet-live-evidence.md`; implementer through the coordinator.
 - Revalidation needed / next action: independent review of the documentation pull
   request; human merge decision; then completion re-run.
+
+## ISSUE-11-DEC-005 — Live version update/rollback moves to stage 2
+
+- ID: ISSUE-11-DEC-005
+- Recorded date: 2026-11-06
+- Status: active for issue #11 only.
+- Authority: human decision.
+- Source: human scope decision in the project conversation on 2026-11-06 ("rollback und
+  update sehe ich erst in stage 2, das kann hier raus"); no permalink available.
+- Scope: the live-evidence expectation of issue #11.
+- Decision: live execution of a version-to-version update and rollback is not part of
+  #11; it moves to stage 2, tracked by
+  [#21](https://github.com/descipar/wled-mcp/issues/21) (S2-COMPAT-03) and
+  [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01). The documented
+  update, rollback and recreation procedures in [DEPLOYMENT.md](../DEPLOYMENT.md) remain
+  #11 scope.
+- Applicability / conditions / expiry: narrows only the #11 live-evidence expectation;
+  it does not authorize any live operation and does not change other #11 criteria
+  (for example hub container recreation, drain on the target, load measurements, H02
+  catalog/preset reads).
+- Rationale supplied: none beyond the statement; only release 0.1.0 exists.
+- Affected requirement IDs, files, issues and tests: OPS-02/05, MCP-01/03/04, READ-01
+  (deployment cells); #11, #21, #25;
+  [VALIDATION.md](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md), README,
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: supersedes nothing; narrows the #11 live-evidence
+  expectation only.
+- Propagated to roles / packet references: implementer through the coordinator
+  (correction round 2 of the live-evidence pull request).
+- Revalidation needed / next action: stage-2 issues #21/#25 carry the live
+  update/rollback evidence; independent review of this documentation change.
+
+## ISSUE-11-DEC-006 — Live removal test of the HTTP service
+
+- ID: ISSUE-11-DEC-006
+- Recorded date: 2026-11-06
+- Status: active for issue #11 only; the operation it authorized has taken place.
+- Authority: human decision.
+- Source: human instruction in the project conversation on 2026-11-06 ("entfernen des
+  http dienstes teste doch einfach mal"); no permalink available.
+- Scope: one bounded operation on the same target as ISSUE-11-DEC-003: remove the HTTP
+  hub entry, the HTTP service container and its image following
+  [DEPLOYMENT.md](../DEPLOYMENT.md), then redeploy from the retained release so that
+  Streamable HTTP stays the active mode (ISSUE-11-DEC-004).
+- Decision: the removal test and the redeploy were authorized. Not authorized: deleting
+  the data directory, credential file or release directory, changes to the hub
+  container or its network, other hosts, device writes.
+- Applicability / conditions / expiry: bounded to that run; not standing permission for
+  further removals, deployments or updates.
+- Rationale supplied: none beyond the instruction.
+- Affected requirement IDs, files, issues and tests: OPS-05;
+  [VALIDATION.md](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06),
+  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md), README,
+  `tests/test_deployment_artifacts.py`.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: implementer through the coordinator
+  (correction round 2 of the live-evidence pull request).
+- Revalidation needed / next action: any further live operation needs a new
+  instruction naming mode, target and permitted operations.

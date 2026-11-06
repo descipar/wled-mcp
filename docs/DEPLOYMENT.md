@@ -3,10 +3,13 @@
 **Status: one live check of both modes on one target.** The artifacts and procedures
 below (#11) are covered by device-free tests and were exercised once on one MCPHub target
 for both modes (build, start, hub registration, reads, recreation, restart, idle
-measurements, stdio entry removal and an authorized power on/off on one test controller);
-see [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Update and
-rollback between two versions, removal of the HTTP service and hub container recreation
-have not been run yet and remain pending. All names, paths and networks below are
+measurements, stdio entry removal, removal and redeploy of the HTTP service, and an
+authorized power on/off on one test controller); see
+[VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06). Hub container
+recreation has not been run yet and remains pending. Live update and rollback between
+two versions moved to stage 2 ([#21](https://github.com/descipar/wled-mcp/issues/21),
+[#25](https://github.com/descipar/wled-mcp/issues/25)) per ISSUE-11-DEC-005; the
+procedures below remain part of #11. All names, paths and networks below are
 synthetic placeholders; confirm them on the actual installation. Any further deployment
 needs its own instruction naming the mode and target.
 

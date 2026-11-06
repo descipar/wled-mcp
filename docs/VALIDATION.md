@@ -546,8 +546,26 @@ limited to one authorized test controller: reads and master power on/off.
 | Through the hub | `wled_list_devices` reached the test controller; `wled_set_state` `on=true` and `on=false` verified by readback; restored to off |
 | Removal (ISSUE-11-DEC-004) | only the stdio hub entry was deleted; no stdio server process was left; the hub data/config directory, the uv cache and the staged release directory were retained |
 
-Mode remaining active: Streamable HTTP (ISSUE-11-DEC-004). Both entries were registered
-at the same time during the run until the stdio entry was removed.
+### HTTP service removal and redeploy (ISSUE-11-DEC-006)
+
+Run after the checks above, following [DEPLOYMENT.md](DEPLOYMENT.md#http-service-update-rollback-recreation-removal);
+the hub configuration was backed up first.
+
+| Check | Result |
+| --- | --- |
+| Hub entry removal | only the HTTP hub entry was deleted; all other hub entries unchanged |
+| `docker compose -p wled-mcp-http -f compose.yaml rm --stop --force wled-mcp` | 1.27 s; no container of the `wled-mcp-http` project left |
+| `docker image rm wled-mcp:0.1.0` | image removed |
+| Hub and neighbors | hub container not restarted (start time unchanged), hub network present, other containers unchanged |
+| Retained | data directory with the inventory, credential file and staged release directory |
+| Redeploy from the retained release | `sha256sum -c SHA256SUMS` matched; `docker build --pull` produced an identical image ID (build cache); `up -d`; in-container `ping` 200, wrong Host 403, missing credential 401, no `Mcp-Session-Id` |
+| Hub re-registration | create entry, set owner to an admin user, reload the entry; through the hub: `initialize`, 12 tools, `wled_list_devices` probe reachable, `wled_get_state` read for the test controller |
+
+No device writes were part of this operation.
+
+Mode remaining active: Streamable HTTP (ISSUE-11-DEC-004), redeployed after the removal
+test. Both entries were registered at the same time during the run until the stdio
+entry was removed.
 
 Findings fed back into [DEPLOYMENT.md](DEPLOYMENT.md#mcphub-notes): the MCPHub entry
 owner requirement and reload step, RSS measurement without a memory cgroup, and RFC 1123
@@ -555,8 +573,12 @@ host labels in `base_url` (an underscore name was rejected,
 [#61](https://github.com/descipar/wled-mcp/issues/61); a hyphenated name resolved to two
 addresses, so the run used an address).
 
-Not exercised and still pending: update and rollback between two releases (only 0.1.0
-exists), removal of the HTTP service, hub container recreation, graceful drain of an
+Moved to stage 2 per ISSUE-11-DEC-005: live update and rollback between two releases
+(only 0.1.0 exists), tracked by [#21](https://github.com/descipar/wled-mcp/issues/21)
+(S2-COMPAT-03) and [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01);
+the documented procedures remain #11 scope.
+
+Not exercised and still pending: hub container recreation, graceful drain of an
 in-flight call on the target, load measurements (parallel calls, peak connections,
 largest body), catalog and preset reads through the hub (H02 for presets), any other
 device, preset or segment writes, and H01/H04–H07 (#12).

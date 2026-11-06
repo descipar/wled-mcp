@@ -732,16 +732,87 @@ def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes
     assert private_identifiers(allowed) == []
 
 
-def test_live_section_covers_both_modes_and_keeps_version_changes_pending():
+STAGE_2_MOVE = "Moved to stage 2 per ISSUE-11-DEC-005:"
+STILL_PENDING = "Not exercised and still pending:"
+
+
+def live_scope_problems(section: str) -> list[str]:
+    """What the #11 live section must state after ISSUE-11-DEC-005/006."""
+    problems = []
+    for heading in ("### Streamable HTTP service", "### stdio via uvx"):
+        if heading + "\n" not in section:
+            problems.append(f"missing mode: {heading}")
+    if not re.search(r"from commit `([0-9a-f]{7,40})`", section):
+        problems.append("the live record names no exercised source commit")
+    removal_heading = "### HTTP service removal and redeploy (ISSUE-11-DEC-006)"
+    if removal_heading + "\n" not in section:
+        return [*problems, "HTTP service removal is not recorded as exercised"]
+    removal = markdown_section(section, removal_heading)
+    for step in ("rm --stop --force wled-mcp", "docker image rm", "Retained", "re-registration"):
+        if step not in removal:
+            problems.append(f"removal record lacks {step!r}")
+    if STAGE_2_MOVE not in section or STILL_PENDING not in section:
+        return [*problems, "stage-2 move or remaining-pending paragraph missing"]
+    moved = section[section.index(STAGE_2_MOVE) : section.index(STILL_PENDING)]
+    if "update and rollback between two releases" not in moved:
+        problems.append("version update/rollback is not marked as moved to stage 2")
+    for issue in ("issues/21", "issues/25"):
+        if issue not in moved:
+            problems.append(f"stage-2 move does not reference {issue}")
+    pending = section[section.index(STILL_PENDING) :]
+    for item in ("rollback", "removal of the HTTP service"):
+        if item in pending:
+            problems.append(f"{item!r} is still listed as pending in #11")
+    if "hub container recreation" not in pending:
+        problems.append("hub container recreation is no longer listed as pending")
+    if "Mode remaining active: Streamable HTTP" not in section:
+        problems.append("the remaining active mode is not stated")
+    return problems
+
+
+def test_live_section_records_http_removal_and_moves_version_changes_to_stage_2():
+    assert live_scope_problems(markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)) == []
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (
+            lambda text: text.replace("### HTTP service removal and redeploy", "### Removal"),
+            "HTTP service removal is not recorded as exercised",
+        ),
+        (
+            lambda text: text.replace(
+                STILL_PENDING, STILL_PENDING + " removal of the HTTP service,"
+            ),
+            "'removal of the HTTP service' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace(STILL_PENDING, STILL_PENDING + " update and rollback,"),
+            "'rollback' is still listed as pending in #11",
+        ),
+        (
+            lambda text: text.replace("issues/25", "issues/99"),
+            "stage-2 move does not reference issues/25",
+        ),
+        (
+            lambda text: text.replace(STAGE_2_MOVE, "Deferred:"),
+            "stage-2 move or remaining-pending paragraph missing",
+        ),
+        (
+            lambda text: text.replace("hub container recreation, graceful", "graceful"),
+            "hub container recreation is no longer listed as pending",
+        ),
+        (
+            lambda text: text.replace("docker image rm", "image deletion"),
+            "removal record lacks 'docker image rm'",
+        ),
+    ],
+)
+def test_live_scope_check_rejects_regressions(mutate, expected):
     section = markdown_section(VALIDATION.read_text("utf-8"), LIVE_HEADING)
-    assert markdown_section(section, "### Streamable HTTP service")
-    assert markdown_section(section, "### stdio via uvx")
-    commit = re.search(r"from commit `([0-9a-f]{7,40})`", section)
-    assert commit is not None, "the live record names the exercised source commit"
-    pending = section[section.index("Not exercised and still pending:") :]
-    for item in ("update and rollback between two releases", "removal of the HTTP service"):
-        assert item in pending
-    assert "Mode remaining active: Streamable HTTP" in section
+    assert live_scope_problems(section) == []
+    assert expected in live_scope_problems(mutate(section))
 
 
 def test_hub_http_registration_points_to_owner_and_reload_requirements():
