@@ -5,9 +5,10 @@ document index and the agent workflow. Users start with the [README](../README.m
 
 ## Status
 
-Package version 0.1.0 carries the stage-1 scope below. Delivery tracker
-[#1](https://github.com/descipar/wled-mcp/issues/1) lists the stage-1 issues; open items
-are tracked there and in the linked follow-up issues. Nothing has been published.
+Package version 0.1.0 carries the stage-1 scope below. All stage-1 work packages listed
+in delivery tracker [#1](https://github.com/descipar/wled-mcp/issues/1) are closed; the
+tracker close-out is pending. Deferred items and remaining limits are tracked in the
+linked follow-up issues. Nothing has been published.
 
 - **Package and transports.** An installable Python 3.13 package with the console
   command `wled-mcp`. stdio is the default transport; the authenticated stateless
