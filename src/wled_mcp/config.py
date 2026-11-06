@@ -11,6 +11,13 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+# ASCII DNS names; labels may contain interior "_" (DHCP-derived names) or "-", but each
+# label is 1-63 characters and starts and ends with a letter or digit (ISSUE-61-DEC-002).
+_HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,251}[A-Za-z0-9])?")
+_HOST_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9])?")
+_DEVICE_FIELDS = ("id", "name", "base_url")
+_MAX_LOCATORS = 5
+
 
 class ConfigurationError(ValueError):
     """A safe message suitable for startup diagnostics."""
@@ -53,11 +60,8 @@ class Device(StrictModel):
         host = parts.hostname
         if ":" in host:
             ipaddress.IPv6Address(host)
-        elif not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?", host):
-            raise ValueError("Invalid host")
-        elif any(
-            not label or len(label) > 63 or label.startswith("-") or label.endswith("-")
-            for label in host.split(".")
+        elif not _HOST.fullmatch(host) or not all(
+            _HOST_LABEL.fullmatch(label) for label in host.split(".")
         ):
             raise ValueError("Invalid host")
         if parts.port is not None and not 1 <= parts.port <= 65535:
@@ -149,9 +153,10 @@ def load_config(
     except (OSError, ValueError, UnicodeError, ValidationError, RecursionError) as exc:
         if isinstance(exc, ConfigurationError):
             raise
+        located = _device_locators(exc) if isinstance(exc, ValidationError) else ""
         raise ConfigurationError(
-            "Invalid inventory configuration: check schema version, unique device IDs, "
-            "credential-free HTTP(S) root URLs and supported settings."
+            f"Invalid inventory configuration{located}: check schema version, unique device "
+            "IDs, credential-free HTTP(S) root URLs and supported settings."
         ) from None
     return StartupConfig(
         config.resolve(),
@@ -160,3 +165,33 @@ def load_config(
         validated.http,
         validated.backups,
     )
+
+
+def _device_locators(exc: ValidationError) -> str:
+    """Name offending device entries from error locations only, never from values or text.
+
+    The zero-based index follows the ``[[devices]]`` order. Unknown keys are reported
+    without their name because keys are file content.
+    """
+    found: set[tuple[int, int, str]] = set()
+    for error in exc.errors(include_url=False, include_context=False, include_input=False):
+        loc = error["loc"]
+        if len(loc) < 2 or loc[0] != "devices" or type(loc[1]) is not int:
+            continue
+        index = loc[1]
+        field = loc[2] if len(loc) > 2 else None
+        if field is None:
+            order, text = -1, f"devices[{index}]: invalid"
+        elif field in _DEVICE_FIELDS:
+            category = "missing" if error["type"] == "missing" else "invalid"
+            order, text = _DEVICE_FIELDS.index(field), f"devices[{index}].{field}: {category}"
+        else:
+            order, text = len(_DEVICE_FIELDS), f"devices[{index}]: unsupported field"
+        found.add((index, order, text))
+    if not found:
+        return ""
+    texts = [text for _, _, text in sorted(found)]
+    shown = ", ".join(texts[:_MAX_LOCATORS])
+    if len(texts) > _MAX_LOCATORS:
+        shown += f" and {len(texts) - _MAX_LOCATORS} more"
+    return f" ({shown})"

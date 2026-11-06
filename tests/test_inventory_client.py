@@ -1,4 +1,5 @@
 import json
+import socket
 import sys
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
-from wled_mcp.client import ClientFailure, Deadline, Endpoint
+from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import ConfigurationError, Device, HTTPSettings, StartupConfig, load_config
 from wled_mcp.operations import ListDevicesRequest, build_operations
 from wled_mcp.resources import Resources
@@ -127,6 +128,212 @@ def test_full_example_and_duplicate_inventory(tmp_path):
     )
     with pytest.raises(ConfigurationError):
         load_config(str(duplicate), str(tmp_path), {})
+
+
+# Issue #61: underscores inside DNS host labels (ISSUE-61-DEC-001/002).
+LONG_LABEL = "a" * 30 + "_" + "b" * 32  # 63 characters, interior underscore
+LONG_HOST = ".".join(["a_" + "b" * 60] * 4) + ".ab"  # 254 characters
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://wled_desk.example.invalid",
+        "http://WLED_Desk.example.invalid:8080/",
+        "http://wled_desk",
+        "http://desk.wled_lan",
+        "http://a_b-c.example.invalid",
+        "http://a__b.example.invalid",
+        f"http://{LONG_LABEL}.example.invalid",
+    ],
+)
+def test_underscore_host_labels_accepted(url):
+    assert Device(id="desk", name="Example", base_url=url).base_url == url.rstrip("/")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        # S61-2: label rules
+        "http://_wled.example.invalid",
+        "http://wled_.example.invalid",
+        "http://_.example.invalid",
+        "http://a._.invalid",
+        "http://wled_desk.invalid_",
+        f"http://{LONG_LABEL}c.example.invalid",
+        f"http://{LONG_HOST}",
+        "http://wled_desk.invalid.",
+        # S61-3: underscore hosts combined with otherwise forbidden parts
+        "http://user:synthetic-secret@wled_desk.invalid",
+        "http://wled_desk.invalid?q=synthetic-secret",
+        "http://wled_desk.invalid/#synthetic-secret",
+        "http://wled_desk.invalid/path",
+        "http://wled%5Fdesk.invalid",
+        "ftp://wled_desk.invalid",
+        "http://wled_desk.invalid:0",
+        "http://wled_desk.invalid\\x.invalid",
+    ],
+)
+def test_underscore_host_rule_stays_fail_closed(tmp_path, url):
+    with pytest.raises(ValidationError):
+        Device(id="desk", name="Example", base_url=url)
+    path = tmp_path / "inventory.toml"
+    path.write_text(
+        f'schema_version=1\n[[devices]]\nid="desk"\nname="Example"\nbase_url={json.dumps(url)}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    assert "synthetic-secret" not in message and url not in message
+    assert "wled_desk" not in message and "devices[0].base_url: invalid" in message
+
+
+def test_rejected_label_lengths_are_real_boundaries():
+    assert len(LONG_LABEL) == 63
+    assert len(LONG_HOST) == 254
+    Device(id="desk", name="Example", base_url=f"http://{LONG_LABEL}.example.invalid")
+    Device(id="desk", name="Example", base_url=f"http://{LONG_HOST[:-1]}")
+
+
+def write_inventory(path, entries):
+    lines = ["schema_version = 1"]
+    for entry in entries:
+        lines.append("[[devices]]")
+        lines.extend(f"{key} = {json.dumps(value)}" for key, value in entry.items())
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
+
+
+def entry(identifier, base_url=None, **extra):
+    values = {"id": identifier, "name": f"Synthetic {identifier} name"}
+    if base_url is not False:
+        values["base_url"] = base_url or f"http://{identifier}.invalid"
+    return values | extra
+
+
+SECRET_URL = "http://user:synthetic-secret@wled_x.invalid"
+
+
+def located_error(tmp_path, entries):
+    path = write_inventory(tmp_path / "inventory.toml", entries)
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    for value in ("synthetic-secret", SECRET_URL, "wled_x", "Synthetic", "synthetic_secret"):
+        assert value not in message
+    for item in entries:
+        assert f"http://{item['id']}" not in message
+    return message
+
+
+def test_rejected_inventory_names_device_entry_without_values(tmp_path):
+    message = located_error(
+        tmp_path, [entry("desk"), entry("synthetic-id-1", SECRET_URL), entry("shelf")]
+    )
+    assert "devices[1].base_url: invalid" in message
+    assert "devices[0]" not in message and "devices[2]" not in message
+    assert "synthetic-id-1" not in message
+    assert message.startswith("Invalid inventory configuration (")
+    assert "credential-free HTTP(S) root URLs" in message
+
+
+def test_rejected_inventory_names_every_bad_entry_in_order(tmp_path):
+    message = located_error(
+        tmp_path,
+        [
+            entry("desk"),
+            entry("bad-one", SECRET_URL),
+            entry("shelf"),
+            entry("bad-two", "http://_wled_x.invalid"),
+        ],
+    )
+    assert message.index("devices[1].base_url: invalid") < message.index(
+        "devices[3].base_url: invalid"
+    )
+
+
+def test_unknown_key_and_missing_field_are_categorized(tmp_path):
+    message = located_error(
+        tmp_path,
+        [
+            entry("desk", synthetic_secret_key="v", other_synthetic_secret_key="w"),
+            entry("shelf", base_url=False),
+        ],
+    )
+    assert message.count("devices[0]: unsupported field") == 1
+    assert "devices[1].base_url: missing" in message
+
+
+def test_device_locators_are_capped(tmp_path):
+    message = located_error(
+        tmp_path, [entry(f"bad-{index}", f"http://_wled_x{index}.invalid") for index in range(8)]
+    )
+    assert "devices[4].base_url: invalid" in message
+    assert "devices[5]" not in message
+    assert "and 3 more" in message
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "schema_version = 2\ndevices = []",
+        "schema_version = 1\ndevices = []\n[http]\nread_retries = 2",
+        "schema_version = 1\n"
+        + '[[devices]]\nid = "desk"\nname = "Example"\nbase_url = "http://wled_desk.invalid"\n' * 2,
+        'schema_version = 1\n[[devices]]\nid = "desk\nbase_url = "http://wled_x.invalid"',
+    ],
+)
+def test_non_device_errors_keep_generic_message(tmp_path, content):
+    path = tmp_path / "inventory.toml"
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    assert message.startswith("Invalid inventory configuration: check schema version")
+    assert "devices[" not in message and "wled_" not in message
+
+
+@pytest.mark.anyio
+async def test_underscore_host_reaches_transport_and_host_header_unchanged():
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"ver": "0.15.1"})
+
+    item = Device(id="desk", name="Example", base_url="http://WLED_Desk.example.invalid:8080/")
+    client = WLEDClient(HTTPSettings(), httpx.MockTransport(handler))
+    try:
+        assert await client.read(item, Endpoint.INFO, Deadline.after(1)) == {"ver": "0.15.1"}
+    finally:
+        await client.aclose()
+    (request,) = requests
+    assert request.url.host == "wled_desk.example.invalid"
+    assert request.url.port == 8080 and request.url.path == "/json/info"
+    assert request.headers["Host"] == "wled_desk.example.invalid:8080"
+
+
+@pytest.mark.anyio
+async def test_underscore_host_reaches_resolver_without_idna(monkeypatch):
+    resolved = []
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        resolved.append(host)
+        raise socket.gaierror(socket.EAI_NONAME, "synthetic resolver failure")
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake_getaddrinfo)
+    item = Device(id="desk", name="Example", base_url="http://wled_desk.example.invalid")
+    client = WLEDClient(HTTPSettings(read_retries=0))
+    try:
+        with pytest.raises(ClientFailure) as caught:
+            await client.read(item, Endpoint.INFO, Deadline.after(2))
+    finally:
+        await client.aclose()
+    assert caught.value.error.code == "UNREACHABLE"
+    assert resolved and all(
+        host in ("wled_desk.example.invalid", b"wled_desk.example.invalid") for host in resolved
+    )
 
 
 @pytest.mark.anyio
