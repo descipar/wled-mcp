@@ -52,6 +52,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-006 | Workflow | Add an agent responsible for completing issue checklists after merge. | Confirmed human instruction, post-merge workflow discussion, 2026-11-04; [issue #34](https://github.com/descipar/wled-mcp/issues/34) |
 | DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
+| DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -125,6 +126,25 @@ can explicitly amend them.
 - Rationale supplied: none beyond Codex lacking Opus. Supersedes no earlier decision;
   refines the "models inherited from the session" default for this one role/client.
 - Affected: agents/coordinator.md (and its generated adapters), docs/AGENT-WORKFLOW.md.
+
+### DEC-009 — Public-ready repository baseline
+
+- Status: active project decision.
+- Authority/source: owner direction in the coordinator session on 2026-11-06 (no
+  permalink): the project should later become public rather than serve one
+  installation only, so installation-specific content must go and a proper README is
+  needed; the owner also asked for example deployment files in the repository,
+  referenced from the README. Issue #62 restates this direction.
+- Scope/decision: keep tracked content neutral and installation-independent, provide a
+  user-facing README and synthetic example deployment files for both transports, and
+  guard against private identifiers in CI.
+- Conditions: no visibility change, license choice, package/image publication, listing
+  submission or history rewrite is implied; those remain owner decisions tracked by #23.
+  Rollback/update procedures stay in stage 2 per the owner.
+- Rationale supplied: later public use instead of a single installation.
+- Supersedes: amends earlier "private project" framing in REQUIREMENTS.md and
+  ARCHITECTURE.md going forward; historical records keep their meaning.
+- Affected: README.md, docs, examples, agent roles, pyproject.toml, CI; issue #62.
 
 ## Issue-specific decisions (pointers)
 
@@ -268,6 +288,10 @@ can explicitly amend them.
 - [ISSUE-13-DEC-002](decisions/issue-13.md) (agent proposal accepted by the coordinator,
   2026-11-06, #13 only; not a human decision): conditional acceptance boxes shown not to
   apply are checked as "not applicable" with evidence.
+- [ISSUE-62-DEC-001](decisions/issue-62.md) (agent technical proposals accepted by the
+  coordinator, 2026-11-06, issue #62 only; not a human decision): repository-wide
+  private-identifier scanner with allowlist and optional untracked denylist, neutral
+  role wording, README/PROJECT split, neutral package metadata.
 
 ## Still unresolved
 
