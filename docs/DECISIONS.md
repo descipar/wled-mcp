@@ -203,6 +203,19 @@ can explicitly amend them.
   drain of an in-flight call on the target and load measurements move from #11 to #12;
   automated T21 drain coverage stays the #11 evidence; no live operation authorized.
 
+- [ISSUE-12-DEC-001](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): one
+  designated test controller released for #12 testing including writes, on condition
+  that state, segment layout and presets file are captured before and restored after,
+  with verified, recorded restoration; that controller only; not standing permission.
+- [ISSUE-12-DEC-002](decisions/issue-12.md) (agent technical proposal accepted by the
+  coordinator, 2026-11-06, issue #12 only; not a human decision): HTTP only, preset slot
+  250, no controller reboot, opt-in read-only HTTP probe, restoration criteria R1-R3,
+  stdio context interpretation; TRACEABILITY cell forms unchanged (ISSUE-10-DEC-001).
+- [ISSUE-12-DEC-003](decisions/issue-12.md) (human authority implicit in #12 acceptance
+  box 7 via ISSUE-11-DEC-008, 2026-11-06, issue #12 only): stop/start of the deployed
+  HTTP service and load against it are in scope; no rebuild, inventory/secret edit or
+  hub change.
+
 ## Still unresolved
 
 Handling an unmet issue prerequisite is not yet a confirmed workflow decision.

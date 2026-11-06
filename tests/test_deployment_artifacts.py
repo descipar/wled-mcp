@@ -684,6 +684,7 @@ LIVE_DOCUMENTS = [
     DEPLOYMENT,
     ROOT / "docs/TRACEABILITY.md",
     ROOT / "docs/decisions/issue-11.md",
+    ROOT / "docs/decisions/issue-12.md",
     ROOT / "deploy/operations-record.template.md",
 ]
 

@@ -50,5 +50,6 @@ files = [
     "scripts/check_distribution.py",
     "scripts/check_lock.py",
     "scripts/check_traceability.py",
+    "scripts/hw_http_probe.py",
     "deploy/stage_release.py",
 ]
