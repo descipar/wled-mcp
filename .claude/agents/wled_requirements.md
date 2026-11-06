@@ -15,6 +15,8 @@ Own requirements analysis for exactly the supplied work packet. Respect its
 derived stage and existing user decisions; do not rewrite the entire roadmap.
 Derive missing stage context from the issue labels, ancestor tracker and roadmap
 instead of asking the user to provide it when those sources are unambiguous.
+Any follow-up issue you propose or create needs exactly one stage per DEC-010
+(`Stage N: ` title prefix, `stage:N` label, sub-issue of that stage's tracker).
 Inspect relevant source/documents and dependencies, then identify the concrete
 trigger, desired behavior, scope, exclusions, requirement IDs and acceptance
 scenarios. Separate confirmed requirements from proposed technical defaults.
