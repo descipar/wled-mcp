@@ -292,6 +292,9 @@ can explicitly amend them.
   coordinator, 2026-11-06, issue #62 only; not a human decision): repository-wide
   private-identifier scanner with allowlist and optional untracked denylist, neutral
   role wording, README/PROJECT split, neutral package metadata.
+- [ISSUE-1-DEC-001](decisions/issue-1.md) (human, 2026-11-06, stage-1 close-out): the
+  OPS-04 diagnostics on main count as delivered for stage 1, the remainder is deferred to
+  #16; housekeeping issue #44 belongs to stage 2.
 
 ## Still unresolved
 
