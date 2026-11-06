@@ -305,3 +305,28 @@ def test_inconsistent_domain_outcomes_rejected(overrides):
     fields.update(overrides)
     with pytest.raises(ValidationError):
         Outcome.model_validate(fields)
+
+
+def test_console_rejects_non_canonical_ipv4_host_without_echo(startup):
+    """Issue #74 S74-4: an invalid IPv4-like host fails startup with the #61 locator."""
+    config, data = startup
+    config.write_text(
+        "schema_version = 1\n"
+        '[[devices]]\nid = "desk"\nname = "Example desk"\nbase_url = "http://desk.invalid"\n'
+        '[[devices]]\nid = "bad"\nname = "Example bad"\nbase_url = "http://203.0.113.777"\n'
+        '[[devices]]\nid = "shelf"\nname = "Example shelf"\nbase_url = "http://shelf.invalid"\n',
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [str(CONSOLE), "--config", str(config), "--data-dir", str(data)],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "Startup configuration error:" in result.stderr
+    assert "devices[1].base_url: invalid" in result.stderr
+    for value in ("777", "203.0.113", "Traceback"):
+        assert value not in result.stderr
+    assert set(data.iterdir()) == {config}

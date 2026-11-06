@@ -63,6 +63,8 @@ Inventory `base_url` host labels may contain letters, digits, hyphens and interi
 underscores; each label starts and ends with a letter or digit (see
 [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md#configuration-and-limits)). A rejected entry
 is named in the startup error by its zero-based `devices[<index>]` position and field.
+An IPv4 address must be a canonical dotted quad (four decimal parts 0–255, no leading
+zeros); short, hexadecimal or out-of-range numeric hosts are rejected.
 Use a reserved DNS name that resolves to exactly one address from the service's
 context, or the controller's address; a name resolving to several addresses makes
 requests ambiguous.

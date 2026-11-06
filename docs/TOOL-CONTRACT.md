@@ -684,6 +684,8 @@ Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `WRITE_OUTCOME_UNKNOWN`,
 `VERIFICATION_MISMATCH`. A pre-dispatch timeout is distinct from possible write
 application. Offline entries in successful inventory probes are per-device data.
+For a device call, `CONFIG_ERROR` means the configured device address cannot be used;
+no request was sent, it is not retried and the address is not echoed.
 
 Return the envelope through MCP `structuredContent` with an output schema and one
 text content block containing the same JSON envelope for older clients.

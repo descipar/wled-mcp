@@ -197,6 +197,16 @@ class WLEDClient:
                     return cast(JsonValue, value)
         except ClientFailure:
             raise
+        except httpx.InvalidURL:
+            # Raised while building the request, before any send; its text echoes the host.
+            raise ClientFailure(
+                "CONFIG_ERROR",
+                f"Configured device address cannot be used for {label}; no request was sent.",
+                reconciliation=(
+                    "Correct the device's base_url in the inventory and restart; "
+                    "nothing was sent to the device."
+                ),
+            ) from None
         except (TimeoutError, httpx.TimeoutException):
             raise ClientFailure(
                 "TIMEOUT", f"Device request for {label} timed out.", retryable=True

@@ -670,3 +670,229 @@ async def test_real_stdio_inventory_schema_and_mock_probes():
             assert result.is_error
             result = await client.call_tool(tool.name, {"host": "http://foreign.invalid"})
             assert result.is_error
+
+
+# Issue #74: IPv4-like hosts (ISSUE-74-DEC-001/002). Every test below is offline: hosts
+# are validated locally, requests go to httpx.MockTransport or an in-process MCP client,
+# and the ``no_network`` guard fails any resolution or socket connect attempt.
+
+
+@pytest.fixture
+def no_network(monkeypatch):
+    attempts = []
+
+    def refuse(*args, **kwargs):
+        attempts.append(args[:1])
+        raise AssertionError("issue #74 tests must not resolve names or open connections")
+
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
+    yield attempts
+    assert attempts == []
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://192.0.2.10",
+        "http://198.51.100.255:8080/",
+        "http://127.0.0.1:81",
+        "http://123.example.invalid",
+        "http://1.2.3.4.example.invalid",
+        "http://0xdesk.example.invalid",
+        "http://desk.1a",
+        "http://wled_1.example.invalid",
+        "http://1e3",
+    ],
+)
+def test_ipv4_rule_keeps_canonical_addresses_and_dns_names(url):
+    """S74-1: canonical dotted quads and names with a non-numeric last label pass."""
+    assert Device(id="desk", name="Example", base_url=url).base_url == url.rstrip("/")
+
+
+NON_CANONICAL_HOSTS = [
+    "999.1.1.1",
+    "1.2.3",
+    "256.0.0.1",
+    "01.2.3.4",
+    "1.2.3.04",
+    "0.0.0.256",
+    "1.2.3.4.5",
+    "127.1",
+    "0x7f.1",
+    "0X7F.0.0.1",
+    "0x7f000001",
+    "017700000001",
+    "2130706433",
+    "4294967296",
+    "123",
+    "0xface",
+    "desk.123",
+    "wled.0x1",
+    "wled.0x",
+    "wled_1.2",
+]
+
+
+@pytest.mark.parametrize(
+    "url", [f"http://{host}" for host in NON_CANONICAL_HOSTS] + ["http://999.1.1.1:8080/"]
+)
+def test_non_canonical_numeric_hosts_rejected_with_fixed_text(tmp_path, url):
+    """S74-2: hosts ending in a number must be canonical dotted-quad IPv4 addresses."""
+    with pytest.raises(ValidationError) as caught:
+        Device(id="desk", name="Example", base_url=url)
+    (error,) = caught.value.errors(include_url=False, include_input=False)
+    assert error["loc"] == ("base_url",)
+    assert error["msg"] == "Value error, Invalid host"
+    host = url.removeprefix("http://").split(":")[0].rstrip("/")
+    assert host not in error["msg"] and host.lower() not in error["msg"]
+    path = write_inventory(tmp_path / "inventory.toml", [entry("desk", url)])
+    with pytest.raises(ConfigurationError) as config_error:
+        load_config(str(path), str(tmp_path), {})
+    assert "devices[0].base_url: invalid" in str(config_error.value)
+    assert host not in str(config_error.value)
+
+
+S74_INVENTORY = [entry("desk"), entry("bad", "http://203.0.113.777"), entry("shelf")]
+
+
+def test_numeric_host_locator_without_echo_and_suppressed_context(tmp_path):
+    """S74-3 / TD-74-4: #61 locator, no host text and no chained original exception."""
+    path = write_inventory(tmp_path / "inventory.toml", S74_INVENTORY)
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    assert "devices[1].base_url: invalid" in message
+    assert "devices[0]" not in message and "devices[2]" not in message
+    assert "777" not in message and "203.0.113" not in message
+    assert caught.value.__cause__ is None
+    assert caught.value.__suppress_context__ is True
+
+
+BAD_HOSTS = ["999.1.1.1", "01.2.3.4", "0.0.0.256"]
+
+
+def unvalidated(host, identifier="bad"):
+    """Defense in depth: a Device that bypassed inventory validation."""
+    return Device.model_construct(id=identifier, name="Example bad", base_url=f"http://{host}")
+
+
+def assert_no_host(text, host):
+    for value in (host, "999", "01.2.3.4", "0.0.0.256", "http://"):
+        assert value not in text
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("host", BAD_HOSTS)
+async def test_invalid_url_maps_to_config_error_before_any_send(no_network, host):
+    """S74-5: httpx2 InvalidURL becomes CONFIG_ERROR, without retry, send or host echo."""
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json={"ver": "0.15.1"})
+
+    client = WLEDClient(HTTPSettings(read_retries=1), httpx.MockTransport(handler))
+    try:
+        failures = []
+        with pytest.raises(ClientFailure) as caught:
+            await client.read(unvalidated(host), Endpoint.INFO, Deadline.after(2))
+        failures.append(caught.value)
+        with pytest.raises(ClientFailure) as caught:
+            await client.post_state(unvalidated(host), b'{"on":true}', Deadline.after(2))
+        failures.append(caught.value)
+    finally:
+        await client.aclose()
+    assert calls == []
+    for failure in failures:
+        assert failure.error.code == "CONFIG_ERROR"
+        assert failure.error.read_retryable is False
+        assert "no request was sent" in failure.error.message
+        assert_no_host(failure.error.model_dump_json(), host)
+        assert_no_host(str(failure), host)
+        assert failure.__cause__ is None
+        assert failure.__suppress_context__ is True
+
+
+@pytest.mark.anyio
+async def test_invalid_url_mapping_is_narrow(no_network):
+    """S74-6: other outcomes keep their existing codes; unrelated errors are not remapped."""
+    item = Device(id="desk", name="Example", base_url="http://192.0.2.10")
+    outcomes = iter(["json", "connect", "malformed", "unrelated"])
+
+    def handler(request):
+        outcome = next(outcomes)
+        if outcome == "connect":
+            raise httpx.ConnectError("synthetic", request=request)
+        if outcome == "unrelated":
+            raise RuntimeError("synthetic unrelated")
+        if outcome == "malformed":
+            return httpx.Response(200, content=b"{", headers={"Content-Type": "application/json"})
+        return httpx.Response(200, json={"ver": "0.15.1"})
+
+    client = WLEDClient(HTTPSettings(read_retries=0), httpx.MockTransport(handler))
+    try:
+        assert await client.read(item, Endpoint.INFO, Deadline.after(2)) == {"ver": "0.15.1"}
+        with pytest.raises(ClientFailure) as caught:
+            await client.read(item, Endpoint.INFO, Deadline.after(2))
+        assert caught.value.error.code == "UNREACHABLE"
+        assert caught.value.error.read_retryable is True
+        with pytest.raises(ClientFailure) as caught:
+            await client.read(item, Endpoint.INFO, Deadline.after(2))
+        assert caught.value.error.code == "INVALID_RESPONSE"
+        with pytest.raises(RuntimeError, match="synthetic unrelated"):
+            await client.read(item, Endpoint.INFO, Deadline.after(2))
+    finally:
+        await client.aclose()
+
+
+@pytest.mark.anyio
+async def test_invalid_url_gives_envelopes_and_probe_entries_at_tool_level(tmp_path, no_network):
+    """S74-7: read, write and probe tools return domain results, never a protocol error."""
+    from mcp import MCPError
+
+    from wled_mcp.server import create_server
+
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(200, json={"ver": "0.15.1"})
+
+    good = Device(id="desk", name="Example desk", base_url="http://192.0.2.10")
+    inventory = config(tmp_path, devices=[unvalidated("999.1.1.1"), good])
+    async with Resources(inventory, httpx.MockTransport(handler)) as resources:
+        server = create_server(build_operations(resources))
+        async with Client(server, mode="legacy", read_timeout_seconds=10) as client:
+            results = []
+            for tool, arguments in [
+                ("wled_get_state", {"device_id": "bad"}),
+                ("wled_set_state", {"device_id": "bad", "on": True}),
+            ]:
+                try:
+                    result = await client.call_tool(tool, arguments)
+                except MCPError as exc:  # the regression being guarded
+                    pytest.fail(f"{tool} raised a protocol error: {exc}")
+                assert result.is_error is True
+                envelope = result.structured_content
+                assert envelope["ok"] is False
+                assert envelope["operation"] == tool
+                assert envelope["application"] == "not_attempted"
+                assert envelope["error"]["code"] == "CONFIG_ERROR"
+                results.append(result)
+            assert calls == []
+            probe = await client.call_tool("wled_list_devices", {"probe": True})
+            assert probe.is_error is False
+            assert probe.structured_content["ok"] is True
+            bad_entry, good_entry = probe.structured_content["data"]["devices"]
+            assert bad_entry["probe_status"] == "failed"
+            assert bad_entry["error"]["code"] == "CONFIG_ERROR"
+            assert good_entry["probe_status"] == "reachable"
+            results.append(probe)
+    assert [request.method for request in calls] == ["GET"]
+    assert all(request.url.host == "192.0.2.10" for request in calls)
+    for result in results:
+        assert_no_host(json.dumps(result.structured_content), "999.1.1.1")
+        assert_no_host(json.dumps([item.model_dump() for item in result.content]), "999.1.1.1")
