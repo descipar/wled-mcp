@@ -151,7 +151,11 @@ Items marked resolved link their decision record:
    denylist file plus CI secret, built from an agent-proposed, owner-approved candidate
    list before the visibility change; a `main` ruleset at the visibility change.
 9. Timing of the visibility change relative to the beta acceptance of
-   [#25](https://github.com/descipar/wled-mcp/issues/25).
+   [#25](https://github.com/descipar/wled-mcp/issues/25). Resolved by
+   [DEC-019](DECISIONS.md#dec-019--make-the-repository-public-before-the-release):
+   visibility is decoupled from release and happens earlier through
+   [#90](https://github.com/descipar/wled-mcp/issues/90); artifact publication and
+   submissions stay in #25.
 
 ## I. Marketplace discovery and actual publication evidence
 
@@ -183,6 +187,7 @@ See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “La
 | [#21](https://github.com/descipar/wled-mcp/issues/21) | Version contract, compatibility and migrations | Launch |
 | [#22](https://github.com/descipar/wled-mcp/issues/22) | PyPI/OCI release pipeline | Launch |
 | [#23](https://github.com/descipar/wled-mcp/issues/23) | Public docs, identity, license and maintenance | Launch |
+| [#90](https://github.com/descipar/wled-mcp/issues/90) | Visibility readiness and making the repository public (DEC-019) | Before release |
 | [#24](https://github.com/descipar/wled-mcp/issues/24) | Registry/marketplace metadata and install evidence | Launch; external acceptance separately tracked |
 | [#25](https://github.com/descipar/wled-mcp/issues/25) | Beta evidence and reviewable release | Final integration of Launch criteria |
 
