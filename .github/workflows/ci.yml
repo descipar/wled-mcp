@@ -55,7 +55,7 @@ jobs:
     # HTTP image per native architecture: stage a non-release build, build the image,
     # start it on loopback and run one MCP tools/list. No push, no LAN (TD-21-8).
     # Runs for pull requests and pushes to main only, to bound private-plan minutes.
-    # TEMPORARY: condition removed for branch verification; restored before handoff.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
