@@ -23,6 +23,7 @@ from pydantic import ValidationError
 from tests.preset_support import PresetDevice, PresetFleet, playlist_entry, state_entry
 from tests.state_catalog_support import make_state
 from tests.test_inventory_client import config, device
+from tests.tool_contract import expected_names
 from wled_mcp.models import Outcome
 from wled_mcp.operations import build_operations
 from wled_mcp.presets import (
@@ -121,30 +122,17 @@ def test_overwrite_requires_explicit_id_and_no_supplied_state_input():
 
 
 @pytest.mark.anyio
-async def test_registry_order_annotations_and_no_restore_tool(tmp_path):
+async def test_registry_preset_tools_strict_and_no_restore_tool(tmp_path):
+    # Order and annotations are checked against tests/tool_contract.py centrally.
     async with open_resources(tmp_path, fleet_of()) as resources:
         operations = build_operations(resources)
-        assert [o.name for o in operations[7:]] == [
-            "wled_list_presets",
-            "wled_get_preset",
-            "wled_activate_preset",
-            "wled_save_preset",
-            "wled_delete_preset",
-        ]
+        registered = {o.name: o for o in operations}
         assert not any("restore" in o.name for o in operations)
-        hints = {o.name: o.annotations for o in operations[7:]}
-        for name in ("wled_list_presets", "wled_get_preset"):
-            assert hints[name].read_only_hint is True and hints[name].idempotent_hint is True
-        assert (
-            hints["wled_activate_preset"].read_only_hint,
-            hints["wled_activate_preset"].destructive_hint,
-        ) == (False, False)
-        for name in ("wled_save_preset", "wled_delete_preset"):
-            assert (hints[name].read_only_hint, hints[name].destructive_hint) == (False, True)
-            assert hints[name].idempotent_hint is False
-        for operation in operations[7:]:
-            assert operation.request_model.model_json_schema()["additionalProperties"] is False
-            assert operation.annotations.open_world_hint is False
+        preset_tools = [name for name in expected_names() if "preset" in name]
+        assert preset_tools  # the contract names the preset tools
+        for name in preset_tools:
+            schema = registered[name].request_model.model_json_schema()
+            assert schema["additionalProperties"] is False
 
 
 # ================================================================ T11 list and read

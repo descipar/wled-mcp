@@ -69,31 +69,13 @@ async def call_patch_segments(resources, segments, **arguments):
 
 
 @pytest.mark.anyio
-async def test_registry_includes_write_tools_with_mutation_annotations(tmp_path):
+async def test_registry_write_tools_have_strict_request_models(tmp_path):
+    # Order and annotations are checked against tests/tool_contract.py centrally.
     async with open_resources(tmp_path, fleet()) as resources:
-        operations = build_operations(resources)
-        names = [o.name for o in operations]
-        assert names == [
-            "wled_list_devices",
-            "wled_get_state",
-            "wled_get_effects",
-            "wled_get_palettes",
-            "wled_set_state",
-            "wled_patch_segments",
-            "wled_replace_layout",
-            "wled_list_presets",
-            "wled_get_preset",
-            "wled_activate_preset",
-            "wled_save_preset",
-            "wled_delete_preset",
-        ]
-        for op in operations[4:6]:
-            hints = op.annotations
-            assert hints.read_only_hint is False
-            assert hints.destructive_hint is False
-            assert hints.idempotent_hint is False
-            assert hints.open_world_hint is False
-            assert op.request_model.model_json_schema()["additionalProperties"] is False
+        registered = {o.name: o for o in build_operations(resources)}
+        for name in ("wled_set_state", "wled_patch_segments"):
+            schema = registered[name].request_model.model_json_schema()
+            assert schema["additionalProperties"] is False
 
 
 def test_set_state_request_strict_models():

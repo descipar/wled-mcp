@@ -36,6 +36,7 @@ from mcp.client.streamable_http import streamable_http_client
 from deploy.stage_release import StageError, stage
 from tests.test_http_cli import CONSOLE, POSIX_ONLY, clean_env, free_port, wait_ready
 from tests.test_private_identifiers import scanner as identifier_scanner
+from tests.tool_contract import expected_names
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCKERFILE = ROOT / "deploy/http/Dockerfile"
@@ -428,7 +429,8 @@ def test_compose_command_accepts_the_hub_example_connection(tmp_path):
                             base, http_client=http, terminate_on_close=False
                         )
                         async with Client(transport, mode=mode, read_timeout_seconds=10) as client:
-                            assert len((await client.list_tools()).tools) == 12
+                            tools = (await client.list_tools()).tools
+                            assert [tool.name for tool in tools] == expected_names()
                             result = await client.call_tool("wled_list_devices", {})
                             assert result.structured_content["data"] == {"devices": []}
                 body = {"jsonrpc": "2.0", "id": 1, "method": "ping"}

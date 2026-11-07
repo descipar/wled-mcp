@@ -32,6 +32,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 from tests.acceptance_support import LoopbackWLED, PostMode
 from tests.test_http_cli import CONSOLE, TOKEN, clean_env, console, free_port, wait_ready
+from tests.tool_contract import expected_names
 
 DESK = "desk"
 
@@ -427,7 +428,8 @@ async def test_stdio_hub_example_arguments_complete_a_handshake(tmp_path):
     params = StdioServerParameters(command=str(CONSOLE), cwd=tmp_path, args=substituted)
     with anyio.fail_after(60):
         async with Client(params, mode="legacy", read_timeout_seconds=10) as client:
-            assert len((await client.list_tools()).tools) == 12
+            tools = (await client.list_tools()).tools
+            assert [tool.name for tool in tools] == expected_names()
             result = await client.call_tool("wled_list_devices", {})
     assert not result.is_error and result.structured_content["data"] == {"devices": []}
     assert sorted(path.name for path in tmp_path.iterdir()) == ["devices.toml"]

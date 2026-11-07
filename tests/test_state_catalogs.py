@@ -22,6 +22,7 @@ from tests.state_catalog_support import (
     make_state,
 )
 from tests.test_inventory_client import config, device
+from tests.tool_contract import ToolClass, destructive_names, expected_names, names_of
 from wled_mcp.catalogs import (
     PLACEHOLDER_NAME,
     AmbiguousName,
@@ -82,40 +83,10 @@ def assert_read_envelope(result, name, ok=True):
 async def test_registry_order_annotations_and_strict_models(tmp_path):
     async with open_resources(tmp_path, fleet()) as resources:
         operations = build_operations(resources)
-        assert [o.name for o in operations] == [
-            "wled_list_devices",
-            "wled_get_state",
-            "wled_get_effects",
-            "wled_get_palettes",
-            "wled_set_state",
-            "wled_patch_segments",
-            "wled_replace_layout",
-            "wled_list_presets",
-            "wled_get_preset",
-            "wled_activate_preset",
-            "wled_save_preset",
-            "wled_delete_preset",
-        ]
+        # Order and annotations are checked against tests/tool_contract.py centrally.
         assert operations[0].execute.__closure__[0].cell_contents is resources
         assert len(operations[0].execute.__closure__) == 1
-        read_only_names = {
-            "wled_list_devices",
-            "wled_get_state",
-            "wled_get_effects",
-            "wled_get_palettes",
-            "wled_list_presets",
-            "wled_get_preset",
-        }
-        destructive_names = {"wled_replace_layout", "wled_save_preset", "wled_delete_preset"}
-        for operation in operations[1:]:
-            hints = operation.annotations
-            if operation.name in read_only_names:
-                assert (hints.read_only_hint, hints.destructive_hint) == (True, False)
-                assert (hints.idempotent_hint, hints.open_world_hint) == (True, False)
-            else:
-                destructive = operation.name in destructive_names
-                assert (hints.read_only_hint, hints.destructive_hint) == (False, destructive)
-                assert (hints.idempotent_hint, hints.open_world_hint) == (False, False)
+        for operation in operations:
             schema = operation.request_model.model_json_schema()
             assert schema["additionalProperties"] is False
     for bad in ({"device_id": "desk", "host": "http://x.invalid"}, {"device_id": 1}, {}):
@@ -796,29 +767,9 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
         )
         async with Client(params, mode="legacy", read_timeout_seconds=10) as client:
             listed = (await client.list_tools()).tools
-            assert [t.name for t in listed] == [
-                "wled_list_devices",
-                "wled_get_state",
-                "wled_get_effects",
-                "wled_get_palettes",
-                "wled_set_state",
-                "wled_patch_segments",
-                "wled_replace_layout",
-                "wled_list_presets",
-                "wled_get_preset",
-                "wled_activate_preset",
-                "wled_save_preset",
-                "wled_delete_preset",
-            ]
-            read_only_names = {
-                "wled_list_devices",
-                "wled_get_state",
-                "wled_get_effects",
-                "wled_get_palettes",
-                "wled_list_presets",
-                "wled_get_preset",
-            }
-            destructive_names = {"wled_replace_layout", "wled_save_preset", "wled_delete_preset"}
+            assert [t.name for t in listed] == expected_names()
+            read_only_names = names_of(ToolClass.READ)
+            destructive = destructive_names()
             for tool in listed:
                 assert tool.input_schema["additionalProperties"] is False
                 if tool.name in read_only_names:
@@ -828,7 +779,7 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                     assert tool.annotations.open_world_hint is False
                 else:
                     assert tool.annotations.read_only_hint is False
-                    assert tool.annotations.destructive_hint is (tool.name in destructive_names)
+                    assert tool.annotations.destructive_hint is (tool.name in destructive)
                     assert tool.annotations.idempotent_hint is False
                     assert tool.annotations.open_world_hint is False
                 assert tool.output_schema["additionalProperties"] is False
