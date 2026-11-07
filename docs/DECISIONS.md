@@ -281,8 +281,9 @@ can explicitly amend them.
 
 - Status: active project decision.
 - Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's four-part proposal below ("ja, mach
-  DEC-015 so").
+  permalink): the owner confirmed the coordinator's four-part proposal ("ja, mach
+  DEC-015 so"), then amended item 3: the #11 revision may stay because the hub is not
+  publicly reachable.
 - Owner decision:
   1. Two review layers: (a) a repeatable, read-only script (working name
      `scripts/check_issue_content.py`) that scans issue/PR titles, bodies, comments,
@@ -292,17 +293,17 @@ can explicitly amend them.
      list that the owner approves.
   2. Timing: the full review runs immediately before the visibility change, as a
      mandatory step of #23/#25; the script is built as part of #23, not now.
-  3. Now: the owner removes the edit-history revision of issue #11 that contains the
-     internal hub hostname (GitHub UI, "Delete revision from history"). Edit-history
-     mentions of the owner's first name (#15, #16, #24) and of the hub hardware (#11,
-     #62) stay.
+  3. Existing edit-history findings stay: the internal hub hostname in an earlier
+     revision of #11 (the owner subsequently decided against the proposed deletion
+     because the hub is not publicly reachable), the owner's first name (#15, #16, #24)
+     and the hub hardware (#11, #62).
   4. The existing AGENTS.md rule keeps issues and PRs impersonal; no new rule.
 - Coordinator notes (not owner statements): a pattern scan on 2026-11-07 of 85 issues/PRs,
   19 comments and 126 edit-history revisions found the current texts clean (remaining
   hits are synthetic examples or intended attribution) and the edit-history findings
   listed above. Pull request commits are covered by DEC-014.
-- Conditions: no visibility change is authorized here. Deleting an edit-history revision
-  is an owner action in the GitHub UI; agents do not perform it.
+- Conditions: no visibility change is authorized here. Any future deletion of an
+  edit-history revision is an owner action in the GitHub UI; agents do not perform it.
 - Rationale supplied: none.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md; future #23/#25 scope.
