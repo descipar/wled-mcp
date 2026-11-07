@@ -77,7 +77,7 @@ The single-worker v1 coordination boundary remains explicit. Multi-worker/distri
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
 | S2-COMPAT-01 | Launch | Define semantic versioning, PEP 440 mapping and one canonical version source across package/image/registry/docs. Document pre-1.0 behavior, breaking changes, deprecation and tool/result/config/backup schema evolution. No silent rename/removal of public tool fields. |
-| S2-COMPAT-02 | Launch | Publish an honest support matrix for Python versions, OS/client scenarios, amd64/arm64 and WLED firmware/build capabilities. Clean-install/SDK tests are distinct from physical-device observations. Choose a narrow tested support range instead of unsupported platform badges. |
+| S2-COMPAT-02 | Launch | Publish an honest support matrix for Python versions, OS/client scenarios, amd64/arm64 and WLED firmware/build capabilities. Clean-install/SDK tests are distinct from physical-device observations. Choose a narrow tested support range instead of unsupported platform badges. Policy per [DEC-020](DECISIONS.md#dec-020--support-and-version-policy): WLED 16.0.0 or newer only, firmware tiers tested/expected/unknown, Python as tested in CI, Linux supported, Windows/macOS experimental. |
 | S2-COMPAT-03 | Launch | Test upgrades and rollback with previous configuration/snapshot fixtures. Validate migrations before replacing state, preserve backups and explain when a downgrade cannot read newer data. A code rollback does not restore a device's live state automatically. |
 
 Both stdio and Streamable HTTP remain release requirements. Test their actual installed entry points and result parity. Linux/container usage on amd64 and arm64 is the first target; Windows/macOS stdio support may be declared tested or explicitly experimental according to evidence. No requirement to own every possible device before releasing: state what was tested and keep unsupported features honest.
@@ -98,7 +98,7 @@ Preparing workflows and artifacts is authorized planning/implementation work onl
 | --- | --- | --- |
 | S2-PUBLIC-01 | Launch | Decide project/package/container/registry identities, author attribution and outbound license with the owner. Review reused code notices and repository history/artifacts for private content before changing visibility. Do not mark the project as officially endorsed by WLED or a marketplace without actual authorization. |
 | S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without access to project history or installation-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
-| S2-PUBLIC-03 | Launch | Prepare contribution guidance, security reporting/contact, support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
+| S2-PUBLIC-03 | Launch | Prepare contribution guidance, a security statement (no security support, use at own risk, per [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support); no private reporting channel), support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
 
 ### Open owner decisions before publication (from #62)
 
@@ -107,34 +107,61 @@ Issue #62 prepared a public-ready baseline under
 content, a user-facing README, synthetic example deployment files for both transports
 and the CI check `scripts/check_private_identifiers.py`. It changed no visibility,
 license, attribution or publication. The following decisions remain with the owner and
-are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01); none
-is resolved here:
+are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01).
+Items marked resolved link their decision record:
 
-1. Outbound license, and whether third-party notices or a NOTICE file are needed.
+1. Resolved by [DEC-011](DECISIONS.md#dec-011--apache-20-license-with-notice-attribution):
+   Apache-2.0 with a NOTICE file. Third-party notices: none needed while no upstream code
+   is reused ([SOURCES.md](SOURCES.md)); recheck when the dependency/license inventory of
+   S2-DIST-03 is prepared.
 2. Project, package, container image and registry identities: repository name and
-   owner, PyPI/OCI names and the `io.github.<publisher>` namespace.
+   owner, PyPI/OCI names and the `io.github.<publisher>` namespace. Resolved by
+   [DEC-012](DECISIONS.md#dec-012--project-and-package-identity): repository
+   `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry
+   `io.github.descipar/wled-mcp`, marked unofficial.
 3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
-   security contact).
+   security contact). Author attribution resolved by DEC-011 (`NOTICE` and
+   `pyproject.toml` authors); public and security contact resolved by
+   [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support): GitHub
+   issues only, no security support (`SECURITY.md`).
 4. Acceptance of the existing commit history and author identities (owner identity
    and agent noreply identity), or a history rewrite or a fresh public repository.
+   Resolved by [DEC-014](DECISIONS.md#dec-014--keep-the-existing-git-history): keep the
+   existing history and author identities; no rewrite, no fresh repository.
 5. Review of issue and PR bodies and comments, including closed ones and run evidence
    links, for installation context before a visibility change; issue visibility
-   follows repository visibility.
+   follows repository visibility. Resolved by
+   [DEC-015](DECISIONS.md#dec-015--issue-and-pr-review-before-visibility-change): a
+   repeatable read-only scan including edit histories plus one agent read-through,
+   immediately before the visibility change, as a mandatory #23/#25 step with owner
+   approval of the findings.
 6. Whether German source quotes in decision records stay verbatim in a public
-   repository.
+   repository. Resolved by
+   [DEC-017](DECISIONS.md#dec-017--verbatim-owner-quotes-with-english-translation):
+   they stay verbatim with an English translation.
 7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
    `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
+   Resolved by [DEC-016](DECISIONS.md#dec-016--ship-the-agent-tooling-and-decision-records):
+   everything ships; a short orientation for outside readers and contributors is #23
+   (S2-PUBLIC-03) work.
 8. Whether CI gets a secret-backed private denylist for
    `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
-   protection.
+   protection. Resolved by
+   [DEC-018](DECISIONS.md#dec-018--private-denylist-and-main-branch-rules): local
+   denylist file plus CI secret, built from an agent-proposed, owner-approved candidate
+   list before the visibility change; a `main` ruleset at the visibility change.
 9. Timing of the visibility change relative to the beta acceptance of
-   [#25](https://github.com/descipar/wled-mcp/issues/25).
+   [#25](https://github.com/descipar/wled-mcp/issues/25). Resolved by
+   [DEC-019](DECISIONS.md#dec-019--make-the-repository-public-before-the-release):
+   visibility is decoupled from release and happens earlier through
+   [#90](https://github.com/descipar/wled-mcp/issues/90); artifact publication and
+   submissions stay in #25.
 
 ## I. Marketplace discovery and actual publication evidence
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.<publisher>/wled-mcp` as a documentation placeholder until the publishing identity is chosen and authenticated. The registry stores metadata, not executable artifacts. |
+| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.descipar/wled-mcp` (DEC-012) once the namespace is authenticated. The registry stores metadata, not executable artifacts. |
 | S2-MARKET-02 | Launch | Prepare the separate MCPHub local-catalog/MCPM entry path and, if desired, hosted MCPHub directory submission. Match current schemas, required runtime/config inputs, English descriptions and honest author status. Track drafted/submitted/accepted/visible/install-tested independently; admission and propagation are not guaranteed by our code. |
 | S2-MARKET-03 | Launch | Test a fresh MCPHub installation using metadata-generated uvx configuration and separate self-hosted HTTP instructions. No private source access, real home URLs, fake remote endpoints, developer paths or committed secrets. Package listing does not publish a central WLED service; show how users supply their own controllers and endpoint. |
 
@@ -160,6 +187,7 @@ See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “La
 | [#21](https://github.com/descipar/wled-mcp/issues/21) | Version contract, compatibility and migrations | Launch |
 | [#22](https://github.com/descipar/wled-mcp/issues/22) | PyPI/OCI release pipeline | Launch |
 | [#23](https://github.com/descipar/wled-mcp/issues/23) | Public docs, identity, license and maintenance | Launch |
+| [#90](https://github.com/descipar/wled-mcp/issues/90) | Visibility readiness and making the repository public (DEC-019) | Before release |
 | [#24](https://github.com/descipar/wled-mcp/issues/24) | Registry/marketplace metadata and install evidence | Launch; external acceptance separately tracked |
 | [#25](https://github.com/descipar/wled-mcp/issues/25) | Beta evidence and reviewable release | Final integration of Launch criteria |
 

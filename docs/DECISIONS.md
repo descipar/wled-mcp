@@ -9,6 +9,9 @@ before asking a question that may already have been answered.
 - Record a clear human answer as a concise, impersonal decision with ID, status,
   authority/source, scope, applicability, rationale if supplied, affected artifacts
   and any superseded decision. Do not invent a rationale or source permalink.
+- Quote a short non-English owner statement verbatim and follow it with an English
+  translation in the form `"original" (English: "translation")` (DEC-017). Typing
+  errors may be corrected if the record says so; meaning must not change.
 - Allocate the next unused sequential ID within the shared or issue-specific
   log, and never reuse an ID after supersession.
 - Use the narrowest supported scope: operation, issue, stage, workflow or project.
@@ -54,6 +57,16 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
 | DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
+| DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-014 | Project / repository history | Keep the existing Git history and author identities, including the owner's commit e-mail address, when the repository becomes public; no history rewrite and no fresh public repository. Does not change visibility. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-014](#dec-014--keep-the-existing-git-history) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-015 | Project / issue and PR review | Before the visibility change, review all issues, PRs, comments and their edit histories with a repeatable read-only scan plus one agent read-through; the owner approves the findings. Mandatory #23/#25 step; the script is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-015](#dec-015--issue-and-pr-review-before-visibility-change) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-016 | Project / public repository content | The agent tooling (AGENTS.md, CLAUDE.md, agent roles and generated client definitions, agent workflow docs and templates, sync script) and all decision records ship in the public repository; a short orientation for outside readers is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-016](#dec-016--ship-the-agent-tooling-and-decision-records) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-017 | Project / decision-record language | German owner quotes in decision records stay verbatim and carry an English translation; future records follow the same form. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-017](#dec-017--verbatim-owner-quotes-with-english-translation) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-018 | Project / private denylist and branch rules | The private denylist is a local untracked file plus a CI secret, built from an agent-proposed, owner-approved candidate list together with the DEC-015 review before the visibility change. At the visibility change `main` gets a ruleset: PRs only, required CI check, no force-push or deletion, no required reviews, owner bypass for the PR requirement only. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-018](#dec-018--private-denylist-and-main-branch-rules) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-019 | Project / visibility timing | Decouple repository visibility from release: the repository becomes public once the readiness checklist of #90 is complete and the owner instructs it; package, image and marketplace publication stay in #25. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-019](#dec-019--make-the-repository-public-before-the-release) and [issue #90](https://github.com/descipar/wled-mcp/issues/90) |
+| DEC-020 | Project / support and version policy | Pre-1.0 `0.x` releases with migration notes; fixes only for the latest release. WLED support from 16.0.0 only, in tiers tested/expected/unknown; older firmware is unsupported and warned about, not refused. Python as tested in CI; Linux supported, Windows/macOS experimental; best-effort responses. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-020](#dec-020--support-and-version-policy) and [issue #21](https://github.com/descipar/wled-mcp/issues/21) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -151,9 +164,9 @@ can explicitly amend them.
 
 - Status: active project decision.
 - Authority/source: owner instructions in the coordinator session on 2026-11-06 (no
-  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein";
+  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein" (English: "an issue must have a stage and that must be visible in its name");
   the owner then confirmed recording the rule "jedes Issue hat genau eine Stage, sichtbar
-  als 'Stage N: …' im Titel plus Label stage:N", and chose stage 1 for the workflow-tooling
+  als 'Stage N: …' im Titel plus Label stage:N" (English: "every issue has exactly one stage, visible as 'Stage N: …' in the title plus label stage:N"), and chose stage 1 for the workflow-tooling
   issues #34 and #37 (previously described as cross-stage), including their link as
   sub-issues of #1.
 - Owner decision: every issue has exactly one stage, shown as a `Stage N: ` title prefix
@@ -173,6 +186,271 @@ can explicitly amend them.
 - Affected: AGENTS.md, agents/coordinator.md, agents/requirements.md, generated adapters,
   docs/AGENT-WORKFLOW.md, docs/IMPLEMENTATION-PLAN.md, docs/PROJECT.md; all GitHub issues
   (retitled, labelled and linked 2026-11-06).
+
+### DEC-011 — Apache-2.0 license with NOTICE attribution
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink): the project should be freely available, but others must not be allowed to
+  remove the owner as author ("ich würde es gerne frei verfügbar machen, aber sie sollen
+  mich als author nicht entfernen dürfen" (English: "I would like to make it freely available, but they must not be allowed to remove me as author"), typing errors corrected); after the coordinator compared MIT, Apache-2.0
+  and copyleft options, the owner chose "apache mit notice" (English: "Apache with notice") and the author name for the
+  attribution.
+- Owner decision: outbound license Apache-2.0; a `NOTICE` file carries the copyright and
+  author attribution, which Section 4(d) of the license requires redistributions,
+  including modified versions, to retain. The author name in `NOTICE` and in
+  `pyproject.toml` authors is an explicit owner request and an exception to DEC-005 for
+  those attribution fields only.
+- Coordinator notes (not owner statements): no license can stop a fork from adding its
+  own authors; it requires keeping the existing notices. No third-party NOTICE content is
+  needed while no upstream code is reused (SOURCES.md).
+- Conditions: no visibility change, package/image publication, registry submission,
+  history rewrite or public contact address is decided here (STAGE-2 open items 2-9).
+- Rationale supplied: free availability with preserved author attribution.
+- Supersedes: the "does not choose a license" limitation of DEC-009 for the license only.
+- Affected: LICENSE, NOTICE, pyproject.toml, README.md, docs/PROJECT.md, docs/STAGE-2.md,
+  scripts/check_distribution.py, tests/test_readme.py.
+
+### DEC-012 — Project and package identity
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink). The owner asked whether `wled-mcp` sounds too official, as if part of the
+  WLED project; the coordinator offered (1) keep `wled-mcp` with a clear unofficial
+  marking, (2) an owner prefix, (3) an own project name. The owner chose option 1 after
+  a check for a WLED trademark policy, then confirmed recording the identity and the
+  three conditions below as DEC-012.
+- Owner decision: repository `descipar/wled-mcp`, PyPI distribution `wled-mcp`, container
+  image `ghcr.io/descipar/wled-mcp`, MCP Registry name `io.github.descipar/wled-mcp`.
+  Conditions: (a) no WLED logo or logo imitation, including marketplace listings;
+  (b) the package summary and registry/listing texts state that the project is
+  unofficial and not affiliated with the WLED project, in addition to the README
+  statement; (c) if the WLED project asks for a rename, comply; this is a known risk.
+- Coordinator notes (not owner statements): research on 2026-11-07 found no trademark or
+  name-usage policy in the WLED repository/README (code licensed EUPL-1.2) and no active
+  US registration of the word mark (one 2011 application, abandoned 2012, relation to
+  the project unknown); EU/German registers were not checked. Community forks and
+  companion projects commonly use the WLED name. The PyPI name was unregistered on
+  2026-11-07; nothing has been reserved.
+- Conditions: no name reservation, package/image publication, registry submission or
+  visibility change is authorized here.
+- Rationale supplied: the owner was concerned the name could appear official; resolved by
+  explicit unofficial marking rather than renaming.
+- Supersedes: the `io.github.<publisher>` placeholder in STAGE-2.md and MARKETPLACE.md.
+- Affected: pyproject.toml (description), docs/MARKETPLACE.md, docs/STAGE-2.md.
+
+### DEC-013 — General contact and no security support
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink). For general contact the owner chose option (a), GitHub issues only. For
+  security the owner stated that this is a private product, that they do not want to do
+  extra security work, and that it is "use at own risk"; the owner then confirmed the
+  coordinator's proposal below.
+- Owner decision: public contact is GitHub issues only; no e-mail address in package
+  metadata or listings. No security support: no private reporting channel (GitHub
+  private vulnerability reporting stays off), no response commitment, no guaranteed
+  fixes, no advisories. A short `SECURITY.md` states this, allows reports as regular
+  issues without exploit details and recommends running the HTTP service only on a
+  trusted network. S2-PUBLIC-03 requires this statement instead of a security contact.
+- Coordinator notes (not owner statements): the Apache-2.0 warranty and liability
+  disclaimers (Sections 7 and 8) already apply; built-in safeguards (HTTP token,
+  Host/Origin checks, validation before writes) remain project requirements and are not
+  affected by this decision.
+- Conditions: no repository setting is changed by this decision.
+- Rationale supplied: private hobby product; the owner does not want security process work.
+- Supersedes: the "security reporting/contact" part of S2-PUBLIC-03.
+- Affected: SECURITY.md, docs/STAGE-2.md.
+
+### DEC-014 — Keep the existing Git history
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): after the coordinator presented a history scan and the options (A) keep the
+  history, (B) a fresh public repository, the owner chose A and stated that the commit
+  e-mail address may be public.
+- Owner decision: the existing history and author identities (owner and agent noreply
+  identity) stay as they are when the repository becomes public. No history rewrite and
+  no fresh public repository; existing issue/PR links and commit references remain valid.
+- Coordinator notes (not owner statements): the 2026-11-07 scan of all 70 commits found
+  the owner's commit e-mail address, the owner's first name in earlier wording and, in
+  two commits of 2026-11-04 later neutralized by #62, an internal hub hostname and coarse
+  hub hardware/mount details. Test IPv4 values are synthetic; no secrets and no deleted
+  files were found. A rewrite in place was not recommended because GitHub keeps pull
+  request refs, so old commits would remain reachable. Accepting these historic contents
+  follows from this decision.
+- Conditions: no visibility change is authorized here. Open owner decision 5 (review of
+  issue/PR bodies and comments before a visibility change) is not resolved by this entry.
+- Rationale supplied: none beyond the e-mail address being acceptable to publish.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md.
+
+### DEC-015 — Issue and PR review before visibility change
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's four-part proposal ("ja, mach
+  DEC-015 so" (English: "yes, do DEC-015 that way")), then amended item 3: the #11 revision may stay because the hub is not
+  publicly reachable.
+- Owner decision:
+  1. Two review layers: (a) a repeatable, read-only script (working name
+     `scripts/check_issue_content.py`) that scans issue/PR titles, bodies, comments,
+     review comments and their edit histories; concrete private terms come from the
+     existing untracked private denylist and are never committed; (b) one agent
+     read-through of all items for context no pattern detects, producing a findings
+     list that the owner approves.
+  2. Timing: the full review runs immediately before the visibility change, as a
+     mandatory step of #23/#25; the script is built as part of #23, not now.
+  3. Existing edit-history findings stay: the internal hub hostname in an earlier
+     revision of #11 (the owner subsequently decided against the proposed deletion
+     because the hub is not publicly reachable), the owner's first name (#15, #16, #24)
+     and the hub hardware (#11, #62).
+  4. The existing AGENTS.md rule keeps issues and PRs impersonal; no new rule.
+- Coordinator notes (not owner statements): a pattern scan on 2026-11-07 of 85 issues/PRs,
+  19 comments and 126 edit-history revisions found the current texts clean (remaining
+  hits are synthetic examples or intended attribution) and the edit-history findings
+  listed above. Pull request commits are covered by DEC-014.
+- Conditions: no visibility change is authorized here. Any future deletion of an
+  edit-history revision is an owner action in the GitHub UI; agents do not perform it.
+- Rationale supplied: none.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23/#25 scope.
+
+### DEC-016 — Ship the agent tooling and decision records
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-016 so" (English: "yes, do DEC-016 that way")).
+- Owner decision: the public repository ships `AGENTS.md`, `CLAUDE.md`, `agents/`, the
+  generated `.claude/agents/` and `.codex/` definitions, `docs/AGENT-*.md`,
+  `docs/agent-workflow/`, `scripts/sync_agents.py` with its tests, `docs/DECISIONS.md`
+  and `docs/decisions/`. Nothing is removed or restructured now. A short orientation
+  (README section and/or the CONTRIBUTING guidance of S2-PUBLIC-03) explains that the
+  project is developed with a documented agent workflow, that human contributions do not
+  require it, and where the design decisions are recorded; this is #23 work.
+- Coordinator notes (not owner statements): removal would give no privacy benefit because
+  the history stays public (DEC-014); product documentation and source comments link the
+  decision records as design rationale, so removing them would break those references.
+  The tracked client files contain agent roles and an agent concurrency limit only, no
+  secrets or personal settings.
+- Conditions: no visibility change is authorized here. Open owner decision 6 (German
+  source quotes) is decided separately.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23 scope.
+
+### DEC-017 — Verbatim owner quotes with English translation
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-017 so"
+  (English: "yes, do DEC-017 that way")).
+- Owner decision: German owner quotes in decision records stay verbatim as source
+  evidence and are followed by an English translation, `"original" (English:
+  "translation")`. Existing quotes are translated now; the recording rules above require
+  the same form for future records. Quotes are not removed or replaced by translations.
+- Coordinator notes (not owner statements): 21 quote occurrences in DECISIONS.md and the
+  issue-7, issue-11 and issue-12 records were translated; the translations are the
+  coordinator's and do not change the recorded decisions. Earlier wording remains in the
+  public history (DEC-014).
+- Conditions: no visibility change is authorized here.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/DECISIONS.md, docs/decisions/issue-7.md, docs/decisions/issue-11.md,
+  docs/decisions/issue-12.md, docs/STAGE-2.md.
+
+### DEC-018 — Private denylist and main branch rules
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink). The owner stated having no list of private terms in mind ("ich hab im
+  moment keine liste überhaupt im kopf" (English: "at the moment I have no list in mind
+  at all"), typing errors corrected) and then confirmed the adjusted proposal below
+  ("ja, mach DEC-018 so" (English: "yes, do DEC-018 that way")).
+- Owner decision:
+  1. Private denylist mechanism: a local untracked `runtime/private-denylist.txt` and the
+     same content as a GitHub Actions secret; a CI step writes the secret to a temporary
+     file and sets `WLED_MCP_PRIVATE_DENYLIST` for `scripts/check_private_identifiers.py`.
+     Without the secret (for example fork pull requests) only the rule checks run.
+  2. Candidate list: an agent derives candidate terms (hostnames, addresses, device and
+     network names) from the untracked `.agent-runs/` records, the Git history and the
+     issues/PRs and presents them; the owner removes or adds entries. This runs together
+     with the DEC-015 review immediately before the visibility change. Concrete terms
+     never appear in committed files, issues or PRs.
+  3. Branch rules at the visibility change: a ruleset on `main` with pull requests
+     required, the CI status check required, force-push and deletion blocked, no
+     required approving reviews; the owner may bypass only the pull-request requirement.
+- Coordinator notes (not owner statements): branch protection/rulesets are not available
+  for this private repository on its current plan, hence the timing. The script reports
+  denylist hits as entry numbers only. Creating the secret and the ruleset are owner
+  actions in the repository settings; the CI step is #23 work.
+- Conditions: no visibility change, secret or repository setting is created by this
+  decision; no denylist content is decided here.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23/#25 scope.
+
+### DEC-019 — Make the repository public before the release
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-019 so"
+  (English: "yes, do DEC-019 that way")), including creating the readiness issue and
+  adjusting #23 and #25.
+- Owner decision: repository visibility is decoupled from the release. The repository
+  becomes public once the readiness checklist of
+  [#90](https://github.com/descipar/wled-mcp/issues/90) is complete and the owner
+  explicitly instructs the change: DEC-015 review, DEC-018 denylist and CI step, DEC-016
+  orientation with pre-release/no-support status and a minimal CONTRIBUTING.md, owner
+  review of the overall state, the visibility change by the owner, and the DEC-018
+  `main` ruleset immediately afterwards. Package/image publication and registry or
+  marketplace submissions remain in #25 and its final release instruction.
+- Coordinator notes (not owner statements): rulesets and unlimited Actions minutes become
+  available with public visibility, which supports parallel stage-2 work (PR #81). After
+  the change, new issues, PRs and evidence are public immediately; the impersonal-issue
+  rule and the DEC-018 denylist apply. #90 was created as a stage-2 sub-issue of #15; a
+  "Visibility split (DEC-019)" section was appended to #23 and #25 with their previous
+  bodies preserved.
+- Conditions: this decision does not itself change visibility; the change requires the
+  owner's explicit instruction under #90. Agents do not change visibility, secrets or
+  rulesets.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: the part of #25 that bundled repository visibility into the final release
+  instruction.
+- Affected: docs/STAGE-2.md; issues #23, #25, #90.
+
+### DEC-020 — Support and version policy
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner accepted the coordinator's proposal below with one amendment
+  ("ja, aber eine ergänzung unterstützung erst ab wled 16.0.0" (English: "yes, but one
+  addition: support only from WLED 16.0.0"), typing errors corrected).
+- Owner decision:
+  1. Versions: `0.x` releases until a separate owner decision on `1.0`; breaking changes
+     may occur in minor releases and carry migration notes in the changelog. Fixes only
+     for the latest release.
+  2. WLED firmware: support starts at WLED 16.0.0 (owner amendment). Within that range,
+     tiers: tested (hardware evidence; currently 16.0.1), expected (source-reviewed and
+     mock-tested), unknown (no claim). A version moves up a tier with recorded evidence
+     from the owner or a reproducible user report. Firmware below 16.0.0, including
+     0.15.x, is unsupported: the server warns but does not refuse.
+  3. Python: supported means tested in CI (currently 3.13); newer versions are added when
+     CI passes; older ones may be dropped when they cause effort.
+  4. Platforms: Linux supported (container amd64/arm64 and stdio); Windows and macOS
+     experimental.
+  5. Responses to reports: best effort without commitment (DEC-013).
+  A short support table in the README reflects this; #21 and #23 fill it with evidence.
+- Coordinator notes (not owner statements): the existing source profile and several
+  contract notes are based on WLED v0.15.1 source review plus WLED 16 evidence; this
+  decision does not remove that code or documentation. Whether 0.15.x-specific handling is
+  kept, and how the below-16.0.0 warning is implemented, is #21 (and #16 diagnostics) work.
+  Windows is experimental partly because six tests currently fail on a local Windows
+  setup while Linux CI passes.
+- Conditions: no code change is made by this decision.
+- Rationale supplied: none.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md (S2-COMPAT-02); future #21/#23 scope.
 
 ## Issue-specific decisions (pointers)
 

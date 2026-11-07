@@ -64,8 +64,9 @@ linked follow-up issues. Nothing has been published.
   the raw state patch, timers and realtime streaming from stage 1.
 - **Public-ready baseline (#62).** Tracked content is kept installation-independent
   under [DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline);
-  `scripts/check_private_identifiers.py` enforces it in CI. Visibility, license and
-  publication remain owner decisions listed in
+  `scripts/check_private_identifiers.py` enforces it in CI. The outbound license is
+  Apache-2.0 with a NOTICE file ([DEC-011](DECISIONS.md#dec-011--apache-20-license-with-notice-attribution));
+  visibility and publication remain owner decisions listed in
   [STAGE-2.md](STAGE-2.md#open-owner-decisions-before-publication-from-62).
 
 [TRACEABILITY.md](TRACEABILITY.md) maps every Must requirement and scenarios T01-T21

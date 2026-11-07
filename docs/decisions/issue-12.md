@@ -198,7 +198,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Authority: human decision.
 - Source: owner reply in the coordinator session on 2026-11-06 to the coordinator's
   question whether the stdio host-level no-drain is acceptable ("ja, ist in ordnung.
-  stdio ist ja nur die zweite wahl für heute, ich bevorzuge http"), relayed by the
+  stdio ist ja nur die zweite wahl für heute, ich bevorzuge http" (English: "yes, that is fine. stdio is only the second choice for today anyway, I prefer http")), relayed by the
   coordinator; no permalink to the original message available.
 - Scope: issue #12, the stdio-via-uvx mode and its host-owned subprocess lifecycle
   (MCP-04 drain evidence).
@@ -288,7 +288,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Status: active for issue #12 only.
 - Authority: human decision.
 - Source: owner reply in the coordinator session on 2026-11-06 ("rückmeldung und
-  speedtest genügen"), relayed by the coordinator and recorded as a coordinator comment
+  speedtest genügen" (English: "feedback and the speed test are sufficient")), relayed by the coordinator and recorded as a coordinator comment
   on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
   message available.
 - Scope: the H04 item "one effect's speed/intensity ... visible behavior" for #12 (the

@@ -19,8 +19,7 @@ service.
 - It does not discover devices, scan networks or forward arbitrary requests to a
   controller.
 - It is not published as a package or container image yet. You build a wheel locally
-  from this repository (see the quickstarts). No license has been selected yet
-  ([#23](https://github.com/descipar/wled-mcp/issues/23)).
+  from this repository (see the quickstarts).
 
 ## Features
 
@@ -279,5 +278,6 @@ Project status, roadmap and the maintainer document index are in
 
 ## License
 
-No license has been selected yet; this is an open owner decision tracked in
-[#23](https://github.com/descipar/wled-mcp/issues/23).
+Licensed under the [Apache License 2.0](LICENSE). Redistributions, including modified
+versions, must retain the copyright and attribution notice in [NOTICE](NOTICE).
+The project is provided as is, without security support; see [SECURITY.md](SECURITY.md).
