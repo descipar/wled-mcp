@@ -32,6 +32,7 @@ from wled_mcp.resources import Resources
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 PROJECT = ROOT / "docs/PROJECT.md"
+CONTRIBUTING = ROOT / "CONTRIBUTING.md"
 EXAMPLES = (
     "examples/compose.http.example.yaml",
     "examples/mcphub.http.example.json",
@@ -124,6 +125,9 @@ def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
         "## Inventory",
         "## Safety model",
         "## Validation status and limitations",
+        "## Project status",
+        "## Support",
+        "### How this project is developed",
     ):
         if section + "\n" not in text:
             problems.append(f"README lacks section {section!r}")
@@ -138,6 +142,60 @@ def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
     ):
         if term not in flat:
             problems.append(f"README safety/validation text lacks {term!r}")
+    problems.extend(orientation_problems(text))
+    return problems
+
+
+def orientation_problems(text: str) -> list[str]:
+    """What an outside reader learns before the repository is public (#90, DEC-016)."""
+    problems = []
+    flat = " ".join(text.split())
+    targets = {target.split("#", 1)[0] for target in LINK.findall(text)}
+    for target in (
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+        "AGENTS.md",
+        "docs/AGENT-WORKFLOW.md",
+        "docs/DECISIONS.md",
+        "docs/decisions/README.md",
+    ):
+        if target not in targets:
+            problems.append(f"README does not link {target}")
+    for term in (
+        "pre-release software",
+        "No release has been made",
+        "not published to PyPI or GHCR",
+        "There is no support commitment",
+        "best effort",
+        "There is no security support",
+        "Human contributions do not need this workflow",
+    ):
+        if term not in flat:
+            problems.append(f"README orientation text lacks {term!r}")
+    return problems
+
+
+def contributing_problems(text: str) -> list[str]:
+    """The minimal contribution guidance (#90, DEC-005, DEC-013, DEC-019)."""
+    problems = []
+    flat = " ".join(text.split())
+    targets = {target.split("#", 1)[0] for target in LINK.findall(text)}
+    for target in ("SECURITY.md", "docs/DEVELOPMENT.md", "docs/AGENT-WORKFLOW.md", "LICENSE"):
+        if target not in targets:
+            problems.append(f"CONTRIBUTING does not link {target}")
+    for term in (
+        "https://github.com/descipar/wled-mcp/issues",
+        "no other channel",
+        "Use synthetic examples",
+        "no security support",
+        "never contact LAN devices",
+        "scripts/check_private_identifiers.py` must pass",
+        "human contributions do not need to follow it",
+        "no commitment to answer",
+        "Section 5",
+    ):
+        if term not in flat:
+            problems.append(f"CONTRIBUTING lacks {term!r}")
     return problems
 
 
@@ -151,7 +209,7 @@ def test_registry_has_the_twelve_documented_tools():
     assert sorted(set(hints.values())) == ["destructive", "read-only", "write"]
 
 
-@pytest.mark.parametrize("path", [README, PROJECT], ids=lambda path: path.name)
+@pytest.mark.parametrize("path", [README, PROJECT, CONTRIBUTING], ids=lambda path: path.name)
 def test_local_links_and_anchors_resolve(path):
     assert link_problems(path, path.read_text("utf-8")) == []
 
@@ -225,6 +283,36 @@ def test_link_check_rejects_missing_files_and_anchors():
             "README lacks section '## Safety model'",
         ),
         (
+            "## Support\n",
+            "## Help\n",
+            "README lacks section '## Support'",
+        ),
+        (
+            "not published\nto PyPI or GHCR",
+            "published\nto PyPI and GHCR",
+            "README orientation text lacks 'not published to PyPI or GHCR'",
+        ),
+        (
+            "There is no support commitment.",
+            "Support is provided.",
+            "README orientation text lacks 'There is no support commitment'",
+        ),
+        (
+            "Human contributions do not need this workflow.",
+            "Human contributions must follow this workflow.",
+            "README orientation text lacks 'Human contributions do not need this workflow'",
+        ),
+        (
+            "[CONTRIBUTING.md](CONTRIBUTING.md)",
+            "CONTRIBUTING.md",
+            "README does not link CONTRIBUTING.md",
+        ),
+        (
+            "[docs/DECISIONS.md](docs/DECISIONS.md)",
+            "docs/DECISIONS.md",
+            "README does not link docs/DECISIONS.md",
+        ),
+        (
             "is reported as\n  possibly applied",
             "is reported as\n  failed",
             "README safety/validation text lacks 'possibly applied'",
@@ -235,3 +323,43 @@ def test_readme_check_rejects_regressions(old, new, expected):
     text = README.read_text("utf-8")
     assert old in text
     assert expected in readme_problems(text.replace(old, new), tool_hints())
+
+
+def test_contributing_states_the_minimal_rules():
+    assert contributing_problems(CONTRIBUTING.read_text("utf-8")) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            "Use synthetic\n  examples",
+            "Use real\n  examples",
+            "CONTRIBUTING lacks 'Use synthetic examples'",
+        ),
+        (
+            "[SECURITY.md](SECURITY.md)",
+            "SECURITY.md",
+            "CONTRIBUTING does not link SECURITY.md",
+        ),
+        (
+            "never contact LAN devices",
+            "may contact LAN devices",
+            "CONTRIBUTING lacks 'never contact LAN devices'",
+        ),
+        (
+            "human contributions do not need to follow it",
+            "human contributions must follow it",
+            "CONTRIBUTING lacks 'human contributions do not need to follow it'",
+        ),
+        (
+            "There is no commitment to answer",
+            "Answers are guaranteed",
+            "CONTRIBUTING lacks 'no commitment to answer'",
+        ),
+    ],
+)
+def test_contributing_check_rejects_regressions(old, new, expected):
+    text = CONTRIBUTING.read_text("utf-8")
+    assert old in text
+    assert expected in contributing_problems(text.replace(old, new))

@@ -18,8 +18,8 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
-uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
+uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
+uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -40,6 +40,31 @@ reason in `scripts/private_identifier_allowlist.toml`; an unused entry fails. Va
 a real installation never go there: list them one per line in the git-ignored
 `runtime/private-denylist.txt` (or a file named by `WLED_MCP_PRIVATE_DENYLIST`) so the
 check also finds those literals.
+
+In CI the denylist comes from the Actions secret `WLED_MCP_PRIVATE_DENYLIST`, which
+holds the file content: a step before the scanner writes it to a file under
+`RUNNER_TEMP` (outside the work tree) and sets `WLED_MCP_PRIVATE_DENYLIST` to that
+path. The content is never echoed; the scanner log shows only the number of entries.
+Without the secret (for example in a pull request from a fork) the step prints a note
+and only the rule checks run.
+
+`scripts/check_issue_content.py` applies the same rules and denylist to the
+repository's issue and pull request text, including titles changed by renames, comments,
+review bodies, review comments, every edit-history revision, branch names and labels.
+It is read-only (GraphQL queries through an authenticated `gh` CLI), runs on demand
+only and never in CI, and reports locators such as
+`pr #30 review 2 comment 1 revision 1:3: ipv4-private` without values. Deleted
+revisions are counted as not scannable. Exit codes: 0 no findings, 1 findings, 2 the
+content could not be checked completely.
+
+```text
+uv run --frozen python scripts/check_issue_content.py --output .agent-runs/issue-scan.txt
+```
+
+`--repo OWNER/NAME` selects another repository; `--show-values` prints matched values
+for local use only and never goes into CI logs, issues or pull requests. The `--output`
+file never contains values; keep it in an ignored directory. Its tests
+(`tests/test_issue_content.py`) use an in-memory fake of the GitHub API.
 
 Build separately with `uv build --wheel --no-build-isolation --python
 .venv/Scripts/python.exe` (use `.venv/bin/python` on POSIX), after locked sync.

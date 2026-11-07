@@ -19,7 +19,7 @@ service.
 - It does not discover devices, scan networks or forward arbitrary requests to a
   controller.
 - It is not published as a package or container image yet. You build a wheel locally
-  from this repository (see the quickstarts).
+  from this repository (see the quickstarts and [Project status](#project-status)).
 
 ## Features
 
@@ -270,11 +270,35 @@ Known limitations:
 | [Architecture](docs/ARCHITECTURE.md) | Components, runtime and design decisions |
 | [Contract examples](examples/contracts/README.md) | Synthetic request, result and snapshot examples |
 
+## Project status
+
+wled-mcp is pre-release software. No release has been made, and it is not published
+to PyPI or GHCR: there is no package, container image or registry entry to install.
+Build it locally from a checkout as described in the quickstarts. Future releases will
+use `0.x` versions, which may contain breaking changes.
+
+## Support
+
+There is no support commitment. Questions and problems go to
+[GitHub issues](https://github.com/descipar/wled-mcp/issues), which are answered best
+effort, without any commitment to respond or fix. There is no security support; see
+[SECURITY.md](SECURITY.md).
+
 ## Project and contributing
 
 Project status, roadmap and the maintainer document index are in
-[docs/PROJECT.md](docs/PROJECT.md). Contributors and coding agents start with
-[AGENTS.md](AGENTS.md). Issues: https://github.com/descipar/wled-mcp/issues.
+[docs/PROJECT.md](docs/PROJECT.md). How to report problems and propose changes is in
+[CONTRIBUTING.md](CONTRIBUTING.md). Issues: https://github.com/descipar/wled-mcp/issues.
+
+### How this project is developed
+
+The maintainer develops this project with coding agents that follow a documented
+workflow: [AGENTS.md](AGENTS.md) holds the project rules,
+[docs/AGENT-WORKFLOW.md](docs/AGENT-WORKFLOW.md) describes the requirements,
+implementation, review and completion roles, and the `agents/` directory holds the
+role definitions. Human contributions do not need this workflow. Design decisions and
+their rationale are recorded in [docs/DECISIONS.md](docs/DECISIONS.md) and, per issue, in
+[docs/decisions/](docs/decisions/README.md).
 
 ## License
 

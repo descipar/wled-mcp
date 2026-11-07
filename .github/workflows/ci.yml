@@ -26,11 +26,23 @@ jobs:
         with:
           version: "0.11.14"
       - run: uv sync --locked
-      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
-      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/hw_http_probe.py
+      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
+      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
       - run: uv run --frozen mypy
       - run: uv run --frozen python scripts/check_agent_setup.py
       - run: uv run --frozen python scripts/check_lock.py
+      - name: Provide private denylist from secret
+        env:
+          PRIVATE_DENYLIST: ${{ secrets.WLED_MCP_PRIVATE_DENYLIST }}
+        run: |
+          if [ -z "${PRIVATE_DENYLIST}" ]; then
+            echo "note: no private denylist secret (for example a fork pull request); rule checks only"
+            exit 0
+          fi
+          umask 077
+          denylist="${RUNNER_TEMP}/private-denylist.txt"
+          printf '%s\n' "${PRIVATE_DENYLIST}" > "${denylist}"
+          echo "WLED_MCP_PRIVATE_DENYLIST=${denylist}" >> "${GITHUB_ENV}"
       - run: uv run --frozen python scripts/check_private_identifiers.py
       - run: uv run --frozen pytest
       - run: uv run --frozen python scripts/check_distribution.py

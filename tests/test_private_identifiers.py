@@ -11,12 +11,15 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "check_private_identifiers.py"
@@ -373,3 +376,168 @@ def test_rule_values_outside_the_scanner_rule_block_are_reported(tmp_path):
     leak_line = source.count("\n")
     reported = [line for line in result.stderr.splitlines() if line.startswith("ERROR")]
     assert reported == [f"ERROR: {scanner.SELF.as_posix()}:{leak_line}: ipv4-private"]
+
+
+# ------------------------------------------------- CI denylist step (#90, DEC-018)
+
+WORKFLOW = ROOT / ".github/workflows/ci.yml"
+DENYLIST_STEP = "Provide private denylist from secret"
+SCANNER_RUN = "uv run --frozen python scripts/check_private_identifiers.py"
+SECRET_REF = "${{ secrets.WLED_MCP_PRIVATE_DENYLIST }}"
+EXPANSION = re.compile(r"\$\{?PRIVATE_DENYLIST\b")
+
+
+def workflow_steps(text: str) -> list[dict]:
+    return yaml.safe_load(text)["jobs"]["checks"]["steps"]
+
+
+def denylist_step_problems(text: str) -> list[str]:
+    """How the workflow could leak or skip the private denylist (R90-07, D3)."""
+    problems = []
+    workflow = yaml.safe_load(text)
+    triggers = workflow.get("on", workflow.get(True))
+    if "pull_request_target" in (triggers or {}):
+        problems.append("workflow runs on pull_request_target")
+    if workflow.get("permissions") != {"contents": "read"}:
+        problems.append("workflow permissions are wider than contents: read")
+    steps = workflow_steps(text)
+    names = [step.get("name") for step in steps]
+    runs = [step.get("run", "") for step in steps]
+    if DENYLIST_STEP not in names or SCANNER_RUN not in runs:
+        return [*problems, "denylist step or scanner step missing"]
+    index = names.index(DENYLIST_STEP)
+    if index + 1 != runs.index(SCANNER_RUN):
+        problems.append("denylist step does not directly precede the scanner step")
+    step = steps[index]
+    if step.get("env") != {"PRIVATE_DENYLIST": SECRET_REF}:
+        problems.append("secret is not passed through the step env")
+    for run in runs:
+        if "${{ secrets." in run:
+            problems.append("a run script interpolates a secret")
+        if "set -x" in run or "--show-values" in run:
+            problems.append("a run script traces commands or prints values")
+    for line in step["run"].splitlines():
+        line = line.strip()
+        if re.search(r"\bcat\b", line):
+            problems.append("denylist step prints a file")
+        if EXPANSION.search(line) and not (
+            line.startswith('if [ -z "${PRIVATE_DENYLIST}" ]') or line.endswith('> "${denylist}"')
+        ):
+            problems.append(f"denylist content used outside the temp file: {line}")
+        if "${GITHUB_WORKSPACE}" in line or "github.workspace" in line:
+            problems.append("denylist file inside the workspace")
+    return problems
+
+
+def test_ci_feeds_the_denylist_secret_safely():
+    assert denylist_step_problems(WORKFLOW.read_text("utf-8")) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
+        (
+            '"${PRIVATE_DENYLIST}" > "${denylist}"',
+            f'"{SECRET_REF}" > "${{denylist}}"',
+            "a run script interpolates a secret",
+        ),
+        ("umask 077\n", "set -x\n          umask 077\n", "a run script traces commands"),
+        (
+            "umask 077\n",
+            'echo "${PRIVATE_DENYLIST}"\n          umask 077\n',
+            'denylist content used outside the temp file: echo "${PRIVATE_DENYLIST}"',
+        ),
+        ("umask 077\n", 'cat "${denylist}"\n          umask 077\n', "prints a file"),
+        (
+            f"PRIVATE_DENYLIST: {SECRET_REF}",
+            "PRIVATE_DENYLIST: ${{ vars.DENYLIST }}",
+            "secret is not passed through the step env",
+        ),
+        (
+            f"      - run: {SCANNER_RUN}\n",
+            "",
+            "denylist step or scanner step missing",
+        ),
+        ("  pull_request:\n", "  pull_request_target:\n", "pull_request_target"),
+        ("  contents: read\n", "  contents: write\n", "permissions are wider"),
+    ],
+)
+def test_denylist_step_check_rejects_regressions(old, new, expected):
+    text = WORKFLOW.read_text("utf-8")
+    assert old in text
+    assert any(expected in problem for problem in denylist_step_problems(text.replace(old, new)))
+
+
+def test_denylist_step_check_rejects_a_step_after_the_scanner():
+    text = WORKFLOW.read_text("utf-8")
+    scanner_line = f"      - run: {SCANNER_RUN}\n"
+    moved = text.replace(scanner_line, "").replace(
+        "      - name: " + DENYLIST_STEP, scanner_line + "      - name: " + DENYLIST_STEP
+    )
+    assert "denylist step does not directly precede the scanner step" in (
+        denylist_step_problems(moved)
+    )
+
+
+def find_bash() -> str | None:
+    """A POSIX bash; on Windows Git's bash (``bash`` on PATH may be the WSL launcher)."""
+    if os.name != "nt":
+        return shutil.which("bash")
+    exec_path = subprocess.run(
+        ["git", "--exec-path"], capture_output=True, text=True, timeout=30, check=False
+    ).stdout.strip()
+    if not exec_path:
+        return None
+    git_root = Path(exec_path).parents[2]
+    for candidate in (git_root / "bin" / "bash.exe", git_root / "usr" / "bin" / "bash.exe"):
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
+def run_denylist_step(tmp_path: Path, secret: str) -> tuple[subprocess.CompletedProcess, Path]:
+    bash = find_bash()
+    if bash is None:
+        pytest.skip("no POSIX bash available to execute the workflow step")
+    (step,) = [
+        s for s in workflow_steps(WORKFLOW.read_text("utf-8")) if s.get("name") == DENYLIST_STEP
+    ]
+    runner_temp = tmp_path / "runner-temp"
+    runner_temp.mkdir()
+    github_env = tmp_path / "github-env"
+    github_env.write_text("", encoding="utf-8")
+    env = clean_env(
+        PRIVATE_DENYLIST=secret,
+        RUNNER_TEMP=runner_temp.as_posix(),
+        GITHUB_ENV=github_env.as_posix(),
+    )
+    result = subprocess.run(
+        [bash, "-e", "-c", step["run"]], capture_output=True, text=True, timeout=60, env=env
+    )
+    return result, github_env
+
+
+def test_ci_denylist_step_without_secret_runs_rule_checks_only(tmp_path):
+    result, github_env = run_denylist_step(tmp_path, "")
+    assert result.returncode == 0, result.stderr
+    assert "rule checks only" in result.stdout
+    assert github_env.read_text("utf-8") == ""
+    assert not (tmp_path / "runner-temp" / "private-denylist.txt").exists()
+
+
+def test_ci_denylist_step_feeds_the_scanner_without_echoing_the_secret(tmp_path):
+    secret = "acme-" + "lab-unit"
+    result, github_env = run_denylist_step(tmp_path, f"# synthetic entries\n{secret}")
+    assert result.returncode == 0, result.stderr
+    assert secret not in result.stdout + result.stderr
+    (line,) = github_env.read_text("utf-8").splitlines()
+    name, _, value = line.partition("=")
+    assert name == scanner.DENYLIST_ENV
+    denylist = Path(value)
+    assert denylist.parent == tmp_path / "runner-temp"
+    assert secret in denylist.read_text("utf-8")
+    repo = git_repo(tmp_path / "repo", {"README.md": f"clean\nsee {secret}\n"})
+    scan = run(repo, env=clean_env(**{scanner.DENYLIST_ENV: value}))
+    assert scan.returncode == 1
+    assert "README.md:2: denylist entry 1" in scan.stderr
+    assert secret not in scan.stdout + scan.stderr
