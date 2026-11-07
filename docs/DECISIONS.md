@@ -64,6 +64,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-015 | Project / issue and PR review | Before the visibility change, review all issues, PRs, comments and their edit histories with a repeatable read-only scan plus one agent read-through; the owner approves the findings. Mandatory #23/#25 step; the script is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-015](#dec-015--issue-and-pr-review-before-visibility-change) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-016 | Project / public repository content | The agent tooling (AGENTS.md, CLAUDE.md, agent roles and generated client definitions, agent workflow docs and templates, sync script) and all decision records ship in the public repository; a short orientation for outside readers is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-016](#dec-016--ship-the-agent-tooling-and-decision-records) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-017 | Project / decision-record language | German owner quotes in decision records stay verbatim and carry an English translation; future records follow the same form. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-017](#dec-017--verbatim-owner-quotes-with-english-translation) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-018 | Project / private denylist and branch rules | The private denylist is a local untracked file plus a CI secret, built from an agent-proposed, owner-approved candidate list together with the DEC-015 review before the visibility change. At the visibility change `main` gets a ruleset: PRs only, required CI check, no force-push or deletion, no required reviews, owner bypass for the PR requirement only. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-018](#dec-018--private-denylist-and-main-branch-rules) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -355,6 +356,37 @@ can explicitly amend them.
 - Supersedes: none.
 - Affected: docs/DECISIONS.md, docs/decisions/issue-7.md, docs/decisions/issue-11.md,
   docs/decisions/issue-12.md, docs/STAGE-2.md.
+
+### DEC-018 — Private denylist and main branch rules
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink). The owner stated having no list of private terms in mind ("ich hab im
+  moment keine liste überhaupt im kopf" (English: "at the moment I have no list in mind
+  at all"), typing errors corrected) and then confirmed the adjusted proposal below
+  ("ja, mach DEC-018 so" (English: "yes, do DEC-018 that way")).
+- Owner decision:
+  1. Private denylist mechanism: a local untracked `runtime/private-denylist.txt` and the
+     same content as a GitHub Actions secret; a CI step writes the secret to a temporary
+     file and sets `WLED_MCP_PRIVATE_DENYLIST` for `scripts/check_private_identifiers.py`.
+     Without the secret (for example fork pull requests) only the rule checks run.
+  2. Candidate list: an agent derives candidate terms (hostnames, addresses, device and
+     network names) from the untracked `.agent-runs/` records, the Git history and the
+     issues/PRs and presents them; the owner removes or adds entries. This runs together
+     with the DEC-015 review immediately before the visibility change. Concrete terms
+     never appear in committed files, issues or PRs.
+  3. Branch rules at the visibility change: a ruleset on `main` with pull requests
+     required, the CI status check required, force-push and deletion blocked, no
+     required approving reviews; the owner may bypass only the pull-request requirement.
+- Coordinator notes (not owner statements): branch protection/rulesets are not available
+  for this private repository on its current plan, hence the timing. The script reports
+  denylist hits as entry numbers only. Creating the secret and the ruleset are owner
+  actions in the repository settings; the CI step is #23 work.
+- Conditions: no visibility change, secret or repository setting is created by this
+  decision; no denylist content is decided here.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23/#25 scope.
 
 ## Issue-specific decisions (pointers)
 
