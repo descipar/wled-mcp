@@ -65,6 +65,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-016 | Project / public repository content | The agent tooling (AGENTS.md, CLAUDE.md, agent roles and generated client definitions, agent workflow docs and templates, sync script) and all decision records ship in the public repository; a short orientation for outside readers is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-016](#dec-016--ship-the-agent-tooling-and-decision-records) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-017 | Project / decision-record language | German owner quotes in decision records stay verbatim and carry an English translation; future records follow the same form. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-017](#dec-017--verbatim-owner-quotes-with-english-translation) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-018 | Project / private denylist and branch rules | The private denylist is a local untracked file plus a CI secret, built from an agent-proposed, owner-approved candidate list together with the DEC-015 review before the visibility change. At the visibility change `main` gets a ruleset: PRs only, required CI check, no force-push or deletion, no required reviews, owner bypass for the PR requirement only. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-018](#dec-018--private-denylist-and-main-branch-rules) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-019 | Project / visibility timing | Decouple repository visibility from release: the repository becomes public once the readiness checklist of #90 is complete and the owner instructs it; package, image and marketplace publication stay in #25. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-019](#dec-019--make-the-repository-public-before-the-release) and [issue #90](https://github.com/descipar/wled-mcp/issues/90) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -387,6 +388,35 @@ can explicitly amend them.
 - Rationale supplied: none beyond accepting the proposal.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md; future #23/#25 scope.
+
+### DEC-019 — Make the repository public before the release
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-019 so"
+  (English: "yes, do DEC-019 that way")), including creating the readiness issue and
+  adjusting #23 and #25.
+- Owner decision: repository visibility is decoupled from the release. The repository
+  becomes public once the readiness checklist of
+  [#90](https://github.com/descipar/wled-mcp/issues/90) is complete and the owner
+  explicitly instructs the change: DEC-015 review, DEC-018 denylist and CI step, DEC-016
+  orientation with pre-release/no-support status and a minimal CONTRIBUTING.md, owner
+  review of the overall state, the visibility change by the owner, and the DEC-018
+  `main` ruleset immediately afterwards. Package/image publication and registry or
+  marketplace submissions remain in #25 and its final release instruction.
+- Coordinator notes (not owner statements): rulesets and unlimited Actions minutes become
+  available with public visibility, which supports parallel stage-2 work (PR #81). After
+  the change, new issues, PRs and evidence are public immediately; the impersonal-issue
+  rule and the DEC-018 denylist apply. #90 was created as a stage-2 sub-issue of #15; a
+  "Visibility split (DEC-019)" section was appended to #23 and #25 with their previous
+  bodies preserved.
+- Conditions: this decision does not itself change visibility; the change requires the
+  owner's explicit instruction under #90. Agents do not change visibility, secrets or
+  rulesets.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: the part of #25 that bundled repository visibility into the final release
+  instruction.
+- Affected: docs/STAGE-2.md; issues #23, #25, #90.
 
 ## Issue-specific decisions (pointers)
 
