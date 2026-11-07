@@ -1221,7 +1221,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
 
 ## Stage 2 and later files
 
-- [validation/issue-18.md](validation/issue-18.md): preset restore, supplied-state save
-  and snapshot listing (#18, mock evidence).
+- [validation/issue-18.md](validation/issue-18.md): preset restore, supplied-state save,
+  snapshot listing, playlist authoring and preset bundles (#18, mock evidence).
 - [validation/issue-21.md](validation/issue-21.md): version source, non-release builds and
   the CI matrix (#21, #70).

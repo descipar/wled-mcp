@@ -13,7 +13,8 @@ and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
 [Layout replacement](#layout-replacement-implemented-in-7)); #14 adds the protected HTTP
 service; #9 adds the five persistent-preset tools (see
 [Persistent presets, implementation](#persistent-presets-implemented-in-9)).
-#18 adds `wled_list_snapshots`, `wled_restore_preset` and `wled_store_preset` (see
+#18 adds `wled_list_snapshots`, `wled_restore_preset`, `wled_store_preset`,
+`wled_save_playlist`, `wled_export_presets` and `wled_import_presets` (see
 [contract/presets.md](contract/presets.md)). `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -69,6 +70,9 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | `wled_list_snapshots` | `device_id`, optional `preset_id` | Server snapshot metadata, newest first; no device I/O | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_restore_preset` | `device_id`, `backup_id`, optional `preset_id`, `overwrite=false`, `dry_run` | Explicit single-entry storage restoration; applies the entry live (or starts the playlist), then stores it | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_store_preset` | `device_id`, `name`, `state`, optional `preset_id`, `overwrite=false`, `dry_run` | Supplied, validated light state; applied live, then stored | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_save_playlist` | `device_id`, `name`, `entries`, `repeat`, `shuffle`, optional `end_preset_id`, `preset_id`, `overwrite=false`, `dry_run` | Native playlist of existing state presets; saving starts it, then it is stored | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_export_presets` | `device_id`, optional `preset_ids`, `include_unwritable=false` | Versioned preset bundle without device data, returned inline | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_import_presets` | `device_id`, `bundle`, optional `id_map`, `effect_map`, `palette_map`, `overwrite_ids`, `dry_run` | Dry-run preview, explicit mappings, snapshots first, per-entry single writes, stop at the first unverified entry | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; excluded from stage 1, `raw_state_patch = true` rejected at startup, no owning issue (ISSUE-13-DEC-001) |
 
 Tool descriptions state physical output, playback and storage effects. State/layout
@@ -786,7 +790,7 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 ## Stage 2 and later files
 
-- [contract/presets.md](contract/presets.md): preset restore, supplied-state save and
-  snapshot listing (#18).
+- [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
+  snapshot listing, playlist authoring and preset bundles (#18).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping and
   non-release build identity (#21, #70).
