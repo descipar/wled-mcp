@@ -66,6 +66,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-017 | Project / decision-record language | German owner quotes in decision records stay verbatim and carry an English translation; future records follow the same form. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-017](#dec-017--verbatim-owner-quotes-with-english-translation) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-018 | Project / private denylist and branch rules | The private denylist is a local untracked file plus a CI secret, built from an agent-proposed, owner-approved candidate list together with the DEC-015 review before the visibility change. At the visibility change `main` gets a ruleset: PRs only, required CI check, no force-push or deletion, no required reviews, owner bypass for the PR requirement only. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-018](#dec-018--private-denylist-and-main-branch-rules) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-019 | Project / visibility timing | Decouple repository visibility from release: the repository becomes public once the readiness checklist of #90 is complete and the owner instructs it; package, image and marketplace publication stay in #25. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-019](#dec-019--make-the-repository-public-before-the-release) and [issue #90](https://github.com/descipar/wled-mcp/issues/90) |
+| DEC-020 | Project / support and version policy | Pre-1.0 `0.x` releases with migration notes; fixes only for the latest release. WLED support from 16.0.0 only, in tiers tested/expected/unknown; older firmware is unsupported and warned about, not refused. Python as tested in CI; Linux supported, Windows/macOS experimental; best-effort responses. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-020](#dec-020--support-and-version-policy) and [issue #21](https://github.com/descipar/wled-mcp/issues/21) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -417,6 +418,39 @@ can explicitly amend them.
 - Supersedes: the part of #25 that bundled repository visibility into the final release
   instruction.
 - Affected: docs/STAGE-2.md; issues #23, #25, #90.
+
+### DEC-020 — Support and version policy
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner accepted the coordinator's proposal below with one amendment
+  ("ja, aber eine ergänzung unterstützung erst ab wled 16.0.0" (English: "yes, but one
+  addition: support only from WLED 16.0.0"), typing errors corrected).
+- Owner decision:
+  1. Versions: `0.x` releases until a separate owner decision on `1.0`; breaking changes
+     may occur in minor releases and carry migration notes in the changelog. Fixes only
+     for the latest release.
+  2. WLED firmware: support starts at WLED 16.0.0 (owner amendment). Within that range,
+     tiers: tested (hardware evidence; currently 16.0.1), expected (source-reviewed and
+     mock-tested), unknown (no claim). A version moves up a tier with recorded evidence
+     from the owner or a reproducible user report. Firmware below 16.0.0, including
+     0.15.x, is unsupported: the server warns but does not refuse.
+  3. Python: supported means tested in CI (currently 3.13); newer versions are added when
+     CI passes; older ones may be dropped when they cause effort.
+  4. Platforms: Linux supported (container amd64/arm64 and stdio); Windows and macOS
+     experimental.
+  5. Responses to reports: best effort without commitment (DEC-013).
+  A short support table in the README reflects this; #21 and #23 fill it with evidence.
+- Coordinator notes (not owner statements): the existing source profile and several
+  contract notes are based on WLED v0.15.1 source review plus WLED 16 evidence; this
+  decision does not remove that code or documentation. Whether 0.15.x-specific handling is
+  kept, and how the below-16.0.0 warning is implemented, is #21 (and #16 diagnostics) work.
+  Windows is experimental partly because six tests currently fail on a local Windows
+  setup while Linux CI passes.
+- Conditions: no code change is made by this decision.
+- Rationale supplied: none.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md (S2-COMPAT-02); future #21/#23 scope.
 
 ## Issue-specific decisions (pointers)
 
