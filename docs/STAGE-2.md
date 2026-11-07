@@ -98,7 +98,7 @@ Preparing workflows and artifacts is authorized planning/implementation work onl
 | --- | --- | --- |
 | S2-PUBLIC-01 | Launch | Decide project/package/container/registry identities, author attribution and outbound license with the owner. Review reused code notices and repository history/artifacts for private content before changing visibility. Do not mark the project as officially endorsed by WLED or a marketplace without actual authorization. |
 | S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without access to project history or installation-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
-| S2-PUBLIC-03 | Launch | Prepare contribution guidance, security reporting/contact, support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
+| S2-PUBLIC-03 | Launch | Prepare contribution guidance, a security statement (no security support, use at own risk, per [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support); no private reporting channel), support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
 
 ### Open owner decisions before publication (from #62)
 
@@ -121,7 +121,9 @@ Items marked resolved link their decision record:
    `io.github.descipar/wled-mcp`, marked unofficial.
 3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
    security contact). Author attribution resolved by DEC-011 (`NOTICE` and
-   `pyproject.toml` authors); public and security contact remain open.
+   `pyproject.toml` authors); public and security contact resolved by
+   [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support): GitHub
+   issues only, no security support (`SECURITY.md`).
 4. Acceptance of the existing commit history and author identities (owner identity
    and agent noreply identity), or a history rewrite or a fresh public repository.
 5. Review of issue and PR bodies and comments, including closed ones and run evidence

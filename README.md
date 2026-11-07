@@ -280,3 +280,4 @@ Project status, roadmap and the maintainer document index are in
 
 Licensed under the [Apache License 2.0](LICENSE). Redistributions, including modified
 versions, must retain the copyright and attribution notice in [NOTICE](NOTICE).
+The project is provided as is, without security support; see [SECURITY.md](SECURITY.md).
