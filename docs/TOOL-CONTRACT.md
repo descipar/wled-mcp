@@ -1,5 +1,9 @@
 # V1 MCP tool contract
 
+Contract text added from stage 2 on lives in per-area files under
+`docs/contract/`, linked below; see
+[where new documentation goes](AGENT-WORKFLOW.md#where-new-documentation-goes).
+
 Implementation status: #4 exposes `wled_list_devices`; #5 adds the read-only
 `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (see
 [Read tools](#read-tools-state-and-catalogs-implemented-in-5)). Inventory and client

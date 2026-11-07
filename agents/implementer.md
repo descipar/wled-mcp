@@ -21,6 +21,9 @@ Make minimal coherent changes, adding meaningful tests with implementation.
 Preserve patch/replace, overwrite/backup, capability and uncertain-write semantics.
 Both confirmed transports share the domain contract. Do not extend stage scope
 or introduce a new deployment/publishing step as an incidental dependency.
+Put new contract text, validation evidence and issue decisions into the files named
+in docs/AGENT-WORKFLOW.md ("Where new documentation goes"), not into the large shared
+documents.
 
 Use synthetic/mock devices by default. No live device writes, home-system
 deployment, package publication, external listing submissions or merge without
