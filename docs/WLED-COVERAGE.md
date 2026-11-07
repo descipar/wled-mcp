@@ -23,7 +23,7 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 35 %** (29 of 84 features). **Planned-scope coverage: 44 %** (29 of 66 features, excluded rows removed).
+**WLED coverage: 33 %** (29 of 89 features). **Planned-scope coverage: 41 %** (29 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -32,11 +32,11 @@ devices and versions are at most expected.
 | Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
 | Presets and playlists (PRESET) | 13 | 6 | 1 | 2 | 3 | 1 | 54 % | 50 % |
 | Information and diagnostics (INFO) | 9 | 3 | 1 | 1 | 4 | 0 | 39 % | 39 % |
-| Configuration (CFG) | 7 | 0 | 0 | 0 | 3 | 4 | 0 % | 0 % |
+| Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 84 | 26 | 6 | 12 | 22 | 18 | 44 % | 35 % |
+| **All** | 89 | 26 | 6 | 12 | 27 | 18 | 41 % | 33 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -78,7 +78,13 @@ Method:
 5. Reading but not writing a settable feature is partial.
 6. A feature delivered by a CLI command counts like one delivered by an MCP tool; the
    reference is written `cli: wled-mcp <command>`.
-7. Row IDs (`W-<AREA>-NN`) are stable. They are never renumbered, and a removed ID is
+7. Every top-level group of `/json/cfg` has a row: `id` W-CFG-10, `nw`/`ap`/`wifi`
+   W-CFG-03, `eth` and the `hw` pin settings W-CFG-02, `hw.led.matrix` W-CFG-05, button
+   and IR behavior in `hw` W-CFG-08, `light` W-CFG-11, `def` W-PRESET-13, `if.ntp`
+   W-CFG-09, the other `if` groups and `dmx` W-CFG-06, `ol` W-CFG-12, `timers` W-CFG-04,
+   `ota` and `pin` W-CFG-07, `um` W-UM-01; reading the whole file is W-CFG-01. The
+   format markers `rev` and `vid` are not features.
+8. Row IDs (`W-<AREA>-NN`) are stable. They are never renumbered, and a removed ID is
    not reused.
 
 Columns: `Delivered by` lists backticked MCP tools or CLI commands, or `-`. `Link` is the
@@ -159,7 +165,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-PRESET-10 | Upload the whole preset file | `/upload` (`presets.json`) | excluded | - | [ISSUE-18-DEC-001](decisions/issue-18.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects) | - |
 | W-PRESET-11 | Quick-load labels | `ql` | unplanned | - | - | Preserved in stored presets; not settable. |
 | W-PRESET-12 | Preset cycling and random selection | `ps` (`"a~b~"`, `"r"`) | unplanned | - | - | - |
-| W-PRESET-13 | Boot preset | `/json/cfg` (`def.ps`) | unplanned | - | - | - |
+| W-PRESET-13 | Boot preset and power-on defaults | `/json/cfg` (`def`: `ps`, `on`, `bri`) | unplanned | - | - | - |
 
 ## Information and diagnostics
 
@@ -180,12 +186,17 @@ owning issue for planned rows and the decision for excluded rows.
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | W-CFG-01 | Read the configuration | `/json/cfg` | unplanned | - | - | - |
-| W-CFG-02 | LED hardware, bus and pin configuration | `/json/cfg` (`hw`), `/settings/leds` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "hardware pin/bus configuration". |
-| W-CFG-03 | Wi-Fi and access point settings | `/json/cfg` (`nw`, `ap`), `/settings/wifi`, state `wifi` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Wi-Fi changes". |
-| W-CFG-04 | Timers and schedules | `/json/cfg` (`timers`), `/settings/time` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Timer editing". |
+| W-CFG-02 | Hardware pin and bus configuration | `/json/cfg` (`hw.led` except `matrix`, `hw.btn` pins and pull-up, `hw.ir.pin`, `hw.relay`, `hw.if`, `hw.baud`, `eth`), `/settings/leds` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "hardware pin/bus configuration": LED buses, button, IR and relay pins, I2C/SPI pins, serial speed and the Ethernet board type with its pins. Button actions and IR remote behavior are W-CFG-08. |
+| W-CFG-03 | Wi-Fi and access point settings | `/json/cfg` (`nw`, `ap`, `wifi`), `/settings/wifi`, state `wifi` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Wi-Fi changes"; includes the address and DNS fields of the Wi-Fi network entries. |
+| W-CFG-04 | Timers and schedules | `/json/cfg` (`timers`), timer fields of `/settings/time` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Timer editing": scheduled presets and the countdown target. NTP and time zone are W-CFG-09. |
 | W-CFG-05 | 2D matrix and panel configuration | `/json/cfg` (`hw.led.matrix`), `/settings/2D` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
-| W-CFG-06 | Sync and integration settings | `/json/cfg` (`if`), `/settings/sync`, `/settings/dmx` | unplanned | - | - | UDP sync, MQTT, Hue, Alexa, DMX, buttons and IR; one row. |
-| W-CFG-07 | Security settings | `/json/cfg` (`ota`), `/settings/sec` | unplanned | - | - | Settings PIN and OTA lock. |
+| W-CFG-06 | Sync and integration settings | `/json/cfg` (`if.sync`, `if.nodes`, `if.live`, `if.va`, `if.mqtt`, `if.hue`, `dmx`), `/settings/sync`, `/settings/dmx` | unplanned | - | - | UDP sync, node list, realtime receive options, Alexa, MQTT, Hue and DMX output; one row. |
+| W-CFG-07 | Security settings | `/json/cfg` (`ota`), settings `pin`, `/settings/sec` | unplanned | - | - | Settings PIN and OTA lock. |
+| W-CFG-08 | Button and IR remote behavior | `/json/cfg` (`hw.btn.ins` `type` and `macros`, `hw.btn.tt`, `hw.btn.mqtt`, `hw.ir.type`, `hw.ir.sel`) | unplanned | - | - | Button types, press-to-preset actions and the IR remote type; not pin settings, so not read as ADV-02. |
+| W-CFG-09 | Time and NTP settings | `/json/cfg` (`if.ntp`), time fields of `/settings/time` | unplanned | - | - | NTP server, time zone, UTC offset and location. |
+| W-CFG-10 | Device identity | `/json/cfg` (`id`: `name`, `mdns`, `inv`) | unplanned | - | - | Device name, mDNS name and Alexa invocation name; `id.sui` is a web UI option (rule 3). |
+| W-CFG-11 | Light defaults | `/json/cfg` (`light`: `scale-bri`, `pal-mode`, `aseg`, `gc`, `tr`, `nl`) | unplanned | - | - | Brightness factor, gamma, default transition and palette blending, nightlight defaults, auto segments. The runtime default transition is W-STATE-04. |
+| W-CFG-12 | Clock overlay | `/json/cfg` (`ol`) | unplanned | - | - | - |
 
 ## System and maintenance
 
@@ -194,7 +205,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-SYS-01 | Reboot | `rb`, `/reset` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "reboot". |
 | W-SYS-02 | Firmware update | `/update`, `/updatebootloader` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "firmware updates". |
 | W-SYS-03 | Factory reset | `/settings/sec` (`RS`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "factory reset". |
-| W-SYS-04 | File upload and editing | `/upload`, `/edit` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads"; preset and palette files have their own rows. |
+| W-SYS-04 | File upload and editing | `/upload`, `/edit` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads": `/edit` also lists, downloads and deletes files; it is the file manager around uploads and is read as part of that exclusion. Preset and palette files have their own rows. |
 | W-SYS-05 | Ledmap file upload | `/upload` (`ledmap.json`, `ledmap<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to ledmap files by ISSUE-94-DEC-001. |
 
 ## Realtime and streaming

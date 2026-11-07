@@ -60,7 +60,7 @@ The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).
 
 <!-- wled-coverage:start -->
-WLED feature coverage: 44 % of the planned scope, 35 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
+WLED feature coverage: 41 % of the planned scope, 33 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
 ## Requirements
