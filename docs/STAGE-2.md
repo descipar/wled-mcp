@@ -130,7 +130,11 @@ Items marked resolved link their decision record:
    existing history and author identities; no rewrite, no fresh repository.
 5. Review of issue and PR bodies and comments, including closed ones and run evidence
    links, for installation context before a visibility change; issue visibility
-   follows repository visibility.
+   follows repository visibility. Resolved by
+   [DEC-015](DECISIONS.md#dec-015--issue-and-pr-review-before-visibility-change): a
+   repeatable read-only scan including edit histories plus one agent read-through,
+   immediately before the visibility change, as a mandatory #23/#25 step with owner
+   approval of the findings.
 6. Whether German source quotes in decision records stay verbatim in a public
    repository.
 7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,

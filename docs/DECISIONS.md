@@ -58,6 +58,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-014 | Project / repository history | Keep the existing Git history and author identities, including the owner's commit e-mail address, when the repository becomes public; no history rewrite and no fresh public repository. Does not change visibility. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-014](#dec-014--keep-the-existing-git-history) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-015 | Project / issue and PR review | Before the visibility change, review all issues, PRs, comments and their edit histories with a repeatable read-only scan plus one agent read-through; the owner approves the findings. Mandatory #23/#25 step; the script is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-015](#dec-015--issue-and-pr-review-before-visibility-change) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -275,6 +276,36 @@ can explicitly amend them.
 - Rationale supplied: none beyond the e-mail address being acceptable to publish.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md.
+
+### DEC-015 — Issue and PR review before visibility change
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's four-part proposal below ("ja, mach
+  DEC-015 so").
+- Owner decision:
+  1. Two review layers: (a) a repeatable, read-only script (working name
+     `scripts/check_issue_content.py`) that scans issue/PR titles, bodies, comments,
+     review comments and their edit histories; concrete private terms come from the
+     existing untracked private denylist and are never committed; (b) one agent
+     read-through of all items for context no pattern detects, producing a findings
+     list that the owner approves.
+  2. Timing: the full review runs immediately before the visibility change, as a
+     mandatory step of #23/#25; the script is built as part of #23, not now.
+  3. Now: the owner removes the edit-history revision of issue #11 that contains the
+     internal hub hostname (GitHub UI, "Delete revision from history"). Edit-history
+     mentions of the owner's first name (#15, #16, #24) and of the hub hardware (#11,
+     #62) stay.
+  4. The existing AGENTS.md rule keeps issues and PRs impersonal; no new rule.
+- Coordinator notes (not owner statements): a pattern scan on 2026-11-07 of 85 issues/PRs,
+  19 comments and 126 edit-history revisions found the current texts clean (remaining
+  hits are synthetic examples or intended attribution) and the edit-history findings
+  listed above. Pull request commits are covered by DEC-014.
+- Conditions: no visibility change is authorized here. Deleting an edit-history revision
+  is an owner action in the GitHub UI; agents do not perform it.
+- Rationale supplied: none.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23/#25 scope.
 
 ## Issue-specific decisions (pointers)
 
