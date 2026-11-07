@@ -1,0 +1,243 @@
+# WLED feature coverage
+
+This list compares WLED's own feature surface with what this unofficial server
+delivers. Each row is one WLED feature with exactly one status, so a reader can see
+what is supported, what is planned and what is deliberately left out. Two figures
+summarize the rows; they are generated from the tables, never typed by hand.
+
+**Basis:** WLED source tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`
+(the WLED 16 pin recorded in [SOURCES.md](SOURCES.md#issue-66-wled-16-preset-evidence):
+`wled00/json.cpp`, `wled00/wled_server.cpp`, `wled00/set.cpp`, `wled00/ws.cpp`), and the
+official [WLED JSON API documentation](https://kno.wled.ge/interfaces/json-api/). The
+features come from WLED's interfaces, not from this server's tool list or any
+home-automation integration. Supported firmware starts at WLED 16.0.0
+([DEC-020](DECISIONS.md#dec-020--support-and-version-policy)).
+
+A status describes this server's implementation against that source, checked by mocked
+tests. It is not a hardware compatibility claim. Under DEC-020, firmware is in one of
+three tiers: tested (hardware evidence), expected (source-reviewed and mock-tested) and
+unknown (no claim). Hardware evidence exists for one RGB controller on WLED 16.0.1 only
+([VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)); all other
+devices and versions are at most expected.
+
+## Figures
+
+<!-- wled-coverage:start -->
+**WLED coverage: 33 %** (29 of 89 features). **Planned-scope coverage: 41 %** (29 of 71 features, excluded rows removed).
+
+| Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Master state (STATE) | 13 | 3 | 2 | 0 | 8 | 0 | 31 % | 31 % |
+| Segments (SEG) | 25 | 12 | 1 | 9 | 0 | 3 | 57 % | 50 % |
+| Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
+| Presets and playlists (PRESET) | 13 | 6 | 1 | 2 | 3 | 1 | 54 % | 50 % |
+| Information and diagnostics (INFO) | 9 | 3 | 1 | 1 | 4 | 0 | 39 % | 39 % |
+| Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
+| System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
+| Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
+| Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
+| **All** | 89 | 26 | 6 | 12 | 27 | 18 | 41 % | 33 % |
+<!-- wled-coverage:end -->
+
+Method:
+
+- S = supported + 0.5 x partial. Every row weighs the same.
+- WLED coverage = S / all rows.
+- Planned-scope coverage = S / (all rows - excluded rows). Planned and unplanned rows
+  stay in both denominators.
+- Percentages are integers, rounded half up. An area without non-excluded rows shows
+  "n/a" for its planned scope.
+- The block above is written by `python scripts/check_coverage.py --update`. Without
+  `--update` the script only checks, and CI fails when the block or the README line
+  differs from the rows.
+
+## Statuses
+
+| Status | Meaning | Counts as |
+| --- | --- | --- |
+| supported | The server reads and, where WLED allows it, sets the feature. `Delivered by` names the tools or CLI commands. | 1 |
+| partial | Only part of the feature is delivered, for example read but not write. `Delivered by` names the tools; Notes say what is missing. | 0.5 |
+| planned | An open roadmap issue owns the feature. Link: that issue. | 0 |
+| unplanned | No owning issue and no exclusion decision ([ISSUE-94-DEC-001](decisions/issue-94.md#issue-94-dec-001--unplanned-features-and-upload-exclusion-scope)). The status decides nothing about future scope. | 0 |
+| excluded | A recorded decision keeps the feature out. Link: that decision. Excluded rows leave the planned-scope denominator only. | 0 |
+
+## Granularity rules
+
+1. One row per independently usable WLED function exposed by the JSON API, an HTTP
+   route or another documented WLED interface.
+2. Aliases and alternative encodings are not rows: `len` folds into segment bounds,
+   hex/Kelvin/object color forms into segment colors, the `lx`/`ly` build option and the
+   `"t"` toggle value into their base features, `/json/si` into the state and
+   information reads, and the legacy `/win` HTTP API is an interface, not a feature
+   ([ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed)).
+3. Web UI pages and assets, and this server's own features (inventory, snapshots,
+   dry run, transports, diagnostics), are not rows.
+4. Raw passthrough counts only for read-only information: `raw.info` fields returned
+   unnormalized make a read-only diagnostics row partial. A settable state key that is
+   merely visible in `raw.state` is not support.
+5. Reading but not writing a settable feature is partial.
+6. A feature delivered by a CLI command counts like one delivered by an MCP tool; the
+   reference is written `cli: wled-mcp <command>`.
+7. Every top-level group of `/json/cfg` has a row: `id` W-CFG-10, `nw`/`ap`/`wifi`
+   W-CFG-03, `eth` and the `hw` pin settings W-CFG-02, `hw.led.matrix` W-CFG-05, button
+   and IR behavior in `hw` W-CFG-08, `light` W-CFG-11, `def` W-PRESET-13, `if.ntp`
+   W-CFG-09, the other `if` groups and `dmx` W-CFG-06, `ol` W-CFG-12, `timers` W-CFG-04,
+   `ota` and `pin` W-CFG-07, `um` W-UM-01; reading the whole file is W-CFG-01. The
+   format markers `rev` and `vid` are not features.
+8. Row IDs (`W-<AREA>-NN`) are stable. They are never renumbered, and a removed ID is
+   not reused.
+
+Columns: `Delivered by` lists backticked MCP tools or CLI commands, or `-`. `Link` is the
+owning issue for planned rows and the decision for excluded rows.
+
+## Master state
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-STATE-01 | Master power | `on` | supported | `wled_set_state`, `wled_get_state` | - | Power rules in TOOL-CONTRACT.md. |
+| W-STATE-02 | Master brightness | `bri` | supported | `wled_set_state`, `wled_get_state` | - | Remembered and effective brightness are reported separately. |
+| W-STATE-03 | One-call transition | `tt` | supported | `wled_set_state` | - | `transition_ms`, rounded to 100 ms units. |
+| W-STATE-04 | Default transition time | `transition` | partial | `wled_get_state` | - | Read as `default_transition_ms`; not settable. |
+| W-STATE-05 | Main segment | `mainseg` | partial | `wled_get_state`, `wled_replace_layout` | - | Read; set only implicitly when a layout replacement removes the main segment. |
+| W-STATE-06 | Transition blending style | `bs` | unplanned | - | - | Preserved in saved presets; not settable. |
+| W-STATE-07 | Nightlight | `nl` (`on`, `dur`, `mode`, `tbri`) | unplanned | - | - | - |
+| W-STATE-08 | UDP sync send and groups | `udpn` (`send`, `sgrp`, `rgrp`, `nn`) | unplanned | - | - | Runtime toggles; sync settings are W-CFG-06. |
+| W-STATE-09 | Realtime override and live mode | `lor`, `live` | unplanned | - | - | Realtime input itself is excluded (RT rows). |
+| W-STATE-10 | Device time and effect timebase | `time`, `tb` | unplanned | - | - | - |
+| W-STATE-11 | Advance playlist | `np` | unplanned | - | - | - |
+| W-STATE-12 | Ledmap selection | `ledmap` | unplanned | - | - | Uploading ledmap files is W-SYS-05. |
+| W-STATE-13 | Reset to automatic segments | `rSeg` | unplanned | - | - | - |
+
+## Segments
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-SEG-01 | Segment bounds (1D) | `start`, `stop` (`len`) | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-02 | Create and remove segments, complete layout | `seg` array, `stop: 0` | supported | `wled_replace_layout` | - | Overlapping segments are rejected; the opt-in is W-SEG-19. |
+| W-SEG-03 | Segment power and opacity | `on`, `bri` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-04 | Segment colors (three slots) | `col` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | RGB arrays; other color forms are encodings (rule 2). |
+| W-SEG-05 | Effect | `fx` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID or catalog name. |
+| W-SEG-06 | Effect speed and intensity | `sx`, `ix` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-07 | Palette | `pal` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID or catalog name. |
+| W-SEG-08 | Grouping and spacing | `grp`, `spc` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-09 | Offset | `of` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-10 | Reverse and mirror | `rev`, `mi` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-11 | Segment selection | `sel` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
+| W-SEG-12 | Segment name | `n` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Up to 32 UTF-8 bytes. |
+| W-SEG-13 | White channel (RGBW) | `col` fourth channel | partial | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Only on existing ranges with reported white capability; new or moved RGBW ranges are refused. #19 extends this. |
+| W-SEG-14 | Correlated color temperature | `cct` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-16 | Sound simulation | `si` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-17 | Segment LED set | `set` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-18 | Freeze | `frz` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-19 | Blend mode and overlapping segments | `bm` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | Overlap as an explicit opt-in, ISSUE-19-DEC-001. |
+| W-SEG-20 | 2D segment bounds | `startY`, `stopY` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-21 | 2D orientation | `rY`, `mY`, `tp` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-22 | 1D effect mapping on 2D | `m12` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-23 | Individual LED colors | `i` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "Pixel art"; restated in ISSUE-19-DEC-002. |
+| W-SEG-24 | Segment repetition | `rpt` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
+| W-SEG-25 | Effect defaults | `fxdef` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
+
+## Effects and palettes
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-CAT-01 | Effect list | `/json/eff` | supported | `wled_get_effects` | - | Cached per firmware. |
+| W-CAT-02 | Effect metadata | `/json/fxdata` | partial | `wled_get_effects` | - | Raw string per effect, not parsed. |
+| W-CAT-03 | Palette list | `/json/pal` | supported | `wled_get_palettes` | - | Built-in and gradient palettes; WLED does not list custom palettes there. |
+| W-CAT-04 | Palette color data | `/json/palx` | unplanned | - | - | - |
+| W-CAT-05 | Custom palette upload | `/upload` (`palette<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to palette files by ISSUE-94-DEC-001. |
+| W-CAT-06 | Custom palette removal | `rmcpal` | unplanned | - | - | - |
+
+## Presets and playlists
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-PRESET-01 | List presets | `/presets.json` | supported | `wled_list_presets` | - | - |
+| W-PRESET-02 | Read one preset | `/presets.json` | supported | `wled_get_preset` | - | Exact stored object. |
+| W-PRESET-03 | Activate a state preset | `ps` | supported | `wled_activate_preset` | - | - |
+| W-PRESET-04 | Activate a playlist | `ps` (playlist entry) | supported | `wled_activate_preset` | - | Members must be state presets. |
+| W-PRESET-05 | Save the current state as a preset | `psave` | supported | `wled_save_preset` | - | Overwrite needs `overwrite=true` and takes a snapshot. |
+| W-PRESET-06 | Delete a preset | `pdel` | supported | `wled_delete_preset` | - | Snapshot first. |
+| W-PRESET-07 | API-command presets | `win` in a preset | partial | `wled_list_presets`, `wled_get_preset` | - | Readable and backed up; activation is refused. |
+| W-PRESET-08 | Write a supplied preset object | `psave` with a supplied state object | planned | - | [#18](https://github.com/descipar/wled-mcp/issues/18) | Supplied-state save and restore; write route per ISSUE-18-DEC-001. |
+| W-PRESET-09 | Create and edit playlists | `playlist` (`ps`, `dur`, `transition`, `repeat`, `end`, `r`) | planned | - | [#18](https://github.com/descipar/wled-mcp/issues/18) | - |
+| W-PRESET-10 | Upload the whole preset file | `/upload` (`presets.json`) | excluded | - | [ISSUE-18-DEC-001](decisions/issue-18.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects) | - |
+| W-PRESET-11 | Quick-load labels | `ql` | unplanned | - | - | Preserved in stored presets; not settable. |
+| W-PRESET-12 | Preset cycling and random selection | `ps` (`"a~b~"`, `"r"`) | unplanned | - | - | - |
+| W-PRESET-13 | Boot preset and power-on defaults | `/json/cfg` (`def`: `ps`, `on`, `bri`) | unplanned | - | - | - |
+
+## Information and diagnostics
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-INFO-01 | Firmware identity | `/json/info` (`ver`, `vid`, `product`, `brand`, `arch`) | supported | `wled_get_state` | - | - |
+| W-INFO-02 | LED count, segment limit and color capabilities | `/json/info` (`leds.count`, `leds.maxseg`, `leds.lc`, `leds.seglc`) | supported | `wled_get_state` | - | - |
+| W-INFO-03 | Reachability | `/json/info` | supported | `wled_list_devices` | - | Optional bounded probe. |
+| W-INFO-04 | Runtime diagnostics | `/json/info` (`uptime`, `freeheap`, `wifi`, `fs`) | partial | `wled_get_state` | - | Raw `info` only, not normalized; `mac`, `ip` and `wifi.bssid` are removed. |
+| W-INFO-05 | Live LED colors | `/json/live`, `/liveview`, WebSocket `lv` | unplanned | - | - | - |
+| W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |
+| W-INFO-07 | Wi-Fi network scan | `/json/net` | unplanned | - | - | - |
+| W-INFO-08 | Pin usage | `/json/pins` | unplanned | - | - | - |
+| W-INFO-09 | mDNS discovery | mDNS announcement | planned | - | [#16](https://github.com/descipar/wled-mcp/issues/16) | CLI only, `wled-mcp discover` (ISSUE-16-DEC-001). |
+
+## Configuration
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-CFG-01 | Read the configuration | `/json/cfg` | unplanned | - | - | - |
+| W-CFG-02 | Hardware pin and bus configuration | `/json/cfg` (`hw.led` except `matrix`, `hw.btn` pins and pull-up, `hw.ir.pin`, `hw.relay`, `hw.if`, `hw.baud`, `eth`), `/settings/leds` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "hardware pin/bus configuration": LED buses, button, IR and relay pins, I2C/SPI pins, serial speed and the Ethernet board type with its pins. Button actions and IR remote behavior are W-CFG-08. |
+| W-CFG-03 | Wi-Fi and access point settings | `/json/cfg` (`nw`, `ap`, `wifi`), `/settings/wifi`, state `wifi` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Wi-Fi changes"; includes the address and DNS fields of the Wi-Fi network entries. |
+| W-CFG-04 | Timers and schedules | `/json/cfg` (`timers`), timer fields of `/settings/time` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Timer editing": scheduled presets and the countdown target. NTP and time zone are W-CFG-09. |
+| W-CFG-05 | 2D matrix and panel configuration | `/json/cfg` (`hw.led.matrix`), `/settings/2D` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
+| W-CFG-06 | Sync and integration settings | `/json/cfg` (`if.sync`, `if.nodes`, `if.live`, `if.va`, `if.mqtt`, `if.hue`, `dmx`), `/settings/sync`, `/settings/dmx` | unplanned | - | - | UDP sync, node list, realtime receive options, Alexa, MQTT, Hue and DMX output; one row. |
+| W-CFG-07 | Security settings | `/json/cfg` (`ota`), settings `pin`, `/settings/sec` | unplanned | - | - | Settings PIN and OTA lock. |
+| W-CFG-08 | Button and IR remote behavior | `/json/cfg` (`hw.btn.ins` `type` and `macros`, `hw.btn.tt`, `hw.btn.mqtt`, `hw.ir.type`, `hw.ir.sel`) | unplanned | - | - | Button types, press-to-preset actions and the IR remote type; not pin settings, so not read as ADV-02. |
+| W-CFG-09 | Time and NTP settings | `/json/cfg` (`if.ntp`), time fields of `/settings/time` | unplanned | - | - | NTP server, time zone, UTC offset and location. |
+| W-CFG-10 | Device identity | `/json/cfg` (`id`: `name`, `mdns`, `inv`) | unplanned | - | - | Device name, mDNS name and Alexa invocation name; `id.sui` is a web UI option (rule 3). |
+| W-CFG-11 | Light defaults | `/json/cfg` (`light`: `scale-bri`, `pal-mode`, `aseg`, `gc`, `tr`, `nl`) | unplanned | - | - | Brightness factor, gamma, default transition and palette blending, nightlight defaults, auto segments. The runtime default transition is W-STATE-04. |
+| W-CFG-12 | Clock overlay | `/json/cfg` (`ol`) | unplanned | - | - | - |
+
+## System and maintenance
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-SYS-01 | Reboot | `rb`, `/reset` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "reboot". |
+| W-SYS-02 | Firmware update | `/update`, `/updatebootloader` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "firmware updates". |
+| W-SYS-03 | Factory reset | `/settings/sec` (`RS`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "factory reset". |
+| W-SYS-04 | File upload and editing | `/upload`, `/edit` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads": `/edit` also lists, downloads and deletes files; it is the file manager around uploads and is read as part of that exclusion. Preset and palette files have their own rows. |
+| W-SYS-05 | Ledmap file upload | `/upload` (`ledmap.json`, `ledmap<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to ledmap files by ISSUE-94-DEC-001. |
+
+## Realtime and streaming
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-RT-01 | Realtime pixel input over UDP or serial | UDP realtime (WARLS, DRGB, DRGBW, DNRGB, tpm2.net), Adalight serial | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
+| W-RT-02 | E1.31 and Art-Net input | E1.31, Art-Net | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
+| W-RT-03 | DDP | DDP | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "DDP". |
+| W-RT-04 | Audio input | AudioReactive usermod | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "audio capture". |
+| W-RT-05 | WebSocket state push | `/ws` | unplanned | - | - | - |
+
+## Usermods
+
+| ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| W-UM-01 | Usermod state, information and settings | usermod keys in `/json/state`, `/json/info`, `/json/cfg` (`um`) | unplanned | - | - | Build-specific; individual usermods are not listed. |
+
+## Tools without a WLED feature row
+
+Registered tools that deliver no WLED feature are listed here with a reason and are not
+counted. None at present: every registered tool appears in at least one row above.
+
+## Maintenance
+
+- A pull request that changes WLED support (a new or changed tool or CLI command, or a
+  new exclusion decision) updates the affected rows by ID and runs
+  `python scripts/check_coverage.py --update`.
+- The check fails when a registered tool is in no supported or partial row and not in
+  the list above, when a row names a tool that is not registered, when a planned row does
+  not link a roadmap issue, or when an excluded row does not link an existing decision.
+- After merging `main`, a conflict inside a generated block is resolved by running
+  `--update` again.
+- A row moves from unplanned to planned or excluded only through an issue or a recorded
+  decision.

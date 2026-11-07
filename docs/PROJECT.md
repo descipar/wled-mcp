@@ -97,6 +97,7 @@ completion.
 | --- | --- |
 | [Requirements](REQUIREMENTS.md) | Context, scope, identifiable requirements, priorities, unresolved inputs |
 | [Tool contract](TOOL-CONTRACT.md) | V1 design: tools, parameters, result format and mutation semantics |
+| [WLED feature coverage](WLED-COVERAGE.md) | WLED features with support status and the generated coverage figures |
 | [Contract examples](../examples/contracts/README.md) | Synthetic patch/layout/preset/error cases and snapshot format |
 | [Architecture](ARCHITECTURE.md) | Components, runtime, configuration, design decisions |
 | [Deployment](DEPLOYMENT.md) | HTTP-service and uvx/stdio MCPHub deployment: build/stage, update, rollback, removal |
