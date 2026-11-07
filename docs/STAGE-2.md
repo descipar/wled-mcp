@@ -115,7 +115,10 @@ Items marked resolved link their decision record:
    is reused ([SOURCES.md](SOURCES.md)); recheck when the dependency/license inventory of
    S2-DIST-03 is prepared.
 2. Project, package, container image and registry identities: repository name and
-   owner, PyPI/OCI names and the `io.github.<publisher>` namespace.
+   owner, PyPI/OCI names and the `io.github.<publisher>` namespace. Resolved by
+   [DEC-012](DECISIONS.md#dec-012--project-and-package-identity): repository
+   `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry
+   `io.github.descipar/wled-mcp`, marked unofficial.
 3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
    security contact). Author attribution resolved by DEC-011 (`NOTICE` and
    `pyproject.toml` authors); public and security contact remain open.
@@ -138,7 +141,7 @@ Items marked resolved link their decision record:
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.<publisher>/wled-mcp` as a documentation placeholder until the publishing identity is chosen and authenticated. The registry stores metadata, not executable artifacts. |
+| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.descipar/wled-mcp` (DEC-012) once the namespace is authenticated. The registry stores metadata, not executable artifacts. |
 | S2-MARKET-02 | Launch | Prepare the separate MCPHub local-catalog/MCPM entry path and, if desired, hosted MCPHub directory submission. Match current schemas, required runtime/config inputs, English descriptions and honest author status. Track drafted/submitted/accepted/visible/install-tested independently; admission and propagation are not guaranteed by our code. |
 | S2-MARKET-03 | Launch | Test a fresh MCPHub installation using metadata-generated uvx configuration and separate self-hosted HTTP instructions. No private source access, real home URLs, fake remote endpoints, developer paths or committed secrets. Package listing does not publish a central WLED service; show how users supply their own controllers and endpoint. |
 
