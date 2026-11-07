@@ -496,7 +496,14 @@ async def test_T10_patch_segments_serializes_per_device(tmp_path):
             group.start_soon(first_call)
             group.start_soon(second_call)
             await first_in_write.wait()
-            assert second_started.is_set() is False or resources.locks["desk"].locked() is not False
+            await second_started.wait()
+            # Deterministic: returns once the first call is parked on `release` and the
+            # second call is parked on the per-device lock (no timed sleeps).
+            await anyio.wait_all_tasks_blocked()
+            lock = resources.locks["desk"]
+            assert lock.locked()
+            assert lock.statistics().tasks_waiting == 1
+            assert router.method_counts()["POST"] == 1
             release.set()
 
     # Both calls dispatched POST but not simultaneously.

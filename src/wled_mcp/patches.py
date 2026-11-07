@@ -20,7 +20,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from wled_mcp.client import ClientFailure
-from wled_mcp.readmodels import CAP_RGB, CAP_WHITE, as_dict
+from wled_mcp.readmodels import CAP_CCT, CAP_RGB, CAP_WHITE, as_dict
 from wled_mcp.segment_rules import (
     GROUPING_MAX,
     SPACING_MAX,
@@ -149,7 +149,7 @@ def _aggregate_capability_bits(info: dict[str, JsonValue]) -> int | None:
 
 
 def _is_rgb_only(cap: int) -> bool:
-    return (cap & (CAP_RGB | CAP_WHITE | 0x04)) == CAP_RGB
+    return (cap & (CAP_RGB | CAP_WHITE | CAP_CCT)) == CAP_RGB
 
 
 def _is_rgbw(cap: int) -> bool:
