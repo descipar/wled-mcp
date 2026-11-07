@@ -57,6 +57,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-014 | Project / repository history | Keep the existing Git history and author identities, including the owner's commit e-mail address, when the repository becomes public; no history rewrite and no fresh public repository. Does not change visibility. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-014](#dec-014--keep-the-existing-git-history) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -251,6 +252,29 @@ can explicitly amend them.
 - Rationale supplied: private hobby product; the owner does not want security process work.
 - Supersedes: the "security reporting/contact" part of S2-PUBLIC-03.
 - Affected: SECURITY.md, docs/STAGE-2.md.
+
+### DEC-014 — Keep the existing Git history
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): after the coordinator presented a history scan and the options (A) keep the
+  history, (B) a fresh public repository, the owner chose A and stated that the commit
+  e-mail address may be public.
+- Owner decision: the existing history and author identities (owner and agent noreply
+  identity) stay as they are when the repository becomes public. No history rewrite and
+  no fresh public repository; existing issue/PR links and commit references remain valid.
+- Coordinator notes (not owner statements): the 2026-11-07 scan of all 70 commits found
+  the owner's commit e-mail address, the owner's first name in earlier wording and, in
+  two commits of 2026-11-04 later neutralized by #62, an internal hub hostname and coarse
+  hub hardware/mount details. Test IPv4 values are synthetic; no secrets and no deleted
+  files were found. A rewrite in place was not recommended because GitHub keeps pull
+  request refs, so old commits would remain reachable. Accepting these historic contents
+  follows from this decision.
+- Conditions: no visibility change is authorized here. Open owner decision 5 (review of
+  issue/PR bodies and comments before a visibility change) is not resolved by this entry.
+- Rationale supplied: none beyond the e-mail address being acceptable to publish.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md.
 
 ## Issue-specific decisions (pointers)
 
