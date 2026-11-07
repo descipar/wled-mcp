@@ -35,6 +35,9 @@ Phase 1, serial small PRs (independent review each), in this order:
  (a) #90 visibility readiness (DEC-015 scan script and review, DEC-018 denylist CI step, DEC-016 orientation and minimal
      CONTRIBUTING.md), then the owner's visibility change and `main` ruleset; this makes required CI checks and
      force-push protection available before parallel tracks start;
+ (a2) #94 WLED feature coverage list with completeness figures, after #90's README changes; documentation and a static
+     test only, so it may also run alongside later steps as the docs/read-only track. Feature issues #17-#19 update its
+     rows when they change support;
  (b) tool-contract helper: one hand-maintained, profile-aware expected-tool-contract helper replacing the hard-coded lists/counts;
  (c) #44 housekeeping nits (removes edits to `resources.py`/`tests/test_patches.py` before tracks begin);
  (d) docs convention: convention only: new contract/evidence go into new files (`docs/contract/<area>.md`,
@@ -64,3 +67,4 @@ Single shared device. Each hardware run needs its own human authorization; the i
 3. Workflow rules adopted: per-issue coordinators, main session as integration owner, the sync/re-review rule above and
    DEC-010 conformance. They apply from the merge of DEC-021; parallel implementation tracks start in Phase 2.
 4. "Depends on" in #16, #17, #20, #21 and #23 updated to the couplings above (2026-11-07).
+5. #94 (WLED feature coverage list) added after #90 at the owner's request (2026-11-07).
