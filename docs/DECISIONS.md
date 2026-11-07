@@ -302,6 +302,8 @@ can explicitly amend them.
      list that the owner approves.
   2. Timing: the full review runs immediately before the visibility change, as a
      mandatory step of #23/#25; the script is built as part of #23, not now.
+     Amended by DEC-019: the review, the script and the visibility change moved to
+     #90.
   3. Existing edit-history findings stay: the internal hub hostname in an earlier
      revision of #11 (the owner subsequently decided against the proposed deletion
      because the hub is not publicly reachable), the owner's first name (#15, #16, #24)
@@ -384,7 +386,7 @@ can explicitly amend them.
 - Coordinator notes (not owner statements): branch protection/rulesets are not available
   for this private repository on its current plan, hence the timing. The script reports
   denylist hits as entry numbers only. Creating the secret and the ruleset are owner
-  actions in the repository settings; the CI step is #23 work.
+  actions in the repository settings; the CI step is #23 work (moved to #90 by DEC-019).
 - Conditions: no visibility change, secret or repository setting is created by this
   decision; no denylist content is decided here.
 - Rationale supplied: none beyond accepting the proposal.
