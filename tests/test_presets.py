@@ -122,12 +122,12 @@ def test_overwrite_requires_explicit_id_and_no_supplied_state_input():
 
 
 @pytest.mark.anyio
-async def test_registry_preset_tools_strict_and_no_restore_tool(tmp_path):
-    # Order and annotations are checked against tests/tool_contract.py centrally.
+async def test_registry_preset_tools_are_strict(tmp_path):
+    # Order and annotations are checked against tests/tool_contract.py centrally; the
+    # restore tool of #18 is one of the preset tools checked here.
     async with open_resources(tmp_path, fleet_of()) as resources:
         operations = build_operations(resources)
         registered = {o.name: o for o in operations}
-        assert not any("restore" in o.name for o in operations)
         preset_tools = [name for name in expected_names() if "preset" in name]
         assert preset_tools  # the contract names the preset tools
         for name in preset_tools:
