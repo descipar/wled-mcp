@@ -55,6 +55,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
 | DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
 | DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -198,6 +199,34 @@ can explicitly amend them.
 - Supersedes: the "does not choose a license" limitation of DEC-009 for the license only.
 - Affected: LICENSE, NOTICE, pyproject.toml, README.md, docs/PROJECT.md, docs/STAGE-2.md,
   scripts/check_distribution.py, tests/test_readme.py.
+
+### DEC-012 — Project and package identity
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink). The owner asked whether `wled-mcp` sounds too official, as if part of the
+  WLED project; the coordinator offered (1) keep `wled-mcp` with a clear unofficial
+  marking, (2) an owner prefix, (3) an own project name. The owner chose option 1 after
+  a check for a WLED trademark policy, then confirmed recording the identity and the
+  three conditions below as DEC-012.
+- Owner decision: repository `descipar/wled-mcp`, PyPI distribution `wled-mcp`, container
+  image `ghcr.io/descipar/wled-mcp`, MCP Registry name `io.github.descipar/wled-mcp`.
+  Conditions: (a) no WLED logo or logo imitation, including marketplace listings;
+  (b) the package summary and registry/listing texts state that the project is
+  unofficial and not affiliated with the WLED project, in addition to the README
+  statement; (c) if the WLED project asks for a rename, comply; this is a known risk.
+- Coordinator notes (not owner statements): research on 2026-11-07 found no trademark or
+  name-usage policy in the WLED repository/README (code licensed EUPL-1.2) and no active
+  US registration of the word mark (one 2011 application, abandoned 2012, relation to
+  the project unknown); EU/German registers were not checked. Community forks and
+  companion projects commonly use the WLED name. The PyPI name was unregistered on
+  2026-11-07; nothing has been reserved.
+- Conditions: no name reservation, package/image publication, registry submission or
+  visibility change is authorized here.
+- Rationale supplied: the owner was concerned the name could appear official; resolved by
+  explicit unofficial marking rather than renaming.
+- Supersedes: the `io.github.<publisher>` placeholder in STAGE-2.md and MARKETPLACE.md.
+- Affected: pyproject.toml (description), docs/MARKETPLACE.md, docs/STAGE-2.md.
 
 ## Issue-specific decisions (pointers)
 
