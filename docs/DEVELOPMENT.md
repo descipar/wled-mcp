@@ -85,6 +85,28 @@ constraints pin its versions. Constraints do not enforce artifact hashes or
 authenticate the wheel; preserve a trusted wheel for private distribution.
 The lockfile separately retains dependency artifact hashes.
 
+## Adding a tool
+
+The expected tool contract lives in `tests/tool_contract.py` (ISSUE-98-DEC-001). It
+is the only hand-maintained tool list: tests compare the real registry and every
+served `tools/list` (stdio and HTTP) with it in both directions, and
+`scripts/check_distribution.py` loads it from the source checkout to check the
+installed wheel. A pull request that adds a tool therefore makes, together:
+
+- one `ExpectedTool` entry in `tests/tool_contract.py` at the tool's registry position,
+  with its class (`read`, `control` or `manage`, ISSUE-20-DEC-001) and its destructive
+  flag; the annotation test derives `read_only_hint`, `destructive_hint` and
+  `idempotent_hint` from these;
+- the affected rows in [WLED-COVERAGE.md](WLED-COVERAGE.md#maintenance) by ID (or an
+  entry under "Tools without a WLED feature row"), followed by
+  `python scripts/check_coverage.py --update` (ISSUE-94-DEC-002);
+- its own behavior tests.
+
+Do not add tool-name lists or tool counts to other tests; select a tool by name and use
+`expected_names()`, `names_of()` or `expected_tool()` from the helper. The standalone
+probe allowlists in `scripts/hw_http_probe.py` and `scripts/hw_read_only_probe.py`
+stay literal on purpose and are guarded by subset tests.
+
 ## Snapshot store tests
 
 `tests/test_backups.py` covers the #8 snapshot store with pytest `tmp_path`, mock

@@ -203,9 +203,9 @@ def test_readme_follows_the_examples_registry_and_safety_model():
     assert readme_problems(README.read_text("utf-8"), tool_hints()) == []
 
 
-def test_registry_has_the_twelve_documented_tools():
+def test_registry_hint_classes_use_the_readme_vocabulary():
+    # The tool set itself is checked against tests/tool_contract.py centrally.
     hints = tool_hints()
-    assert len(hints) == 12
     assert sorted(set(hints.values())) == ["destructive", "read-only", "write"]
 
 

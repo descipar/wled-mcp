@@ -13,6 +13,7 @@ from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
+from tests.tool_contract import expected_names
 from wled_mcp.config import ConfigurationError, load_config
 from wled_mcp.models import DomainError, Outcome
 
@@ -154,20 +155,7 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
                     "2025-11-25" if mode == "legacy" else "2026-07-28"
                 )
                 tools = (await client.list_tools()).tools
-                assert [tool.name for tool in tools] == [
-                    "wled_list_devices",
-                    "wled_get_state",
-                    "wled_get_effects",
-                    "wled_get_palettes",
-                    "wled_set_state",
-                    "wled_patch_segments",
-                    "wled_replace_layout",
-                    "wled_list_presets",
-                    "wled_get_preset",
-                    "wled_activate_preset",
-                    "wled_save_preset",
-                    "wled_delete_preset",
-                ]
+                assert [tool.name for tool in tools] == expected_names()
                 result = await client.call_tool("wled_list_devices", {})
                 assert result.structured_content["data"] == {"devices": []}
 
@@ -263,20 +251,7 @@ def test_stdout_is_only_protocol_and_clean_eof(startup):
         process.stdout.close()
         process.stderr.close()
     assert responses[1]["result"]["serverInfo"]["name"] == "wled-mcp"
-    assert [tool["name"] for tool in responses[2]["result"]["tools"]] == [
-        "wled_list_devices",
-        "wled_get_state",
-        "wled_get_effects",
-        "wled_get_palettes",
-        "wled_set_state",
-        "wled_patch_segments",
-        "wled_replace_layout",
-        "wled_list_presets",
-        "wled_get_preset",
-        "wled_activate_preset",
-        "wled_save_preset",
-        "wled_delete_preset",
-    ]
+    assert [tool["name"] for tool in responses[2]["result"]["tools"]] == expected_names()
     assert responses[3]["error"]["code"] == -32601
     assert responses[4]["error"]["code"] == -32602
 

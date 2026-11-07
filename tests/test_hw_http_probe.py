@@ -26,6 +26,7 @@ import anyio
 import pytest
 
 from tests.http_support import TOKEN, running_service
+from tests.tool_contract import ToolClass, names_of
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "hw_http_probe.py"
@@ -158,19 +159,10 @@ def run_probe(
 # ---------------------------------------------------------------------- allowlist
 
 
-@pytest.mark.parametrize(
-    "tool",
-    [
-        "wled_set_state",
-        "wled_patch_segments",
-        "wled_replace_layout",
-        "wled_save_preset",
-        "wled_activate_preset",
-        "wled_delete_preset",
-        "unknown_tool",
-        "WLED_GET_STATE",
-    ],
-)
+NON_READ_TOOLS = sorted(names_of(ToolClass.CONTROL, ToolClass.MANAGE))
+
+
+@pytest.mark.parametrize("tool", [*NON_READ_TOOLS, "unknown_tool", "WLED_GET_STATE"])
 def test_non_read_only_tools_are_refused_before_any_request(tool):
     with stub_server() as (url, log):
         code, out, err = run_probe(
@@ -185,15 +177,9 @@ def test_non_read_only_tools_are_refused_before_any_request(tool):
 
 def test_every_allowlisted_tool_is_a_read_only_contract_tool():
     # The allowlist must not drift into the server's mutating tools.
-    mutating = {
-        "wled_set_state",
-        "wled_patch_segments",
-        "wled_replace_layout",
-        "wled_save_preset",
-        "wled_activate_preset",
-        "wled_delete_preset",
-    }
-    assert probe.READ_ONLY_TOOLS.isdisjoint(mutating)
+    assert NON_READ_TOOLS, "the contract lists mutating tools"
+    assert probe.READ_ONLY_TOOLS <= names_of(ToolClass.READ)
+    assert probe.READ_ONLY_TOOLS.isdisjoint(NON_READ_TOOLS)
     assert all(name.startswith(("wled_get_", "wled_list_")) for name in probe.READ_ONLY_TOOLS)
 
 

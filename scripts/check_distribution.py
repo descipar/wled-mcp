@@ -4,6 +4,7 @@ Dependency installation uses exact runtime constraints, never LAN devices.
 Run after `uv sync --frozen`; runtime export drift is checked separately.
 """
 
+import importlib.util
 import json
 import os
 import signal
@@ -22,6 +23,30 @@ from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
 from packaging.requirements import Requirement
 
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACT_PATH = ROOT / "tests" / "tool_contract.py"
+
+
+def expected_tool_names(path: Path = CONTRACT_PATH) -> list[str]:
+    """Ordered tool names of the default profile, from the source checkout's contract.
+
+    Loaded by path: the expectation is not part of the wheel, so the installed wheel's
+    served list is compared with the source tree (ISSUE-98-DEC-001).
+    """
+    spec = importlib.util.spec_from_file_location("wled_mcp_tool_contract", path)
+    if spec is None or spec.loader is None:
+        raise SystemExit(f"cannot load the expected tool contract {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # dataclasses resolve annotations through sys.modules
+    spec.loader.exec_module(module)
+    names = module.expected_names()
+    if not isinstance(names, list) or not names or not all(isinstance(n, str) for n in names):
+        raise SystemExit(f"{path.name} did not provide an ordered list of tool names")
+    return names
+
+
+EXPECTED_TOOL_NAMES = expected_tool_names()
+
 
 def run(command: list[str], cwd: Path, env: dict[str, str]) -> str:
     result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
@@ -39,28 +64,12 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert client.server_info.name == "wled-mcp"
                 assert client.server_info.version == "0.1.0"
                 tools = (await client.list_tools()).tools
-                assert [tool.name for tool in tools] == [
-                    "wled_list_devices",
-                    "wled_get_state",
-                    "wled_get_effects",
-                    "wled_get_palettes",
-                    "wled_set_state",
-                    "wled_patch_segments",
-                    "wled_replace_layout",
-                    "wled_list_presets",
-                    "wled_get_preset",
-                    "wled_activate_preset",
-                    "wled_save_preset",
-                    "wled_delete_preset",
-                ]
+                assert [tool.name for tool in tools] == EXPECTED_TOOL_NAMES
                 assert tools[0].input_schema["additionalProperties"] is False
                 result = await client.call_tool("wled_list_devices", {})
                 assert result.structured_content is not None
                 assert result.structured_content["data"] == {"devices": []}
                 assert not result.is_error
-
-
-TOOL_COUNT = 12
 
 
 async def http_exchange(port: int, token: str) -> None:
@@ -71,7 +80,8 @@ async def http_exchange(port: int, token: str) -> None:
                     f"http://127.0.0.1:{port}/mcp", http_client=http, terminate_on_close=False
                 )
                 async with Client(transport, mode=mode, read_timeout_seconds=10) as client:
-                    assert len((await client.list_tools()).tools) == TOOL_COUNT
+                    tools = (await client.list_tools()).tools
+                    assert [tool.name for tool in tools] == EXPECTED_TOOL_NAMES
                     result = await client.call_tool("wled_list_devices", {})
                     assert result.structured_content is not None
                     assert result.structured_content["data"] == {"devices": []}
@@ -166,7 +176,7 @@ def hub_example_uvx(
 
 
 def main() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = ROOT
     artifacts = root / ".artifacts"
     artifacts.mkdir(exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith("WLED_MCP_")}

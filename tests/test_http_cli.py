@@ -26,6 +26,7 @@ from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
 
 from tests.state_catalog_support import EFFECTS, FXDATA, PALETTES, make_info, make_state
+from tests.tool_contract import expected_names
 
 ROOT = Path(__file__).resolve().parents[1]
 CONSOLE = Path(sys.executable).parent / ("wled-mcp.exe" if os.name == "nt" else "wled-mcp")
@@ -296,7 +297,7 @@ def test_console_serves_http_and_shuts_down_cleanly(tmp_path, source):
                         )
                         async with Client(transport, mode=mode, read_timeout_seconds=10) as client:
                             tools = (await client.list_tools()).tools
-                            assert len(tools) == 12
+                            assert [tool.name for tool in tools] == expected_names()
                             result = await client.call_tool("wled_list_devices", {})
                             assert result.structured_content["data"] == {"devices": []}
 
@@ -403,7 +404,7 @@ async def test_http_and_stdio_expose_identical_tool_descriptors(tmp_path):
                 )
                 async with Client(transport, mode="legacy", read_timeout_seconds=10) as over_http:
                     http_tools = (await over_http.list_tools()).tools
-    assert len(stdio_tools) == 12
+    assert [tool.name for tool in stdio_tools] == expected_names()
 
     def dump(tools: list[Any]) -> str:
         return json.dumps([t.model_dump(mode="json") for t in tools], sort_keys=True)

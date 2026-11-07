@@ -30,24 +30,11 @@ from tests.http_support import (
     sdk_client,
     tool_call,
 )
+from tests.tool_contract import expected_names
 from wled_mcp import resources as resources_module
 from wled_mcp.models import Outcome
 from wled_mcp.server import Operation
 
-TOOLS = [
-    "wled_list_devices",
-    "wled_get_state",
-    "wled_get_effects",
-    "wled_get_palettes",
-    "wled_set_state",
-    "wled_patch_segments",
-    "wled_replace_layout",
-    "wled_list_presets",
-    "wled_get_preset",
-    "wled_activate_preset",
-    "wled_save_preset",
-    "wled_delete_preset",
-]
 SYNTHETIC_SECRET = "synthetic-secret-never-return"
 
 
@@ -73,7 +60,7 @@ async def test_sdk_client_initialize_list_call_over_http(tmp_path, mode):
             if mode != "2026-07-28":  # the modern path has no initialize handshake
                 assert client.server_info is not None and client.server_info.name == "wled-mcp"
             assert client.protocol_version == ("2025-11-25" if mode == "legacy" else "2026-07-28")
-            assert [t.name for t in (await client.list_tools()).tools] == TOOLS
+            assert [t.name for t in (await client.list_tools()).tools] == expected_names()
             listed = await client.call_tool("wled_list_devices", {})
             assert [d["id"] for d in listed.structured_content["data"]["devices"]] == [
                 "desk",
@@ -122,7 +109,7 @@ async def test_stateless_json_transport_behavior(tmp_path):
                     headers={"Mcp-Session-Id": "stale-synthetic-id"},
                 )
                 assert listing.status_code == 200
-                assert [t["name"] for t in listing.json()["result"]["tools"]] == TOOLS
+                assert [t["name"] for t in listing.json()["result"]["tools"]] == expected_names()
                 assert "mcp-session-id" not in listing.headers
                 # Transport/protocol errors are SDK errors, never tool envelopes.
                 assert (await http.post("/mcp", content=b"{nope")).status_code == 400
