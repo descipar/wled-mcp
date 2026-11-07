@@ -499,7 +499,9 @@ Stage 2 (recorded 2026-11-07):
   instead of in-process reload; CLI-only standard-library discovery.
 - [ISSUE-18-DEC-001](decisions/issue-18.md) (human): supplied objects are written as
   single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
-  #19 owns the capability model.
+  #19 owns the capability model; ISSUE-18-DEC-003 (coordinator, technical proposal):
+  no version gate, exact-firmware restore with its own snapshot, tool names/classes and
+  coverage statuses, 192 KiB bundle and 50-entry import bounds.
 - [ISSUE-19-DEC-001 and -002](decisions/issue-19.md) (human): overlap only with an
   explicit `allow_overlap`; `rpt`, `fxdef` and matrix/panel configuration not exposed.
 - [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device

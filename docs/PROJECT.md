@@ -19,9 +19,9 @@ linked follow-up issues. Nothing has been published.
   `wled_set_state` and `wled_patch_segments` (#6); `wled_replace_layout` (#7); and the
   persistent-preset tools `wled_list_presets`, `wled_get_preset`,
   `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9) with a
-  durable snapshot before overwrite/delete (#8). There is no restore tool; restore and
-  supplied-state save are deferred to [#18](https://github.com/descipar/wled-mcp/issues/18)
-  per ISSUE-13-DEC-001. Listing is network-free by default; explicit probes and reads
+  durable snapshot before overwrite/delete (#8). Stage-2 work of
+  [#18](https://github.com/descipar/wled-mcp/issues/18) adds snapshot listing, restore and
+  supplied-state save (mock-tested; playlist authoring and import/export pending). Listing is network-free by default; explicit probes and reads
   use bounded requests to configured devices; effect/palette catalogs have a
   firmware-aware cache.
 - **Deployment artifacts (#11).** HTTP image and Compose example, uvx/stdio hub entry,

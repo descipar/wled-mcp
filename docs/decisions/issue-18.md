@@ -54,3 +54,59 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: issue-18 and issue-19 packets.
 - Revalidation needed / next action: none.
+
+## ISSUE-18-DEC-003 — Technical defaults for restore, supplied-state save and bundles
+
+- ID: ISSUE-18-DEC-003
+- Recorded date: 2026-11-07
+- Status: active for issue #18.
+- Authority: technical proposal accepted by the coordinator (not a human decision).
+- Source: refreshed requirements packet `.agent-runs/stage2/issue-18/packet.md`
+  (items marked P, "Newly answered questions"), accepted in the coordinator session on
+  2026-11-07 and recorded with the first #18 pull request.
+- Scope: issue #18 only (both pull requests); not a project-wide rule.
+- Decision:
+  - No firmware-version gate in #18 (consistent with DEC-020, "warns, does not
+    refuse"): below 16.0.0 the tools run and rely on readback verification; a mismatch
+    is reported, not normalized. The below-16 warning is #21's mechanism.
+  - Restore requires the exact `device_id` and the exact firmware `version` of the
+    snapshot (ISSUE-8-DEC-003 reused). The default target is the snapshot's preset ID;
+    an explicit different ID is allowed. An occupied destination needs
+    `overwrite=true` and a snapshot that the restore takes itself before the write
+    (instead of a caller-supplied prior snapshot).
+  - Tools, in registry order after `wled_delete_preset`, with ISSUE-20-DEC-001
+    classes: `wled_list_snapshots` (read, not destructive; server snapshot metadata
+    only, newest first, invalid files counted), `wled_restore_preset` (manage,
+    destructive), `wled_store_preset` (manage, destructive; the supplied-state save,
+    `wled_save_preset` keeps no `state` input); in the second pull request
+    `wled_save_playlist` (manage, destructive), `wled_export_presets` (read, not
+    destructive), `wled_import_presets` (manage, destructive).
+  - Coverage statuses (docs/WLED-COVERAGE.md): first pull request W-PRESET-08
+    supported, W-PRESET-09 partial, `wled_list_snapshots` listed as a tool without a
+    WLED feature row; second pull request W-PRESET-09 supported and the export/import
+    tools added to W-PRESET-01, -07 and -08.
+  - For the second pull request: playlist authoring refuses `end = 255` and a negative
+    `repeat`, and `shuffle` is an explicit field; export selects `state` and
+    `playlist` entries by default (others only with `include_unwritable=true`, never
+    importable); bundle field names as in the packet (R18-EXP-05); bundles are passed
+    inline and rejected above 192 KiB serialized before any device I/O; at most 50
+    entries per import; lowest free ID 1-250 in bundle order when no `id_map` is
+    given; no automatic LED-range or matrix conversion; the interim raw-matrix rule of
+    ISSUE-18-DEC-002; snapshots before the first write and stop at the first failed,
+    mismatched or unknown entry.
+- Applicability / conditions / expiry: issue #18. The bundle `format_version` follows
+  the TD-21-5 schema rules (to be recorded by #21 as ISSUE-21-DEC-002: integer version,
+  higher or unknown versions rejected with the version named, a semantic change bumps
+  the version); if that entry is recorded with different wording, the coordinator
+  rechecks the bundle items. #19 takes over the interim matrix rule when it adds the
+  capability module.
+- Rationale supplied: packet analysis (agent): conservative defaults that keep every
+  write single-entry, validated before dispatch and verified by readback.
+- Affected requirement IDs, files, issues and tests: PRE-03, PRE-04, PLAY-01,
+  S2-PRESET-01 to -03; `tests/tool_contract.py`; docs/WLED-COVERAGE.md;
+  docs/contract/presets.md; #19, #20, #21.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: issue-18 packet; #19 and #21 packets when
+  they are refreshed.
+- Revalidation needed / next action: recheck the bundle items when ISSUE-21-DEC-002 is
+  recorded.

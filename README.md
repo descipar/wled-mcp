@@ -55,12 +55,15 @@ barrier.
 | `wled_activate_preset` | write | Activate an existing state preset or playlist; never edits storage |
 | `wled_save_preset` | destructive | Save the current live state as a preset; overwriting needs `overwrite=true` |
 | `wled_delete_preset` | destructive | Delete exactly one preset after a durable snapshot |
+| `wled_list_snapshots` | read-only | The server's stored preset snapshots, newest first; no device read |
+| `wled_restore_preset` | destructive | Restore one snapshot entry; applies it live (or starts the playlist), then stores it |
+| `wled_store_preset` | destructive | Store a supplied, validated state as a preset; applies it live, then stores it |
 
 The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).
 
 <!-- wled-coverage:start -->
-WLED feature coverage: 41 % of the planned scope, 33 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
+WLED feature coverage: 43 % of the planned scope, 34 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
 ## Requirements
@@ -226,8 +229,9 @@ without echoing values. Nothing is discovered automatically.
 - **Verification.** Writes are read back. A write that timed out is reported as
   possibly applied and is never retried blindly.
 - **Snapshots.** Overwriting or deleting a preset first stores a durable snapshot in
-  the data directory (`backups/<device_id>/`). There is no restore tool yet
-  ([#18](https://github.com/descipar/wled-mcp/issues/18)).
+  the data directory (`backups/<device_id>/`). `wled_restore_preset` writes one
+  snapshot entry back; like `wled_store_preset` it changes the live output before it
+  stores, and the previous lighting is not restored.
 - **No hidden reach.** No discovery, no arbitrary endpoints or caller-supplied hosts,
   no silent preset overwrite; overwriting needs `overwrite=true`.
 - **Authorization.** Deciding whether a person may run a tool is the MCP host's job;
@@ -247,7 +251,8 @@ controllers or firmware versions is claimed.
 
 Known limitations:
 
-- No restore tool and no saving of a supplied state as a preset
+- Storing or restoring a preset without changing the live output is not possible on
+  WLED 16; playlist authoring and preset import/export are pending
   ([#18](https://github.com/descipar/wled-mcp/issues/18)).
 - No CCT white balance or 2D matrix layouts
   ([#19](https://github.com/descipar/wled-mcp/issues/19)); no raw state patch tool.

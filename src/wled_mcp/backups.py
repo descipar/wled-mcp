@@ -2,7 +2,8 @@
 
 Layout: ``<backups>/<device_id>/<backup_id>.json``. The store performs no device
 I/O: callers pass a freshly read preset object while holding the device lock.
-Restoration execution is deferred; only a read-only plan helper exists here.
+The read-only plan helper executes nothing; ``wled_restore_preset`` (issue #18,
+``preset_tools``) executes one restore and uses the helper as its final check.
 Diagnostics go to the logging system (stderr) and never carry paths or payloads.
 """
 
@@ -87,7 +88,10 @@ class SnapshotListing:
 
 @dataclass(frozen=True)
 class RestorePlan:
-    """Read-only inspection result. Execution stays deferred (ISSUE-8-DEC-001)."""
+    """Read-only inspection result; the plan itself executes nothing (ISSUE-8-DEC-001).
+
+    ``as_data`` describes the manual procedure; ``wled_restore_preset`` (#18) executes.
+    """
 
     backup_id: str
     device_id: str
