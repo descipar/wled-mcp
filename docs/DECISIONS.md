@@ -494,6 +494,24 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+Stage 2 (recorded 2026-11-07):
+- [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart
+  instead of in-process reload; CLI-only standard-library discovery.
+- [ISSUE-18-DEC-001](decisions/issue-18.md) (human): supplied objects are written as
+  single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
+  #19 owns the capability model.
+- [ISSUE-19-DEC-001 and -002](decisions/issue-19.md) (human): overlap only with an
+  explicit `allow_overlap`; `rpt`, `fxdef` and matrix/panel configuration not exposed.
+- [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device
+  maximum class, status tool, classes `read`/`control`/`manage`; applies to every
+  tool-adding issue.
+- [ISSUE-21-DEC-001](decisions/issue-21.md) (human): automated update/rollback tests in
+  #21, live run as #25 evidence.
+- [ISSUE-94-DEC-001 and -002](decisions/issue-94.md) (human; coordinator): `unplanned`
+  coverage status; coverage-list technical defaults.
+- [ISSUE-98-DEC-001](decisions/issue-98.md) (coordinator): every tool-adding PR adds its
+  tool with its class to `tests/tool_contract.py`.
+
 - [ISSUE-52-DEC-001](decisions/issue-52.md) (delegated decision, 2026-11-05, issue #52
   only, content decided by the coordinator): `wled_set_state` sends `on=false` with a
   positive brightness on an off master, shows it as targeted compensation and verifies

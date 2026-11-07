@@ -10,7 +10,7 @@ service.
 ## What it is and is not
 
 - It is a self-hosted adapter for controllers you configure explicitly. Both
-  transports expose the same 12 tools and the same behavior.
+  transports expose the same tools and the same behavior.
 - It is not affiliated with, endorsed by or supported by the WLED project or MCPHub.
   The names only describe what it works with.
 - It is not a cloud service, a web interface, an animation engine or a home-automation
