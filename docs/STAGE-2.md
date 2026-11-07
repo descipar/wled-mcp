@@ -146,7 +146,10 @@ Items marked resolved link their decision record:
    (S2-PUBLIC-03) work.
 8. Whether CI gets a secret-backed private denylist for
    `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
-   protection.
+   protection. Resolved by
+   [DEC-018](DECISIONS.md#dec-018--private-denylist-and-main-branch-rules): local
+   denylist file plus CI secret, built from an agent-proposed, owner-approved candidate
+   list before the visibility change; a `main` ruleset at the visibility change.
 9. Timing of the visibility change relative to the beta acceptance of
    [#25](https://github.com/descipar/wled-mcp/issues/25).
 
