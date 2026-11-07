@@ -59,6 +59,10 @@ barrier.
 The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).
 
+<!-- wled-coverage:start -->
+WLED feature coverage: 44 % of the planned scope, 35 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
+<!-- wled-coverage:end -->
+
 ## Requirements
 
 - Python 3.13 and [uv](https://docs.astral.sh/uv/) (0.11.14 is used in CI) to build the
@@ -264,6 +268,7 @@ Known limitations:
 | --- | --- |
 | [Deployment](docs/DEPLOYMENT.md) | Both transports in detail: staging, verification, update, rollback, removal |
 | [Tool contract](docs/TOOL-CONTRACT.md) | Tools, parameters, results, errors and mutation semantics |
+| [WLED feature coverage](docs/WLED-COVERAGE.md) | WLED features with support status, owning issue or decision, and coverage figures |
 | [Inventory and client](docs/INVENTORY-CLIENT.md) | Inventory schema, limits and HTTP client behavior |
 | [Development](docs/DEVELOPMENT.md) | Local checks, build and launch, including PowerShell |
 | [Validation](docs/VALIDATION.md) | Automated checks, opt-in hardware checks and recorded evidence |
