@@ -199,6 +199,23 @@ coordinator per issue, branches are kept current by merging `main` (no force-pus
 and "Starte Stage 2 parallel" starts or resumes the plan (see
 [coordinator.md](../agents/coordinator.md)).
 
+### Where new documentation goes
+
+From stage 2 on, new documentation goes into new files so that parallel tracks do
+not edit the same large documents (plan step (d) of DEC-021):
+
+| Content | Location | Linked from |
+| --- | --- | --- |
+| New tool or transport contract | `docs/contract/<area>.md`, one file per area (for example `segments.md`) | [TOOL-CONTRACT.md](TOOL-CONTRACT.md) |
+| New validation or acceptance evidence | `docs/validation/issue-<n>.md` | [VALIDATION.md](VALIDATION.md) |
+| Issue-specific decisions | `docs/decisions/issue-<n>.md` | [DECISIONS.md](DECISIONS.md) |
+
+The PR that creates such a file adds one link line, in sorted position, to the
+"Stage 2 and later files" list at the end of the contract or validation document;
+decision files get the usual pointer in DECISIONS.md.
+Existing sections stay where they are; nothing is moved. A small correction to an
+existing section is still made in place.
+
 Use issue/PR bodies or clearly attributed agent comments for durable status when
 that external write is within scope. Local transcripts/packets belong under
 ignored `.agent-runs/`, never in a central output directory. Record requirement

@@ -1,5 +1,10 @@
 # V1 MCP tool contract
 
+Contract text added from stage 2 on lives in per-area files under
+`docs/contract/`, linked from the
+[list at the end](#stage-2-and-later-files) of this document; see
+[where new documentation goes](AGENT-WORKFLOW.md#where-new-documentation-goes).
+
 Implementation status: #4 exposes `wled_list_devices`; #5 adds the read-only
 `wled_get_state`, `wled_get_effects` and `wled_get_palettes` (see
 [Read tools](#read-tools-state-and-catalogs-implemented-in-5)). Inventory and client
@@ -774,3 +779,7 @@ Update decisions, requirements, examples and acceptance assertions together when
 semantics change. Synthetic examples are contract assertions, not executable
 schemas, a server or runtime evidence. Downstream issues add schema snapshots,
 mock/protocol tests and actual firmware compatibility evidence.
+
+## Stage 2 and later files
+
+None yet.
