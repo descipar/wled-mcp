@@ -126,6 +126,8 @@ Items marked resolved link their decision record:
    issues only, no security support (`SECURITY.md`).
 4. Acceptance of the existing commit history and author identities (owner identity
    and agent noreply identity), or a history rewrite or a fresh public repository.
+   Resolved by [DEC-014](DECISIONS.md#dec-014--keep-the-existing-git-history): keep the
+   existing history and author identities; no rewrite, no fresh repository.
 5. Review of issue and PR bodies and comments, including closed ones and run evidence
    links, for installation context before a visibility change; issue visibility
    follows repository visibility.
