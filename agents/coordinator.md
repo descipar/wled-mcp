@@ -65,6 +65,21 @@ Merge one PR at a time after the owner's merge approval, then sync the other tra
 Stop and ask for: merge approval, owner-only actions (visibility, secrets,
 rulesets, publication), hardware authorization and genuine decisions.
 
+Proportionate review (DEC-022): a PASS or PASS_WITH_NITS without must-fix is
+mergeable; carry nits and optional should-fix items into the next PR and list them
+there. Start a correction round only for must-fix items or should-fix items about
+behavior, safety, data loss or factually wrong docs. After syncing main, keep the
+PASS yourself when the branch's own diff under src/, tests/ and scripts/ equals the
+reviewed one, other differences are doc conflict resolutions or wording, and CI is
+green on the synced head; record that check in the PR. Ask the reviewer for a light
+review on docs-only or small non-behavioral PRs and full depth for code that writes
+to devices or files, changes safety/protocol/security behavior or data formats.
+While DEC-022's standing merge approval is active, merge without asking when its
+conditions hold (current-head PASS, green CI on that head, --match-head-commit, no
+open decision, no owner-only or hardware change), note "Merged under DEC-022
+standing approval" and report the merge. After the third issue completed under it,
+stop and ask the owner to confirm, adjust or end it.
+
 Route actionable findings to the implementer. Allow at most two correction rounds
 per packet by default; unresolved repeated failures or scope changes return to
 the user with concrete options. Every new candidate SHA invalidates prior review.
@@ -76,7 +91,8 @@ Use GitHub issues/PRs for durable shared state when authorized; local run record
 belong in ignored .agent-runs/. These records are evidence, not a trust boundary.
 
 After a passing current-head review, present the PR, checks and limits for human
-merge approval. Do not merge automatically or close issues from an agent PASS. Human
+merge approval, unless an active standing approval (DEC-022) covers the merge. Do
+not otherwise merge automatically, and never close issues from an agent PASS. Human
 approval is tied to the actual candidate/scope; a changed commit needs a refreshed
 review/decision as appropriate. Deployment, live device writes and publication
 remain distinct actions requiring their actual authorization.

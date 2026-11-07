@@ -68,6 +68,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-019 | Project / visibility timing | Decouple repository visibility from release: the repository becomes public once the readiness checklist of #90 is complete and the owner instructs it; package, image and marketplace publication stay in #25. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-019](#dec-019--make-the-repository-public-before-the-release) and [issue #90](https://github.com/descipar/wled-mcp/issues/90) |
 | DEC-020 | Project / support and version policy | Pre-1.0 `0.x` releases with migration notes; fixes only for the latest release. WLED support from 16.0.0 only, in tiers tested/expected/unknown; older firmware is unsupported and warned about, not refused. Python as tested in CI; Linux supported, Windows/macOS experimental; best-effort responses. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-020](#dec-020--support-and-version-policy) and [issue #21](https://github.com/descipar/wled-mcp/issues/21) |
 | DEC-021 | Stage 2 / workflow | Adopt docs/STAGE-2-PARALLEL-PLAN.md: at most two implementation tracks, #90 first, per-issue coordinators in isolated worktrees with the main session as integration owner, branches synced by merging `main` (no force-push). "Starte Stage 2 parallel" starts or resumes the plan. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-021](#dec-021--adopt-the-stage-2-parallel-plan) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15) |
+| DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -491,6 +492,65 @@ can explicitly amend them.
 - Supersedes: the "proposal only" status of docs/STAGE-2-PARALLEL-PLAN.md.
 - Affected: docs/STAGE-2-PARALLEL-PLAN.md, agents/coordinator.md and generated adapters,
   AGENTS.md, docs/AGENT-WORKFLOW.md; issues #16, #17, #20, #21, #23.
+
+### DEC-022 — Proportionate review and standing merge approval
+
+- Status: active stage-2 workflow decision; the standing merge approval (item 4) is
+  pending revalidation after three issues (see Conditions).
+- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
+  permalink). The owner observed that the work takes long ("ich hab das gefühl das
+  alles dauert immer sehr lange weil vllt auch zuviele tests gemacht werden"
+  (English: "I have the feeling that everything always takes very long, maybe also
+  because too many tests are done")). The coordinator answered that the test suite is
+  not the bottleneck and proposed items 1-3 and, optionally, item 4. The owner
+  answered: "ersten 3 punkte so übernehmen und auch so festschreiben das auf anderen
+  rechner das so gemacht wird. pauschale freigabe erteilt, sollte aber nach 3-4 issues
+  nochmal überprüpft werden" (English: "adopt the first 3 points as proposed and record
+  them so that it is done this way on other computers as well. Blanket approval
+  granted, but it should be reviewed again after 3-4 issues"), typing errors kept.
+- Owner decision:
+  1. Nits do not start a review round. A PASS or PASS_WITH_NITS with no must-fix is
+     mergeable; nits and optional should-fix items are carried into the next PR of the
+     same track (or a follow-up issue) and listed in the PR body. A correction round is
+     needed only for must-fix items and for should-fix items that concern behavior,
+     safety, data loss or factually wrong documentation.
+  2. A sync that merges `main` into a reviewed branch keeps the review PASS when the
+     coordinator verifies that the branch's own changes under `src/`, `tests/` and
+     `scripts/` are unchanged against the reviewed SHA
+     (`git diff <base>..<reviewed>` equals `git diff <main>..<synced>` for those paths),
+     the remaining differences are conflict resolutions or wording in documentation,
+     and CI is green on the synced head. The coordinator records this check in the PR.
+     Any change to own code, tests or scripts needs a fresh review. This refines the
+     sync rule of DEC-021 item 4.
+  3. Review depth is proportionate. Documentation-only and small non-behavioral PRs get
+     a light review: acceptance criteria, links, consistency, privacy and CI; no mutation
+     runs, fixture regeneration or source re-reads. Full depth (reproducers, mutants,
+     upstream source checks) stays for code that writes to devices or files, changes
+     safety, protocol or security behavior, or changes data formats. The reviewer is
+     still launched with Opus (DEC-008). The test suite itself is not reduced.
+  4. Standing merge approval: the coordinator may merge a stage-2 PR without asking
+     when all of the following hold, and reports the merge afterwards:
+     - a current-head review verdict PASS or PASS_WITH_NITS without must-fix, or a
+       sync that keeps the PASS under item 2;
+     - all CI checks green on that exact head; the merge uses
+       `gh pr merge --squash --match-head-commit <sha>`;
+     - no open NEEDS_DECISION, no scope change beyond the issue/packet, and no change
+       to repository visibility, secrets, rulesets, publication, deployment or
+       hardware/LAN access in the PR.
+     The PR body or a coordinator comment states "Merged under DEC-022 standing
+     approval". Post-merge completion follows as before.
+- Conditions: stage 2 only. Item 4 covers the merges of at most three issues reaching
+  completion (DONE) under it, counted from 2026-11-08, PR-by-PR merges of partial
+  scopes included in their issue. After the third, the coordinator stops merging
+  without asking and asks the owner to confirm, adjust or end the standing approval;
+  the owner may end it at any time. Owner-only actions and hardware authorization
+  stay separate.
+- Rationale supplied: shorten turnaround without reducing the test suite.
+- Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 6
+  "stops only for merge approval" applies again when item 4 ends); refines the DEC-021
+  sync rule.
+- Affected: agents/coordinator.md, agents/reviewer.md and generated adapters,
+  AGENTS.md, docs/AGENT-WORKFLOW.md.
 
 ## Issue-specific decisions (pointers)
 

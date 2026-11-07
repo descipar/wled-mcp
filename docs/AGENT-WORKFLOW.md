@@ -198,6 +198,12 @@ owner, at most two implementation tracks run in isolated worktrees with one
 coordinator per issue, branches are kept current by merging `main` (no force-push),
 and "Starte Stage 2 parallel" starts or resumes the plan (see
 [coordinator.md](../agents/coordinator.md)).
+[DEC-022](DECISIONS.md#dec-022--proportionate-review-and-standing-merge-approval)
+keeps review proportionate: nits go to the next PR instead of a new round, a sync
+without own code changes keeps the PASS after the coordinator's diff check, and
+docs-only PRs get a light review. While its standing merge approval is active, the
+coordinator merges PRs with a current-head PASS and green CI without asking and
+revalidates the approval with the owner after three issues.
 
 ### Where new documentation goes
 

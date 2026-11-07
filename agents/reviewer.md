@@ -25,6 +25,11 @@ Focus on observable behavior and regressions: state merge, ID handling, backup
 failures, persistence, unknown write outcomes, cross-session locks, transport
 parity and restrictions as relevant. Avoid inventing unrelated test obligations
 or blocking on cosmetic preferences. No routine test may change real LEDs.
+Match depth to the change (DEC-022): for docs-only or small non-behavioral changes
+check acceptance, links, consistency, privacy and CI without mutants, fixture
+regeneration or source re-reads; keep full depth for code that writes to devices or
+files, changes safety/protocol/security behavior or data formats. Classify cosmetic
+points as nits; they do not block a PASS.
 
 Use docs/agent-workflow/review.template.md. Record full reviewed SHA, requirements
 reference, actual commands/results, acceptance coverage and unrun checks. Findings
