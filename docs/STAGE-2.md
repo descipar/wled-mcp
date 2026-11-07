@@ -107,14 +107,18 @@ Issue #62 prepared a public-ready baseline under
 content, a user-facing README, synthetic example deployment files for both transports
 and the CI check `scripts/check_private_identifiers.py`. It changed no visibility,
 license, attribution or publication. The following decisions remain with the owner and
-are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01); none
-is resolved here:
+are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01).
+Items marked resolved link their decision record:
 
-1. Outbound license, and whether third-party notices or a NOTICE file are needed.
+1. Resolved by [DEC-011](DECISIONS.md#dec-011--apache-20-license-with-notice-attribution):
+   Apache-2.0 with a NOTICE file. Third-party notices: none needed while no upstream code
+   is reused ([SOURCES.md](SOURCES.md)); recheck when the dependency/license inventory of
+   S2-DIST-03 is prepared.
 2. Project, package, container image and registry identities: repository name and
    owner, PyPI/OCI names and the `io.github.<publisher>` namespace.
 3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
-   security contact).
+   security contact). Author attribution resolved by DEC-011 (`NOTICE` and
+   `pyproject.toml` authors); public and security contact remain open.
 4. Acceptance of the existing commit history and author identities (owner identity
    and agent noreply identity), or a history rewrite or a fresh public repository.
 5. Review of issue and PR bodies and comments, including closed ones and run evidence

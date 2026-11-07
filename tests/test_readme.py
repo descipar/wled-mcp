@@ -115,8 +115,8 @@ def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
         problems.append("README tool table differs from the registered tools and hints")
     if not re.search(r"not affiliated with[^.]*WLED project[^.]*MCPHub", flat):
         problems.append("README lacks the non-affiliation statement")
-    if "No license has been selected" not in flat or "issues/23" not in flat:
-        problems.append("README does not state the open license decision")
+    if "Apache License 2.0" not in flat or "(NOTICE)" not in flat:
+        problems.append("README does not state the Apache-2.0 license and NOTICE file")
     for section in (
         "## Requirements",
         "## Quickstart: stdio via uvx",

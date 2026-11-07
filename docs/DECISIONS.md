@@ -54,6 +54,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
 | DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
+| DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -173,6 +174,30 @@ can explicitly amend them.
 - Affected: AGENTS.md, agents/coordinator.md, agents/requirements.md, generated adapters,
   docs/AGENT-WORKFLOW.md, docs/IMPLEMENTATION-PLAN.md, docs/PROJECT.md; all GitHub issues
   (retitled, labelled and linked 2026-11-06).
+
+### DEC-011 — Apache-2.0 license with NOTICE attribution
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink): the project should be freely available, but others must not be allowed to
+  remove the owner as author ("ich würde es gerne frei verfügbar machen, aber sie sollen
+  mich als author nicht entfernen dürfen", typing errors corrected); after the coordinator compared MIT, Apache-2.0
+  and copyleft options, the owner chose "apache mit notice" and the author name for the
+  attribution.
+- Owner decision: outbound license Apache-2.0; a `NOTICE` file carries the copyright and
+  author attribution, which Section 4(d) of the license requires redistributions,
+  including modified versions, to retain. The author name in `NOTICE` and in
+  `pyproject.toml` authors is an explicit owner request and an exception to DEC-005 for
+  those attribution fields only.
+- Coordinator notes (not owner statements): no license can stop a fork from adding its
+  own authors; it requires keeping the existing notices. No third-party NOTICE content is
+  needed while no upstream code is reused (SOURCES.md).
+- Conditions: no visibility change, package/image publication, registry submission,
+  history rewrite or public contact address is decided here (STAGE-2 open items 2-9).
+- Rationale supplied: free availability with preserved author attribution.
+- Supersedes: the "does not choose a license" limitation of DEC-009 for the license only.
+- Affected: LICENSE, NOTICE, pyproject.toml, README.md, docs/PROJECT.md, docs/STAGE-2.md,
+  scripts/check_distribution.py, tests/test_readme.py.
 
 ## Issue-specific decisions (pointers)
 
