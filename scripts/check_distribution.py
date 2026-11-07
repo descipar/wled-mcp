@@ -202,7 +202,10 @@ def main() -> None:
         assert not any(name.startswith("tests/") for name in archive.namelist())
         metadata = archive.read("wled_mcp-0.1.0.dist-info/METADATA").decode()
         assert "Requires-Dist: mcp==2.3.0" in metadata
-        assert "License-Expression:" not in metadata
+        assert "License-Expression: Apache-2.0" in metadata
+        assert "Author: Kai Schulte" in metadata
+        assert "wled_mcp-0.1.0.dist-info/licenses/LICENSE" in archive.namelist()
+        assert "wled_mcp-0.1.0.dist-info/licenses/NOTICE" in archive.namelist()
     with tempfile.TemporaryDirectory(dir=artifacts) as temporary:
         outside = Path(temporary)
         environment = outside / "installed"
