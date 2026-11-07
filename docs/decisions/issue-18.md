@@ -93,8 +93,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
     refused. The pinned v16.0.1 source stores them unchanged because the save runs
     before the playlist advances (source-derived, hardware pending). While the device
     reports a running playlist (`state.pl` > 0, read during planning and rechecked
-    after the snapshot), the playlist route is refused with `PRESET_CONFLICT` before
-    any snapshot or POST, because the firmware could store the running playlist
+    after the snapshot), the playlist route is refused with `PRESET_CONFLICT` without
+    a POST (before any snapshot when found during planning; the post-snapshot recheck
+    keeps the snapshot), because the firmware could store the running playlist
     instead. The restore's source snapshot is protected from retention pruning.
   - For the second pull request: playlist authoring refuses `end = 255` and a negative
     `repeat`, and `shuffle` is an explicit field (the running-playlist refusal above

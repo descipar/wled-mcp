@@ -41,8 +41,8 @@ result report the active preset and playlist before the write (`live_before`). A
 state write warns when a running playlist may be interrupted; the playlist route is
 refused while a playlist runs (see [Restore](#restore-wled_restore_preset)). A warning
 also names the active preset marker when it is the destination, and the playlists that
-reference an overwritten destination (they are not edited). The PRE-03 variant "without changing live output" is not
-supported on WLED 16; no input requests it.
+reference an overwritten destination (they are not edited). The PRE-03 variant
+"without changing live output" is not supported on WLED 16; no input requests it.
 
 ## Write routes
 
@@ -152,7 +152,7 @@ Because saving starts the playlist, every member and a persistent `end` must be 
 existing plain state preset other than the destination itself; a member that changes
 between planning and the post-snapshot recheck is `PRESET_CONFLICT`.
 
-The playlist route is refused with `PRESET_CONFLICT` before any snapshot or POST while
+The playlist route is refused with `PRESET_CONFLICT` before any snapshot or POST when
 the device reports a running playlist (`state.pl` > 0), and again if one is running
 when the state is re-read after the snapshot: with a playlist already running the
 firmware's `loadPlaylist` can keep it, and the save would then store the running

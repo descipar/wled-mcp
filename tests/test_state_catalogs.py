@@ -22,6 +22,7 @@ from tests.state_catalog_support import (
     make_state,
 )
 from tests.test_inventory_client import config, device
+from tests.test_version_source import canonical_version
 from tests.tool_contract import ToolClass, destructive_names, expected_names, names_of
 from wled_mcp.catalogs import (
     PLACEHOLDER_NAME,
@@ -160,7 +161,7 @@ async def test_state_full_fixture_normalized_raw_redacted(tmp_path):
     assert data["raw"]["redacted_info_keys"] == ["mac", "ip", "wifi.bssid"]
     dumped = result.model_dump_json()
     assert "192.0.2.10" not in dumped and "00:00:5E" not in dumped and "00005e" not in dumped
-    assert data["diagnostics"]["server_version"] == "0.1.0"
+    assert data["diagnostics"]["server_version"] == canonical_version()
     assert data["diagnostics"]["unknown_capabilities"] == []
     assert [router.count(DESK, "/json/state"), router.count(DESK, "/json/info")] == [1, 1]
     Outcome.model_validate(result.model_dump())  # stays a valid envelope

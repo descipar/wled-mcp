@@ -1,7 +1,11 @@
 # Local development and launch
 
-Version 0.1.0 supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
-Windows/3.13.2; CI checks Linux/3.13. Official MCP SDK 2.3.0 owns protocol handling.
+The package supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
+Windows/3.13.2; CI checks Linux amd64 and arm64 with Python 3.13 on native runners
+(`checks` job) and builds and smoke-tests the HTTP image on both architectures
+(`container` job, for pull requests and `main`). Windows and macOS are experimental
+(DEC-020) and have no CI job; see [Platform notes](#platform-notes). Official MCP SDK
+2.3.0 owns protocol handling.
 The production registry contains `wled_list_devices`, the three read tools from #5, `wled_set_state` and `wled_patch_segments` (#6) and `wled_replace_layout` (#7) and the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9; mock-tested, H06 pending). `--transport streamable-http` starts the
 authenticated stateless HTTP service from #14 (see below); its software evidence is
 mock/loopback only. Deployment artifacts for both modes (#11: Dockerfile, Compose
@@ -155,7 +159,8 @@ New-Item -ItemType Directory -Force runtime | Out-Null
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_TOOL_DIR = Join-Path (Get-Location) '.uv-tools'
 $env:UV_PYTHON_INSTALL_DIR = Join-Path (Get-Location) '.uv-python'
-$wheelUri = ([System.Uri](Join-Path (Get-Location) 'dist/wled_mcp-0.1.0-py3-none-any.whl')).AbsoluteUri
+$version = uv run --frozen python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
+$wheelUri = ([System.Uri](Join-Path (Get-Location) "dist/wled_mcp-$version-py3-none-any.whl")).AbsoluteUri
 $constraintsUri = ([System.Uri](Join-Path (Get-Location) 'requirements-runtime.txt')).AbsoluteUri
 uvx --isolated --no-env-file --python 3.13 --constraints $constraintsUri --from $wheelUri wled-mcp --config (Join-Path (Get-Location) 'examples/bootstrap.toml') --data-dir (Join-Path (Get-Location) 'runtime')
 ```
@@ -164,6 +169,16 @@ File URIs preserve Windows paths containing spaces. Supply the exact wheel and
 matching constraints together; no public PyPI project package is assumed. stdio
 waits for its MCP host on stdin. stdout is protocol only; diagnostics use stderr;
 EOF closes the process. `--help`/`--version` need no configuration paths.
+
+## Platform notes
+
+Windows and macOS are experimental (DEC-020): no CI job runs on them and failures there
+do not block a change. Known local results on Windows with Python 3.13, also on `main`:
+the invalid-URL cases of `tests/test_inventory_client.py` and one credential test of
+`tests/test_hw_http_probe.py` fail, the POSIX signal and image checksum tests are
+skipped, and `scripts/check_distribution.py` stops at the uvx stdio handshake when the
+checkout or user profile path contains a space. Linux CI is the reference.
+`scripts/check_container.py` needs a Linux Docker host.
 
 ## Deployment artifact checks
 

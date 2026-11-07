@@ -10,6 +10,7 @@ opt-in (``WLED_MCP_DOCKER_CHECKS=1``).
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import os
@@ -65,8 +66,16 @@ def version() -> str:
         return str(tomllib.load(stream)["project"]["version"])
 
 
-def wheel_name() -> str:
-    return f"wled_mcp-{version()}-py3-none-any.whl"
+def wheel_name(wheel_version: str | None = None) -> str:
+    return f"wled_mcp-{wheel_version or version()}-py3-none-any.whl"
+
+
+# The image files and examples carry no version literal (docs/contract/versioning.md):
+# the Dockerfile copies the one staged wheel by pattern and pins it by checksum, and the
+# examples name the staged release directory and image tag by placeholders.
+WHEEL_PATTERN = "wled_mcp-*-py3-none-any.whl"
+VERSION_PLACEHOLDER = "REPLACE_WITH_VERSION"
+IMAGE_TAG_PLACEHOLDER = "REPLACE_WITH_IMAGE_TAG"
 
 
 def compose() -> dict[str, Any]:
@@ -263,18 +272,20 @@ def test_dockerfile_pins_base_image_wheel_and_constraints():
     copies = [rest.split() for keyword, rest in instructions if keyword == "COPY"]
     assert len(copies) == 1
     sources = copies[0][:-1]
-    assert sources == [wheel_name(), CONSTRAINTS, "SHA256SUMS"]
+    assert sources == [WHEEL_PATTERN, CONSTRAINTS, "SHA256SUMS"]
     run = " ".join(rest for keyword, rest in instructions if keyword == "RUN")
-    verify = " && ".join(image_checksum_commands())
+    steps = image_checksum_commands()
+    verify = " && ".join(steps)
     assert "--ignore-missing" not in verify, "unlisted inputs must not pass verification"
-    for name in (wheel_name(), CONSTRAINTS):  # both pinned by name in the grep pattern
-        assert name.replace(".", "\\.") in verify, name
+    assert steps[:2] == [f"set -- {WHEEL_PATTERN}", 'test "$#" -eq 1'], "exactly one wheel"
+    assert CONSTRAINTS.replace(".", "\\.") in verify, "constraints pinned in the grep pattern"
+    assert 'requirements-runtime.txt "$1"' in verify, "the copied wheel is the required one"
     assert verify.endswith("sha256sum --strict -c required.sha256")
     install = re.search(r"pip install (?P<args>.*?) &&", run)
     assert install is not None
     tokens = install.group("args").split()
     assert tokens[tokens.index("--constraint") + 1] == CONSTRAINTS
-    assert tokens[-1] == f"./{wheel_name()}", "only the staged wheel is installed"
+    assert tokens[-1] == '"./$1"', "only the verified staged wheel is installed"
     assert "-e" not in tokens and "--editable" not in tokens
     assert not any(t.startswith(("wled-mcp", "wled_mcp")) for t in tokens), "no index package"
     users = [rest for keyword, rest in instructions if keyword == "USER"]
@@ -282,17 +293,22 @@ def test_dockerfile_pins_base_image_wheel_and_constraints():
     assert ("ARG", "APP_UID=10001") in instructions
     assert ("ENTRYPOINT", '["wled-mcp"]') in instructions, "exec form, PID 1 gets SIGTERM"
     assert ("STOPSIGNAL", "SIGTERM") in instructions
-    assert service()["image"] == f"wled-mcp:{version()}"
+    assert service()["image"] == f"wled-mcp:{IMAGE_TAG_PLACEHOLDER}"
     assert service()["pull_policy"] == "never"
 
 
 def test_build_context_is_an_allowlist_of_the_release_inputs():
     assert (
         dockerignore_violations(
-            DOCKERIGNORE.read_text("utf-8"), {wheel_name(), CONSTRAINTS, "SHA256SUMS"}
+            DOCKERIGNORE.read_text("utf-8"), {WHEEL_PATTERN, CONSTRAINTS, "SHA256SUMS"}
         )
         == []
     )
+    # The wheel rule admits release and non-release wheels, nothing else.
+    for name in (wheel_name(), wheel_name("1.2.3"), wheel_name("1.2.3+g0123456789ab.dirty")):
+        assert fnmatch.fnmatchcase(name, WHEEL_PATTERN), name
+    for name in ("devices.toml", "wled_mcp-1.2.3.tar.gz", "other-1.2.3-py3-none-any.whl"):
+        assert not fnmatch.fnmatchcase(name, WHEEL_PATTERN), name
 
 
 def test_dockerignore_check_rejects_leaky_contexts():
@@ -345,8 +361,9 @@ def test_stdio_hub_example_runs_the_staged_release_with_constraints():
     assert option(uvx_args, "--python") == "3.13"
     constraints = Path(option(uvx_args, "--constraints"))
     wheel = Path(option(uvx_args, "--from"))
-    release = Path("/app/binaries/wled-mcp") / version()
-    assert constraints == release / CONSTRAINTS and wheel == release / wheel_name()
+    release = Path("/app/binaries/wled-mcp") / VERSION_PLACEHOLDER
+    assert constraints == release / CONSTRAINTS
+    assert wheel == release / wheel_name(VERSION_PLACEHOLDER)
     assert "--isolated" in uvx_args, "never fall back to a separately installed tool"
     data_dir = option(console_args, "--data-dir")
     assert option(console_args, "--config").startswith(f"{data_dir}/config/")

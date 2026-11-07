@@ -1,11 +1,14 @@
 # Independent Streamable HTTP service image for wled-mcp (issue #11).
 #
 # Build context: a staged release directory created by deploy/stage_release.py that
-# holds exactly the versioned wheel, requirements-runtime.txt and SHA256SUMS (the
+# holds exactly one versioned wheel, requirements-runtime.txt and SHA256SUMS (the
 # allowlist .dockerignore keeps everything else, including inventories and secrets,
-# out of the context). Build locally on the target and never push:
+# out of the context). The wheel name is not hard-coded: the version has one source
+# (docs/contract/versioning.md) and the checksum step below pins the copied wheel.
+# Build locally on the target with the image tag from the release's RELEASE record
+# (the version, with "+" mapped to "-" for a non-release build) and never push:
 #
-#   docker build --pull -t wled-mcp:0.1.0 /app/binaries/wled-mcp/0.1.0
+#   docker build --pull -t wled-mcp:<image-tag> /app/binaries/wled-mcp/<version>
 #
 # Base image: official Python 3.13 slim image on Debian trixie, exact patch tag plus the
 # multi-architecture index digest (docker.io/library/python, 2026-11-05). Update both
@@ -22,19 +25,22 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_INPUT=1
 
-COPY wled_mcp-0.1.0-py3-none-any.whl requirements-runtime.txt SHA256SUMS /tmp/wled-mcp-release/
+COPY wled_mcp-*-py3-none-any.whl requirements-runtime.txt SHA256SUMS /tmp/wled-mcp-release/
 
-# Verify the staged artifacts: SHA256SUMS must list both the wheel and the constraints
-# exactly once each and both must match (a missing or duplicated line fails the build).
-# Then install only the pinned wheel with the exported runtime constraints and remove
-# the build inputs. No index package named wled-mcp is used.
+# Verify the staged artifacts: the context holds exactly one wheel, and SHA256SUMS must
+# list that wheel and the constraints exactly once each and both must match (a missing,
+# duplicated or foreign wheel line fails the build). Then install only that verified
+# wheel with the exported runtime constraints and remove the build inputs. No index
+# package named wled-mcp is used.
 RUN cd /tmp/wled-mcp-release \
-    && grep -E '^[0-9a-f]{64}  (wled_mcp-0\.1\.0-py3-none-any\.whl|requirements-runtime\.txt)$' SHA256SUMS > required.sha256 \
-    && test "$(cut -c67- required.sha256 | sort)" = "$(printf '%s\n' requirements-runtime.txt wled_mcp-0.1.0-py3-none-any.whl)" \
+    && set -- wled_mcp-*-py3-none-any.whl \
+    && test "$#" -eq 1 \
+    && grep -E '^[0-9a-f]{64}  (wled_mcp-[0-9A-Za-z.+_]+-py3-none-any\.whl|requirements-runtime\.txt)$' SHA256SUMS > required.sha256 \
+    && test "$(cut -c67- required.sha256 | sort)" = "$(printf '%s\n' requirements-runtime.txt "$1" | sort)" \
     && sha256sum --strict -c required.sha256 \
     && python -m pip install --no-cache-dir --root-user-action=ignore \
         --constraint requirements-runtime.txt \
-        ./wled_mcp-0.1.0-py3-none-any.whl \
+        "./$1" \
     && cd / && rm -rf /tmp/wled-mcp-release \
     && groupadd --gid "${APP_GID}" wledmcp \
     && useradd --no-log-init --uid "${APP_UID}" --gid "${APP_GID}" --no-create-home \

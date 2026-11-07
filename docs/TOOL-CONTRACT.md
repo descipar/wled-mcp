@@ -788,3 +788,5 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save and
   snapshot listing (#18).
+- [contract/versioning.md](contract/versioning.md): version source, release mapping and
+  non-release build identity (#21, #70).
