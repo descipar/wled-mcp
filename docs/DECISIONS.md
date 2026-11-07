@@ -33,7 +33,9 @@ before asking a question that may already have been answered.
   scope. Unclear answers remain unresolved, not approved by elapsed time.
 - Merge/deployment/hardware/publication permissions are bounded to their actual
   scope/candidate/conditions. A log entry is evidence, not standing permission for
-  future operations or a substitute for the current human merge decision.
+  future operations or a substitute for the current human merge decision, unless
+  an active owner decision explicitly grants a bounded standing approval with its
+  conditions and expiry (currently DEC-022 item 4 for stage-2 merges).
 - Keep names, private hosts, credentials and raw transcripts out of committed
   entries. If a sensitive detail is necessary at runtime, store only a neutral
   reference to its local/protected source; do not copy it into the log.
@@ -509,7 +511,7 @@ can explicitly amend them.
   them so that it is done this way on other computers as well. Blanket approval
   granted, but it should be reviewed again after 3-4 issues"), typing errors kept.
 - Owner decision:
-  1. Nits do not start a review round. A PASS or PASS_WITH_NITS with no must-fix is
+  1. Nits do not start a review round. A PASS (which may list nits) with no must-fix is
      mergeable; nits and optional should-fix items are carried into the next PR of the
      same track (or a follow-up issue) and listed in the PR body. A correction round is
      needed only for must-fix items and for should-fix items that concern behavior,
@@ -519,9 +521,11 @@ can explicitly amend them.
      `scripts/` are unchanged against the reviewed SHA
      (`git diff <base>..<reviewed>` equals `git diff <main>..<synced>` for those paths),
      the remaining differences are conflict resolutions or wording in documentation,
-     and CI is green on the synced head. The coordinator records this check in the PR.
-     Any change to own code, tests or scripts needs a fresh review. This refines the
-     sync rule of DEC-021 item 4.
+     no newly merged work overlaps semantically with the PR (for example it changes
+     code the PR calls or the same contract), and CI is green on the synced head. The
+     coordinator records this check in the PR. Any change to own code, tests or
+     scripts, or a semantic overlap, needs a fresh review. This refines the sync rule
+     of DEC-021 item 4 and docs/STAGE-2-PARALLEL-PLAN.md.
   3. Review depth is proportionate. Documentation-only and small non-behavioral PRs get
      a light review: acceptance criteria, links, consistency, privacy and CI; no mutation
      runs, fixture regeneration or source re-reads. Full depth (reproducers, mutants,
@@ -530,8 +534,8 @@ can explicitly amend them.
      still launched with Opus (DEC-008). The test suite itself is not reduced.
   4. Standing merge approval: the coordinator may merge a stage-2 PR without asking
      when all of the following hold, and reports the merge afterwards:
-     - a current-head review verdict PASS or PASS_WITH_NITS without must-fix, or a
-       sync that keeps the PASS under item 2;
+     - a current-head review verdict PASS (nits allowed) without must-fix, or a sync
+       that keeps the PASS under item 2;
      - all CI checks green on that exact head; the merge uses
        `gh pr merge --squash --match-head-commit <sha>`;
      - no open NEEDS_DECISION, no scope change beyond the issue/packet, and no change
@@ -546,11 +550,14 @@ can explicitly amend them.
   the owner may end it at any time. Owner-only actions and hardware authorization
   stay separate.
 - Rationale supplied: shorten turnaround without reducing the test suite.
-- Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 6
-  "stops only for merge approval" applies again when item 4 ends); refines the DEC-021
-  sync rule.
+- Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 4
+  "one merge at a time after the owner's merge approval" and item 6 "stops only for
+  merge approval" apply again when item 4 ends; one merge at a time stays); adds an
+  exception to the recording rule on standing permission; refines the DEC-021 sync
+  rule.
 - Affected: agents/coordinator.md, agents/reviewer.md and generated adapters,
-  AGENTS.md, docs/AGENT-WORKFLOW.md.
+  AGENTS.md, docs/AGENT-WORKFLOW.md, docs/STAGE-2-PARALLEL-PLAN.md, the recording rules
+  above.
 
 ## Issue-specific decisions (pointers)
 

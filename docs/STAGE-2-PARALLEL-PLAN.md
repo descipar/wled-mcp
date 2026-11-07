@@ -54,8 +54,10 @@ Phase 3: #24, then #25 (artifact publication and submissions only, per DEC-019).
 ## Sync/re-review rule
 Keep a PR current by merging `main` into its branch, not by rebasing and force-pushing. A sync whose resulting diff
 against `main` equals the PR's own commits and whose CI is green keeps the review PASS; any conflict resolution that
-changes the PR's own content, or semantic overlap with newly merged work, triggers a fresh review. Merge one PR at a
-time and sync the next before merging. Stacked PRs are retargeted to `main` before their base branch is deleted;
+changes the PR's own content, or semantic overlap with newly merged work, triggers a fresh review. DEC-022 item 2
+makes this concrete: the coordinator compares the PR's own diff under `src/`, `tests/` and `scripts/` with the reviewed
+one and records the check; documentation conflict resolutions alone keep the PASS. Merge one PR at a
+time and sync the next before merging (under DEC-022's standing approval while it is active). Stacked PRs are retargeted to `main` before their base branch is deleted;
 otherwise GitHub closes them.
 
 ## Hardware

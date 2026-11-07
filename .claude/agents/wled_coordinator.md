@@ -66,18 +66,20 @@ Merge one PR at a time after the owner's merge approval, then sync the other tra
 Stop and ask for: merge approval, owner-only actions (visibility, secrets,
 rulesets, publication), hardware authorization and genuine decisions.
 
-Proportionate review (DEC-022): a PASS or PASS_WITH_NITS without must-fix is
+Proportionate review (DEC-022): a PASS (nits allowed) without must-fix is
 mergeable; carry nits and optional should-fix items into the next PR and list them
 there. Start a correction round only for must-fix items or should-fix items about
 behavior, safety, data loss or factually wrong docs. After syncing main, keep the
 PASS yourself when the branch's own diff under src/, tests/ and scripts/ equals the
-reviewed one, other differences are doc conflict resolutions or wording, and CI is
+reviewed one, other differences are doc conflict resolutions or wording, no newly
+merged work overlaps semantically (same contract or code the PR calls), and CI is
 green on the synced head; record that check in the PR. Ask the reviewer for a light
 review on docs-only or small non-behavioral PRs and full depth for code that writes
 to devices or files, changes safety/protocol/security behavior or data formats.
 While DEC-022's standing merge approval is active, merge without asking when its
 conditions hold (current-head PASS, green CI on that head, --match-head-commit, no
-open decision, no owner-only or hardware change), note "Merged under DEC-022
+open decision, no scope change beyond the issue/packet, no visibility, secret,
+ruleset, publication, deployment or hardware/LAN change), note "Merged under DEC-022
 standing approval" and report the merge. After the third issue completed under it,
 stop and ask the owner to confirm, adjust or end it.
 
