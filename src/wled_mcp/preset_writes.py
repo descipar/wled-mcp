@@ -41,6 +41,7 @@ from wled_mcp.presets import (
     lowest_free,
     parse_store,
     playlist_ids,
+    referencing_playlists,
     unsafe_playlist_members,
 )
 from wled_mcp.readmodels import as_dict
@@ -50,6 +51,9 @@ from wled_mcp.segment_rules import GROUPING_MAX, SPACING_MAX, check_segment_name
 Route = Literal["state", "playlist"]
 
 # Keys the firmware removes from the request document before it stores it verbatim.
+# Only o and psave are ever sent: the supplied-state schema and the state classification
+# of a restored snapshot exclude v, time, error and bootps (bootps would also change the
+# boot preset configuration). They are listed so the comparison follows the firmware.
 FIRMWARE_REMOVED_KEYS: Final = frozenset({"o", "v", "time", "error", "psave", "bootps"})
 # Top-level keys a supplied state object may carry (a subset of STATE_ALLOWED_KEYS).
 SUPPLIED_STATE_KEYS: Final = ("on", "bri", "transition", "bs", "mainseg", "seg")
@@ -58,7 +62,12 @@ PLAYLIST_ENTRY_KEYS: Final = frozenset({"playlist", "n", "on", "ql"})
 PLAYLIST_KEYS: Final = frozenset({"ps", "dur", "transition", "repeat", "end", "r"})
 MAX_PLAYLIST_ENTRIES: Final = 100
 MAX_PLAYLIST_DURATION: Final = 42_949_670  # tenths of a second (v16.0.1 playlist.cpp)
-MAX_TRANSITION: Final = 65_535  # tenths of a second (uint16)
+MAX_TRANSITION: Final = 65_535  # playlist transition, tenths of a second (uint16 entry)
+# Master transition: the firmware keeps transitionDelay = tenths * 100 in a uint16_t
+# (wled.h), so more than 655 tenths would wrap.
+MAX_STATE_TRANSITION: Final = 655
+# The firmware masks the blending style with 0x1F (json.cpp, ISSUE-66 evidence).
+MAX_BLENDING_STYLE: Final = 31
 DEFAULT_PLAYLIST_DURATION: Final = 100
 QUICK_LOAD_MAX_BYTES: Final = 8
 
@@ -124,8 +133,8 @@ class SuppliedState(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     on: bool | None = None
     bri: int | None = Field(default=None, ge=0, le=255)
-    transition: int | None = Field(default=None, ge=0, le=MAX_TRANSITION)
-    bs: int | None = Field(default=None, ge=0, le=255)
+    transition: int | None = Field(default=None, ge=0, le=MAX_STATE_TRANSITION)
+    bs: int | None = Field(default=None, ge=0, le=MAX_BLENDING_STYLE)
     mainseg: int | None = Field(default=None, ge=0)
     seg: list[SuppliedSegment] | None = Field(default=None, min_length=1, max_length=64)
 
@@ -317,13 +326,6 @@ def check_playlist_entry(entry: dict[str, JsonValue]) -> list[int]:
     repeat = playlist.get("repeat", 0)
     if type(repeat) is not int or repeat < 0:
         raise _unsupported("The playlist repeat count must be a non-negative integer.", reconcile)
-    if repeat > 0:
-        raise _unsupported(
-            "A playlist with a finite repeat count is not reproducible: the firmware saves "
-            "the playlist after starting it and stores a repeat count that depends on "
-            "playback timing (v16.0.1 serializePlaylist).",
-            reconcile,
-        )
     end = playlist.get("end", 0)
     if type(end) is not int or not 0 <= end <= MAX_PERSISTENT_ID:
         raise _unsupported(
@@ -334,12 +336,6 @@ def check_playlist_entry(entry: dict[str, JsonValue]) -> list[int]:
     shuffle = playlist.get("r", False)
     if not (isinstance(shuffle, bool) or shuffle in (0, 1)):
         raise _unsupported("The playlist shuffle flag must be a boolean.", reconcile)
-    if shuffle:
-        raise _unsupported(
-            "A shuffle playlist is not reproducible: the firmware saves the playlist after "
-            "starting it and may store a shuffled member order (v16.0.1 presets.cpp).",
-            reconcile,
-        )
     return [*members, end] if end else list(members)
 
 
@@ -473,6 +469,12 @@ def plan_destination(
         raise _fail("The existing entry is not a JSON object and cannot be snapshotted.")
     if kind != route:
         warnings.append(f"The existing '{kind}' entry is replaced by a {route} entry.")
+    users = referencing_playlists(store, preset_id)
+    if users:
+        warnings.append(
+            f"Playlist(s) {users[:20]} reference this preset; they are not edited and will "
+            "use the new entry."
+        )
     return Destination(preset_id, False, current, kind, store, warnings)
 
 
@@ -571,15 +573,32 @@ def live_before(state: dict[str, JsonValue]) -> dict[str, JsonValue]:
 def playback_warnings(route: Route, before: dict[str, JsonValue], target: int) -> list[str]:
     warnings: list[str] = []
     running = before.get("active_playlist_id")
-    if isinstance(running, int):
+    # The playlist route refuses a running playlist (refuse_running_playlist).
+    if isinstance(running, int) and route == "state":
         warnings.append(
             f"Playlist {running} is running; the write changes the live output and may "
             "interrupt it."
-            if route == "state"
-            else f"Playlist {running} is running; the saved playlist starts and replaces it."
         )
     if before.get("active_preset_id") == target:
         warnings.append(
             "The destination is the currently active preset marker (state.ps); it is replaced."
         )
     return warnings
+
+
+def refuse_running_playlist(before: dict[str, JsonValue]) -> None:
+    """The playlist route must not run while a playlist plays.
+
+    With a playlist already running, the firmware's ``loadPlaylist`` may keep it (nested
+    playlist) and the save would then store the running playlist instead of the sent
+    one (v16.0.1 playlist.cpp, presets.cpp). Checked during planning and again after the
+    snapshot, before any POST.
+    """
+    running = before.get("active_playlist_id")
+    if isinstance(running, int):
+        raise _conflict(
+            f"Playlist {running} is running; saving a playlist now could store the running "
+            "playlist instead of this one, so nothing was written.",
+            "Stop the running playlist explicitly (for example by activating a state preset) "
+            "and request the restore again.",
+        )

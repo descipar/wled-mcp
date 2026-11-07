@@ -324,14 +324,17 @@ class SnapshotStore:
         preset_id: int,
         preset: dict[str, JsonValue],
         firmware: Firmware,
+        protect: frozenset[str] = frozenset(),
     ) -> BackupRecord:
         """Durably store one preset object; raise BACKUP_FAILED/VALIDATION_ERROR otherwise.
 
         Call inside the device lock, with a freshly read object, immediately before
-        the destructive write. Prune runs only after the new snapshot is durable.
+        the destructive write. Prune runs only after the new snapshot is durable and
+        never deletes the new snapshot or a ``protect``ed one (for example the source
+        of a running restore).
         """
         try:
-            return self._backup(device_id, preset_id, preset, firmware)
+            return self._backup(device_id, preset_id, preset, firmware, protect)
         except ClientFailure as failure:
             if failure.error.code == "VALIDATION_ERROR":
                 raise
@@ -344,7 +347,12 @@ class SnapshotStore:
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"]) from None
 
     def _backup(
-        self, device_id: str, preset_id: int, preset: dict[str, JsonValue], firmware: Firmware
+        self,
+        device_id: str,
+        preset_id: int,
+        preset: dict[str, JsonValue],
+        firmware: Firmware,
+        protect: frozenset[str] = frozenset(),
     ) -> BackupRecord:
         self._check_device(device_id)
         _check_preset_id(preset_id)
@@ -384,7 +392,7 @@ class SnapshotStore:
                 break
         else:
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"])
-        pruned, warnings = self._prune(device_id, keep=backup_id)
+        pruned, warnings = self._prune(device_id, keep=backup_id, protect=protect)
         return BackupRecord(backup_id, device_id, preset_id, created_at, pruned, warnings)
 
     @staticmethod
@@ -477,8 +485,13 @@ class SnapshotStore:
 
     # -- retention ---------------------------------------------------------
 
-    def _prune(self, device_id: str, keep: str) -> tuple[int, tuple[str, ...]]:
-        """Delete oldest valid snapshots beyond retention; failure is a warning only."""
+    def _prune(
+        self, device_id: str, keep: str, protect: frozenset[str] = frozenset()
+    ) -> tuple[int, tuple[str, ...]]:
+        """Delete oldest valid snapshots beyond retention; failure is a warning only.
+
+        ``keep`` and ``protect``ed IDs are never deleted; younger snapshots go instead.
+        """
         try:
             listing = self.list_snapshots(device_id)
             ordered = [item for item in listing.snapshots]
@@ -488,7 +501,7 @@ class SnapshotStore:
             for item in ordered:
                 if excess <= 0:
                     break
-                if item.backup_id == keep:
+                if item.backup_id == keep or item.backup_id in protect:
                     continue
                 path = self._device_dir(device_id) / f"{item.backup_id}.json"
                 try:

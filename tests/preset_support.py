@@ -148,7 +148,7 @@ class PresetDevice:
                 "transition": expand(playlist.get("transition"), self.state["transition"]),
                 "repeat": playlist.get("repeat", 0),
                 "end": playlist.get("end", 0),
-                "r": bool(playlist.get("r", False)),
+                "r": int(bool(playlist.get("r", False))),  # playlistOptions & 1
             },
             "on": True,
             "n": body.get("n") or f"Preset {body['psave']}",

@@ -37,9 +37,11 @@ description, the dry-run plan (`plan.live_effect`) and the result (`data.live_ef
   is not restored."
 
 There is no "apply, save, re-apply the previous lighting" emulation. The plan and
-result report the active preset and playlist before the write (`live_before`) and warn
-when a running playlist is interrupted or replaced, or when the destination is the
-active preset marker. The PRE-03 variant "without changing live output" is not
+result report the active preset and playlist before the write (`live_before`). A
+state write warns when a running playlist may be interrupted; the playlist route is
+refused while a playlist runs (see [Restore](#restore-wled_restore_preset)). A warning
+also names the active preset marker when it is the destination, and the playlists that
+reference an overwritten destination (they are not edited). The PRE-03 variant "without changing live output" is not
 supported on WLED 16; no input requests it.
 
 ## Write routes
@@ -104,7 +106,9 @@ uncertain write), and restore also `source_backup_id`, `source_preset_id`,
 ## Supplied state (`wled_store_preset`)
 
 `state` uses WLED wire keys and allows only light state: top-level `on`, `bri` (0-255),
-`transition` (0-65535 tenths), `bs` (0-255), `mainseg`, `seg` (1-64 segments) and at
+`transition` (0-655 tenths: the firmware keeps `transition` x 100 ms in a 16-bit value,
+so larger values would wrap), `bs` (0-31: the firmware masks the blending style with
+`0x1F`), `mainseg`, `seg` (1-64 segments) and at
 least one of `on`, `bri`, `seg`. Segments need `id`, `start`, `stop` and may carry
 `on`, `bri`, `col`, `fx`, `pal`, `sx`, `ix`, `grp` (1-255), `spc` (0-255), `of`, `rev`,
 `mi`, `sel`, `n`. Any other key, including every control or side-effect key (`ps`,
@@ -138,12 +142,24 @@ firmware's playlist save would not reproduce it: top-level keys other than `play
 `end`, `r` (they would be dropped); `on` other than true; a name over 32 UTF-8 bytes
 or an empty or over-8-byte label; no or more than 100 members; `dur` outside
 0-42949670 or `transition` outside 0-65535 tenths; `end` other than 0 or 1-250 (255
-is refused as for activation); a negative or a finite positive `repeat`; or shuffle
-(`r`). The last two are refused because the firmware saves the playlist only after
-starting it, so the stored repeat count depends on playback timing and a shuffle
-playlist may be stored in shuffled order. Because saving starts the playlist, every
-member and a persistent `end` must be an existing plain state preset other than the
-destination itself.
+is refused as for activation); or a negative `repeat` (the firmware reads it as
+shuffle). A finite `repeat` and shuffle (`r`) are accepted (ISSUE-18-DEC-003): from the
+pinned source the save runs before the playlist advances, so `repeat` and the member
+order are stored unchanged; the semantic readback compares `repeat`, `r` and the `ps`
+order and reports any deviation as `VERIFICATION_MISMATCH` (source-derived,
+hardware pending; see [SOURCES.md](../SOURCES.md#issue-18-wled-16-preset-write-evidence)).
+Because saving starts the playlist, every member and a persistent `end` must be an
+existing plain state preset other than the destination itself; a member that changes
+between planning and the post-snapshot recheck is `PRESET_CONFLICT`.
+
+The playlist route is refused with `PRESET_CONFLICT` before any snapshot or POST while
+the device reports a running playlist (`state.pl` > 0), and again if one is running
+when the state is re-read after the snapshot: with a playlist already running the
+firmware's `loadPlaylist` can keep it, and the save would then store the running
+playlist in the destination instead of the snapshot's.
+
+The restore's source snapshot is protected from retention pruning for the whole
+operation, so the prior snapshot of an occupied destination never deletes it.
 
 ## Snapshot listing (`wled_list_snapshots`)
 

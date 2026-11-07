@@ -250,7 +250,7 @@ PLAYLIST = playlist_entry([1, 2], name="Cycle")  # dur [100, 100], transition [7
 @pytest.mark.anyio
 async def test_playlist_snapshot_restores_through_the_playlist_route(tmp_path):
     desk = wled16({"1": state_entry("A"), "2": state_entry("B")})
-    desk.state.update(pl=4, ps=1)
+    desk.state.update(pl=-1, ps=1)
     resources, _clock = open_resources(tmp_path, fleet_of(desk))
     async with resources:
         source = snapshot(resources, PLAYLIST, preset_id=7)
@@ -262,7 +262,7 @@ async def test_playlist_snapshot_restores_through_the_playlist_route(tmp_path):
     assert outcome.data["type"] == "playlist"
     assert "Starts the playlist" in str(outcome.data["live_effect"])
     assert desk.state["pl"] == 7  # the playlist started
-    assert any("Playlist 4 is running" in w for w in outcome.warnings)
+    assert outcome.data["live_before"] == {"active_preset_id": 1, "active_playlist_id": None}
 
 
 @pytest.mark.anyio
@@ -280,9 +280,6 @@ async def test_playlist_snapshot_restores_through_the_playlist_route(tmp_path):
         (playlist_entry([1, 9]), "IDs [9]"),  # member 9 is an API command
         (playlist_entry([1, 7]), "IDs [7]"),  # the destination itself
         (playlist_entry(list(range(1, 102))), "1-100"),
-        # The firmware saves after starting: repeat and shuffle are not reproducible.
-        ({**PLAYLIST, "playlist": {**PLAYLIST["playlist"], "repeat": 2}}, "repeat count"),
-        ({**PLAYLIST, "playlist": {**PLAYLIST["playlist"], "r": True}}, "shuffle"),
         (playlist_entry([1], name="x" * 33), "32 UTF-8 bytes"),
         (playlist_entry([1], ql=""), "quick-load"),
     ],
@@ -416,3 +413,146 @@ async def test_unusable_stored_playlist_values_are_a_mismatch_not_a_crash(tmp_pa
         outcome = await call(resources, "wled_restore_preset", backup_id=source)
     assert outcome.error.code == "VERIFICATION_MISMATCH"
     assert outcome.data["differences"] == ["playlist.dur"] and len(desk.posts) == 1
+
+
+# ================================================= correction round 1 (review of 01d0c81)
+
+
+@pytest.mark.anyio
+async def test_restore_at_the_retention_limit_keeps_its_source_snapshot(tmp_path):
+    # M-1: the prior snapshot of the occupied destination must not prune the source.
+    desk = wled16({"5": state_entry("Current")})
+    resources, clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        retain = resources.backups.retain_per_device
+        source = snapshot(resources, STORED)  # the oldest snapshot
+        others = []
+        for index in range(retain - 1):
+            clock.advance(1)
+            others.append(snapshot(resources, state_entry(f"Other {index}"), preset_id=7))
+        clock.advance(1)
+        assert len(snapshot_files(tmp_path)) == retain
+        outcome = await call(resources, "wled_restore_preset", backup_id=source, overwrite=True)
+        files = snapshot_files(tmp_path)
+    assert outcome.ok and (outcome.application, outcome.verification) == ("applied", "verified")
+    assert len(desk.posts) == 1 and desk.store["5"] == STORED
+    assert f"{source}.json" in files and f"{outcome.data['backup_id']}.json" in files
+    assert f"{others[0]}.json" not in files  # the oldest unprotected snapshot went instead
+    assert len(files) == retain
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("changes", [{"repeat": 2}, {"r": True}, {"repeat": 3, "r": 1}])
+async def test_finite_repeat_and_shuffle_restore_and_verify_semantically(tmp_path, changes):
+    # S1 (coordinator decision): accepted; the semantic readback compares repeat, r, ps.
+    preset = {**PLAYLIST, "playlist": {**PLAYLIST["playlist"], **changes}}
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B")})
+    resources, _clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, preset, preset_id=7)
+        outcome = await call(resources, "wled_restore_preset", backup_id=source)
+    assert outcome.ok and len(desk.posts) == 1
+    stored = desk.store["7"]["playlist"]
+    assert stored["repeat"] == changes.get("repeat", 0)
+    assert stored["r"] == int(bool(changes.get("r", False)))  # firmware stores an integer
+
+
+@pytest.mark.anyio
+async def test_shuffled_member_order_in_readback_is_a_mismatch(tmp_path):
+    preset = {**PLAYLIST, "playlist": {**PLAYLIST["playlist"], "r": True}}
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B")})
+    desk.entry_mutator = lambda entry: entry["playlist"]["ps"].reverse()
+    resources, _clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, preset, preset_id=7)
+        outcome = await call(resources, "wled_restore_preset", backup_id=source)
+    assert outcome.error.code == "VERIFICATION_MISMATCH"
+    assert outcome.data["differences"] == ["playlist.ps"] and len(desk.posts) == 1
+
+
+@pytest.mark.anyio
+async def test_running_playlist_blocks_the_playlist_route_before_any_write(tmp_path):
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B"), "5": state_entry("Old")})
+    desk.state.update(pl=4, ps=1)
+    fleet = fleet_of(desk)
+    resources, _clock = open_resources(tmp_path, fleet)
+    async with resources:
+        source = snapshot(resources, PLAYLIST, preset_id=5)
+        for dry_run in (True, False):
+            outcome = await call(
+                resources, "wled_restore_preset", backup_id=source, overwrite=True, dry_run=dry_run
+            )
+            assert outcome.error.code == "PRESET_CONFLICT"
+            assert "Playlist 4 is running" in outcome.error.message
+    assert fleet.post_count() == 0
+    assert snapshot_files(tmp_path) == [f"{source}.json"]  # no prior snapshot either
+
+
+@pytest.mark.anyio
+async def test_playlist_started_after_the_snapshot_is_a_conflict(tmp_path):
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B"), "5": state_entry("Old")})
+
+    def start_on_recheck(device: PresetDevice) -> None:
+        if device.get_counts["presets.json"] == 2:
+            device.state["pl"] = 9
+
+    desk.before_presets_get = start_on_recheck
+    resources, clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, PLAYLIST, preset_id=5)
+        clock.advance(5)
+        outcome = await call(resources, "wled_restore_preset", backup_id=source, overwrite=True)
+    assert outcome.error.code == "PRESET_CONFLICT" and "Playlist 9" in outcome.error.message
+    assert desk.posts == [] and len(snapshot_files(tmp_path)) == 2
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("change", ["delete", "api-command"])
+async def test_playlist_member_changed_after_the_snapshot_is_a_conflict(tmp_path, change):
+    # S3: the member recheck after the snapshot (planning saw valid members).
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B"), "5": state_entry("Old")})
+
+    def change_member(device: PresetDevice) -> None:
+        if device.get_counts["presets.json"] == 2:
+            if change == "delete":
+                device.store.pop("2")
+            else:
+                device.store["2"] = {"win": "T=1", "n": "B"}
+
+    desk.before_presets_get = change_member
+    resources, clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, PLAYLIST, preset_id=5)
+        clock.advance(5)
+        outcome = await call(resources, "wled_restore_preset", backup_id=source, overwrite=True)
+    assert outcome.error.code == "PRESET_CONFLICT" and "member" in outcome.error.message
+    assert desk.posts == [] and outcome.application == "not_attempted"
+    assert len(snapshot_files(tmp_path)) == 2  # the destination snapshot is kept
+
+
+@pytest.mark.anyio
+async def test_unrelated_entry_changed_during_the_write_is_reported_as_interference(tmp_path):
+    # N2: reported, never corrected.
+    desk = wled16({"9": state_entry("Unrelated")})
+    desk.on_post = lambda body: desk.store.update({"9": state_entry("Changed elsewhere")})
+    resources, _clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, STORED)
+        outcome = await call(resources, "wled_restore_preset", backup_id=source)
+    assert outcome.ok and outcome.data["interference"] == [9]
+    assert any("Unrelated preset entries changed" in w for w in outcome.warnings)
+    assert len(desk.posts) == 1
+
+
+@pytest.mark.anyio
+async def test_overwriting_a_playlist_member_names_the_referencing_playlists(tmp_path):
+    # N6: like delete, the referencing playlists are named and not edited.
+    desk = wled16({"1": state_entry("A"), "2": state_entry("B"), "7": PLAYLIST})
+    resources, clock = open_resources(tmp_path, fleet_of(desk))
+    async with resources:
+        source = snapshot(resources, STORED, preset_id=2)
+        clock.advance(5)
+        outcome = await call(
+            resources, "wled_restore_preset", backup_id=source, overwrite=True, dry_run=True
+        )
+    assert any("Playlist(s) [7] reference this preset" in w for w in outcome.warnings)

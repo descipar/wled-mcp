@@ -21,9 +21,9 @@ linked follow-up issues. Nothing has been published.
   `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9) with a
   durable snapshot before overwrite/delete (#8). Stage-2 work of
   [#18](https://github.com/descipar/wled-mcp/issues/18) adds snapshot listing, restore and
-  supplied-state save (mock-tested; playlist authoring and import/export pending). Listing is network-free by default; explicit probes and reads
-  use bounded requests to configured devices; effect/palette catalogs have a
-  firmware-aware cache.
+  supplied-state save (mock-tested; playlist authoring and import/export pending).
+  Listing is network-free by default; explicit probes and reads use bounded requests
+  to configured devices; effect/palette catalogs have a firmware-aware cache.
 - **Deployment artifacts (#11).** HTTP image and Compose example, uvx/stdio hub entry,
   staging helper and update/rollback procedures in [DEPLOYMENT.md](DEPLOYMENT.md) are
   statically checked. One authorized live check of both modes ran on one MCPHub target

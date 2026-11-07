@@ -87,6 +87,8 @@ class OperationContext:
     dispatched: bool = False
     store: SnapshotStore | None = None
     backup_records: list[BackupRecord] = field(default_factory=list)
+    # Snapshot IDs retention pruning must keep during this operation (restore source).
+    protected_backups: set[str] = field(default_factory=set)
 
     async def backup_preset(
         self, preset_id: int, preset: dict[str, JsonValue], firmware: Firmware
@@ -102,7 +104,14 @@ class OperationContext:
         # Shielded: a cancelled call must not leave a half-promoted snapshot.
         with anyio.CancelScope(shield=True):
             record = await anyio.to_thread.run_sync(
-                partial(self.store.backup_preset, self.device.id, preset_id, preset, firmware)
+                partial(
+                    self.store.backup_preset,
+                    self.device.id,
+                    preset_id,
+                    preset,
+                    firmware,
+                    frozenset(self.protected_backups),
+                )
             )
         self.backup_records.append(record)
         # An outer cancellation that arrived during the shielded write aborts here,

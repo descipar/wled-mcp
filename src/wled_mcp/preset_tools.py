@@ -35,6 +35,7 @@ from wled_mcp.preset_writes import (
     plan_destination,
     playback_warnings,
     postconditions,
+    refuse_running_playlist,
     route_payload,
     secure_destination,
     state_object,
@@ -275,6 +276,8 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
 
         async def planner(context: OperationContext, executing: bool) -> WritePlan:
             snapshot = await load_snapshot(device_id, request.backup_id)
+            # The prior snapshot of an occupied destination must not prune the source.
+            context.protected_backups.add(snapshot.backup_id)
             kind, _malformed = classify(snapshot.preset)
             if kind not in ("state", "playlist"):
                 raise ClientFailure(
@@ -298,6 +301,8 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
             if route == "playlist":
                 check_playlist_members(store, members, target)
             before = live_before(await live_state(context))
+            if route == "playlist":
+                refuse_running_playlist(before)
             warnings = [*destination.warnings, *playback_warnings(route, before, target)]
             if destination.existing is not None and json_equal(
                 destination.existing, snapshot.preset
@@ -306,7 +311,16 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
             if executing:
                 await secure_destination(context, destination, firmware, _read_store)
                 if route == "playlist":
-                    check_playlist_members(destination.pre_store, members, target)
+                    try:
+                        check_playlist_members(destination.pre_store, members, target)
+                    except ClientFailure:
+                        raise ClientFailure(
+                            "PRESET_CONFLICT",
+                            "A playlist member changed after planning; nothing was written.",
+                            reconciliation="Inspect the members with wled_get_preset; the "
+                            "snapshot taken for the destination is kept.",
+                        ) from None
+                    refuse_running_playlist(live_before(await live_state(context)))
                 prior = context.backup_records[-1].backup_id if context.backup_records else None
                 # The #8 plan helper confirms device, firmware, target and prior snapshot.
                 await anyio.to_thread.run_sync(

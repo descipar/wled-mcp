@@ -63,7 +63,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
 - Authority: technical proposal accepted by the coordinator (not a human decision).
 - Source: refreshed requirements packet `.agent-runs/stage2/issue-18/packet.md`
   (items marked P, "Newly answered questions"), accepted in the coordinator session on
-  2026-11-07 and recorded with the first #18 pull request.
+  2026-11-07 and recorded with the first #18 pull request; the playlist-restore item
+  was amended the same day by coordinator decision on the independent review of
+  candidate `01d0c81` (correction round 1).
 - Scope: issue #18 only (both pull requests); not a project-wide rule.
 - Decision:
   - No firmware-version gate in #18 (consistent with DEC-020, "warns, does not
@@ -85,8 +87,18 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
     supported, W-PRESET-09 partial, `wled_list_snapshots` listed as a tool without a
     WLED feature row; second pull request W-PRESET-09 supported and the export/import
     tools added to W-PRESET-01, -07 and -08.
+  - Playlist restore (amended 2026-11-07 after the independent review of `01d0c81`):
+    a finite `repeat` and shuffle (`r`) are accepted and checked by the semantic
+    readback (`repeat`, `r`, `ps` order); `end = 255` and a negative `repeat` stay
+    refused. The pinned v16.0.1 source stores them unchanged because the save runs
+    before the playlist advances (source-derived, hardware pending). While the device
+    reports a running playlist (`state.pl` > 0, read during planning and rechecked
+    after the snapshot), the playlist route is refused with `PRESET_CONFLICT` before
+    any snapshot or POST, because the firmware could store the running playlist
+    instead. The restore's source snapshot is protected from retention pruning.
   - For the second pull request: playlist authoring refuses `end = 255` and a negative
-    `repeat`, and `shuffle` is an explicit field; export selects `state` and
+    `repeat`, and `shuffle` is an explicit field (the running-playlist refusal above
+    applies to the playlist route there too); export selects `state` and
     `playlist` entries by default (others only with `include_unwritable=true`, never
     importable); bundle field names as in the packet (R18-EXP-05); bundles are passed
     inline and rejected above 192 KiB serialized before any device I/O; at most 50

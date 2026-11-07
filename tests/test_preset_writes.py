@@ -23,6 +23,7 @@ from tests.state_catalog_support import make_info, make_state
 from tests.test_presets import call, fleet_of, open_resources, snapshot_files
 from wled_mcp.operations import build_operations
 from wled_mcp.preset_tools import StorePresetRequest
+from wled_mcp.preset_writes import expected_entry
 from wled_mcp.server import create_server
 
 FIRMWARE = "16.0.1"
@@ -140,6 +141,8 @@ async def test_minimal_state_and_omitted_fields_are_absent_not_null(tmp_path):
         {"bri": 256},
         {"bri": True},
         {"transition": -1},
+        {"transition": 656},  # S2: tenths * 100 would wrap the firmware's uint16_t
+        {"on": True, "bs": 32},  # N5: the firmware masks bs with 0x1F
         {},
         {"seg": []},
     ],
@@ -393,3 +396,18 @@ async def test_logs_carry_no_preset_names_or_objects(tmp_path, caplog, monkeypat
                 overwrite=True,
             )
     assert "PRIVATE" not in caplog.text
+
+
+def test_state_transition_and_blending_style_upper_bounds_are_accepted():
+    request = StorePresetRequest.model_validate(
+        {"device_id": "desk", "name": "N", "state": {"on": True, "transition": 655, "bs": 31}}
+    )
+    assert (request.state.transition, request.state.bs) == (655, 31)
+
+
+def test_firmware_removed_keys_are_excluded_from_the_expected_entry():
+    # N1: only o and psave are ever sent; v, time, error and bootps cannot reach the
+    # writer (schema and state classification), but the comparison follows the firmware.
+    sent = {"on": True, "n": "N", "o": True, "v": True, "time": 1, "error": 0, "bootps": 3}
+    assert expected_entry("state", {**sent, "psave": 4}, 4) == {"on": True, "n": "N"}
+    assert expected_entry("state", {"on": True}, 4) == {"on": True, "n": "Preset 4"}

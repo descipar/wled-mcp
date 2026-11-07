@@ -623,7 +623,8 @@ advisory writability flag without creating directories, temp files or pruning.
 Retention: default 20 valid snapshots per device (`backups.retain_per_device`,
 1-1000). Only after the new snapshot is durable, the oldest valid recognized
 snapshots beyond the limit are deleted, ordered by (`created_at`, `backup_id`); the
-new snapshot is never deleted. Invalid, temporary, foreign-named, symlink and other
+new snapshot and the source snapshot of a running `wled_restore_preset` are never
+deleted. Invalid, temporary, foreign-named, symlink and other
 devices' files are never deleted nor counted. Prune failure is a warning on the
 result, never a failure of the operation. Listing/pruning examines at most 10,000
 directory entries.

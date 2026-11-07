@@ -501,7 +501,8 @@ Stage 2 (recorded 2026-11-07):
   single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
   #19 owns the capability model; ISSUE-18-DEC-003 (coordinator, technical proposal):
   no version gate, exact-firmware restore with its own snapshot, tool names/classes and
-  coverage statuses, 192 KiB bundle and 50-entry import bounds.
+  coverage statuses, 192 KiB bundle and 50-entry import bounds; playlist restore
+  accepts repeat/shuffle and refuses while a playlist runs.
 - [ISSUE-19-DEC-001 and -002](decisions/issue-19.md) (human): overlap only with an
   explicit `allow_overlap`; `rpt`, `fxdef` and matrix/panel configuration not exposed.
 - [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device

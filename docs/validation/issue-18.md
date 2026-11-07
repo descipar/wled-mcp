@@ -23,9 +23,26 @@ firmware version explicitly (16.0.1). Nothing here is hardware acceptance.
 | A18-15 log privacy | `tests/test_preset_writes.py::test_logs_carry_no_preset_names_or_objects` |
 | Registry and coverage | `tests/tool_contract.py` (three new entries), `tests/test_tool_contract.py`, `tests/test_coverage.py`, `tests/test_readme.py` |
 
-Firmware facts that shaped refusals (pinned source review, not observed on hardware):
-the playlist route saves after starting the playlist, so a finite `repeat` and shuffle
-are refused for restore; a state write without a name is stored as `Preset <id>`.
+Firmware facts that shaped the behavior (pinned source review, not observed on
+hardware): the playlist save runs after `loadPlaylist` but before the playlist advances,
+so a finite `repeat` and shuffle are stored unchanged and are accepted (readback checks
+them); a playlist that is already running could be stored instead, so the playlist route
+is refused while one runs; a state write without a name is stored as `Preset <id>`.
+
+### Correction round 1 (review of `01d0c81`)
+
+| Finding | Fix | Evidence |
+| --- | --- | --- |
+| M-1 restore pruned its own source at the retention limit | Source `backup_id` protected from pruning for the operation (`OperationContext.protected_backups` passed to `SnapshotStore.backup_preset`) | `tests/test_restore.py::test_restore_at_the_retention_limit_keeps_its_source_snapshot` |
+| S1 finite `repeat` and shuffle wrongly refused | Accepted; semantic readback compares `repeat`, `r`, `ps` order | `tests/test_restore.py::test_finite_repeat_and_shuffle_restore_and_verify_semantically`, `::test_shuffled_member_order_in_readback_is_a_mismatch` |
+| S1 nested-playlist hazard | Playlist route refused with `PRESET_CONFLICT` while `state.pl` > 0, at planning and after the snapshot | `tests/test_restore.py::test_running_playlist_blocks_the_playlist_route_before_any_write`, `::test_playlist_started_after_the_snapshot_is_a_conflict` |
+| S2 `transition` above 655 wraps in the firmware | Bounded to 0-655 tenths | `tests/test_preset_writes.py::test_control_unknown_and_malformed_state_is_refused_by_the_schema`, `::test_state_transition_and_blending_style_upper_bounds_are_accepted` |
+| S3 member recheck after the snapshot untested | Recheck failure is `PRESET_CONFLICT`, zero POSTs | `tests/test_restore.py::test_playlist_member_changed_after_the_snapshot_is_a_conflict` |
+| N1 firmware-removed keys | Comparison test; `v`, `time`, `error`, `bootps` noted as unreachable | `tests/test_preset_writes.py::test_firmware_removed_keys_are_excluded_from_the_expected_entry` |
+| N2 interference | Test in the new files | `tests/test_restore.py::test_unrelated_entry_changed_during_the_write_is_reported_as_interference` |
+| N3 fake stores `r` as the firmware's integer | `tests/preset_support.py` | covered by the S1 tests |
+| N5 `bs` | Bounded to 0-31 (firmware mask `0x1F`) | schema rejection and upper-bound tests above |
+| N6 referencing playlists on overwrite | Warning names them | `tests/test_restore.py::test_overwriting_a_playlist_member_names_the_referencing_playlists` |
 
 Hardware: not run. A hardware check of both routes on the shared WLED 16 controller
 needs its own human authorization naming the controller and a captured, restorable
@@ -33,13 +50,13 @@ baseline (DEC-021 "Hardware"). Until then the hardware outcome is pending.
 
 ### Commands and results
 
-Local run on Windows (2026-11-07, branch `stage2/issue-18-preset-writes`); the exact
+Local run on Windows (2026-11-07, branch `stage2/issue-18-preset-writes`, after correction round 1); the exact
 candidate commit and the Linux CI run are recorded in the pull request description.
 
 | Command | Result |
 | --- | --- |
-| `uv run --frozen pytest` | 1273 passed, 18 skipped; 6 failed and 5 errors in `tests/test_inventory_client.py` and `tests/test_hw_http_probe.py`, the same Windows-only failures as on `main` |
-| `uv run --frozen pytest tests/test_preset_writes.py tests/test_restore.py` | 91 passed |
+| `uv run --frozen pytest` | 1286 passed, 18 skipped; 6 failed and 5 errors in `tests/test_inventory_client.py` and `tests/test_hw_http_probe.py`, the same Windows-only failures as on `main` |
+| `uv run --frozen pytest tests/test_preset_writes.py tests/test_restore.py` | 104 passed |
 | `uv run --frozen ruff check` / `ruff format --check` (CI path list) | pass |
 | `uv run --frozen mypy` (strict) | no issues in 28 source files |
 | `uv run --frozen python scripts/check_traceability.py` | pass |
