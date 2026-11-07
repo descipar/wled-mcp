@@ -1,8 +1,9 @@
-# Proposal: running stage 2 with limited parallelism
+# Stage 2 parallel plan
 
-Status: proposal only, not a decision. Revised after an independent review (verdict: adopt with changes), 2026-11-07,
-and refreshed against repository state `3a489fc` (owner decisions DEC-011 to DEC-020 recorded, readiness issue #90
-created). No workflow rule, issue or decision record is changed by this document.
+Status: adopted by the owner as [DEC-021](DECISIONS.md#dec-021--adopt-the-stage-2-parallel-plan) on 2026-11-07.
+Revised after an independent review (verdict: adopt with changes) and refreshed against repository state `3a489fc`.
+"Starte Stage 2 parallel" starts or resumes this plan (see `agents/coordinator.md`, stage execution). Changes to the
+plan's order, track count or rules need the owner.
 
 ## Diagnosis (confirmed by review)
 Stage 1 was serial mainly because of shared hotspots, not product dependencies: the four feature PRs
@@ -39,16 +40,15 @@ Phase 1, serial small PRs (independent review each), in this order:
  (d) docs convention: convention only: new contract/evidence go into new files (`docs/contract/<area>.md`,
      `docs/validation/<issue>.md`) and issue-specific decisions into `docs/decisions/issue-<n>.md`, linked from existing
      docs; nothing moves;
- (e) workflow rules as a human-approved shared decision: worktree per issue, main session as integration owner, sync/re-review
-     rule below, dependency-file owner, one coordinator per issue; every new issue follows DEC-010; includes
-     `agents/coordinator.md` edit and regeneration.
+ (e) workflow rules: recorded as DEC-021 together with this plan (`agents/coordinator.md` stage execution, regenerated
+     adapters); this step is done.
 Phase 2, at most two implementation tracks:
  Track A: #21 (absorbs #70, implements DEC-020) -> #16 -> #20 (+#67).
  Track B: #18 then #19 (parallel only after capability-model owner is fixed); #17 after #16 and #20 profile classes.
  #22 after #21's version source merges; #23 remaining docs/governance after #90, quickstart after #16.
 Phase 3: #24, then #25 (artifact publication and submissions only, per DEC-019).
 
-## Sync/re-review rule (needs human decision)
+## Sync/re-review rule
 Keep a PR current by merging `main` into its branch, not by rebasing and force-pushing. A sync whose resulting diff
 against `main` equals the PR's own commits and whose CI is green keeps the review PASS; any conflict resolution that
 changes the PR's own content, or semantic overlap with newly merged work, triggers a fresh review. Merge one PR at a
@@ -58,10 +58,9 @@ otherwise GitHub closes them.
 ## Hardware
 Single shared device. Each hardware run needs its own human authorization; the integration owner only schedules.
 
-## Decisions for the human
-Recommendations are the coordinator's proposal, not owner decisions.
-1. Accept 2 implementation tracks (3rd only if docs/read-only)? Recommendation: yes; human merge approval is the bottleneck.
-2. Put #90 first in Phase 1 so the `main` ruleset exists before parallel tracks? Recommendation: yes.
-3. Approve the workflow rule change (per-issue coordinators, integration owner, sync/re-review rule, DEC-010 conformance)
-   as a shared decision record? Recommendation: yes, after Phase 1 (b) has merged.
-4. Change "Depends on" in #16/#17/#20/#21/#23 issue bodies to match the real couplings? Recommendation: yes, before Phase 2.
+## Owner decisions (DEC-021)
+1. At most two implementation tracks; a third only for docs/read-only work.
+2. #90 comes first in Phase 1.
+3. Workflow rules adopted: per-issue coordinators, main session as integration owner, the sync/re-review rule above and
+   DEC-010 conformance. They apply from the merge of DEC-021; parallel implementation tracks start in Phase 2.
+4. "Depends on" in #16, #17, #20, #21 and #23 updated to the couplings above (2026-11-07).

@@ -192,6 +192,13 @@ with one writer in the current suitable checkout. Parallelize read-only work;
 parallel writers require actual isolated checkouts and clear integration ownership.
 Follow the active host's worktree tools/rules when isolation is needed.
 
+For stage 2, [DEC-021](DECISIONS.md#dec-021--adopt-the-stage-2-parallel-plan) adopts
+[the parallel plan](STAGE-2-PARALLEL-PLAN.md): the main session is the integration
+owner, at most two implementation tracks run in isolated worktrees with one
+coordinator per issue, branches are kept current by merging `main` (no force-push),
+and "Starte Stage 2 parallel" starts or resumes the plan (see
+[coordinator.md](../agents/coordinator.md)).
+
 Use issue/PR bodies or clearly attributed agent comments for durable status when
 that external write is within scope. Local transcripts/packets belong under
 ignored `.agent-runs/`, never in a central output directory. Record requirement

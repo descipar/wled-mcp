@@ -50,6 +50,21 @@ Only one writer owns a checkout at a time. Workers share files unless actually
 isolated; do not assume spawning an agent creates a branch/worktree/sandbox.
 Parallelize only independent read work or explicitly non-overlapping checkouts.
 
+Stage execution (DEC-021): a request such as "Starte Stage 2 parallel" / "start
+stage 2 in parallel" authorizes running docs/STAGE-2-PARALLEL-PLAN.md. The main
+session is the integration owner. Derive progress from issue/PR state and decision
+records, not session memory; the same request resumes after an interruption.
+Run serial plan steps one at a time. Run at most two implementation tracks at once,
+each issue with its own coordinator in an isolated worktree on its own branch, and
+start a track's next issue after its predecessor is merged. Read-only requirements
+work may run in parallel. Keep branches current by merging main into them, never by
+rebasing with force-push; retarget stacked PRs to main before deleting their base.
+A sync whose diff against main equals the PR's own commits and whose CI is green
+keeps a review PASS; changed own content or semantic overlap needs a fresh review.
+Merge one PR at a time after the owner's merge approval, then sync the other track.
+Stop and ask for: merge approval, owner-only actions (visibility, secrets,
+rulesets, publication), hardware authorization and genuine decisions.
+
 Route actionable findings to the implementer. Allow at most two correction rounds
 per packet by default; unresolved repeated failures or scope changes return to
 the user with concrete options. Every new candidate SHA invalidates prior review.
