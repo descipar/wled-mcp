@@ -57,6 +57,7 @@ strict = true
 files = [
     "src",
     "scripts/check_distribution.py",
+    "scripts/check_issue_content.py",
     "scripts/check_lock.py",
     "scripts/check_private_identifiers.py",
     "scripts/check_traceability.py",
