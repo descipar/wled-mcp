@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tomllib
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -25,6 +26,16 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "tests" / "tool_contract.py"
+VERSION_PLACEHOLDER = "REPLACE_WITH_VERSION"  # release directory name in the hub example
+
+
+def project_version(root: Path = ROOT) -> str:
+    """The canonical version: ``project.version`` (docs/contract/versioning.md)."""
+    with (root / "pyproject.toml").open("rb") as stream:
+        return str(tomllib.load(stream)["project"]["version"])
+
+
+VERSION = project_version()
 
 
 def expected_tool_names(path: Path = CONTRACT_PATH) -> list[str]:
@@ -62,7 +73,7 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
             async with Client(params, mode=mode, read_timeout_seconds=10) as client:
                 assert client.server_info is not None
                 assert client.server_info.name == "wled-mcp"
-                assert client.server_info.version == "0.1.0"
+                assert client.server_info.version == VERSION
                 tools = (await client.list_tools()).tools
                 assert [tool.name for tool in tools] == EXPECTED_TOOL_NAMES
                 assert tools[0].input_schema["additionalProperties"] is False
@@ -165,7 +176,9 @@ def hub_example_uvx(
             local = replacements[token]
             assert documented.is_absolute(), f"{token} path in the hub example is absolute"
             if token in ("--constraints", "--from"):
-                assert documented.name == local.name, f"{token} names the staged {local.name}"
+                assert documented.parent.name == VERSION_PLACEHOLDER, f"{token} release dir"
+                staged = documented.name.replace(VERSION_PLACEHOLDER, VERSION)
+                assert staged == local.name, f"{token} names the staged {local.name}"
             args[index + 1] = str(local)
     assert sum(token in replacements for token in args) == len(replacements)
     hub_env = dict(env)
@@ -194,7 +207,7 @@ def main() -> None:
         requirement = Requirement(line)
         if requirement.marker is None or requirement.marker.evaluate():
             expected[requirement.name] = next(iter(requirement.specifier)).version
-    expected["wled-mcp"] = "0.1.0"
+    expected["wled-mcp"] = VERSION
     inspection = (
         "import importlib.metadata as m,json; "
         f"names={list(expected)!r}; "
@@ -206,18 +219,20 @@ def main() -> None:
         root,
         env,
     )
-    wheel = root / "dist" / "wled_mcp-0.1.0-py3-none-any.whl"
+    wheel = root / "dist" / f"wled_mcp-{VERSION}-py3-none-any.whl"
+    dist_info = f"wled_mcp-{VERSION}.dist-info"
     with zipfile.ZipFile(wheel) as archive:
         assert "wled_mcp/cli.py" in archive.namelist()
         assert not any(name.startswith("tests/") for name in archive.namelist())
-        metadata = archive.read("wled_mcp-0.1.0.dist-info/METADATA").decode()
+        metadata = archive.read(f"{dist_info}/METADATA").decode()
         assert "Requires-Dist: mcp==2.3.0" in metadata
         assert "License-Expression: Apache-2.0" in metadata
         assert "Author: Kai Schulte" in metadata
+        assert f"Version: {VERSION}\n" in metadata
         assert "Summary: Unofficial " in metadata
         assert "not affiliated with the WLED project" in metadata
-        assert "wled_mcp-0.1.0.dist-info/licenses/LICENSE" in archive.namelist()
-        assert "wled_mcp-0.1.0.dist-info/licenses/NOTICE" in archive.namelist()
+        assert f"{dist_info}/licenses/LICENSE" in archive.namelist()
+        assert f"{dist_info}/licenses/NOTICE" in archive.namelist()
     with tempfile.TemporaryDirectory(dir=artifacts) as temporary:
         outside = Path(temporary)
         environment = outside / "installed"
@@ -242,7 +257,7 @@ def main() -> None:
         installed = run([str(python), "-c", inspection], outside, env).splitlines()
         assert json.loads(installed[0]) == expected
         assert str(environment).casefold() in installed[1].casefold()
-        assert run([str(console), "--version"], outside, env) == "wled-mcp 0.1.0"
+        assert run([str(console), "--version"], outside, env) == f"wled-mcp {VERSION}"
         assert "--transport" in run([str(console), "--help"], outside, env)
         config = outside / "bootstrap.toml"
         config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
@@ -263,7 +278,7 @@ def main() -> None:
         tool = run([*uvx, "python", "-c", inspection], outside, env).splitlines()
         assert json.loads(tool[0]) == expected
         assert str(root / "src").casefold() not in tool[1].casefold()
-        assert run([*uvx, "wled-mcp", "--version"], outside, env) == "wled-mcp 0.1.0"
+        assert run([*uvx, "wled-mcp", "--version"], outside, env) == f"wled-mcp {VERSION}"
         anyio.run(handshake, uvx[0], [*uvx[1:], "wled-mcp", *args], outside, env)
         hub_data = outside / "hub-data"
         command, hub_args, hub_env = hub_example_uvx(root, wheel, constraints, hub_data, env)

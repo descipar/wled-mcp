@@ -84,10 +84,12 @@ uv run --frozen python scripts/check_distribution.py
 uv run --frozen python deploy/stage_release.py --output .artifacts/release
 ```
 
-`check_distribution.py` builds `dist/wled_mcp-0.1.0-py3-none-any.whl` and verifies it in
-a clean environment; `stage_release.py` writes `.artifacts/release/0.1.0/` with the wheel,
-the pinned runtime constraints `requirements-runtime.txt`, the HTTP `Dockerfile` and
-`SHA256SUMS`. Nothing is uploaded or published. Copy that directory unchanged to the
+`check_distribution.py` builds `dist/wled_mcp-<version>-py3-none-any.whl` and verifies
+it in a clean environment; `stage_release.py` writes `.artifacts/release/<version>/` with
+the wheel, the pinned runtime constraints `requirements-runtime.txt`, the HTTP
+`Dockerfile`, `SHA256SUMS` and the `RELEASE` record. `<version>` is the package version
+from `pyproject.toml`, or `<version>+g<commit>` for a non-release build staged with
+`--non-release` ([versioning](docs/contract/versioning.md)). Nothing is uploaded or published. Copy that directory unchanged to the
 host that runs the server and check it there with `sha256sum -c SHA256SUMS`. On
 Windows, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for PowerShell commands.
 
@@ -107,8 +109,9 @@ Copyable, synthetic starting points; replace every placeholder before use:
 The MCP host starts the server as a subprocess on demand.
 
 1. Place the release directory where the host can read it. The example uses
-   `/app/binaries/wled-mcp/0.1.0/` and `/app/data/wled-mcp/` as seen from inside an
-   MCPHub container; use your own absolute paths elsewhere.
+   `/app/binaries/wled-mcp/REPLACE_WITH_VERSION/` and `/app/data/wled-mcp/` as seen from
+   inside an MCPHub container; replace `REPLACE_WITH_VERSION` with the release directory
+   name (the `version=` line of its `RELEASE`) and use your own absolute paths elsewhere.
 2. Create the data directory and the inventory:
 
    ```text
@@ -121,7 +124,7 @@ The MCP host starts the server as a subprocess on demand.
    [examples/mcphub.example.json](examples/mcphub.example.json); it runs:
 
    ```text
-   uvx --isolated --python 3.13 --constraints /app/binaries/wled-mcp/0.1.0/requirements-runtime.txt --from /app/binaries/wled-mcp/0.1.0/wled_mcp-0.1.0-py3-none-any.whl wled-mcp --transport stdio --config /app/data/wled-mcp/config/devices.toml --data-dir /app/data/wled-mcp
+   uvx --isolated --python 3.13 --constraints /app/binaries/wled-mcp/REPLACE_WITH_VERSION/requirements-runtime.txt --from /app/binaries/wled-mcp/REPLACE_WITH_VERSION/wled_mcp-REPLACE_WITH_VERSION-py3-none-any.whl wled-mcp --transport stdio --config /app/data/wled-mcp/config/devices.toml --data-dir /app/data/wled-mcp
    ```
 
    Keep each argument separate in the host configuration, and keep the `UV_CACHE_DIR`,
@@ -139,11 +142,12 @@ The service runs as its own Docker Compose project and the MCP host connects to 
 a private Docker network. No host port is published.
 
 1. Build the image locally from the copied release directory (`<release-dir>`, for
-   example `.artifacts/release/0.1.0` on the build machine); the image is never pulled
-   or pushed:
+   example `.artifacts/release/<version>` on the build machine); the image is never
+   pulled or pushed. The tag is the release version, with `+` replaced by `-` for a
+   non-release build (the `image_tag=` line of its `RELEASE`):
 
    ```text
-   docker build --pull -t wled-mcp:0.1.0 <release-dir>
+   docker build --pull -t wled-mcp:<image-tag> <release-dir>
    ```
 
 2. Prepare a deployment directory (the path is an example) with the
@@ -160,9 +164,9 @@ a private Docker network. No host port is published.
    sudo chmod 0400 secrets/wled_mcp_http_token
    ```
 
-   Edit `data/wled-mcp/config/devices.toml` ([Inventory](#inventory)) and replace
+   Edit `data/wled-mcp/config/devices.toml` ([Inventory](#inventory)), replace
    `REPLACE_WITH_HUB_NETWORK` in `compose.yaml` with the existing Docker network of your
-   MCP host. The credential stays in `secrets/wled_mcp_http_token`; never commit or
+   MCP host and `REPLACE_WITH_IMAGE_TAG` with the tag built in step 1. The credential stays in `secrets/wled_mcp_http_token`; never commit or
    print it.
 3. Start and inspect only this project:
 

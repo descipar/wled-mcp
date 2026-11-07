@@ -348,7 +348,7 @@
             ]
           },
           "diagnostics": {
-            "server_version": "0.1.0",
+            "server_version": "0.0.0+example",
             "unknown_capabilities": []
           }
         },
