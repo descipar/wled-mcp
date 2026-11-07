@@ -355,6 +355,44 @@ def test_stage_cli_rejects_contradictory_options(argv, capsys):
     assert capsys.readouterr().out == ""
 
 
+@pytest.mark.parametrize(
+    ("failure", "expected"),
+    [
+        (
+            subprocess.CalledProcessError(
+                128, ["git", "archive", "--format=tar", "HEAD"], stderr=b"fatal: bad tree\n"
+            ),
+            "Staging failed: git archive exited 128.\nfatal: bad tree\n",
+        ),
+        (
+            subprocess.CalledProcessError(
+                1, ["git", "rev-parse", "HEAD"], stderr="fatal: not a git repository\n"
+            ),
+            "Staging failed: git rev-parse exited 1.\nfatal: not a git repository\n",
+        ),
+        (
+            subprocess.CalledProcessError(1, ["git", "status"], stderr=None),
+            "Staging failed: git status exited 1.\n",
+        ),
+        (
+            subprocess.TimeoutExpired(["git", "archive", "--format=tar", "HEAD"], 60),
+            "Staging failed: git archive did not finish within 60 seconds.\n",
+        ),
+    ],
+    ids=["archive-stderr-bytes", "git-stderr-text", "no-stderr", "timeout"],
+)
+def test_stage_cli_reports_git_failures_cleanly(monkeypatch, capsys, failure, expected):
+    # Nit from the PR A review: git's stderr is shown and a timeout is no traceback.
+    def failing(*_args: object, **_kwargs: object) -> Path:
+        raise failure
+
+    monkeypatch.setattr(stage_release, "stage_non_release", failing)
+    assert stage_release.main(["--non-release", "--output", "unused"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.endswith(expected), captured.err
+
+
 POSIX_SHELL = pytest.mark.skipif(
     os.name == "nt" or shutil.which("sh") is None or shutil.which("sha256sum") is None,
     reason="runs the image's POSIX checksum step; needs sh and sha256sum",
