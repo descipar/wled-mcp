@@ -136,7 +136,9 @@ Items marked resolved link their decision record:
    immediately before the visibility change, as a mandatory #23/#25 step with owner
    approval of the findings.
 6. Whether German source quotes in decision records stay verbatim in a public
-   repository.
+   repository. Resolved by
+   [DEC-017](DECISIONS.md#dec-017--verbatim-owner-quotes-with-english-translation):
+   they stay verbatim with an English translation.
 7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
    `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
    Resolved by [DEC-016](DECISIONS.md#dec-016--ship-the-agent-tooling-and-decision-records):

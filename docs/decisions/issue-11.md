@@ -124,7 +124,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Recorded date: 2026-11-06
 - Status: active for issue #11 only.
 - Authority: human decision accepting coordinator proposals ("setze deine Vorschläge
-  um", 2026-11-06); the choice of mode is an agent choice inside that approval.
+  um" (English: "implement your proposals"), 2026-11-06); the choice of mode is an agent choice inside that approval.
 - Source: human instruction in the coordinator session on 2026-11-06; no permalink
   available.
 - Scope: issue #11 live installation from ISSUE-11-DEC-003 and its documentation.
@@ -155,7 +155,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Status: active for issue #11 only.
 - Authority: human decision.
 - Source: human scope decision in the coordinator session on 2026-11-06 ("rollback und
-  update sehe ich erst in stage 2, das kann hier raus"); no permalink available.
+  update sehe ich erst in stage 2, das kann hier raus" (English: "I see rollback and update only in stage 2, that can be taken out here")); no permalink available.
 - Scope: the live-evidence expectation of issue #11.
 - Decision: live execution of a version-to-version update and rollback is not part of
   #11; it moves to stage 2, tracked by
@@ -219,7 +219,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
 - Source: human instruction in the coordinator session on 2026-11-06 ("5 und 6
   testen, dafür ist das bekannte [test controller] gerät freigegeben. wenn du dir
   merkst wie das aktuelle preset dort ist, ist auch das schreiben zum testen
-  freigegeben"; the device name is replaced by its role, the known test controller of
+  freigegeben" (English: "test 5 and 6; the known [test controller] device is released for that. If you remember what the current preset there is, writing for testing is released too"); the device name is replaced by its role, the known test controller of
   ISSUE-11-DEC-003). No permalink available.
 - Scope: one bounded operation on the same target and the same single test controller
   as ISSUE-11-DEC-003: the remaining #11 live checks of acceptance boxes 5 and 6 (H02
