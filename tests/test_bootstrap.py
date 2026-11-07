@@ -13,6 +13,7 @@ from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
+from tests.test_version_source import canonical_version
 from tests.tool_contract import expected_names
 from wled_mcp.config import ConfigurationError, load_config
 from wled_mcp.models import DomainError, Outcome
@@ -150,7 +151,7 @@ def test_actual_console_sdk_handshake(startup, transport, mode):
             )
             async with Client(params, mode=mode, read_timeout_seconds=5) as client:
                 assert client.server_info.name == "wled-mcp"
-                assert client.server_info.version == "0.1.0"
+                assert client.server_info.version == canonical_version()
                 assert client.protocol_version == (
                     "2025-11-25" if mode == "legacy" else "2026-07-28"
                 )

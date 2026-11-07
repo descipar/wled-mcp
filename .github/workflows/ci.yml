@@ -9,10 +9,13 @@ permissions:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    # Native amd64 and arm64 runners (DEC-020, TD-21-8); no emulation.
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
+        runner: ["ubuntu-latest", "ubuntu-24.04-arm"]
         python: ["3.13"]
     env:
       UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
@@ -26,8 +29,8 @@ jobs:
         with:
           version: "0.11.14"
       - run: uv sync --locked
-      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
-      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
+      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
+      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
       - run: uv run --frozen mypy
       - run: uv run --frozen python scripts/check_agent_setup.py
       - run: uv run --frozen python scripts/check_lock.py
@@ -46,4 +49,36 @@ jobs:
       - run: uv run --frozen python scripts/check_private_identifiers.py
       - run: uv run --frozen pytest
       - run: uv run --frozen python scripts/check_distribution.py
+      - run: git diff --exit-code
+
+  container:
+    # HTTP image per native architecture: stage a non-release build, build the image,
+    # start it on loopback and run one MCP tools/list. No push, no LAN (TD-21-8).
+    # Runs for pull requests and pushes to main only, to bound private-plan minutes.
+    # TEMPORARY: condition removed for branch verification; restored before handoff.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ["ubuntu-latest", "ubuntu-24.04-arm"]
+    env:
+      UV_CACHE_DIR: ${{ github.workspace }}/.uv-cache
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.14"
+      - run: uv sync --locked
+      - name: Stage a non-release build of this commit
+        run: uv run --frozen python deploy/stage_release.py --non-release --output "${RUNNER_TEMP}/release"
+      - name: Build and smoke-test the image
+        run: |
+          set -- "${RUNNER_TEMP}"/release/*/
+          test "$#" -eq 1
+          uv run --frozen python scripts/check_container.py "$1"
       - run: git diff --exit-code

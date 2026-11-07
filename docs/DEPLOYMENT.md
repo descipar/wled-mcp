@@ -110,16 +110,18 @@ uv run --frozen python scripts/check_distribution.py
 uv run --frozen python deploy/stage_release.py --output .artifacts/release
 ```
 
-`check_distribution.py` builds `dist/wled_mcp-<version>-py3-none-any.whl` and verifies it
+`<version>` is `project.version` from `pyproject.toml`, the single version source
+([versioning](contract/versioning.md)). `check_distribution.py` builds
+`dist/wled_mcp-<version>-py3-none-any.whl` and verifies it
 (clean install, stdio, HTTP restart, uvx and the stdio hub example). `stage_release.py`
 creates `.artifacts/release/<version>/` with the wheel, `requirements-runtime.txt`, the
 HTTP `Dockerfile`, its allowlist `.dockerignore`, `SHA256SUMS` and `RELEASE` (version,
 source commit, clean/modified tree). It refuses to overwrite an existing version and
 warns about a modified tree. Copy the directory unchanged to the target and verify it
-there before use:
+there before use (`<version>` is the directory name):
 
 ```text
-cd /app/binaries/wled-mcp/0.1.0
+cd /app/binaries/wled-mcp/<version>
 sha256sum -c SHA256SUMS
 cat RELEASE
 ```
@@ -139,25 +141,44 @@ Constraints pin versions but do not enforce artifact hashes; keep the trusted wh
 Never point a deployment at an editable checkout, `@latest`, an unpinned Git branch or
 an index package of the same name.
 
-Staging a non-release build (a newer commit with an unchanged package version) is not yet
-defined: `stage_release.py` correctly refuses to overwrite the existing `<version>/`
-directory, and the ad-hoc directory and image names used once in the second #12 run are
-not a documented procedure. Tracked by
-[#70](https://github.com/descipar/wled-mcp/issues/70).
+### Non-release builds
+
+A build of a commit that is not a release (a newer commit with an unchanged package
+version) gets its own immutable identity, defined in
+[versioning](contract/versioning.md#non-release-builds) and introduced by
+[#70](https://github.com/descipar/wled-mcp/issues/70):
+
+```text
+uv sync --locked
+uv run --frozen python deploy/stage_release.py --non-release --output .artifacts/release
+```
+
+`--non-release` exports the checked-out commit with `git archive`, rewrites the version
+to `<base>+g<12 hex of the commit>` only in that exported copy, builds the wheel from it
+and stages `.artifacts/release/<base>+g<12hex>/`. No tracked file is edited. The
+wheel metadata, wheel file name, directory name, `RELEASE` and `SHA256SUMS` all carry
+this PEP 440 version; `RELEASE` additionally records `build_kind=non-release`, the
+`label` (`g<12hex>`), the full `source_commit` and the derived `image_tag`
+(`wled-mcp:<base>-g<12hex>`, `+` mapped to `-` because image tags cannot contain `+`).
+Uncommitted changes are not included; `--dirty` includes uncommitted changes to tracked
+files, appends `.dirty` to the label and records `source_tree=modified`. Staging the
+same commit again is refused like any other existing directory. In the procedures
+below, `<version>` is the directory name and `<image-tag>` the `RELEASE` `image_tag`
+(for a release, the version itself), so the same steps cover both kinds of build.
 
 ## HTTP service: build, start, verify
 
 The image is built locally on the target from the staged directory and never pushed:
 
 ```text
-docker build --pull -t wled-mcp:0.1.0 /app/binaries/wled-mcp/0.1.0
-docker image inspect --format '{{.Id}}' wled-mcp:0.1.0
+docker build --pull -t wled-mcp:<image-tag> /app/binaries/wled-mcp/<version>
+docker image inspect --format '{{.Id}}' wled-mcp:<image-tag>
 ```
 
 The Dockerfile pins `python:3.13.18-slim-trixie` by tag and multi-architecture index
-digest, requires `SHA256SUMS` to list the wheel and `requirements-runtime.txt` exactly
-once each and both to match (otherwise the build fails), installs only the copied
-wheel with `--constraint requirements-runtime.txt` and creates `/app/data/wled-mcp` for the non-root
+digest, requires exactly one wheel in the context, requires `SHA256SUMS` to list that
+wheel and `requirements-runtime.txt` exactly once each and both to match (otherwise the
+build fails), installs only the copied wheel with `--constraint requirements-runtime.txt` and creates `/app/data/wled-mcp` for the non-root
 user. The allowlist `.dockerignore` keeps everything except the wheel, constraints and
 `SHA256SUMS` out of the build context, so inventories, data, backups, `.env` files and
 secrets cannot enter an image layer. To move to a newer Python 3.13 patch image, change
@@ -165,8 +186,9 @@ tag and digest together, rebuild and re-run the checks.
 
 Prepare a dedicated deployment directory (for example `/srv/wled-mcp-http/`, a
 placeholder) with the Compose file, inventory and credential. Replace
-`REPLACE_WITH_HUB_NETWORK` with the hub's existing Docker network; do not edit the hub's
-own Compose file:
+`REPLACE_WITH_HUB_NETWORK` with the hub's existing Docker network and
+`REPLACE_WITH_IMAGE_TAG` with the built `<image-tag>`; do not edit the hub's own Compose
+file:
 
 ```text
 cd /srv/wled-mcp-http
@@ -253,13 +275,17 @@ Observed with MCPHub 1.2.1 in the live check:
 All commands are scoped to the `wled-mcp-http` project and the `wled-mcp` service; none
 of them restarts, recreates or removes the hub or its network.
 
-- Update: stage and build the new version (`wled-mcp:<new>`), keep the previous image
-  and release directory, change `image:` in `compose.yaml`, then
+- Update: stage and build the new version (`wled-mcp:<new image tag>`, a release or a
+  non-release build), keep the previous image and release directory, change `image:` in
+  `compose.yaml`, then
   `docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps wled-mcp`. Repeat
   `ps`, `logs` and the authenticated `ping`; the hub reconnects without replaying writes.
 - Rollback: set `image:` back to the previous tag (rebuild it from the retained release
   directory if it was removed) and run the same `up -d --no-deps wled-mcp`. Configuration
   is never migrated in place; snapshot local data before any future schema change.
+  Rolling back the code does not restore device state: lights, segments and presets
+  stay as the newer version left them; restore them from the snapshots under the data
+  directory if needed.
 - Runtime recreation: data and inventory live in the bind mount, so recreating the
   container keeps them:
 
@@ -277,7 +303,7 @@ of them restarts, recreates or removes the hub or its network.
 
   ```text
   docker compose -p wled-mcp-http -f compose.yaml rm --stop --force wled-mcp
-  docker image rm wled-mcp:0.1.0
+  docker image rm wled-mcp:<image-tag>
   ```
 
   Deleting `data/wled-mcp` is a further, explicit decision; backups are never pruned as
@@ -290,8 +316,8 @@ wheel with the exported constraints; every argument is a separate array element:
 
 ```text
 uvx --isolated --python 3.13 \
-  --constraints /app/binaries/wled-mcp/0.1.0/requirements-runtime.txt \
-  --from /app/binaries/wled-mcp/0.1.0/wled_mcp-0.1.0-py3-none-any.whl \
+  --constraints /app/binaries/wled-mcp/REPLACE_WITH_VERSION/requirements-runtime.txt \
+  --from /app/binaries/wled-mcp/REPLACE_WITH_VERSION/wled_mcp-REPLACE_WITH_VERSION-py3-none-any.whl \
   wled-mcp --transport stdio --config /app/data/wled-mcp/config/devices.toml \
   --data-dir /app/data/wled-mcp
 ```
@@ -309,10 +335,14 @@ uvx --isolated --python 3.13 \
   `/app/data/wled-mcp/config/devices.toml` mounted persistently, the data directory
   existing and writable by the hub's process user, and outbound access to the package
   index on first launch (or an offline wheelhouse).
-- Update: stage the new version directory, change the version in `--constraints` and
-  `--from` together, then restart only this hub entry. Keep the previous directory.
+- `REPLACE_WITH_VERSION` is the release directory name, for a non-release build
+  including its label (for example `1.2.3+g0123456789ab`); the wheel file name carries
+  the same version.
+- Update: stage the new version directory (release or non-release), change the version
+  in `--constraints` and `--from` together, then restart only this hub entry. Keep the
+  previous directory.
 - Rollback: point both paths back to the previous version directory and restart only
-  this entry.
+  this entry. As for HTTP, this does not restore device state.
 - Environment rebuild after a hub image, Python or architecture change: relaunch the
   entry; if it fails to start, stop the entry, delete only `/app/data/wled-mcp-uv/cache`
   (never `/app/data/wled-mcp`) and relaunch, then repeat the read-only checks.

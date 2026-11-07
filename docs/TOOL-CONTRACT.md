@@ -782,4 +782,5 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 ## Stage 2 and later files
 
-None yet.
+- [contract/versioning.md](contract/versioning.md): version source, release mapping and
+  non-release build identity (#21, #70).
