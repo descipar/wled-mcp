@@ -216,6 +216,8 @@ class Resources:
                 # Reserve 25% (at most one second) for bounded readback after dispatch.
                 reserve = min(1.0, remaining * 0.25)
                 dispatch_deadline = Deadline(context.deadline.expires - reserve)
+                # Pre-dispatch guard: raises TIMEOUT before anything is sent, so an
+                # exhausted budget is reported as not_attempted, not uncertain.
                 dispatch_deadline.remaining()
                 dispatched = context.dispatched = True
                 try:
@@ -317,6 +319,8 @@ class Resources:
                             )
                         reserve = min(1.0, remaining * 0.25)
                         dispatch_deadline = Deadline(context.deadline.expires - reserve)
+                        # Pre-dispatch guard: raises TIMEOUT before the step is sent, so an
+                        # exhausted budget stops the sequence before dispatch.
                         dispatch_deadline.remaining()
                     except ClientFailure as failure:
                         return self._sequence_outcome(
@@ -456,6 +460,8 @@ class Resources:
                     )
                 reserve = min(1.0, remaining * 0.25)
                 dispatch_deadline = Deadline(context.deadline.expires - reserve)
+                # Pre-dispatch guard: raises TIMEOUT before anything is sent, so an
+                # exhausted budget is reported as not_attempted, not uncertain.
                 dispatch_deadline.remaining()
                 dispatched = context.dispatched = True
                 try:
