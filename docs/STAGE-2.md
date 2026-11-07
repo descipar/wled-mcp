@@ -139,6 +139,9 @@ Items marked resolved link their decision record:
    repository.
 7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
    `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
+   Resolved by [DEC-016](DECISIONS.md#dec-016--ship-the-agent-tooling-and-decision-records):
+   everything ships; a short orientation for outside readers and contributors is #23
+   (S2-PUBLIC-03) work.
 8. Whether CI gets a secret-backed private denylist for
    `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
    protection.
