@@ -9,6 +9,9 @@ before asking a question that may already have been answered.
 - Record a clear human answer as a concise, impersonal decision with ID, status,
   authority/source, scope, applicability, rationale if supplied, affected artifacts
   and any superseded decision. Do not invent a rationale or source permalink.
+- Quote a short non-English owner statement verbatim and follow it with an English
+  translation in the form `"original" (English: "translation")` (DEC-017). Typing
+  errors may be corrected if the record says so; meaning must not change.
 - Allocate the next unused sequential ID within the shared or issue-specific
   log, and never reuse an ID after supersession.
 - Use the narrowest supported scope: operation, issue, stage, workflow or project.
@@ -60,6 +63,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-014 | Project / repository history | Keep the existing Git history and author identities, including the owner's commit e-mail address, when the repository becomes public; no history rewrite and no fresh public repository. Does not change visibility. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-014](#dec-014--keep-the-existing-git-history) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-015 | Project / issue and PR review | Before the visibility change, review all issues, PRs, comments and their edit histories with a repeatable read-only scan plus one agent read-through; the owner approves the findings. Mandatory #23/#25 step; the script is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-015](#dec-015--issue-and-pr-review-before-visibility-change) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-016 | Project / public repository content | The agent tooling (AGENTS.md, CLAUDE.md, agent roles and generated client definitions, agent workflow docs and templates, sync script) and all decision records ship in the public repository; a short orientation for outside readers is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-016](#dec-016--ship-the-agent-tooling-and-decision-records) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-017 | Project / decision-record language | German owner quotes in decision records stay verbatim and carry an English translation; future records follow the same form. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-017](#dec-017--verbatim-owner-quotes-with-english-translation) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -157,9 +161,9 @@ can explicitly amend them.
 
 - Status: active project decision.
 - Authority/source: owner instructions in the coordinator session on 2026-11-06 (no
-  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein";
+  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein" (English: "an issue must have a stage and that must be visible in its name");
   the owner then confirmed recording the rule "jedes Issue hat genau eine Stage, sichtbar
-  als 'Stage N: …' im Titel plus Label stage:N", and chose stage 1 for the workflow-tooling
+  als 'Stage N: …' im Titel plus Label stage:N" (English: "every issue has exactly one stage, visible as 'Stage N: …' in the title plus label stage:N"), and chose stage 1 for the workflow-tooling
   issues #34 and #37 (previously described as cross-stage), including their link as
   sub-issues of #1.
 - Owner decision: every issue has exactly one stage, shown as a `Stage N: ` title prefix
@@ -186,8 +190,8 @@ can explicitly amend them.
 - Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
   permalink): the project should be freely available, but others must not be allowed to
   remove the owner as author ("ich würde es gerne frei verfügbar machen, aber sie sollen
-  mich als author nicht entfernen dürfen", typing errors corrected); after the coordinator compared MIT, Apache-2.0
-  and copyleft options, the owner chose "apache mit notice" and the author name for the
+  mich als author nicht entfernen dürfen" (English: "I would like to make it freely available, but they must not be allowed to remove me as author"), typing errors corrected); after the coordinator compared MIT, Apache-2.0
+  and copyleft options, the owner chose "apache mit notice" (English: "Apache with notice") and the author name for the
   attribution.
 - Owner decision: outbound license Apache-2.0; a `NOTICE` file carries the copyright and
   author attribution, which Section 4(d) of the license requires redistributions,
@@ -283,7 +287,7 @@ can explicitly amend them.
 - Status: active project decision.
 - Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
   permalink): the owner confirmed the coordinator's four-part proposal ("ja, mach
-  DEC-015 so"), then amended item 3: the #11 revision may stay because the hub is not
+  DEC-015 so" (English: "yes, do DEC-015 that way")), then amended item 3: the #11 revision may stay because the hub is not
   publicly reachable.
 - Owner decision:
   1. Two review layers: (a) a repeatable, read-only script (working name
@@ -313,7 +317,7 @@ can explicitly amend them.
 
 - Status: active project decision.
 - Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-016 so").
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-016 so" (English: "yes, do DEC-016 that way")).
 - Owner decision: the public repository ships `AGENTS.md`, `CLAUDE.md`, `agents/`, the
   generated `.claude/agents/` and `.codex/` definitions, `docs/AGENT-*.md`,
   `docs/agent-workflow/`, `scripts/sync_agents.py` with its tests, `docs/DECISIONS.md`
@@ -331,6 +335,26 @@ can explicitly amend them.
 - Rationale supplied: none beyond accepting the proposal.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md; future #23 scope.
+
+### DEC-017 — Verbatim owner quotes with English translation
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-017 so"
+  (English: "yes, do DEC-017 that way")).
+- Owner decision: German owner quotes in decision records stay verbatim as source
+  evidence and are followed by an English translation, `"original" (English:
+  "translation")`. Existing quotes are translated now; the recording rules above require
+  the same form for future records. Quotes are not removed or replaced by translations.
+- Coordinator notes (not owner statements): 21 quote occurrences in DECISIONS.md and the
+  issue-7, issue-11 and issue-12 records were translated; the translations are the
+  coordinator's and do not change the recorded decisions. Earlier wording remains in the
+  public history (DEC-014).
+- Conditions: no visibility change is authorized here.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/DECISIONS.md, docs/decisions/issue-7.md, docs/decisions/issue-11.md,
+  docs/decisions/issue-12.md, docs/STAGE-2.md.
 
 ## Issue-specific decisions (pointers)
 
