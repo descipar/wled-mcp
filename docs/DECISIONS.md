@@ -56,6 +56,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
 | DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -227,6 +228,29 @@ can explicitly amend them.
   explicit unofficial marking rather than renaming.
 - Supersedes: the `io.github.<publisher>` placeholder in STAGE-2.md and MARKETPLACE.md.
 - Affected: pyproject.toml (description), docs/MARKETPLACE.md, docs/STAGE-2.md.
+
+### DEC-013 — General contact and no security support
+
+- Status: active project decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink). For general contact the owner chose option (a), GitHub issues only. For
+  security the owner stated that this is a private product, that they do not want to do
+  extra security work, and that it is "use at own risk"; the owner then confirmed the
+  coordinator's proposal below.
+- Owner decision: public contact is GitHub issues only; no e-mail address in package
+  metadata or listings. No security support: no private reporting channel (GitHub
+  private vulnerability reporting stays off), no response commitment, no guaranteed
+  fixes, no advisories. A short `SECURITY.md` states this, allows reports as regular
+  issues without exploit details and recommends running the HTTP service only on a
+  trusted network. S2-PUBLIC-03 requires this statement instead of a security contact.
+- Coordinator notes (not owner statements): the Apache-2.0 warranty and liability
+  disclaimers (Sections 7 and 8) already apply; built-in safeguards (HTTP token,
+  Host/Origin checks, validation before writes) remain project requirements and are not
+  affected by this decision.
+- Conditions: no repository setting is changed by this decision.
+- Rationale supplied: private hobby product; the owner does not want security process work.
+- Supersedes: the "security reporting/contact" part of S2-PUBLIC-03.
+- Affected: SECURITY.md, docs/STAGE-2.md.
 
 ## Issue-specific decisions (pointers)
 
