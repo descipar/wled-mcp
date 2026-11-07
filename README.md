@@ -287,9 +287,11 @@ Known limitations:
   call; a write interrupted that way stays uncertain.
 - `tools/list` is CPU-heavy on small hosts
   ([#67](https://github.com/descipar/wled-mcp/issues/67)).
-- No published package, image or registry entry. Upgrade and rollback compatibility
-  is tested automatically against retained data of earlier releases
-  ([versioning](docs/contract/versioning.md#upgrade-downgrade-and-rollback)); a live
+- No published package, image or registry entry. Automated tests check that the
+  current server reads the retained data of earlier releases and rejects newer data
+  versions without changing files; an older server reading newer data is not tested
+  and relies on unchanged formats
+  ([versioning](docs/contract/versioning.md#upgrade-downgrade-and-rollback)). A live
   update and rollback of a deployed service is checked with the first published
   release ([#25](https://github.com/descipar/wled-mcp/issues/25)).
 

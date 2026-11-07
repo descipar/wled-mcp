@@ -52,6 +52,10 @@ CASES = [
     ("0.14.0", "unsupported", UNSUPPORTED_WARNING),
     ("15.99.99", "unsupported", UNSUPPORTED_WARNING),
     ("16.0.0-b1", "unsupported", UNSUPPORTED_WARNING),  # pre-release of the floor
+    ("16.0.0+mod", "unsupported", UNSUPPORTED_WARNING),  # any suffix on the floor
+    ("16.0.0-custom", "unsupported", UNSUPPORTED_WARNING),
+    ("١٦.٠.١", "unrecognized", UNRECOGNIZED_WARNING),  # Arabic-Indic
+    ("１６.０.１", "unrecognized", UNRECOGNIZED_WARNING),  # fullwidth
     ("v16.0.1", "unrecognized", UNRECOGNIZED_WARNING),
     ("16.0", "unrecognized", UNRECOGNIZED_WARNING),
     ("custom-build", "unrecognized", UNRECOGNIZED_WARNING),

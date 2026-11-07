@@ -181,10 +181,11 @@ def load_config(
 def _check_schema_version(version: object) -> None:
     """Name an unsupported integer ``schema_version`` (issue #21, TD-21-5).
 
-    Only an integer is echoed; any other type keeps the generic message, which never
-    quotes file content. The file is only read, never rewritten.
+    Only an integer from 0 to 9999 is echoed (as for snapshots); any other value keeps
+    the generic message, which never quotes file content. The file is only read, never
+    rewritten.
     """
-    if type(version) is not int or version == SCHEMA_VERSION:
+    if type(version) is not int or version == SCHEMA_VERSION or not 0 <= version <= 9999:
         return
     message = (
         f"Unsupported inventory configuration schema_version {version}; this server reads "

@@ -59,8 +59,8 @@ firmware version reported in `info.ver`:
 | `tested` | 16.0.1 | Recorded hardware evidence | no |
 | `expected` | none yet | Source-reviewed and mock-tested, without hardware evidence | no |
 | `unknown` | every other release from 16.0.0 on | No claim either way | no |
-| `unsupported` | below 16.0.0, including every 0.x release and pre-releases of 16.0.0 (`16.0.0-b1`) | Outside the support policy | yes |
-| `unrecognized` | no leading numeric `MAJOR.MINOR.PATCH` | Support cannot be determined | yes |
+| `unsupported` | below 16.0.0, including every 0.x release and any suffixed 16.0.0: pre-releases (`16.0.0-b1`) and builds (`16.0.0+mod`, `16.0.0-custom`) | Outside the support policy | yes |
+| `unrecognized` | no leading ASCII-numeric `MAJOR.MINOR.PATCH` (other Unicode digits included) | Support cannot be determined | yes |
 
 - `wled_get_state` reports `data.diagnostics.firmware_support` =
   `{"tier": ..., "minimum_supported": "16.0.0"}` and, for `unsupported` and

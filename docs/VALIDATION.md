@@ -1219,5 +1219,6 @@ All Must requirements need evidence. Mock implementation can be merged while har
 
 ## Stage 2 and later files
 
-- [validation/issue-21.md](validation/issue-21.md): version source, non-release builds and
-  the CI matrix (#21, #70).
+- [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
+  the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
+  upgrade compatibility) (#21, #70).

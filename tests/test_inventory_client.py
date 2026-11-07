@@ -296,7 +296,7 @@ def test_non_device_errors_keep_generic_message(tmp_path, content):
 
 
 @pytest.mark.parametrize(
-    ("version", "downgrade_hint"), [(2, True), (99, True), (0, False), (-1, False)]
+    ("version", "downgrade_hint"), [(2, True), (99, True), (9999, True), (0, False)]
 )
 def test_unsupported_integer_schema_version_is_named(tmp_path, version, downgrade_hint):
     # Issue #21 (TD-21-5, A21-06): the reader names the version it cannot read.
@@ -310,6 +310,18 @@ def test_unsupported_integer_schema_version_is_named(tmp_path, version, downgrad
         "this server reads schema_version 1."
     )
     assert ("newer server version" in message) is downgrade_hint
+
+
+@pytest.mark.parametrize("version", [10000, 2**40, -2])
+def test_implausible_integer_schema_version_keeps_the_generic_message(tmp_path, version):
+    # Bounded to 0..9999 like snapshot format versions; larger values are not echoed.
+    path = tmp_path / "inventory.toml"
+    path.write_text(f"schema_version = {version}\ndevices = []\n", encoding="utf-8")
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    assert message.startswith("Invalid inventory configuration: check schema version")
+    assert str(version) not in message
 
 
 @pytest.mark.anyio

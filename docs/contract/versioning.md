@@ -139,6 +139,14 @@ a migration note below names its tool and JSON pointer; tools that are not in th
 retained data are additions. A change of meaning without a schema change is not
 detectable this way; it needs a migration note by review.
 
+Limit of the snapshot: every tool serves the same output schema, the result envelope,
+whose `data` is a free-form object. The comparison therefore covers tool names, input
+schemas, annotations and the envelope fields (including error codes), but it cannot
+see a field inside `data` being removed, renamed or retyped. For `wled_get_state`
+alone, the envelope test (below) shows that the current result keeps every value of
+the retained one; for every other tool, changes to `data` fields are found only by
+review and must be announced with a migration note.
+
 ## Schema evolution
 
 Applies to the inventory configuration (`schema_version`), the result envelope
@@ -147,11 +155,14 @@ Applies to the inventory configuration (`schema_version`), the result envelope
 
 - Versions are integers. The current server reads configuration `schema_version` 1,
   envelope `schema_version` 1 and snapshot `format_version` 1.
-- A reader accepts every version it knows and rejects a higher or unknown integer
-  version with a message that names it, for example `Unsupported inventory
-  configuration schema_version 2; this server reads schema_version 1.` or
-  `Unsupported snapshot format version 2; this server reads format version 1.` Other
-  malformed values keep the generic message, which never quotes file content.
+- A reader accepts every version it knows and rejects a higher or unknown version.
+  Servers from the compatibility-policy change of #21 on name it, for example
+  `Unsupported inventory configuration schema_version 2; this server reads
+  schema_version 1.` or `Unsupported snapshot format version 2; this server reads
+  format version 1.`; only integers from 0 to 9999 are named, other values keep the
+  generic message, which never quotes file content. The first release predates this
+  and reports only a generic error (`Invalid inventory configuration: check schema
+  version, ...` or `Unsupported snapshot format version.`).
 - A new optional configuration key keeps `schema_version` 1; its migration note states
   the minimum server version, because the strict reader of an older server rejects the
   unknown key after a downgrade. A change of meaning or a required key raises the
@@ -167,10 +178,16 @@ Applies to the inventory configuration (`schema_version`), the result envelope
   release (`tests/test_upgrade_compat.py` loads each retained configuration and
   snapshot, checks that the files stay byte-identical and that the current
   `wled_get_state` envelope only adds to the retained one).
-- Downgrade or rollback of the code: an older server cannot read a newer configuration
-  or snapshot version and says so, naming the version; restore the configuration that
-  was kept for that release. Snapshots written by the newer server stay on disk
-  untouched.
+- Downgrade or rollback of the code: an older server rejects a configuration or
+  snapshot version it does not know; servers from this change on name the version,
+  the first release reports a generic schema or format error. Restore the
+  configuration that was kept for that release. Snapshots written by the newer server
+  stay on disk untouched.
+- What is tested: the current server reading the retained data of earlier releases
+  and rejecting newer versions without modifying files. An older server reading data
+  of a newer one is not run in a test; it holds while the configuration and snapshot
+  formats are unchanged (both are still version 1), and any format change gets a new
+  version and a migration note.
 - A code rollback does not restore any device state, preset or layout; device state
   is restored only from snapshots or presets by an explicit request. The procedures are
   in [DEPLOYMENT.md](../DEPLOYMENT.md#non-release-builds) and the HTTP and stdio

@@ -11,9 +11,11 @@ Tiers, in the vocabulary of docs/contract/compatibility.md:
 - ``expected``: a release expected to work from a recorded source review (``EXPECTED``,
   empty until such a review exists).
 - ``unknown``: any other release at or above the floor; no claim either way.
-- ``unsupported``: below the floor, including every 0.x release and pre-releases of the
-  floor itself (``16.0.0-b1``); served with a warning.
-- ``unrecognized``: no leading numeric ``MAJOR.MINOR.PATCH``; served with a warning.
+- ``unsupported``: below the floor, including every 0.x release and any suffixed
+  version of the floor itself (pre-release ``16.0.0-b1`` or build ``16.0.0+mod``,
+  ``16.0.0-custom``); served with a warning.
+- ``unrecognized``: no leading ASCII-numeric ``MAJOR.MINOR.PATCH``; served with a
+  warning.
 
 Promotion to ``tested`` or ``expected`` edits only the data below, together with the
 evidence link in docs/contract/compatibility.md.
@@ -31,8 +33,9 @@ MINIMUM_SUPPORTED: Final = ".".join(map(str, _FLOOR))
 TESTED: Final[frozenset[str]] = frozenset({"16.0.1"})
 EXPECTED: Final[frozenset[str]] = frozenset()
 
-# Leading numeric core; anything after it (``-b1``, ``-mod``) is a suffix.
-_VERSION = re.compile(r"(\d{1,9})\.(\d{1,9})\.(\d{1,9})(.*)", re.S)
+# Leading ASCII-numeric core (re.ASCII: no other Unicode digits); anything after it
+# (``-b1``, ``-mod``, ``+custom``) is a suffix.
+_VERSION = re.compile(r"(\d{1,9})\.(\d{1,9})\.(\d{1,9})(.*)", re.S | re.ASCII)
 
 UNSUPPORTED_WARNING: Final = (
     f"The firmware version is below the minimum supported WLED version {MINIMUM_SUPPORTED}; "
@@ -60,8 +63,9 @@ def classify(version: object) -> Tier:
     if parsed is None:
         return "unrecognized"
     core, suffix = parsed
-    # A suffixed version of the floor itself is a pre-release or a build of it; treat it
-    # as below the floor (DEC-020 names 16.0.0 as the first supported release).
+    # Any suffix on the floor itself (a pre-release such as ``-b1`` or a build such as
+    # ``+mod`` or ``-custom``) counts as below the floor: DEC-020 names the plain 16.0.0
+    # release as the first supported one, and a suffix cannot be ordered against it.
     if core < _FLOOR or (core == _FLOOR and suffix):
         return "unsupported"
     if version in TESTED:
