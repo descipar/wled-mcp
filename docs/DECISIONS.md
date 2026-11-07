@@ -59,6 +59,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-014 | Project / repository history | Keep the existing Git history and author identities, including the owner's commit e-mail address, when the repository becomes public; no history rewrite and no fresh public repository. Does not change visibility. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-014](#dec-014--keep-the-existing-git-history) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-015 | Project / issue and PR review | Before the visibility change, review all issues, PRs, comments and their edit histories with a repeatable read-only scan plus one agent read-through; the owner approves the findings. Mandatory #23/#25 step; the script is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-015](#dec-015--issue-and-pr-review-before-visibility-change) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
+| DEC-016 | Project / public repository content | The agent tooling (AGENTS.md, CLAUDE.md, agent roles and generated client definitions, agent workflow docs and templates, sync script) and all decision records ship in the public repository; a short orientation for outside readers is #23 work. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-016](#dec-016--ship-the-agent-tooling-and-decision-records) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -307,6 +308,29 @@ can explicitly amend them.
 - Rationale supplied: none.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md; future #23/#25 scope.
+
+### DEC-016 — Ship the agent tooling and decision records
+
+- Status: active project decision.
+- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
+  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-016 so").
+- Owner decision: the public repository ships `AGENTS.md`, `CLAUDE.md`, `agents/`, the
+  generated `.claude/agents/` and `.codex/` definitions, `docs/AGENT-*.md`,
+  `docs/agent-workflow/`, `scripts/sync_agents.py` with its tests, `docs/DECISIONS.md`
+  and `docs/decisions/`. Nothing is removed or restructured now. A short orientation
+  (README section and/or the CONTRIBUTING guidance of S2-PUBLIC-03) explains that the
+  project is developed with a documented agent workflow, that human contributions do not
+  require it, and where the design decisions are recorded; this is #23 work.
+- Coordinator notes (not owner statements): removal would give no privacy benefit because
+  the history stays public (DEC-014); product documentation and source comments link the
+  decision records as design rationale, so removing them would break those references.
+  The tracked client files contain agent roles and an agent concurrency limit only, no
+  secrets or personal settings.
+- Conditions: no visibility change is authorized here. Open owner decision 6 (German
+  source quotes) is decided separately.
+- Rationale supplied: none beyond accepting the proposal.
+- Supersedes: none.
+- Affected: docs/STAGE-2.md; future #23 scope.
 
 ## Issue-specific decisions (pointers)
 
