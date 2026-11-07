@@ -67,6 +67,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-018 | Project / private denylist and branch rules | The private denylist is a local untracked file plus a CI secret, built from an agent-proposed, owner-approved candidate list together with the DEC-015 review before the visibility change. At the visibility change `main` gets a ruleset: PRs only, required CI check, no force-push or deletion, no required reviews, owner bypass for the PR requirement only. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-018](#dec-018--private-denylist-and-main-branch-rules) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-019 | Project / visibility timing | Decouple repository visibility from release: the repository becomes public once the readiness checklist of #90 is complete and the owner instructs it; package, image and marketplace publication stay in #25. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-019](#dec-019--make-the-repository-public-before-the-release) and [issue #90](https://github.com/descipar/wled-mcp/issues/90) |
 | DEC-020 | Project / support and version policy | Pre-1.0 `0.x` releases with migration notes; fixes only for the latest release. WLED support from 16.0.0 only, in tiers tested/expected/unknown; older firmware is unsupported and warned about, not refused. Python as tested in CI; Linux supported, Windows/macOS experimental; best-effort responses. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-020](#dec-020--support-and-version-policy) and [issue #21](https://github.com/descipar/wled-mcp/issues/21) |
+| DEC-021 | Stage 2 / workflow | Adopt docs/STAGE-2-PARALLEL-PLAN.md: at most two implementation tracks, #90 first, per-issue coordinators in isolated worktrees with the main session as integration owner, branches synced by merging `main` (no force-push). "Starte Stage 2 parallel" starts or resumes the plan. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-021](#dec-021--adopt-the-stage-2-parallel-plan) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -451,6 +452,43 @@ can explicitly amend them.
 - Rationale supplied: none.
 - Supersedes: none.
 - Affected: docs/STAGE-2.md (S2-COMPAT-02); future #21/#23 scope.
+
+### DEC-021 — Adopt the stage-2 parallel plan
+
+- Status: active stage-2 workflow decision.
+- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
+  permalink). The owner asked whether stage 2 could be started with a single request
+  so that the agent knows what to do ("kann man das nicht einfach machen, nach dem:
+  starte stage 2 parallel und der agent weiss was zu tun ist dann?" (English: "can't
+  this simply be done with: start stage 2 in parallel, and the agent then knows what to
+  do?"), capitalization and typing errors corrected), and then agreed to all open points
+  of the plan ("zustimmen zu allen offenen punkten im plan" (English: "agree to all open
+  points in the plan"), typing errors corrected).
+- Owner decision:
+  1. docs/STAGE-2-PARALLEL-PLAN.md is the adopted stage-2 execution plan.
+  2. At most two implementation tracks run at once; a third only for docs/read-only work.
+  3. #90 comes first in Phase 1.
+  4. Workflow rules: one coordinator per issue in an isolated worktree on its own branch;
+     the main session is the integration owner; branches are kept current by merging
+     `main` (no rebase with force-push); stacked PRs are retargeted to `main` before
+     their base branch is deleted; a sync whose diff equals the PR's own commits with
+     green CI keeps the review PASS, otherwise a fresh review; one merge at a time after
+     the owner's merge approval; DEC-010 applies to new issues.
+  5. "Depends on" in #16, #17, #20, #21 and #23 reflect the plan's couplings.
+  6. "Starte Stage 2 parallel" (or an equivalent request) starts or resumes the plan;
+     the main session derives progress from issue/PR state and decision records and
+     stops only for merge approval, owner-only actions (visibility, secrets, rulesets,
+     publication), hardware authorization and genuine decisions.
+- Coordinator notes (not owner statements): the start phrase mirrors DEC-001 for single
+  issues. Human merge approval per PR stays unchanged. The "Depends on" lines were edited
+  on 2026-11-07 (#16: #21; #17: #16, #20, #21; #20: #16 plus classifying tools of
+  #17-#19; #21: stage-1 foundations, absorbs #70; #23: #16, #90).
+- Conditions: stage 2 only; changes to plan order, track count or rules need the owner.
+  Does not authorize visibility changes, publication, deployment or hardware writes.
+- Rationale supplied: start stage 2 with one request without repeating instructions.
+- Supersedes: the "proposal only" status of docs/STAGE-2-PARALLEL-PLAN.md.
+- Affected: docs/STAGE-2-PARALLEL-PLAN.md, agents/coordinator.md and generated adapters,
+  AGENTS.md, docs/AGENT-WORKFLOW.md; issues #16, #17, #20, #21, #23.
 
 ## Issue-specific decisions (pointers)
 
