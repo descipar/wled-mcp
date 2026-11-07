@@ -84,8 +84,8 @@ def test_contract_example_validates():
         {"created_at": "2026-13-04T12:00:00Z"},
         {"created_at": "2026-11-04T12:00:01Z"},  # disagrees with the ID timestamp
         {"firmware": {"version": ""}},
-        {"firmware": {"version": "0.15.1", "mac": "x"}},
-        {"firmware": "0.15.1"},
+        {"firmware": {"version": "16.0.1", "mac": "x"}},
+        {"firmware": "16.0.1"},
         {"extra": 1},
         {"device_id": "other"},
         {"backup_id": "b-20261104T120000Z-ffffffffffff"},
@@ -98,6 +98,40 @@ def test_invalid_envelopes_rejected_without_leaks(tmp_path, override):
         store.load("desk", GOOD_ID)
     assert caught.value.error.code == "VALIDATION_ERROR"
     assert str(tmp_path) not in caught.value.error.message
+
+
+@pytest.mark.parametrize(
+    ("version", "named"),
+    [(2, True), (0, True), (9999, True), (10**12, False), (-1, False), ("2", False), (True, False)],
+)
+def test_unsupported_format_version_is_named_only_when_plausible(tmp_path, version, named):
+    # Issue #21 (TD-21-5, A21-06): a newer snapshot is named on downgrade, never rewritten.
+    store = make_store(tmp_path)
+    path = write_raw(store, "desk", f"{GOOD_ID}.json", envelope(GOOD_ID, format_version=version))
+    before = path.read_bytes()
+    with pytest.raises(ClientFailure) as caught:
+        store.load("desk", GOOD_ID)
+    message = caught.value.error.message
+    if named:
+        assert message == (
+            f"Unsupported snapshot format version {version}; this server reads format version 1."
+        )
+    else:
+        assert message == "Unsupported snapshot format version."
+    assert path.read_bytes() == before
+
+
+def test_snapshot_of_below_floor_firmware_still_loads(tmp_path):
+    # TD-21-7: explicit 0.15.1 case; the firmware tier never gates stored data.
+    store = make_store(tmp_path)
+    legacy = {"version": "0.15.1", "build_id": 2412100}
+    write_raw(store, "desk", f"{GOOD_ID}.json", envelope(GOOD_ID, firmware=legacy))
+    snapshot = store.load("desk", GOOD_ID)
+    assert (snapshot.firmware.version, snapshot.firmware.build_id) == ("0.15.1", 2412100)
+    plan = store.plan_restore(
+        "desk", GOOD_ID, firmware_version="0.15.1", destination_occupied=False
+    )
+    assert plan.as_data()["execution"] == "deferred"
 
 
 def test_missing_key_and_malformed_bytes_rejected(tmp_path):
@@ -211,7 +245,7 @@ async def test_unknown_device_fails_before_filesystem(tmp_path):
         assert caught.value.error.code == "UNKNOWN_DEVICE"
         with pytest.raises(ClientFailure):
             await resources.plan_restore(
-                "nope", GOOD_ID, firmware_version="0.15.1", destination_occupied=False
+                "nope", GOOD_ID, firmware_version="16.0.1", destination_occupied=False
             )
         assert not resources.backups.directory.exists()
 
@@ -456,7 +490,7 @@ def test_restore_plan_is_read_only_and_requires_exact_firmware_and_device(tmp_pa
     record = store.backup_preset("desk", 5, PRESET, FIRMWARE)
     before = listing_names(store)
     plan = store.plan_restore(
-        "desk", record.backup_id, firmware_version="0.15.1", destination_occupied=False
+        "desk", record.backup_id, firmware_version="16.0.1", destination_occupied=False
     )
     data = plan.as_data()
     assert data["execution"] == "deferred" and data["target_preset_id"] == 5
@@ -465,7 +499,7 @@ def test_restore_plan_is_read_only_and_requires_exact_firmware_and_device(tmp_pa
             store.plan_restore,
             "desk",
             record.backup_id,
-            firmware_version="0.15.2",
+            firmware_version="16.0.2",
             destination_occupied=False,
         )
         == "UNSUPPORTED_CAPABILITY"
@@ -475,7 +509,7 @@ def test_restore_plan_is_read_only_and_requires_exact_firmware_and_device(tmp_pa
             store.plan_restore,
             "lamp",
             record.backup_id,
-            firmware_version="0.15.1",
+            firmware_version="16.0.1",
             destination_occupied=False,
         )
         == "PRESET_NOT_FOUND"
@@ -487,7 +521,7 @@ def test_restore_plan_occupied_destination_needs_overwrite_and_prior_snapshot(tm
     store = make_store(tmp_path)
     source = store.backup_preset("desk", 5, PRESET, FIRMWARE)
     prior = store.backup_preset("desk", 7, {"n": "current"}, FIRMWARE)
-    base = {"firmware_version": "0.15.1", "destination_occupied": True, "target_preset_id": 7}
+    base = {"firmware_version": "16.0.1", "destination_occupied": True, "target_preset_id": 7}
     assert code_of(store.plan_restore, "desk", source.backup_id, **base) == "VALIDATION_ERROR"
     assert (
         code_of(store.plan_restore, "desk", source.backup_id, overwrite=True, **base)

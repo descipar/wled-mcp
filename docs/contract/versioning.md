@@ -6,8 +6,9 @@ non-release builds. Introduced by [#21](https://github.com/descipar/wled-mcp/iss
 DEC-020 (pre-1.0 policy), DEC-012 (identities) and ISSUE-21-DEC-002 (technical defaults,
 [decision log](../decisions/issue-21.md)). Examples use the synthetic version `1.2.3`.
 
-The rules for contract evolution, schema versions, deprecation and migration notes are
-added to this file by the compatibility-policy part of #21.
+Contract evolution, schema versions, deprecation, downgrade limits and migration notes
+follow the build-identity sections below. The support matrix is in
+[compatibility.md](compatibility.md).
 
 ## Version source
 
@@ -23,7 +24,10 @@ added to this file by the compatibility-policy part of #21.
   image `Dockerfile` copies the single staged wheel by pattern and pins it through
   `SHA256SUMS`; the example files name the release directory and image tag by the
   placeholders `REPLACE_WITH_VERSION` and `REPLACE_WITH_IMAGE_TAG`; tests compare with
-  `pyproject.toml`.
+  `pyproject.toml`. The synthetic contract example `examples/contracts/state.json`
+  shows `diagnostics.server_version` as `0.0.0+example`, a fixed placeholder that never
+  equals a real version (chosen over deriving the value, so the example file does not
+  change with each release).
 - `tests/test_version_source.py` fails when a tracked file other than the allowlisted
   ones contains the current version as a literal. Allowlisted: `pyproject.toml`, its
   generated `uv.lock` entry, retained fixtures of earlier releases
@@ -103,3 +107,88 @@ match the build kind: a labelled version without `--non-release`, or a label tha
 not name the source commit. The update and rollback procedures in
 [DEPLOYMENT.md](../DEPLOYMENT.md#non-release-builds) use the directory name and the
 `image_tag` value, so they cover both kinds of build.
+
+## Contract evolution
+
+The public contract is every served tool's name, input schema, output schema (the
+envelope and its `data`), error codes, enum values, annotations and documented
+meaning. While the major version is `0` (DEC-020):
+
+- A patch release (`0.Y.Z` to `0.Y.Z+1`) contains no breaking change.
+- A minor release (`0.Y` to `0.Y+1`) may contain breaking changes; each one has a
+  migration note (below). Nothing is renamed or removed silently.
+- Non-breaking: a new tool; a new optional input field; a looser input bound or a new
+  accepted input enum value; a new output field; a new output enum value or error code;
+  reworded descriptions and titles that keep the meaning.
+- Breaking: removing or renaming a tool, field, error code or enum value; a new
+  required input; a tighter input (lower maximum, higher minimum, new pattern, new
+  constraint); a changed type or default; a changed annotation (`readOnlyHint`,
+  `destructiveHint`, `idempotentHint`, `openWorldHint`); an output field that is no
+  longer guaranteed; a changed meaning of an unchanged field.
+- Deprecation: where feasible, a field or tool to be removed stays for one minor
+  release, is marked "Deprecated" in its description and has a migration note in the
+  release that deprecates it and in the release that removes it.
+
+`tests/test_upgrade_compat.py` enforces the mechanical part. Each retained release under
+`tests/fixtures/compat/<release>/` keeps the complete served `tools/list` of that
+release. The test serves the current, unfiltered contract (all tool classes, profile
+`full`), checks it with `contract_problems` of `tests/tool_contract.py` and compares
+every retained tool with the served tool of the same name after expanding local
+`$ref`s (so a renamed model class is not a change). A breaking difference fails unless
+a migration note below names its tool and JSON pointer; tools that are not in the
+retained data are additions. A change of meaning without a schema change is not
+detectable this way; it needs a migration note by review.
+
+## Schema evolution
+
+Applies to the inventory configuration (`schema_version`), the result envelope
+(`schema_version`), preset snapshots (`format_version`) and later persistent formats
+(scenes and bundles of #17 and #18 follow the same rules):
+
+- Versions are integers. The current server reads configuration `schema_version` 1,
+  envelope `schema_version` 1 and snapshot `format_version` 1.
+- A reader accepts every version it knows and rejects a higher or unknown integer
+  version with a message that names it, for example `Unsupported inventory
+  configuration schema_version 2; this server reads schema_version 1.` or
+  `Unsupported snapshot format version 2; this server reads format version 1.` Other
+  malformed values keep the generic message, which never quotes file content.
+- A new optional configuration key keeps `schema_version` 1; its migration note states
+  the minimum server version, because the strict reader of an older server rejects the
+  unknown key after a downgrade. A change of meaning or a required key raises the
+  version.
+- A migration from an older version happens in memory while reading. The server never
+  rewrites a configuration or snapshot file; writing a migrated configuration is an
+  explicit operator action (`config validate` family, #16). Snapshots are immutable;
+  an unreadable newer snapshot is counted as invalid, left untouched and not pruned.
+
+## Upgrade, downgrade and rollback
+
+- Upgrade: install the new release; it reads the retained data of every earlier
+  release (`tests/test_upgrade_compat.py` loads each retained configuration and
+  snapshot, checks that the files stay byte-identical and that the current
+  `wled_get_state` envelope only adds to the retained one).
+- Downgrade or rollback of the code: an older server cannot read a newer configuration
+  or snapshot version and says so, naming the version; restore the configuration that
+  was kept for that release. Snapshots written by the newer server stay on disk
+  untouched.
+- A code rollback does not restore any device state, preset or layout; device state
+  is restored only from snapshots or presets by an explicit request. The procedures are
+  in [DEPLOYMENT.md](../DEPLOYMENT.md#non-release-builds) and the HTTP and stdio
+  update and rollback sections there.
+
+## Migration notes
+
+One row per breaking change, in release order. `tests/test_upgrade_compat.py` reads
+this block: a row allows breaking differences of its tool at its JSON pointer (the
+pointer into the tool object after `$ref` expansion, for example
+`/inputSchema/properties/segments`; `/` stands for the whole tool, as for a removal or
+rename). Rows are never deleted once released. A configuration or snapshot format
+change is listed here as well, with the tool column `-` and a pointer into that file
+(for example `/schema_version`).
+
+<!-- migration-notes:start -->
+| Release | Tool | JSON pointer | Change | Migration |
+| --- | --- | --- | --- | --- |
+<!-- migration-notes:end -->
+
+No breaking change has been released yet.

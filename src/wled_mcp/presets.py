@@ -1,7 +1,8 @@
 """Pure persistent-preset logic (issue #9): requests, store parsing, classification,
 allocation, capture comparison and interference detection. No network and no I/O.
 
-Source facts (pinned v0.15.1, see docs/SOURCES.md "Issue-9 preset evidence"):
+Source facts (baseline profile 0: v0.15.1 source, observed on 16.0.1; see
+docs/SOURCES.md "Issue-9 preset evidence"):
 persistent IDs are 1-250, ``/presets.json`` keys the entries by decimal ID and keeps a
 ``"0"`` initializer, a deleted entry is removed from the file, a saved state entry is
 serialized by ``serializeState(forPreset=true)`` and a saved name is cut at 32 bytes.

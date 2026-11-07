@@ -27,7 +27,7 @@ async def test_probe_worker_bound_and_independent_failures(tmp_path):
             eight_entered.set()
         await release.wait()
         active -= 1
-        return httpx.Response(200, json={"ver": "0.15.1"})
+        return httpx.Response(200, json={"ver": "16.0.1"})
 
     async with Resources(
         config(tmp_path, devices=[device(f"strip{i}") for i in range(17)]),

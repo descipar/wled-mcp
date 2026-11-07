@@ -6,7 +6,7 @@ from pathlib import Path
 
 from wled_mcp.backups import Firmware, SnapshotStore
 
-FIRMWARE = Firmware("0.15.1", "synthetic-reference")
+FIRMWARE = Firmware("16.0.1", "synthetic-reference")
 PRESET = {
     "n": "Saved scene",
     "on": True,
@@ -38,7 +38,7 @@ def envelope(backup_id: str, /, device_id: str = "desk", **override):
         "backup_id": backup_id,
         "device_id": device_id,
         "preset_id": 5,
-        "firmware": {"version": "0.15.1", "build_id": None},
+        "firmware": {"version": "16.0.1", "build_id": None},
         "created_at": "2026-11-04T12:00:00Z",
         "preset": {"n": "x", "on": False},
     }

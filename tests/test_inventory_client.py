@@ -277,7 +277,8 @@ def test_device_locators_are_capped(tmp_path):
 @pytest.mark.parametrize(
     "content",
     [
-        "schema_version = 2\ndevices = []",
+        "schema_version = true\ndevices = []",
+        'schema_version = "2"\ndevices = []',
         "schema_version = 1\ndevices = []\n[http]\nread_retries = 2",
         "schema_version = 1\n"
         + '[[devices]]\nid = "desk"\nname = "Example"\nbase_url = "http://wled_desk.invalid"\n' * 2,
@@ -294,18 +295,35 @@ def test_non_device_errors_keep_generic_message(tmp_path, content):
     assert "devices[" not in message and "wled_" not in message
 
 
+@pytest.mark.parametrize(
+    ("version", "downgrade_hint"), [(2, True), (99, True), (0, False), (-1, False)]
+)
+def test_unsupported_integer_schema_version_is_named(tmp_path, version, downgrade_hint):
+    # Issue #21 (TD-21-5, A21-06): the reader names the version it cannot read.
+    path = tmp_path / "inventory.toml"
+    path.write_text(f"schema_version = {version}\ndevices = []\n", encoding="utf-8")
+    with pytest.raises(ConfigurationError) as caught:
+        load_config(str(path), str(tmp_path), {})
+    message = str(caught.value)
+    assert message.startswith(
+        f"Unsupported inventory configuration schema_version {version}; "
+        "this server reads schema_version 1."
+    )
+    assert ("newer server version" in message) is downgrade_hint
+
+
 @pytest.mark.anyio
 async def test_underscore_host_reaches_transport_and_host_header_unchanged():
     requests = []
 
     def handler(request):
         requests.append(request)
-        return httpx.Response(200, json={"ver": "0.15.1"})
+        return httpx.Response(200, json={"ver": "16.0.1"})
 
     item = Device(id="desk", name="Example", base_url="http://WLED_Desk.example.invalid:8080/")
     client = WLEDClient(HTTPSettings(), httpx.MockTransport(handler))
     try:
-        assert await client.read(item, Endpoint.INFO, Deadline.after(1)) == {"ver": "0.15.1"}
+        assert await client.read(item, Endpoint.INFO, Deadline.after(1)) == {"ver": "16.0.1"}
     finally:
         await client.aclose()
     (request,) = requests
@@ -343,7 +361,7 @@ async def test_inventory_no_probe_zero_http_and_independent_probes(tmp_path):
     def handler(request):
         calls.append(request)
         if request.url.host == "desk.invalid":
-            return httpx.Response(200, json={"ver": "0.15.1"})
+            return httpx.Response(200, json={"ver": "16.0.1"})
         raise httpx.ReadTimeout("synthetic-secret http://shelf.invalid")
 
     async with Resources(
@@ -792,7 +810,7 @@ async def test_invalid_url_maps_to_config_error_before_any_send(no_network, host
 
     def handler(request):
         calls.append(request)
-        return httpx.Response(200, json={"ver": "0.15.1"})
+        return httpx.Response(200, json={"ver": "16.0.1"})
 
     client = WLEDClient(HTTPSettings(read_retries=1), httpx.MockTransport(handler))
     try:
@@ -830,11 +848,11 @@ async def test_invalid_url_mapping_is_narrow(no_network):
             raise RuntimeError("synthetic unrelated")
         if outcome == "malformed":
             return httpx.Response(200, content=b"{", headers={"Content-Type": "application/json"})
-        return httpx.Response(200, json={"ver": "0.15.1"})
+        return httpx.Response(200, json={"ver": "16.0.1"})
 
     client = WLEDClient(HTTPSettings(read_retries=0), httpx.MockTransport(handler))
     try:
-        assert await client.read(item, Endpoint.INFO, Deadline.after(2)) == {"ver": "0.15.1"}
+        assert await client.read(item, Endpoint.INFO, Deadline.after(2)) == {"ver": "16.0.1"}
         with pytest.raises(ClientFailure) as caught:
             await client.read(item, Endpoint.INFO, Deadline.after(2))
         assert caught.value.error.code == "UNREACHABLE"
@@ -859,7 +877,7 @@ async def test_invalid_url_gives_envelopes_and_probe_entries_at_tool_level(tmp_p
 
     def handler(request):
         calls.append(request)
-        return httpx.Response(200, json={"ver": "0.15.1"})
+        return httpx.Response(200, json={"ver": "16.0.1"})
 
     good = Device(id="desk", name="Example desk", base_url="http://192.0.2.10")
     inventory = config(tmp_path, devices=[unvalidated("999.1.1.1"), good])

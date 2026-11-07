@@ -8,7 +8,7 @@ import anyio
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from wled_mcp import __version__
+from wled_mcp import __version__, compat
 from wled_mcp.backups import Firmware
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
@@ -149,6 +149,9 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
         except ClientFailure as failure:
             return _read_failure(resources, name, device_id, failure)
         raw_info, removed = redact_info(as_dict(info))
+        # Informational only (TD-21-6): never refuses and never changes other behavior.
+        support = compat.firmware_support(firmware["version"])
+        tier_warning = compat.support_warning(compat.classify(firmware["version"]))
         data: dict[str, JsonValue] = {
             "device": device_data(device_id),
             "freshness": {"source": "device", "read_at": read_at.isoformat()},
@@ -159,9 +162,11 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
             "diagnostics": {
                 "server_version": __version__,
                 "unknown_capabilities": list(unknown),
+                "firmware_support": support,
             },
         }
-        return _read_success(name, device_id, data, warnings.result())
+        leading = [tier_warning] if tier_warning is not None else []
+        return _read_success(name, device_id, data, [*leading, *warnings.result()])
 
     def catalog_operation(kind: Kind) -> Callable[[dict[str, Any]], Awaitable[Outcome]]:
         name = "wled_get_effects" if kind == "effects" else "wled_get_palettes"
