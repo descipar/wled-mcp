@@ -22,7 +22,7 @@ from mcp import MCPError
 from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from mcp.types import ToolAnnotations
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from tests.acceptance_support import LoopbackWLED
 from tests.envelopes import CORRELATION_ID, correlation_id_of, strip_correlation_id
@@ -210,18 +210,29 @@ def test_the_strip_helper_validates_before_it_strips():
     assert envelope["correlation_id"] == "0123456789abcdef"  # the input is untouched
     with pytest.raises(AssertionError):
         strip_correlation_id({"ok": True, "correlation_id": "not-an-id"})
+    # A served envelope without an ID fails the comparison; an unserved one opts out explicitly.
+    with pytest.raises(KeyError):
+        strip_correlation_id({"ok": True})
+    assert strip_correlation_id({"ok": True}, served=False) == {"ok": True}
 
 
 class Boom(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
 
-def crash_operation(secret: str) -> Operation:
+class DeviceBoom(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    device_id: str = Field(min_length=1, max_length=64)
+
+
+def crash_operation(
+    secret: str, tool_class: ToolClass = ToolClass.READ, model: type[BaseModel] = Boom
+) -> Operation:
     async def crash(arguments: dict[str, Any]) -> Outcome:
         raise RuntimeError(f"connection to http://user:{secret}@planted.example failed")
 
     return Operation(
-        "wled_crash", "crashes", Boom, crash, ToolAnnotations(), tool_class=ToolClass.READ
+        "wled_crash", "crashes", model, crash, ToolAnnotations(), tool_class=tool_class
     )
 
 
@@ -242,8 +253,42 @@ async def test_an_internal_failure_names_the_id_and_nothing_else(caplog):
     assert record.call_fields["correlation_id"] == match.group(1)  # type: ignore[attr-defined]
     assert record.call_fields["error_code"] == "INTERNAL_FAILURE"  # type: ignore[attr-defined]
     assert "hunter2" not in caplog.text and "planted.example" not in caplog.text
+    assert "application" not in record.call_fields  # type: ignore[attr-defined]
+    assert "verification" not in record.call_fields  # type: ignore[attr-defined]
     counts = monitor.call_counts()
     assert counts["internal_failure"] == 1 and counts["failed"] == 1
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("tool_class", "application"),
+    [
+        (ToolClass.READ, None),
+        (ToolClass.CONTROL, "unknown"),  # a crash cannot tell "not attempted" from "applied"
+        (ToolClass.MANAGE, "unknown"),
+    ],
+)
+async def test_an_internal_failure_logs_the_configured_device_and_an_honest_application(
+    caplog, tool_class, application
+):
+    caplog.set_level(logging.INFO, logger="wled_mcp")
+    server = create_server(
+        [crash_operation("hunter2", tool_class, DeviceBoom)], monitor=ServiceMonitor(["desk"])
+    )
+    async with Client(server) as client:
+        for device in ("desk", PLANTED[0]):  # a configured ID, then client-chosen input
+            with pytest.raises(MCPError):
+                await client.call_tool("wled_crash", {"device_id": device})
+    configured, unconfigured = (r.call_fields for r in call_logs(caplog))  # type: ignore[attr-defined]
+    assert configured["device_id"] == "desk"  # the operator knows which device to read back
+    assert "device_id" not in unconfigured
+    for fields in (configured, unconfigured):
+        assert fields["error_code"] == "INTERNAL_FAILURE" and fields["ok"] is False
+        assert fields.get("application") == application
+        assert "verification" not in fields
+        assert set(fields) <= ALLOWED_FIELDS
+    for hidden in ("hunter2", "planted.example", PLANTED[0]):
+        assert hidden not in caplog.text
 
 
 @pytest.mark.anyio
@@ -757,6 +802,52 @@ async def test_the_client_observer_sees_only_requests_that_reached_the_transport
     assert ("lamp", "TIMEOUT") not in seen  # an exhausted deadline is not
     assert all(device_id != "shelf" for device_id, _ in seen)  # a rejected address is not
     assert seen.count(("lamp", None)) == 1  # ... and was not observed either
+
+
+@pytest.mark.anyio
+async def test_a_failing_observer_cannot_change_the_outcome_of_a_request(tmp_path):
+    router = make_router()
+    router.set(HOSTS["shelf"], "/json/info", httpx.TimeoutException("planted"))
+    calls: list[str] = []
+
+    def broken(device_id: str, code: str | None) -> None:
+        calls.append(device_id)
+        raise RuntimeError("planted observer fault")
+
+    from wled_mcp.client import ClientFailure, Deadline, Endpoint
+
+    config = make_config(tmp_path)
+    devices = {device.id: device for device in config.devices}
+    client = WLEDClient(HTTPSettings(operation_timeout_seconds=0.5), router.transport(), broken)
+    try:
+        written = await client.post_state(devices["desk"], b'{"on":true}', Deadline.after(2))
+        read = await client.read(devices["desk"], Endpoint.INFO, Deadline.after(2))
+        with pytest.raises(ClientFailure) as failed:
+            await client.read(devices["shelf"], Endpoint.INFO, Deadline.after(2))
+    finally:
+        await client.aclose()
+    assert written == {"success": True}  # the write result is what the device answered
+    assert isinstance(read, dict)
+    assert failed.value.error.code == "TIMEOUT"  # not replaced by the observer's exception
+    assert router.count("POST") == 1  # and nothing was replayed
+    assert "desk" in calls and "shelf" in calls  # the observer really was called
+
+
+@pytest.mark.anyio
+async def test_the_startup_backups_check_is_made_once_and_passed_on(tmp_path, monkeypatch):
+    harness = Harness(tmp_path)
+    checked: list[Path] = []
+
+    def spy(data_dir: Path) -> bool:
+        checked.append(data_dir)
+        return True
+
+    monkeypatch.setattr(cli.setup, "backups_writable", spy)
+    async with harness.resources:
+        cli.attach_monitor(harness.resources, "stdio", False)
+        assert harness.resources.monitor.backups_writable is False and checked == []
+        cli.attach_monitor(harness.resources, "stdio")  # no result handed over: checks here
+        assert harness.resources.monitor.backups_writable is True and checked == [tmp_path]
 
 
 # ============================================== T20-17 no outbound traffic, no polling

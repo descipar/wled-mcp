@@ -169,7 +169,10 @@ class WLEDClient:
 
     def _observe(self, device: Device, code: ErrorCode | None) -> None:
         if self.observer is not None:
-            self.observer(device.id, code)
+            try:
+                self.observer(device.id, code)
+            except Exception:
+                pass  # a diagnostics fault must never change the outcome of a request
 
     async def _exchange(
         self, device: Device, endpoint: Endpoint, remaining: float, body: bytes | None

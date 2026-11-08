@@ -83,8 +83,8 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
 - Invalid values stop startup with exit 2 and a positional message that never echoes the
   value: `access.profile: invalid`, `devices[i].max_class: invalid`, or
   `access: unsupported field` for an unknown key (the same wording as
-  `devices[i]: unsupported field`; the key's name is never shown). A profile outside the three names on
-  the command line is the fixed usage error.
+  `devices[i]: unsupported field`; the key's name is never shown). A profile outside the
+  three names on the command line is the fixed usage error.
 - `wled-mcp config validate` and `doctor` report the profile and the number of capped
   devices only when the file sets an access setting; their output is otherwise unchanged
   ([cli.md](cli.md)). The reported profile is the file's ("as configured"); a serve

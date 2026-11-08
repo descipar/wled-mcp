@@ -336,7 +336,7 @@ def test_console_without_bind_options_selects_the_default_binding_and_binds_noth
         ["--config", str(config), "--data-dir", str(tmp_path), "--transport", "streamable-http"]
     )
     assert code == 0
-    ((_config, settings),) = captured
+    ((_config, settings, _writable),) = captured
     assert (settings.host, settings.port) == ("127.0.0.1", 8000)
     assert settings.allowed_hosts == frozenset({"127.0.0.1:8000", "localhost:8000"})
 

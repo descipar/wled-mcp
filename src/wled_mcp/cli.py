@@ -37,27 +37,39 @@ def announce_profile(config: StartupConfig, transport: str) -> None:
     )
 
 
-def attach_monitor(resources: Resources, transport: str) -> None:
-    """Tell the status tool which transport serves and what the startup check found."""
+def attach_monitor(
+    resources: Resources, transport: str, backups_writable: bool | None = None
+) -> None:
+    """Tell the status tool which transport serves and what the startup check found.
+
+    ``backups_writable`` is the result of the one startup check made by ``main``; without
+    it (a caller that did not check) the check runs here once.
+    """
     resources.monitor.transport = transport
-    resources.monitor.backups_writable = setup.backups_writable(resources.config.data_dir)
+    resources.monitor.backups_writable = (
+        setup.backups_writable(resources.config.data_dir)
+        if backups_writable is None
+        else backups_writable
+    )
 
 
-async def serve(config: StartupConfig) -> None:
+async def serve(config: StartupConfig, backups_writable: bool | None = None) -> None:
     announce_profile(config, "stdio")
     async with Resources(config) as resources:
-        attach_monitor(resources, "stdio")
+        attach_monitor(resources, "stdio", backups_writable)
         server = create_server(build_operations(resources), config.access, resources.monitor)
         await serve_stdio(server)
 
 
-async def serve_http(config: StartupConfig, settings: HTTPServiceSettings) -> None:
+async def serve_http(
+    config: StartupConfig, settings: HTTPServiceSettings, backups_writable: bool | None = None
+) -> None:
     # Imported lazily: the default stdio path never loads the HTTP stack.
     from wled_mcp.http_service import HTTPService, announce, build_http_app
 
     announce_profile(config, "streamable-http")
     async with Resources(config) as resources:
-        attach_monitor(resources, "streamable-http")
+        attach_monitor(resources, "streamable-http", backups_writable)
         server = create_server(build_operations(resources), config.access, resources.monitor)
         app = build_http_app(server, settings)
         await HTTPService(app, settings, on_started=announce(settings)).serve()
@@ -169,14 +181,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Startup configuration error: {exc}", file=sys.stderr)
         return 2
     configure_logging(log_settings)
-    if not setup.backups_writable(config.data_dir):
+    writable = setup.backups_writable(config.data_dir)
+    if not writable:
         # OPS-04 (TD-16-7): advisory only; tool-level BACKUP_FAILED stays fail-closed.
         print(BACKUPS_ADVISORY, file=sys.stderr)
     try:
         if settings is None:
-            anyio.run(serve, config)
+            anyio.run(serve, config, writable)
         else:
-            anyio.run(serve_http, config, settings)
+            anyio.run(serve_http, config, settings, writable)
     except KeyboardInterrupt:
         return 0
     except SystemExit:

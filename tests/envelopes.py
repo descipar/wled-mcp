@@ -24,10 +24,15 @@ def correlation_id_of(envelope: dict[str, Any]) -> str:
     return value
 
 
-def strip_correlation_id(envelope: dict[str, Any]) -> dict[str, Any]:
-    """A copy of a served envelope without its (validated) correlation ID."""
+def strip_correlation_id(envelope: dict[str, Any], *, served: bool = True) -> dict[str, Any]:
+    """A copy of an envelope without its (validated) correlation ID.
+
+    A served envelope must carry a valid ID, so every parity comparison proves that each
+    envelope of both transports has one. Pass ``served=False`` only for an envelope that
+    legitimately never went through the dispatcher (a direct ``execute`` dump).
+    """
     result = copy.deepcopy(envelope)
-    if "correlation_id" in result:
+    if served or "correlation_id" in result:
         correlation_id_of(result)
         del result["correlation_id"]
     return result

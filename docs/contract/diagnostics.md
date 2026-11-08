@@ -51,7 +51,7 @@ does not apply.
 | `class` | `read`, `control` or `manage` (absent for `unknown_tool`) |
 | `device_id` | the configured device ID, only if the call named a device of the inventory (an unknown ID is client input and is not logged) |
 | `ok` | `true` or `false` |
-| `application`, `verification` | the outcome axes of the envelope (absent for an internal failure and `unknown_tool`) |
+| `application`, `verification` | the outcome axes of the envelope; absent for `unknown_tool`, and for an internal failure see below |
 | `error_code` | the domain error code, `UNKNOWN_TOOL` or `INTERNAL_FAILURE` |
 | `duration_ms` | integer milliseconds |
 | `correlation_id` | the ID of the result |
@@ -60,6 +60,10 @@ Never logged: argument values, scene or preset contents, URLs, hosts, headers, r
 response bodies, exception text, file paths or any credential. Every value comes from a fixed
 set or from configuration, and a line is at most 512 characters.
 
+- An internal failure has no envelope, so its line has no `verification`. It still names the
+  configured `device_id` the call was validated against, so an operator knows which device to
+  read back, and, for a `control` or `manage` tool only, `application=unknown`: a crash cannot
+  tell "not attempted" from "possibly applied". A `read` tool's line has no `application`.
 - `WLED_MCP_LOG_LEVEL` selects `warning` (default) or `info`. A successful call is an INFO
   line, a failed one (`ok=false`, including `ACCESS_DENIED` and unknown tools) is a WARNING
   line, so the default shows failures only and stays quiet on success. At `info` the startup

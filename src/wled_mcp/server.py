@@ -105,7 +105,9 @@ def create_server(
             ]
         )
 
-    async def dispatch(operation: Operation, raw_arguments: dict[str, Any]) -> Outcome:
+    async def dispatch(
+        operation: Operation, raw_arguments: dict[str, Any], named: list[str]
+    ) -> Outcome:
         try:
             validated = operation.request_model.model_validate(raw_arguments)
         except ValidationError:
@@ -123,6 +125,9 @@ def create_server(
             )
         arguments = validated.model_dump()
         device_id = arguments.get("device_id")
+        if isinstance(device_id, str):
+            # Kept for the call line when the tool crashes and there is no envelope.
+            named.append(device_id)
         if isinstance(device_id, str) and not policy.permits(operation.tool_class, device_id):
             # G2: refused before the tool runs, so before any lock, file or device I/O.
             # dry_run does not lower a tool's class (TD-20-2).
@@ -157,6 +162,7 @@ def create_server(
         # The ID is generated here, per call, and never read from the request (TD-20-9).
         correlation_id = new_correlation_id()
         started = time.perf_counter()
+        named: list[str] = []  # the validated device ID of this call, if it has one
 
         def finish(
             operation: Operation | None,
@@ -169,7 +175,13 @@ def create_server(
             tool_class = None if operation is None else operation.tool_class
             code = error_code or (outcome.error.code if outcome and outcome.error else None)
             calls.record_call(tool_class, ok, code)
-            raw_device = None if outcome is None else outcome.device_id
+            raw_device = named[0] if outcome is None and named else None
+            application = None if outcome is None else outcome.application
+            if outcome is not None:
+                raw_device = outcome.device_id
+            elif code == INTERNAL_FAILURE and tool_class is not ToolClass.READ:
+                # A crash cannot tell "not attempted" from "possibly applied".
+                application = "unknown"
             log_call(
                 CallRecord(
                     tool=tool,
@@ -179,7 +191,7 @@ def create_server(
                     tool_class=tool_class,
                     # Only configured IDs: an unknown ID is client input.
                     device_id=raw_device if calls.is_configured(raw_device) else None,
-                    application=None if outcome is None else outcome.application,
+                    application=application,
                     verification=None if outcome is None else outcome.verification,
                     error_code=code,
                 )
@@ -191,7 +203,7 @@ def create_server(
             finish(None, "unknown_tool", False, error_code=UNKNOWN_TOOL)
             raise MCPError(code=-32602, message="Unknown tool")
         try:
-            outcome = await dispatch(operation, params.arguments or {})
+            outcome = await dispatch(operation, params.arguments or {}, named)
         except Exception:
             # Exceptions can contain configuration, URLs or tokens; do not echo them.
             finish(operation, operation.name, False, error_code=INTERNAL_FAILURE)
