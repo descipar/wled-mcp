@@ -72,6 +72,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-021 | Stage 2 / workflow | Adopt docs/STAGE-2-PARALLEL-PLAN.md: at most two implementation tracks, #90 first, per-issue coordinators in isolated worktrees with the main session as integration owner, branches synced by merging `main` (no force-push). "Starte Stage 2 parallel" starts or resumes the plan. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-021](#dec-021--adopt-the-stage-2-parallel-plan) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15) |
 | DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
 | DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
+| DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -368,7 +369,7 @@ can explicitly amend them.
 
 ### DEC-018 — Private denylist and main branch rules
 
-- Status: active project decision.
+- Status: active project decision; item 3 (branch rules) is superseded by DEC-024.
 - Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
   permalink). The owner stated having no list of private terms in mind ("ich hab im
   moment keine liste überhaupt im kopf" (English: "at the moment I have no list in mind
@@ -614,6 +615,54 @@ can explicitly amend them.
   the first public release only; DEC-018 is not superseded (see item 3 reading).
 - Affected: docs/STAGE-2.md (release staging note), issues #15, #22, #23, #24, #25 and
   #90 (comments with the deferral; bodies and acceptance lists unchanged).
+
+### DEC-024 — Main branch rules with review for external pull requests
+
+- Status: active project decision; items 1 and 3 contain coordinator readings awaiting
+  owner confirmation (see Coordinator notes).
+- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
+  permalink). Asked how the `main` rules of DEC-018 could require a review of pull
+  requests from others, the owner wrote "was ist wenn ich will, das ich das reviewn
+  lassen will wenn andere außer dich und von mir gestartete agenten ein pr machen. von
+  fremden will ich das vorher sehen" (English: "what if I want to have it reviewed when
+  others, apart from you and agents started by me, open a PR. I want to see those from
+  outsiders beforehand"), typing errors kept, and confirmed the coordinator's proposal:
+  "ja, mach DEC-024 so und schreib die klickschritte bzw. prüfe über du das per api nicht
+  selber kannst" (English: "yes, do DEC-024 that way and write the click steps, or check
+  via the API what you cannot do yourself"), typing errors kept.
+- Owner decision, applied at the visibility change (#90, DEC-019), created by the owner:
+  1. Ruleset A, no bypass actors, target the default branch: required status checks
+     `checks (ubuntu-latest, 3.13)` and `checks (ubuntu-24.04-arm, 3.13)`, block force
+     pushes, restrict deletions. "Require branches to be up to date" is not enabled.
+  2. Ruleset B, target the default branch: require a pull request with one approving
+     review. Bypass list: the repository admin role (the owner), bypass mode "for pull
+     requests only". Reviews of pull requests from external contributors are therefore
+     required; pull requests of the owner and of agents working under the owner's account
+     are merged by the owner's bypass.
+  3. Repository setting Actions, General, "Approval for running fork pull request
+     workflows from contributors": "Require approval for all external contributors", so
+     that no workflow of an outside pull request runs before the owner has seen it.
+  4. The agent verifies the result read-only through the API (GET requests only) after
+     the owner created it, as described in the [runbook](validation/issue-90.md).
+- Coordinator notes (not owner statements): GitHub applies a bypass to the whole ruleset,
+  not to single rules, so the DEC-018 wording "bypass only the pull-request requirement"
+  is realized by keeping the CI, force-push and deletion rules in ruleset A without
+  bypass (documentation check, not yet observed live). Reading 1: bypass mode "for pull
+  requests only" lets the owner merge but not push directly to `main`; an owner who wants
+  direct pushes would choose "always allow" in ruleset B. Reading 3: the squash merge by
+  the coordinator needs `gh pr merge --admin` once ruleset B is active; that command
+  change, with `agents/coordinator.md` and DEC-022 item 4, is made after ruleset B exists
+  and the first merge has been observed. Rulesets and the fork-approval setting cannot be
+  read or created while the repository is private (observed 2026-11-08: HTTP 403 and
+  422), so verification is possible only after the visibility change.
+- Conditions: creating the rulesets and the setting is an owner-only action; this decision
+  changes no repository setting, visibility or secret. The CI-secret denylist step of
+  DEC-018 and its deferral under DEC-023 are unaffected.
+- Rationale supplied: pull requests from outsiders must be seen by the owner before they
+  run or merge.
+- Supersedes: DEC-018 item 3 (branch rules) only.
+- Affected: docs/validation/issue-90.md (runbook), issue #90 acceptance item on the
+  ruleset, agents/coordinator.md and DEC-022 item 4 (merge command, follow-up).
 
 ## Issue-specific decisions (pointers)
 
