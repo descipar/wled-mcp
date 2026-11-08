@@ -51,5 +51,8 @@ restricted-profile handshake before it, and the setup and HTTP smoke steps, ran.
 
 Correlation ID, bounded structured logs, the `wled_get_service_status` tool and the
 no-telemetry checks (S2-ACCESS-03, T20-14 to T20-17) belong to the second pull request.
-Scene composites of #17 are not in this branch; the guard is tested with test-double
-composites that use the same engines and `Resources.require_access`.
+`wled_apply_scene` of #17 (its second pull request) is not on this branch; the guard is
+tested with test-double composites that use the same engines and
+`Resources.require_access`. The seven group and scene tools of #17 pull request A are
+classified (`wled_save_group`, `wled_delete_group`, `wled_save_scene`, `wled_delete_scene`
+as `manage`; the list and plan tools as `read`) and covered by the profile tests.

@@ -246,7 +246,16 @@ MANAGE_TOOLS = frozenset(
         "wled_store_preset",
         "wled_save_playlist",
         "wled_import_presets",
+        # Local persistent artifacts (stored definitions) are manage as well.
+        "wled_save_group",
+        "wled_delete_group",
+        "wled_save_scene",
+        "wled_delete_scene",
     }
+)
+# Manage tools without a top-level device_id: only the registration filter applies to them.
+LOCAL_FILE_TOOLS = frozenset(
+    {"wled_save_group", "wled_delete_group", "wled_save_scene", "wled_delete_scene"}
 )
 
 
@@ -277,7 +286,11 @@ READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_get_preset": {"device_id": "desk", "preset_id": 1},
     "wled_list_snapshots": {"device_id": "desk"},
     "wled_export_presets": {"device_id": "desk"},
+    "wled_list_groups": {},
+    "wled_list_scenes": {},
+    "wled_plan_scene": {"scene_id": "evening"},
 }
+NEEDS_A_STORED_SCENE = {"wled_plan_scene"}  # refused without one, still a read
 CONTROL_CALLS: dict[str, dict[str, Any]] = {
     "wled_set_state": {"device_id": "desk", "on": False},
     "wled_patch_segments": {"device_id": "desk", "segments": [{"id": 0, "brightness": 40}]},
@@ -302,7 +315,8 @@ async def test_read_tools_send_no_post_and_write_nothing(tmp_path):
         async with open_resources(make_config(tmp_path), router) as resources:
             for name, arguments in READ_CALLS.items():
                 outcome = await run_tool(resources, name, **arguments)
-                assert outcome.ok, (name, outcome.error)
+                if name not in NEEDS_A_STORED_SCENE:
+                    assert outcome.ok, (name, outcome.error)
     assert router.count("POST") == 0
     assert tree(tmp_path) == before
 
@@ -410,7 +424,8 @@ DEVICE_TOOLS = [t.name for t in EXPECTED_TOOLS if t.name != "wled_list_devices"]
 
 
 def test_the_cap_cases_cover_every_write_tool():
-    assert set(WRITE_CALLS) == names_of(CONTROL, MANAGE)
+    assert set(WRITE_CALLS) | LOCAL_FILE_TOOLS == names_of(CONTROL, MANAGE)
+    assert not set(WRITE_CALLS) & LOCAL_FILE_TOOLS
 
 
 async def call(client: Client, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -451,7 +466,9 @@ async def test_reads_stay_allowed_on_a_capped_device_and_other_devices_are_unaff
     with anyio.fail_after(60):
         async with Client(server) as client:
             for name, arguments in READ_CALLS.items():
-                assert (await call(client, name, arguments))["ok"] is True, name
+                envelope = await call(client, name, arguments)
+                assert envelope["ok"] is (name not in NEEDS_A_STORED_SCENE), name
+                assert (envelope["error"] or {}).get("code") != "ACCESS_DENIED", name
             assert router.count("POST") == 0
             other = await call(client, "wled_set_state", {"device_id": "shelf", "brightness": 40})
             assert other["error"] is None or other["error"]["code"] != "ACCESS_DENIED"

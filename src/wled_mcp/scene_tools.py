@@ -21,6 +21,7 @@ from typing import Annotated, Any, Final, Literal
 import anyio
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
+from wled_mcp.access import ToolClass
 from wled_mcp.catalogs import AmbiguousName, CatalogView, Kind, load_catalog, resolve_name
 from wled_mcp.client import ClientFailure, Endpoint
 from wled_mcp.formats import invalid
@@ -695,6 +696,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_list_groups",
+            tool_class=ToolClass.READ,
             description=(
                 "List the stored device groups with their exact member expansion (device ID, "
                 "designated segment IDs and whether the device is still configured). An "
@@ -708,6 +710,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_save_group",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Create or replace a named group of configured devices with optional explicit "
                 "segment IDs per member (never 'all'). Stored as a local file in the data "
@@ -721,6 +724,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_delete_group",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Delete one stored group file and return its document. Scenes that name the "
                 "group fail their plan until it is stored again. No device is contacted. "
@@ -732,6 +736,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_list_scenes",
+            tool_class=ToolClass.READ,
             description=(
                 "List the stored scenes (ID, name, target count and references). An optional "
                 "scene_id returns that scene's document; shareable=true returns the portable "
@@ -746,6 +751,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_save_scene",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Create or replace a scene from a document (JSON text or object, format "
                 "wled-mcp.scene version 1): per target a device or stored group, an optional "
@@ -763,6 +769,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_delete_scene",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Delete one stored scene file and return its document. No device is contacted "
                 "and lighting is unchanged. dry_run reports without deleting."
@@ -773,6 +780,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_plan_scene",
+            tool_class=ToolClass.READ,
             description=(
                 "Dry-run plan of a stored scene. Expands groups to the exact device and "
                 "segment targets, then reads fresh state, effect/palette catalogs and "
