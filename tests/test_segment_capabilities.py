@@ -28,6 +28,7 @@ from wled_mcp.capabilities import (
     required_color_channels,
     seglc_bits,
 )
+from wled_mcp.layouts import ReplaceLayoutRequest
 from wled_mcp.operations import GetStateRequest, build_operations
 from wled_mcp.patches import PatchSegmentsRequest
 from wled_mcp.readmodels import Collector, normalize_state
@@ -133,6 +134,25 @@ def test_no_per_segment_evidence_is_unknown_not_false():
         assert "segment_color_capability" in result["unknown"]
 
 
+def test_partial_per_segment_evidence_is_not_reported_as_complete():
+    """One segment with ``lc`` and one without (no ``seglc``): evidence is incomplete."""
+    state = make_state([v16_segment(0, 0, 30, RGB), make_segment(1, 30, 60)])
+    device = derive_capabilities(state, leds(lc=1))
+    assert [s.bits for s in device.segments] == [RGB, None]
+    assert device.per_segment_reported is False
+    result, _w = normalized(state, leds(lc=1))
+    assert result["caps"]["segment_color_capability_reported"] is False
+    assert "segment_color_capability" in result["unknown"]
+
+
+@pytest.mark.parametrize("bad", [True, 256, -1])
+def test_aligned_seglc_uses_the_state_lc_value_range(bad):
+    """``info.leds.seglc`` entries are uint8_t bitfields like ``seg[].lc`` (0-255, no bool)."""
+    state = make_state([make_segment(0, 0, 30), make_segment(1, 30, 60)])
+    device = derive_capabilities(state, leds(lc=1, seglc=[1, bad]))
+    assert [(s.bits, s.source) for s in device.segments] == [(None, None), (None, None)]
+
+
 def test_uniform_bits_need_every_segment_equal_to_the_aggregate():
     state = make_state([v16_segment(0, 0, 30, RGBW), v16_segment(1, 30, 60, RGBW)])
     assert derive_capabilities(state, leds(lc=RGBW)).uniform_bits == RGBW
@@ -141,6 +161,9 @@ def test_uniform_bits_need_every_segment_equal_to_the_aggregate():
     unknown = make_state([v16_segment(0, 0, 30, RGBW), make_segment(1, 30, 60)])
     assert derive_capabilities(unknown, leds(lc=RGBW)).uniform_bits is None
     assert derive_capabilities(state, leds(lc=True)).uniform_bits is None
+    # An empty segment list is no evidence for a new range (no vacuous ``all``).
+    empty = derive_capabilities(make_state([]), leds(lc=RGBW, seglc=[]))
+    assert empty.uniform_bits is None and empty.per_segment_reported is True
 
 
 def test_aggregate_cct_is_none_when_unreported():
@@ -254,6 +277,21 @@ def test_malformed_new_field_is_null_with_a_warning(name, bad):
     assert warnings[0].endswith("reported as null.")
 
 
+def test_color_trimming_keeps_the_stage_1_seglc_path_not_the_state_lc_chain():
+    """A zero fourth channel is trimmed only on ``info.leds.seglc`` RGB-only evidence."""
+    col = [[1, 2, 3, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    # seg[].lc says RGBW, aligned seglc says RGB-only: trimmed (seglc path).
+    state = make_state([v16_segment(0, 0, 30, RGBW, col=col)])
+    trimmed, _w = normalized(state, leds(lc=3, seglc=[1]))
+    seg = trimmed["view"]["segments"][0]
+    assert seg["color_channels"] == 3 and seg["colors"][0] == [1, 2, 3]
+    assert seg["reported_color_capability"]["white"] is True  # the chain reports RGBW
+    # seg[].lc says RGB-only, no seglc: not trimmed (the chain is not used for trimming).
+    kept, _w = normalized(make_state([v16_segment(0, 0, 30, RGB, col=col)]), leds(lc=1))
+    seg = kept["view"]["segments"][0]
+    assert seg["color_channels"] == 4 and seg["colors"][0] == [1, 2, 3, 0]
+
+
 def test_new_fields_are_additive_to_the_stage_1_segment_view():
     result, _w = normalized(make_state(), leds(lc=3, seglc=[1, 3, 1]))
     keys = list(result["view"]["segments"][0])
@@ -347,6 +385,7 @@ def test_write_side_lookup_still_uses_info_seglc_only():
     assert seglc_bits(leds(lc=3), 0, segments) is None
     assert seglc_bits(leds(lc=3, seglc=[1]), 0, segments) == 1
     assert seglc_bits(leds(lc=3, seglc=[1, 1]), 0, segments) is None
+    assert seglc_bits(leds(lc=3, seglc=[True]), 0, segments) is None  # bool rejected
 
 
 @pytest.mark.anyio
@@ -355,6 +394,23 @@ async def test_patch_colors_without_seglc_still_refused_despite_seg_lc(tmp_path)
     async with open_resources(tmp_path, fake) as resources:
         operation = {o.name: o for o in build_operations(resources)}["wled_patch_segments"]
         request = PatchSegmentsRequest.model_validate(
+            {
+                "device_id": "desk",
+                "segments": [{"id": 0, "start": 0, "stop": 20, "colors": [[1, 2, 3]]}],
+            }
+        ).model_dump()
+        result = await operation.execute(request)
+    assert result.error is not None and result.error.code == "UNSUPPORTED_CAPABILITY"
+    assert fake.method_count("POST") == 0
+
+
+@pytest.mark.anyio
+async def test_replace_colors_without_seglc_still_refused_despite_seg_lc(tmp_path):
+    """Replace analogue of the patch pin: a moved range has only ``seg[].lc`` evidence."""
+    fake = FakeWLED([make_segment(0, 0, 30)], led_count=30, v16=True, seglc=None)
+    async with open_resources(tmp_path, fake) as resources:
+        operation = {o.name: o for o in build_operations(resources)}["wled_replace_layout"]
+        request = ReplaceLayoutRequest.model_validate(
             {
                 "device_id": "desk",
                 "segments": [{"id": 0, "start": 0, "stop": 20, "colors": [[1, 2, 3]]}],
@@ -385,6 +441,20 @@ def test_fake_matrix_keeps_omitted_y_and_clamps_to_the_matrix():
     assert (seg["startY"], seg["stopY"], seg["n"]) == (0, 8, "Kept")
 
 
+def test_fake_matrix_name_follows_the_requested_x_bounds_before_clamping():
+    """json.cpp L144-151: the name is cleared when the requested start/stop differ from
+    the current ones before ``setGeometry`` clamps them; a Y-only change keeps it."""
+    fake = matrix_fake()
+    seg = fake.slots[0]
+    fake.apply({"seg": {"id": 0, "startY": 1, "stopY": 3}})
+    assert (seg["startY"], seg["stopY"], seg["n"]) == (1, 3, "Segment 0")
+    fake.apply({"seg": {"id": 0, "start": 0, "stop": 40}})  # clamps back to (0, 16)
+    assert (seg["start"], seg["stop"], seg["n"]) == (0, 16, "")
+    one_d = FakeWLED([make_segment(0, 0, 30)], led_count=30, v16=True)
+    one_d.apply({"seg": {"id": 0, "start": 0, "stop": 30, "bri": 9}})
+    assert one_d.slots[0]["n"] == "Segment 0"  # same bounds requested: name kept
+
+
 def test_fake_matrix_trailing_strip_and_capability_recompute():
     fake = matrix_fake()
     lc = {s["id"]: s["lc"] for s in fake.state()["seg"]}
@@ -401,9 +471,22 @@ def test_fake_matrix_trailing_strip_and_capability_recompute():
     assert fake.info()["leds"]["lc"] == RGBW
 
 
+def test_fake_trailing_strip_rows_follow_start_y_and_stop_y():
+    """``refreshLightCapabilities`` walks rows startY..stopY at ``x + width * y`` for a
+    trailing strip too: row 1 of the strip indexes past every bus, so no capability."""
+    fake = matrix_fake()
+    assert fake.state()["seg"][2]["lc"] == RGB_CCT
+    fake.apply({"seg": {"id": 2, "startY": 1, "stopY": 2}})
+    assert (fake.slots[2]["startY"], fake.slots[2]["stopY"]) == (1, 2)
+    assert fake.state()["seg"][2]["lc"] == 0
+
+
 def test_fake_v16_applies_option_keys_with_firmware_clamps():
     fake = FakeWLED([make_segment(0, 0, 30)], led_count=30, v16=True)
     fake.apply({"seg": {"id": 0, "c3": 99, "m12": 9, "si": 2, "bm": 5, "cct": 10, "rY": True}})
     seg = fake.state()["seg"][0]
     assert (seg["c3"], seg["m12"], seg["si"], seg["bm"], seg["cct"]) == (31, 7, 2, 5, 10)
     assert "rY" not in seg  # orientation keys exist only on a matrix
+    fake.apply({"seg": {"id": 0, "si": 9, "set": 7}})  # json.cpp L277-278
+    seg = fake.state()["seg"][0]
+    assert (seg["si"], seg["set"]) == (3, 3)

@@ -403,6 +403,18 @@ async def test_matching_2d_geometry_and_cct_without_capability(tmp_path):
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("lc", [5, 7], ids=["rgb-cct", "rgbw-cct"])
+async def test_cct_entry_on_a_cct_target_has_no_cct_warning(tmp_path, lc):
+    """The aggregate ``info.leds.lc`` carries the CCT bit 0x04: no 'cct' warning."""
+    entry = state_preset("Warm white")
+    entry["seg"][0].update(cct=200)
+    desk = BundleDevice(lc=lc)
+    outcome, _fleet = await import_(tmp_path, desk, bundle_with(item(1, entry)))
+    assert outcome.ok and desk.store["1"] == entry
+    assert not any("'cct'" in w for w in outcome.warnings), outcome.warnings
+
+
+@pytest.mark.anyio
 async def test_running_playlist_blocks_a_playlist_import_but_names_state_interruption(tmp_path):
     desk = BundleDevice({"9": state_preset("M"), "8": stored_playlist([9])})
     desk.state.update(pl=8, ps=9)

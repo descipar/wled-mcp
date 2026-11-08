@@ -20,7 +20,13 @@ L574-643) and applies them; ``matrix=(w, h)`` adds ``info.leds.matrix``, per-seg
 ``startY``/``stopY``/``rY``/``mY``/``tp`` and the X/Y clamping of ``setGeometry``
 (FX_fcn.cpp L460-538, including the trailing 1D strip after the matrix); ``buses`` lists
 ``(first, end, lc)`` pixel ranges so each segment's capability is recomputed from the
-pixels it covers after every geometry change (``refreshLightCapabilities`` L1027ff).
+pixels it covers after every geometry change (``refreshLightCapabilities`` L1027ff, which
+walks rows ``startY..stopY`` at ``x + width * y`` for a trailing strip too).
+
+``deserializeSegment`` (json.cpp L144-151) clears the name when the *requested* ``start``
+or ``stop`` differs from the current value before any clamping, so a Y-only change keeps
+the name; ``si`` and ``set`` are constrained to 0-3 (L277-278), ``c3`` to 0-31 and ``m12``
+to 0-7; ``cct`` is applied by every build (``setCCT``), not only by WLED 16.
 """
 
 from __future__ import annotations
@@ -48,7 +54,7 @@ V16_DEFAULTS: dict[str, Any] = {
     "m12": 0,
     "bm": 0,
 }
-V16_SETTERS = ("cct", "c1", "c2", "o1", "o2", "o3", "si", "set", "bm")
+V16_SETTERS = ("c1", "c2", "o1", "o2", "o3", "bm")
 ORIENTATION_KEYS = ("rY", "mY", "tp")
 
 
@@ -135,10 +141,8 @@ class FakeWLED:
         if self.buses is None:
             return 1
         width = self.matrix[0] if self.matrix is not None else self.led_count
+        # Rows follow startY/stopY even for a trailing strip (index = x + width * y).
         rows = range(slot.get("startY", 0), slot.get("stopY", 1))
-        if self.matrix is not None and slot["start"] >= width * self.matrix[1]:
-            rows = range(0, 1)  # trailing 1D strip: plain indices after the matrix
-            width = 0
         bits = 0
         for y in rows:
             for x in range(slot["start"], slot["stop"]):
@@ -280,7 +284,7 @@ class FakeWLED:
                 slot["col"][index] = list(color) + [0] * (4 - len(color))
         if "n" in obj:
             slot["n"] = obj["n"].encode()[: self.name_buffer].decode(errors="ignore")
-        for key in ("fx", "sx", "ix", "pal", "frz", "sel", "rev", "mi"):
+        for key in ("fx", "sx", "ix", "pal", "frz", "sel", "rev", "mi", "cct"):
             if key in obj:
                 slot[key] = obj[key]
         if self.v16:
@@ -291,6 +295,9 @@ class FakeWLED:
                 slot["c3"] = max(0, min(31, obj["c3"]))
             if "m12" in obj:
                 slot["m12"] = max(0, min(7, obj["m12"]))
+            for key in ("si", "set"):
+                if key in obj:
+                    slot[key] = max(0, min(3, obj[key]))
         if self.matrix is not None:
             for key in ORIENTATION_KEYS:
                 if key in obj:
@@ -305,11 +312,13 @@ class FakeWLED:
         assert self.matrix is not None
         width, height = self.matrix
         cells = width * height
-        old = (slot["start"], slot["stop"], slot["startY"], slot["stopY"])
         i1 = obj.get("start", slot["start"])
         i2 = obj.get("stop", slot["stop"])
         i1y = obj.get("startY", slot["startY"])
         i2y = obj.get("stopY", slot["stopY"])
+        # The name check compares the requested X bounds before clamping (json.cpp L144-151).
+        if (i1, i2) != (slot["start"], slot["stop"]) and "n" not in obj:
+            slot["n"] = ""
         if i2 <= i1:
             slot["stop"] = 0
             if seg_id == self.mainseg:
@@ -326,9 +335,6 @@ class FakeWLED:
         if slot["start"] >= slot["stop"] or slot["startY"] >= slot["stopY"]:
             slot["stop"] = 0
             return False
-        changed = old != (slot["start"], slot["stop"], slot["startY"], slot["stopY"])
-        if changed and "n" not in obj:
-            slot["n"] = ""
         return True
 
     # ------------------------------------------------------------------ transport

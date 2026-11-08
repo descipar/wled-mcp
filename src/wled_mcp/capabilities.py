@@ -162,7 +162,8 @@ class DeviceCapabilities:
     aggregate_bits: int | None
     matrix: tuple[int, int] | None
     segments: tuple[SegmentCapability, ...]
-    # ``info.leds.lc`` when every listed segment reports exactly that value (TD-19-4).
+    # ``info.leds.lc`` when every listed segment reports exactly that value (TD-19-4);
+    # ``None`` for an empty segment list, which is no evidence for a new range.
     uniform_bits: int | None
 
     def segment(self, seg_id: int) -> SegmentCapability | None:
@@ -178,11 +179,18 @@ class DeviceCapabilities:
 
 
 def aligned_seglc(info: Mapping[str, JsonValue], count: int) -> list[int] | None:
-    """``info.leds.seglc`` when it is a list of integers of exactly ``count`` entries."""
+    """``info.leds.seglc`` when it holds exactly ``count`` capability bitfields.
+
+    Each entry must be a ``valid_bits`` value (integer 0-255, booleans rejected), the same
+    range as ``state.seg[].lc``: both are the firmware's uint8_t ``getLightCapabilities()``.
+    """
     seglc = _leds(info).get("seglc")
-    if isinstance(seglc, list) and len(seglc) == count and all(_is_int(v) for v in seglc):
-        return [v for v in seglc if isinstance(v, int)]
-    return None
+    if not isinstance(seglc, list) or len(seglc) != count:
+        return None
+    values = [valid_bits(v) for v in seglc]
+    if any(v is None for v in values):
+        return None
+    return [v for v in values if v is not None]
 
 
 def _count(leds: Mapping[str, JsonValue], key: str) -> int | None:
@@ -229,9 +237,10 @@ def derive_capabilities(
         )
     leds = _leds(info)
     aggregate = aggregate_bits(info)
+    # An empty segment list proves nothing about any range, so it has no uniform bits.
     uniform = (
         aggregate
-        if aggregate is not None and all(seg.bits == aggregate for seg in segments)
+        if aggregate is not None and segments and all(seg.bits == aggregate for seg in segments)
         else None
     )
     return DeviceCapabilities(
