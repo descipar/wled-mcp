@@ -579,6 +579,12 @@ Stage 2 (recorded 2026-11-07):
   instead of in-process reload; CLI-only standard-library discovery.
   ISSUE-16-DEC-002 (coordinator, technical proposal): CLI shape and exit codes, atomic
   config writes, read-only `doctor` with sanitized export, no `config migrate`.
+- [ISSUE-17-DEC-001](decisions/issue-17.md) (human): groups and scenes are local JSON
+  documents under `<data-dir>/groups/` and `<data-dir>/scenes/`, written by `manage`
+  tools; the default failure policy is `strict`, `best_effort` is an opt-in.
+  ISSUE-17-DEC-002 (coordinator, technical proposal): technical defaults TD-17-1 to
+  TD-17-18 for #17 (two pull requests, tools and classes, formats and limits, sharing,
+  coverage) and C-17-1 (#17 starts with the class classification only).
 - [ISSUE-18-DEC-001](decisions/issue-18.md) (human): supplied objects are written as
   single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
   #19 owns the capability model; ISSUE-18-DEC-003 (coordinator, technical proposal):

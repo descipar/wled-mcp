@@ -15,7 +15,11 @@ service; #9 adds the five persistent-preset tools (see
 [Persistent presets, implementation](#persistent-presets-implemented-in-9)).
 #18 adds `wled_list_snapshots`, `wled_restore_preset`, `wled_store_preset`,
 `wled_save_playlist`, `wled_export_presets` and `wled_import_presets` (see
-[contract/presets.md](contract/presets.md)). `wled_patch_raw_state` remains a design
+[contract/presets.md](contract/presets.md)). #17 adds the group and scene tools
+`wled_list_groups`, `wled_save_group`, `wled_delete_group`, `wled_list_scenes`,
+`wled_save_scene`, `wled_delete_scene` and `wled_plan_scene`: local definitions and a
+read-only plan, no device write yet (see [contract/groups-scenes.md](contract/groups-scenes.md)).
+`wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06);
@@ -73,6 +77,13 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | `wled_save_playlist` | `device_id`, `name`, `entries`, `repeat`, `shuffle`, optional `end_preset_id`, `preset_id`, `overwrite=false`, `dry_run` | Native playlist of existing state presets; saving starts it, then it is stored | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_export_presets` | `device_id`, optional `preset_ids`, `include_unwritable=false` | Versioned preset bundle without device data, returned inline | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_import_presets` | `device_id`, `bundle`, optional `id_map`, `effect_map`, `palette_map`, `overwrite_ids`, `dry_run` | Dry-run preview, explicit mappings, snapshots first, per-entry single writes, stop at the first unverified entry | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_list_groups` | optional `group_id` | Stored groups with the exact member expansion; one group with its document; local files only | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_save_group` | `group_id`, `name`, `members` (`device`, optional `segments`), `overwrite=false`, `dry_run` | Create or replace a group of configured devices as a local file; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_delete_group` | `group_id`, `dry_run` | Delete one stored group file | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_list_scenes` | optional `scene_id`, `shareable=false`, `include_targets=false` | Stored scenes; one scene document; shareable export with placeholders; local files only | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_save_scene` | `scene` (JSON text or object), optional `target_map`, `overwrite=false`, `dry_run` | Validate and store a versioned scene as a local file; placeholders need `target_map`; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_delete_scene` | `scene_id`, `dry_run` | Delete one stored scene file | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_plan_scene` | `scene_id`, `mode=strict` | Read-only plan: exact targets, per-device preflight with the real planners, names resolved per device, no write | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; excluded from stage 1, `raw_state_patch = true` rejected at startup, no owning issue (ISSUE-13-DEC-001) |
 
 Tool descriptions state physical output, playback and storage effects. State/layout
@@ -709,8 +720,8 @@ suggestion. Safe reconciliation means read/inspect and decide explicitly.
 
 Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `INVALID_RESPONSE`, `VALIDATION_ERROR`, `UNSUPPORTED_CAPABILITY`, `AMBIGUOUS_NAME`,
-`PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `WRITE_OUTCOME_UNKNOWN`,
-`VERIFICATION_MISMATCH`. A pre-dispatch timeout is distinct from possible write
+`PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `STORAGE_FAILED`,
+`WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`. A pre-dispatch timeout is distinct from possible write
 application. Offline entries in successful inventory probes are per-device data.
 For a device call, `CONFIG_ERROR` means the configured device address cannot be used;
 no request was sent, it is not retried and the address is not echoed.
@@ -807,6 +818,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   codes, doctor categories and the sanitized export (#16).
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
   firmware tiers (#21).
+- [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
+  and sharing (#17).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18).
 - [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,
