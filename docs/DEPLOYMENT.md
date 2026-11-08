@@ -426,6 +426,17 @@ file modes and the backups writability check reflect what the server will see.
   `--endpoint <url>` also checks a running Streamable HTTP service (credential from
   `WLED_MCP_HTTP_TOKEN` or `--http-token-file`), and `--export` prints a sanitized JSON
   summary that can be attached to a report.
+- `wled-mcp discover [--config <abs>]` sends one mDNS query (plus at most one
+  follow-up) for WLED controllers and lists the answers with a suggested `base_url`
+  and the matching `config add-device` command. It runs only when invoked, writes
+  nothing and contacts no candidate. Multicast stays in the local network segment: it
+  does not cross VLANs or routed subnets, firewalls may block it, and a container on a
+  Docker bridge network usually sees no answers. `network_mode: host` would let a
+  container take part in multicast, but it also removes the network isolation of the
+  service, so the documented deployment does not use it; run `discover` on the host
+  instead, or skip it. The suggested URL uses the IPv4 address because container
+  resolvers usually cannot resolve `.local` names; reserve the address in DHCP so that
+  it stays valid. Adding a controller by address always works without discovery.
 
 Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md).
 

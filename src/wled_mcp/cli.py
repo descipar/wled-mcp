@@ -1,7 +1,7 @@
 """Installed console entry point. stdout is reserved for the SDK while serving.
 
 Without a subcommand the console serves MCP exactly as before. The subcommands of
-issue #16 (``config init|add-device|validate`` and ``doctor``,
+issue #16 (``config init|add-device|validate``, ``doctor`` and ``discover``,
 docs/contract/cli.md) run as separate processes, never serve and write their result
 to stdout.
 """
@@ -15,7 +15,7 @@ from typing import Never
 
 import anyio
 
-from wled_mcp import __version__, doctor, setup
+from wled_mcp import __version__, discovery, doctor, setup
 from wled_mcp.config import ConfigurationError, StartupConfig, load_config
 from wled_mcp.http_config import TOKEN_ENV, HTTPServiceSettings, load_http_settings
 from wled_mcp.operations import build_operations
@@ -47,7 +47,7 @@ BACKUPS_ADVISORY = (
     "starts, but writes that take a snapshot fail with BACKUP_FAILED. "
     "Run `wled-mcp doctor` for details."
 )
-SUBCOMMANDS = ("config", "doctor")
+SUBCOMMANDS = ("config", "doctor", "discover")
 
 
 def build_parser() -> SafeParser:
@@ -81,6 +81,7 @@ def build_parser() -> SafeParser:
     )
     setup.register(commands)
     doctor.register(commands)
+    discovery.register(commands)
     return parser
 
 
@@ -89,6 +90,8 @@ def run_subcommand(args: argparse.Namespace) -> int:
     try:
         if args.command == "doctor":
             return doctor.run(args, os.environ)
+        if args.command == "discover":
+            return setup.run(discovery.handler, "discover", args, os.environ)
         handler = setup.HANDLERS[args.config_command]
         return setup.run(handler, f"config {args.config_command}", args, os.environ)
     except Exception:

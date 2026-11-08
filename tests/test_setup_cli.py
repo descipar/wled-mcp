@@ -596,3 +596,49 @@ def test_surrogate_in_device_value_is_an_input_error(tmp_path, capsys):
 def test_subcommand_options_cannot_be_abbreviated(capsys, argv):
     code, out, err = run(capsys, *argv)
     assert code == 2 and out == ""
+
+
+# ------------------------------------------------------------------ PR B carried nits
+
+
+def test_init_names_a_missing_parent(tmp_path, capsys):
+    code, out, _ = init(capsys, tmp_path / "absent" / "devices.toml", "--format", "json")
+    assert code == 1 and json.loads(out)["problems"][0]["code"] == "PARENT_MISSING"
+
+
+def test_init_reports_an_unwritable_parent_accurately(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(setup.os, "access", lambda path, mode: False)
+    code, out, _ = init(capsys, tmp_path / "devices.toml", "--format", "json")
+    (problem,) = json.loads(out)["problems"]
+    assert code == 1 and problem["code"] == "PARENT_INACCESSIBLE"
+    assert "does not exist" not in problem["message"]
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_init_reports_an_uninspectable_parent_accurately(tmp_path, capsys, monkeypatch):
+    real_stat = Path.stat
+
+    def denied(self: Path, *args: object, **kwargs: object) -> os.stat_result:
+        if self == tmp_path:
+            raise PermissionError(13, "denied")
+        return real_stat(self, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(Path, "stat", denied)
+    code, out, _ = init(capsys, tmp_path / "devices.toml", "--format", "json")
+    (problem,) = json.loads(out)["problems"]
+    assert code == 1 and problem["code"] == "PARENT_INACCESSIBLE"
+    assert "does not exist" not in problem["message"]
+
+
+def test_add_device_hints_at_an_inline_devices_array(tmp_path, capsys):
+    config = tmp_path / "devices.toml"
+    config.write_bytes(
+        b"schema_version = 1\n"
+        b'devices = [{ id = "desk", name = "Desk", base_url = "http://192.0.2.10" }]\n'
+    )
+    before = snapshot(tmp_path)
+    code, out, _ = add(capsys, config, "shelf", "Shelf", "http://192.0.2.11", "--format", "json")
+    (problem,) = json.loads(out)["problems"]
+    assert code == 1 and problem["code"] == "INLINE_DEVICES_ARRAY"
+    assert "[[devices]]" in problem["message"]
+    assert snapshot(tmp_path) == before
