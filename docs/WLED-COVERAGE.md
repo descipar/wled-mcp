@@ -23,12 +23,12 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 35 %** (31 of 89 features). **Planned-scope coverage: 44 %** (31 of 71 features, excluded rows removed).
+**WLED coverage: 40 %** (35.5 of 89 features). **Planned-scope coverage: 50 %** (35.5 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Master state (STATE) | 13 | 3 | 2 | 0 | 8 | 0 | 31 % | 31 % |
-| Segments (SEG) | 25 | 12 | 1 | 9 | 0 | 3 | 57 % | 50 % |
+| Segments (SEG) | 25 | 12 | 10 | 0 | 0 | 3 | 77 % | 68 % |
 | Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
 | Presets and playlists (PRESET) | 13 | 8 | 1 | 0 | 3 | 1 | 71 % | 65 % |
 | Information and diagnostics (INFO) | 9 | 3 | 1 | 1 | 4 | 0 | 39 % | 39 % |
@@ -36,7 +36,7 @@ devices and versions are at most expected.
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 89 | 28 | 6 | 10 | 27 | 18 | 44 % | 35 % |
+| **All** | 89 | 28 | 15 | 1 | 27 | 18 | 50 % | 40 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -125,15 +125,15 @@ owning issue for planned rows and the decision for excluded rows.
 | W-SEG-11 | Segment selection | `sel` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-12 | Segment name | `n` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Up to 32 UTF-8 bytes. |
 | W-SEG-13 | White channel (RGBW) | `col` fourth channel | partial | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Only on existing ranges with reported white capability; new or moved RGBW ranges are refused. #19 extends this. |
-| W-SEG-14 | Correlated color temperature | `cct` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-16 | Sound simulation | `si` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-17 | Segment LED set | `set` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-18 | Freeze | `frz` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-19 | Blend mode and overlapping segments | `bm` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | Overlap as an explicit opt-in, ISSUE-19-DEC-001. |
-| W-SEG-20 | 2D segment bounds | `startY`, `stopY` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-21 | 2D orientation | `rY`, `mY`, `tp` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
-| W-SEG-22 | 1D effect mapping on 2D | `m12` | planned | - | [#19](https://github.com/descipar/wled-mcp/issues/19) | - |
+| W-SEG-14 | Correlated color temperature | `cct` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state` (`cct`, CCT capability bit); the setter follows in #19. |
+| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setters follow in #19. |
+| W-SEG-16 | Sound simulation | `si` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setter follows in #19. |
+| W-SEG-17 | Segment LED set | `set` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setter follows in #19. |
+| W-SEG-18 | Freeze | `frz` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setter follows in #19. |
+| W-SEG-19 | Blend mode and overlapping segments | `bm` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setter and overlap as an explicit opt-in (ISSUE-19-DEC-001) follow in #19. |
+| W-SEG-20 | 2D segment bounds | `startY`, `stopY` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state` (`start_y`/`stop_y`, `capabilities.matrix`); the setters follow in #19. |
+| W-SEG-21 | 2D orientation | `rY`, `mY`, `tp` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setters follow in #19. |
+| W-SEG-22 | 1D effect mapping on 2D | `m12` | partial | `wled_get_state` | [#19](https://github.com/descipar/wled-mcp/issues/19) | Read only in `wled_get_state`; the setter follows in #19. |
 | W-SEG-23 | Individual LED colors | `i` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "Pixel art"; restated in ISSUE-19-DEC-002. |
 | W-SEG-24 | Segment repetition | `rpt` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
 | W-SEG-25 | Effect defaults | `fxdef` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
@@ -172,7 +172,7 @@ owning issue for planned rows and the decision for excluded rows.
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | W-INFO-01 | Firmware identity | `/json/info` (`ver`, `vid`, `product`, `brand`, `arch`) | supported | `wled_get_state` | - | - |
-| W-INFO-02 | LED count, segment limit and color capabilities | `/json/info` (`leds.count`, `leds.maxseg`, `leds.lc`, `leds.seglc`) | supported | `wled_get_state` | - | - |
+| W-INFO-02 | LED count, segment limit and color capabilities | `/json/info` (`leds.count`, `leds.maxseg`, `leds.lc`, `leds.seglc`, `leds.matrix`; state `seg[].lc`) | supported | `wled_get_state` | - | - |
 | W-INFO-03 | Reachability | `/json/info` | supported | `wled_list_devices` | - | Optional bounded probe. |
 | W-INFO-04 | Runtime diagnostics | `/json/info` (`uptime`, `freeheap`, `wifi`, `fs`) | partial | `wled_get_state` | - | Raw `info` only, not normalized; `mac`, `ip` and `wifi.bssid` are removed. |
 | W-INFO-05 | Live LED colors | `/json/live`, `/liveview`, WebSocket `lv` | unplanned | - | - | - |

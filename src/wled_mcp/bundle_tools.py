@@ -37,11 +37,11 @@ from wled_mcp.bundles import (
     leaking_entries,
     parse_bundle,
     parse_id_keys,
-    parse_matrix,
     plan_import,
     referenced_catalog_ids,
     serialized_size,
 )
+from wled_mcp.capabilities import aggregate_cct, matrix_of
 from wled_mcp.catalogs import load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.config import Device
@@ -69,7 +69,7 @@ from wled_mcp.presets import (
     json_equal,
     parse_store,
 )
-from wled_mcp.readmodels import CAP_CCT, as_dict, is_int, read_identity
+from wled_mcp.readmodels import as_dict, is_int, read_identity
 from wled_mcp.resources import OperationContext, Resources
 from wled_mcp.server import Operation
 
@@ -279,7 +279,7 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
             identity.version,
             _count(leds, "count"),
             _count(leds, "maxseg"),
-            parse_matrix(leds.get("matrix")),
+            matrix_of(info),
             effects,
             palettes,
             selected,
@@ -384,14 +384,13 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
                 await load_catalog(context, resources.metadata_cache, "palettes")
             ).entry.names
         leds = as_dict(info.get("leds"))
-        lc = leds.get("lc")
         target = Target(
             store=store,
             firmware_version=identity.version,
             led_count=_count(leds, "count"),
             max_segments=_count(leds, "maxseg"),
-            matrix=parse_matrix(leds.get("matrix")),
-            cct=bool(lc & CAP_CCT) if isinstance(lc, int) and is_int(lc) else None,
+            matrix=matrix_of(info),
+            cct=aggregate_cct(info),
             effects=effects,
             palettes=palettes,
             before=live_before(state),

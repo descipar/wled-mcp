@@ -23,12 +23,9 @@ from typing import Final, Literal
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from wled_mcp.backups import Firmware
+from wled_mcp.capabilities import aggregate_bits, required_color_channels
 from wled_mcp.client import ClientFailure
-from wled_mcp.patches import (
-    _aggregate_capability_bits,
-    _required_color_channels,
-    _validate_colors,
-)
+from wled_mcp.patches import _validate_colors
 from wled_mcp.presets import (
     MAX_DIFFERENCES,
     MAX_PERSISTENT_ID,
@@ -232,8 +229,8 @@ def validate_supplied_state(
         _segment_power(segment)
         if segment.col is not None:
             if channels is None:
-                cap = _aggregate_capability_bits(raw_info)
-                channels = _required_color_channels(cap) if cap is not None else None
+                cap = aggregate_bits(raw_info)
+                channels = required_color_channels(cap) if cap is not None else None
                 if channels is None:
                     raise _unsupported(
                         f"{ctx}no RGB or RGBW color capability evidence for the device.",

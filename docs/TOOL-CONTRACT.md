@@ -98,7 +98,7 @@ one deadline and the per-device lock. It is never cached and not an atomic snaps
 `data`: `device{id,name}`, `freshness{source="device",read_at}`, `firmware{version,
 build_id,product,brand,arch}` (null if absent; only `ver` is required), `capabilities`
 (`led_count`, `max_segments`, `effect_count`, `palette_count`, `device_wide_color`,
-`segment_color_capability_reported`), `state`, `raw{state,info,redacted_info_keys}` and
+`segment_color_capability_reported`, `matrix`), `state`, `raw{state,info,redacted_info_keys}` and
 `diagnostics{server_version,unknown_capabilities,firmware_support{tier,minimum_supported}}`;
 `warnings` lists tolerated anomalies. `firmware_support` is the informational DEC-020
 firmware tier with one warning below 16.0.0 or for an unrecognizable version, never a
@@ -118,11 +118,14 @@ refusal ([compatibility](contract/compatibility.md#wled-firmware-tiers), #21).
   opacity is 0, so such a segment shows 255 even while on), `colors`, `color_channels`, `reported_color_capability`,
   `effect_id`, `palette_id`, `speed`, `intensity` and, when present, `grouping`,
   `spacing`, `offset`, `reverse`, `mirror`, `selected`, `name`; missing values are null.
+  Issue #19 adds the capability source, CCT, effect options, 2D and further segment
+  fields after `name` ([contract/segments.md](contract/segments.md)).
 - `device_wide_color{scope,rgb,white,cct}` is the firmware aggregate (`info.leds.lc`),
   reported only when that value is an integer, and is not proof for any range.
-  `reported_color_capability` comes from `info.leds.seglc`, which the pinned firmware
-  emits per active segment in order; it is used only when its length equals the segment
-  list. A fourth color channel is trimmed only when that capability proves the segment
+  `reported_color_capability` comes from `state.seg[].lc` or else from `info.leds.seglc`
+  (issue #19, [contract/segments.md](contract/segments.md)); `info.leds.seglc`, which the
+  pinned firmware emits per active segment in order, is used only when its length equals
+  the segment list. A fourth color channel is trimmed only when `info.leds.seglc` proves the segment
   RGB-only (RGB bit without white/CCT), every slot's fourth channel is 0 and thus
   nothing is lost; `raw.state` always keeps the original arrays.
 - Redaction (runtime privacy default, DEC-006): `mac`, `ip` and `wifi.bssid` are removed
@@ -797,5 +800,7 @@ mock/protocol tests and actual firmware compatibility evidence.
   firmware tiers (#21).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18).
+- [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,
+  CCT and 2D layouts (#19).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping,
   non-release build identity, contract and schema evolution, migration notes (#21, #70).
