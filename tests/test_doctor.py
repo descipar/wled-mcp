@@ -587,8 +587,9 @@ def test_real_unsearchable_data_dir(tmp_path, monkeypatch, capsys):
     config, data = layout(tmp_path)
     data.chmod(0o600)
     try:
-        monkeypatch.setattr(cli.anyio, "run", lambda *args: None)
-        assert cli.main(["--config", str(config), "--data-dir", str(data)]) == 0
+        with monkeypatch.context() as patched:  # anyio.run is the shared module function
+            patched.setattr(cli.anyio, "run", lambda *args: None)
+            assert cli.main(["--config", str(config), "--data-dir", str(data)]) == 0
         assert capsys.readouterr().err.strip() == cli.BACKUPS_ADVISORY
         report = diagnose(config, data, offline=True)
         assert "BACKUPS_NOT_WRITABLE" in codes(report, "storage") and report.exit_code == 1
