@@ -117,7 +117,9 @@ so larger values would wrap), `bs` (0-31: the firmware masks the blending style 
 `0x1F`), `mainseg`, `seg` (1-64 segments) and at
 least one of `on`, `bri`, `seg`. Segments need `id`, `start`, `stop` and may carry
 `on`, `bri`, `col`, `fx`, `pal`, `sx`, `ix`, `grp` (1-255), `spc` (0-255), `of`, `rev`,
-`mi`, `sel`, `n`. Any other key, including every control or side-effect key (`ps`,
+`mi`, `sel`, `n` and, since #19 (ISSUE-19-DEC-003 TD-19-12), `cct` (0-255), `c1`/`c2`
+(0-255), `c3` (0-31), `o1`-`o3`, `si` (0-3), `set` (0-3), `m12` (0-4), `frz`, `bm` (0-16),
+`startY`/`stopY`, `rY`, `mY`, `tp`. Any other key, including `rpt`, `fxdef`, `i` and every control or side-effect key (`ps`,
 `pd`, `playlist`, `psave`, `pdel`, `win`, `nl`, `udpn`, `lor`, `rmcpal`, `wifi`, `np`,
 `rb`, `live`, `time`, `bootps`, `ledmap`, `o`, `v`, `ib`, `sb`, `sc`, `n` at top level),
 is a schema `VALIDATION_ERROR` with no device I/O. Omitted fields are absent in the
@@ -125,10 +127,16 @@ stored object, never `null`.
 
 Before any write, against the device's reported capabilities (consistent with
 `wled_replace_layout`): `0 <= start < stop <= led_count`, unique segment IDs below the
-reported maximum and no more segments than it, no overlap, `of` below the segment
+reported maximum and no more segments than it, no overlap (rectangles on a matrix;
+`allow_overlap` does not exist here, ISSUE-19-DEC-001 covers only the two segment
+tools), `of` below the segment
 length, `fx`/`pal` inside the reported catalog counts, 1-3 color slots with exactly the
-device's channel width (RGB 3, RGBW 4; no evidence with colors is
-`UNSUPPORTED_CAPABILITY`), segment names of at most 32 UTF-8 bytes without U+0000,
+device's channel width from the aggregate `info.leds.lc` (RGB 3, white bit 4, white-only
+4 with RGB 0; no evidence with colors is `UNSUPPORTED_CAPABILITY`), the #19 rules of
+[segments.md](segments.md#write-rules-second-pull-request) for the WLED 16 keys (`cct`
+with the CCT bit, options only where the readback carries the key, 2D keys only on a
+matrix with X columns up to the width, explicit `startY`/`stopY` for an ID that does not
+exist yet, a trailing strip only unchanged), segment names of at most 32 UTF-8 bytes without U+0000,
 `mainseg` naming a supplied segment, and no `on=true` with `bri=0` (master or
 segment). A segment `bri=0` needs an explicit `on=false`, because the stored preset is
 applied later regardless of the then-current power. Unknown LED count or segment
@@ -295,10 +303,14 @@ Planning rules:
   it has more segments than the target maximum, or a segment ID is not below that
   maximum. An unknown target LED count or segment maximum blocks entries with segments.
 - **2D geometry.** `startY`/`stopY` is blocked unless the bundle's and the target's
-  `matrix` are both reported and equal. This is the interim rule of ISSUE-18-DEC-002,
-  read from raw `info.leds.matrix`.
-- **Carried with a warning.** `cct` on a target without the CCT capability bit, and a
-  `ledmap` selection, are written verbatim with a warning.
+  `matrix` are both reported and equal. The matrix comes from `capabilities.py` (#19,
+  same semantics as the interim rule of ISSUE-18-DEC-002).
+- **Carried with a warning.** `cct` on a target whose aggregate `info.leds.lc` lacks the
+  CCT bit, and a `ledmap` selection, are written verbatim with a warning.
+- **Other WLED 16 keys.** `c1`-`c3`, `o1`-`o3`, `si`, `set`, `m12`, `bm` and the
+  orientation keys are written verbatim without the field-presence check of
+  `wled_store_preset` (TD-19-10, residual limit): an import does not prove that the target
+  reports them.
 - **Effects and palettes.**
   - An ID is kept when the target catalog has the same name at that ID.
   - Otherwise the entry is blocked. `required_mappings` names the source ID and name

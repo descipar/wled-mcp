@@ -12,6 +12,12 @@ without a live effect, and nothing here restores the previous lighting.
 Every write targets one ID, is planned inside the device lock, takes a snapshot of an
 occupied destination first, rechecks the destination, sends one POST through
 ``Resources.write_polled`` and is decided by ``/presets.json`` readback only.
+
+WLED 16 segment fields (issue #19, ISSUE-19-DEC-003 TD-19-12): a supplied segment may
+carry ``cct``, ``c1``-``c3``, ``o1``-``o3``, ``si``, ``set``, ``m12``, ``frz``, ``bm``,
+``startY``/``stopY`` and ``rY``/``mY``/``tp`` with the bounds and the capability,
+field-presence and matrix rules of the segment tools (``segment_rules``); overlap stays
+rejected here (ISSUE-19-DEC-001 covers only the two segment tools).
 """
 
 from __future__ import annotations
@@ -23,9 +29,8 @@ from typing import Final, Literal
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from wled_mcp.backups import Firmware
-from wled_mcp.capabilities import aggregate_bits, required_color_channels
+from wled_mcp.capabilities import DeviceCapabilities, derive_capabilities
 from wled_mcp.client import ClientFailure
-from wled_mcp.patches import _validate_colors
 from wled_mcp.presets import (
     MAX_DIFFERENCES,
     MAX_PERSISTENT_ID,
@@ -43,7 +48,26 @@ from wled_mcp.presets import (
 )
 from wled_mcp.readmodels import as_dict
 from wled_mcp.resources import OperationContext, Verdict
-from wled_mcp.segment_rules import GROUPING_MAX, SPACING_MAX, check_segment_name
+from wled_mcp.segment_rules import (
+    BLEND_MODE_MAX,
+    CCT_MAX,
+    CUSTOM3_MAX,
+    CUSTOM_MAX,
+    GROUPING_MAX,
+    MAP_1D_2D_MAX,
+    SEGMENT_SET_MAX,
+    SOUND_SIMULATION_MAX,
+    SPACING_MAX,
+    Geometry,
+    Rect,
+    check_cct,
+    check_fields,
+    check_segment_name,
+    check_y_pair,
+    colors_for_bits,
+    option_keys,
+    overlapping_pairs,
+)
 
 Route = Literal["state", "playlist"]
 
@@ -122,6 +146,46 @@ class SuppliedSegment(BaseModel):
     sel: bool | None = None
     # Coarse character bound; the 32 UTF-8 byte rule is checked by check_segment_name.
     n: str | None = Field(default=None, max_length=32)
+    # Issue #19 (TD-19-12): the wire keys of the segment tools' #19 fields, same bounds.
+    cct: int | None = Field(default=None, ge=0, le=CCT_MAX)
+    c1: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    c2: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    c3: int | None = Field(default=None, ge=0, le=CUSTOM3_MAX)
+    o1: bool | None = None
+    o2: bool | None = None
+    o3: bool | None = None
+    si: int | None = Field(default=None, ge=0, le=SOUND_SIMULATION_MAX)
+    set: int | None = Field(default=None, ge=0, le=SEGMENT_SET_MAX)
+    m12: int | None = Field(default=None, ge=0, le=MAP_1D_2D_MAX)
+    frz: bool | None = None
+    bm: int | None = Field(default=None, ge=0, le=BLEND_MODE_MAX)
+    startY: int | None = Field(default=None, ge=0)  # WLED wire key
+    stopY: int | None = Field(default=None, ge=1)  # WLED wire key
+    rY: bool | None = None  # WLED wire key
+    mY: bool | None = None  # WLED wire key
+    tp: bool | None = None
+
+    def fields_19(self) -> dict[str, object]:
+        """The #19 values under the public names of the segment tools."""
+        return {
+            "cct": self.cct,
+            "custom1": self.c1,
+            "custom2": self.c2,
+            "custom3": self.c3,
+            "check1": self.o1,
+            "check2": self.o2,
+            "check3": self.o3,
+            "sound_simulation": self.si,
+            "segment_set": self.set,
+            "map_1d_2d": self.m12,
+            "freeze": self.frz,
+            "blend_mode": self.bm,
+            "start_y": self.startY,
+            "stop_y": self.stopY,
+            "reverse_y": self.rY,
+            "mirror_y": self.mY,
+            "transpose": self.tp,
+        }
 
 
 class SuppliedState(BaseModel):
@@ -167,14 +231,19 @@ def state_object(state: SuppliedState, name: str) -> dict[str, JsonValue]:
 
 
 def validate_supplied_state(
-    state: SuppliedState, capabilities: dict[str, JsonValue], raw_info: dict[str, JsonValue]
+    state: SuppliedState,
+    capabilities: dict[str, JsonValue],
+    raw_info: dict[str, JsonValue],
+    raw_state: dict[str, JsonValue],
 ) -> None:
     """Range and capability rules against the target's reported capabilities.
 
-    Consistent with ``wled_replace_layout``: ``0 <= start < stop <= led_count``, unique
-    IDs below the reported segment maximum, no overlap, offset below the length, effect
-    and palette IDs inside the catalogs, 1-3 color slots of the device's channel width,
-    the shared name rule and no ``on=true`` with ``bri=0``.
+    Consistent with ``wled_replace_layout``: ``0 <= start < stop <= led_count`` (on a
+    matrix ``start``/``stop`` are X columns up to the width and ``startY``/``stopY`` rows),
+    unique IDs below the reported segment maximum, no overlap (rectangles on a matrix),
+    offset below the length, effect and palette IDs inside the catalogs, 1-3 color slots
+    of the device's channel width, the shared name rule, no ``on=true`` with ``bri=0`` and
+    the #19 capability, field-presence and matrix evidence (TD-19-12).
     """
     if state.on is True and state.bri == 0:
         raise _fail("on=true with bri=0 is rejected; pass on=false for off.")
@@ -204,7 +273,9 @@ def validate_supplied_state(
         raise _fail(f"More segments than the device maximum ({max_segments}).")
     if state.mainseg is not None and state.mainseg not in ids:
         raise _fail("mainseg must name one of the supplied segment IDs.")
-    channels = None
+    device = derive_capabilities(raw_state, raw_info)
+    geometry = Geometry(device.matrix)
+    rects: dict[int, Rect] = {}
     for segment in sorted(segments, key=lambda item: item.id):
         ctx = f"Segment {segment.id}: "
         if segment.id >= max_segments:
@@ -227,20 +298,93 @@ def validate_supplied_state(
             raise _fail(f"{ctx}pal out of catalog range (0..{palette_count - 1}).")
         check_segment_name(segment.id, segment.n)
         _segment_power(segment)
+        try:
+            rects[segment.id] = _check_segment_19(segment, device, geometry)
+        except ClientFailure as failure:
+            raise _store_failure(failure) from None
         if segment.col is not None:
-            if channels is None:
-                cap = aggregate_bits(raw_info)
-                channels = required_color_channels(cap) if cap is not None else None
-                if channels is None:
-                    raise _unsupported(
-                        f"{ctx}no RGB or RGBW color capability evidence for the device.",
-                        "Omit col or read the device with wled_get_state; nothing was written.",
-                    )
-            _validate_colors(segment.col, channels, ctx)
-    ordered = sorted((segment.start, segment.stop, segment.id) for segment in segments)
-    for (_a, a_stop, a_id), (b_start, _b, b_id) in zip(ordered, ordered[1:], strict=False):
-        if b_start < a_stop:
-            raise _fail(f"Segments {a_id} and {b_id} overlap.")
+            if device.aggregate_bits is None:
+                raise _unsupported(
+                    f"{ctx}no RGB or RGBW color capability evidence for the device.",
+                    "Omit col or read the device with wled_get_state; nothing was written.",
+                )
+            try:
+                colors_for_bits(device.aggregate_bits, segment.col, ctx)
+            except ClientFailure as failure:
+                raise _store_failure(failure) from None
+    pairs = overlapping_pairs(rects)
+    if pairs:
+        a_id, b_id = pairs[0]
+        raise _fail(f"Segments {a_id} and {b_id} overlap.")
+
+
+def _store_failure(failure: ClientFailure) -> ClientFailure:
+    """A shared segment-rule refusal with the store's reconciliation text."""
+    error = failure.error
+    if error.code == "UNSUPPORTED_CAPABILITY":
+        return _unsupported(
+            error.message,
+            "Omit the field or read the device with wled_get_state; nothing was written.",
+        )
+    return _fail(error.message)
+
+
+def _check_segment_19(
+    segment: SuppliedSegment, device: DeviceCapabilities, geometry: Geometry
+) -> Rect:
+    """Matrix geometry and #19 field evidence of one supplied segment; returns its area.
+
+    An existing ID whose range (and rows) stay the same is "unchanged" and uses its own
+    per-segment evidence; any other entry is a new or moved range (uniform rule, TD-19-4).
+    """
+    ctx = f"Segment {segment.id}: "
+    check_y_pair(segment.id, segment.startY, segment.stopY)
+    cur = device.segment(segment.id)
+    cur_x = (cur.start, cur.stop) if cur is not None else None
+    cur_y = (cur.start_y, cur.stop_y) if cur is not None else (None, None)
+    same_x = cur_x == (segment.start, segment.stop)
+    if geometry.matrix is not None:
+        if cur is not None and cur.start is not None and geometry.is_trailing(cur.start):
+            if not same_x:
+                # An existing trailing strip moved into the matrix (or elsewhere in the strip).
+                raise ClientFailure(
+                    "UNSUPPORTED_CAPABILITY",
+                    f"{ctx}is the trailing 1D strip after the matrix; moving it is not supported.",
+                )
+        if geometry.is_trailing(segment.start):
+            if not same_x:
+                raise ClientFailure(
+                    "UNSUPPORTED_CAPABILITY",
+                    f"{ctx}creating or moving a trailing 1D strip after the matrix is not "
+                    "supported; it is read and preserved only.",
+                )
+            if segment.startY is not None and (segment.startY, segment.stopY) != cur_y:
+                raise ClientFailure(
+                    "UNSUPPORTED_CAPABILITY",
+                    f"{ctx}is the trailing 1D strip after the matrix; its rows are not changed.",
+                )
+        else:
+            geometry.check_x(segment.id, segment.start, segment.stop)
+            if segment.startY is None and cur is None:
+                raise ClientFailure(
+                    "VALIDATION_ERROR",
+                    f"{ctx}on a matrix a segment that does not exist yet needs explicit "
+                    "startY and stopY.",
+                )
+            if segment.startY is not None and segment.stopY is not None:
+                geometry.check_y(segment.id, segment.startY, segment.stopY)
+    target_y = (segment.startY, segment.stopY) if segment.startY is not None else cur_y
+    rect = geometry.rect(segment.start, segment.stop, *target_y)
+    if rect is None:
+        raise ClientFailure(
+            "UNSUPPORTED_CAPABILITY", f"{ctx}2D bounds unknown; the overlap check cannot be made."
+        )
+    unchanged = same_x and (segment.startY is None or (segment.startY, segment.stopY) == cur_y)
+    supplied = segment.fields_19()
+    check_fields(segment.id, supplied, device, option_keys(device, segment.id, is_new=cur is None))
+    if segment.cct is not None:
+        check_cct(segment.id, device, changed=not unchanged)
+    return rect
 
 
 # ---------------------------------------------------------------------- playlists

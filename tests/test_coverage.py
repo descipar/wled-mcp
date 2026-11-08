@@ -356,9 +356,13 @@ def test_roadmap_issues_come_from_the_stage_maps():
 
 
 def test_planned_row_with_a_reference_fails_c4():
-    changed = edit_row(
-        COVERAGE, "W-SEG-14", Status="planned", **{"Delivered by": "`wled_patch_segments`"}
-    )
+    # Status and link are set explicitly: W-SEG-14 itself is supported since #19.
+    row = {
+        "Status": "planned",
+        "Delivered by": "`wled_patch_segments`",
+        "Link": "[#19](https://github.com/descipar/wled-mcp/issues/19)",
+    }
+    changed = edit_row(COVERAGE, "W-SEG-14", **row)
     assert problems(changed) == ["C4 W-SEG-14: planned row must not name a Delivered by reference"]
 
 

@@ -100,9 +100,9 @@ Second change, same platform:
 
 | Command | Result |
 | --- | --- |
-| `uv run --frozen pytest` | 1717 passed, 23 skipped; only the known Windows-local failures (6 failed, 5 errors in `test_inventory_client.py` and `test_hw_http_probe.py`) |
+| `uv run --frozen pytest` | 1872 passed, 23 skipped (after merging main with #19); only the known Windows-local failures (6 failed, 5 errors in `test_inventory_client.py` and `test_hw_http_probe.py`) |
 | `uv run --frozen ruff check .` / `ruff format --check .` / `mypy` | pass |
-| `python scripts/check_coverage.py --update`, then without `--update` | W-INFO-09 supported; 41 % overall (36.5 of 89), 51 % planned scope (36.5 of 71); INFO 4 supported, 0 planned |
+| `python scripts/check_coverage.py --update`, then without `--update` | W-INFO-09 supported; after merging main with #19: 47 % overall (41.5 of 89), 58 % planned scope (41.5 of 71); INFO 4 supported, 0 planned; no planned row is left |
 | `check_traceability.py`, `check_private_identifiers.py`, `sync_agents.py --check`, `uv lock --check` | pass |
 
 `wled-mcp discover` was never run against a real network, neither by the tests nor

@@ -571,6 +571,8 @@ def leaves(value: Any, pointer: str = "") -> Iterator[tuple[str, Any]]:
             yield from leaves(item, f"{pointer}/{escape(key)}")
     elif isinstance(value, list) and value:
         # The length is a value of its own, so only new object keys inside elements add.
+        # The pointer could only collide with an object key literally named "#length";
+        # neither the envelope nor the retained WLED payloads have such a key.
         yield f"{pointer}/#length", len(value)
         for index, item in enumerate(value):
             yield from leaves(item, f"{pointer}/{index}")
@@ -624,11 +626,10 @@ def test_get_state_envelope_only_adds_to_the_retained_one(release, tmp_path):
             outcome = await operation.execute({"device_id": retained["device_id"]})
         return outcome.model_dump(mode="json")
 
-    now = dict(leaves(anyio.run(current)))
-    old = dict(leaves(retained))
-    missing = sorted(set(old) - set(now))
-    changed = sorted(p for p in set(old) & set(now) if old[p] != now[p] and p not in VARYING)
+    current_envelope = anyio.run(current)
+    missing, changed = envelope_difference(retained, current_envelope)
     # The device name comes from the synthetic test inventory, not the retained one.
-    changed = [p for p in changed if p != "/data/device/name"]
+    changed = [p for p in changed if p not in VARYING and p != "/data/device/name"]
     assert (missing, changed) == ([], [])
-    assert set(now) - set(old) >= {"/data/diagnostics/firmware_support/tier"}
+    added = set(dict(leaves(current_envelope))) - set(dict(leaves(retained)))
+    assert added >= {"/data/diagnostics/firmware_support/tier"}

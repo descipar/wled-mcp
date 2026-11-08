@@ -11,6 +11,13 @@ baseline profile 0 (WLED v0.15.1 source, observed on 16.0.1), exact stale remova
 one ``stop: 0`` POST per ID (never an array payload, which could purge/renumber slots),
 no filler segments, no temporary segment, creates only in ascending ID order within the
 observable allocation bound, and no reset of the master state.
+
+WLED 16 segment evidence (ISSUE-19-DEC-003, docs/contract/segments.md): capability for
+colors and ``cct`` follows ``capabilities.derive_capabilities`` (new or moved ranges use
+the uniform rule, TD-19-4); option fields need field presence, 2D fields a matrix; on a
+matrix ``start``/``stop`` are X columns and overlap is rectangle intersection; new IDs
+receive the WLED 16 defaults where the readback proves the field (TD-19-6), and
+``allow_overlap`` (ISSUE-19-DEC-001) permits an overlapping layout.
 """
 
 from __future__ import annotations
@@ -20,21 +27,36 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from wled_mcp.capabilities import (
-    aggregate_bits,
-    is_rgb_only,
-    required_color_channels,
-    seglc_bits,
-)
+from wled_mcp.capabilities import DeviceCapabilities, derive_capabilities
 from wled_mcp.client import ClientFailure
-from wled_mcp.patches import _validate_colors
-from wled_mcp.readmodels import as_dict
 from wled_mcp.resources import SequencePlan, WriteStep
 from wled_mcp.segment_rules import (
+    BLEND_MODE_MAX,
+    CCT_DEFAULT,
+    CCT_MAX,
+    CUSTOM3_MAX,
+    CUSTOM_MAX,
+    FREEZE_WARNING,
     GROUPING_MAX,
+    MAP_1D_2D_MAX,
+    OPTION_FIELDS,
+    ORIENTATION_FIELDS,
+    SEGMENT_FIELDS,
+    SEGMENT_SET_MAX,
+    SOUND_SIMULATION_MAX,
     SPACING_MAX,
+    Geometry,
+    Rect,
     SegmentPower,
+    check_cct,
+    check_colors,
+    check_fields,
     check_segment_name,
+    check_y_pair,
+    evidence_entries,
+    option_keys,
+    overlap_plan,
+    overlapping_pairs,
     resolve_segment_power,
 )
 
@@ -42,7 +64,11 @@ from wled_mcp.segment_rules import (
 
 
 class LayoutSegment(BaseModel):
-    """One segment of the complete desired layout (id, start and stop are required)."""
+    """One segment of the complete desired layout (id, start and stop are required).
+
+    On a matrix a new segment also needs ``start_y`` and ``stop_y`` (planner rule). The
+    #19 fields after ``name`` need fresh capability, field or matrix evidence.
+    """
 
     model_config = ConfigDict(extra="forbid", strict=True)
     id: int = Field(ge=0)
@@ -63,14 +89,36 @@ class LayoutSegment(BaseModel):
     selected: bool | None = None
     # Coarse character bound; the 32 UTF-8 byte limit is checked by the planner.
     name: str | None = Field(default=None, max_length=32)
+    # Issue #19 (ISSUE-19-DEC-003 TD-19-2); additive, all optional.
+    cct: int | None = Field(default=None, ge=0, le=CCT_MAX)
+    custom1: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    custom2: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    custom3: int | None = Field(default=None, ge=0, le=CUSTOM3_MAX)
+    check1: bool | None = None
+    check2: bool | None = None
+    check3: bool | None = None
+    sound_simulation: int | None = Field(default=None, ge=0, le=SOUND_SIMULATION_MAX)
+    segment_set: int | None = Field(default=None, ge=0, le=SEGMENT_SET_MAX)
+    map_1d_2d: int | None = Field(default=None, ge=0, le=MAP_1D_2D_MAX)
+    freeze: bool | None = None
+    blend_mode: int | None = Field(default=None, ge=0, le=BLEND_MODE_MAX)
+    start_y: int | None = Field(default=None, ge=0)
+    stop_y: int | None = Field(default=None, ge=1)
+    reverse_y: bool | None = None
+    mirror_y: bool | None = None
+    transpose: bool | None = None
 
 
 class ReplaceLayoutRequest(BaseModel):
-    """The complete desired active layout. Active IDs not listed here are removed."""
+    """The complete desired active layout. Active IDs not listed here are removed.
+
+    ``allow_overlap`` (ISSUE-19-DEC-001) permits overlapping desired segments.
+    """
 
     model_config = ConfigDict(extra="forbid", strict=True)
     device_id: str = Field(min_length=1, max_length=64)
     segments: list[LayoutSegment] = Field(min_length=1, max_length=64)
+    allow_overlap: bool = False
     dry_run: bool = False
 
 
@@ -123,6 +171,8 @@ _SIMPLE_FIELDS: tuple[tuple[str, str], ...] = (
 )
 
 Layout = dict[int, tuple[int, int]]
+# Keys a new ID inherits from a reused slot unless the create step resets them (TD-19-6).
+_RESETTABLE_KEYS: tuple[str, ...] = ("cct", *(field.wire for field in OPTION_FIELDS))
 
 
 def _fail(message: str) -> ClientFailure:
@@ -274,65 +324,10 @@ def _expectation_from_resolved(
         fields["n"] = resolved["name"]
     if is_new:
         fields["frz"] = False
+    for public, wire in SEGMENT_FIELDS:
+        if resolved.get(public) is not None:
+            fields[wire] = resolved[public]
     return fields
-
-
-def _check_colors(
-    seg: LayoutSegment,
-    *,
-    is_new: bool,
-    moved: bool,
-    raw_info: dict[str, JsonValue],
-    raw_segments: list[JsonValue],
-) -> list[list[int]] | None:
-    """Channel-width rules: ISSUE-6-DEC-003 for existing IDs, profile-0 evidence for new."""
-    colors = seg.colors
-    ctx = f"Segment {seg.id}: "
-    if colors is None:
-        if is_new:
-            raise _fail(f"{ctx}a new segment requires explicit colors.")
-        return None
-    if not colors or len(colors) > 3:
-        raise _fail(f"{ctx}colors must contain 1-3 slots.")
-    if is_new:
-        leds = as_dict(raw_info.get("leds"))
-        lc = aggregate_bits(raw_info)
-        seglc = leds.get("seglc")
-        uniform = lc is not None and is_rgb_only(lc)
-        if uniform and seglc is not None:
-            uniform = (
-                isinstance(seglc, list)
-                and len(seglc) == len(raw_segments)
-                and all(
-                    isinstance(v, int) and not isinstance(v, bool) and is_rgb_only(v) for v in seglc
-                )
-            )
-        if not uniform:
-            raise _unsupported(
-                f"{ctx}no uniform RGB-only capability evidence for a new range "
-                "(baseline profile 0)."
-            )
-        if any(len(slot) == 4 for slot in colors):
-            raise _unsupported(
-                f"{ctx}4-channel colors for a new range are not supported under baseline profile 0."
-            )
-        return _validate_colors(colors, 3, ctx)
-    seglc_cap = seglc_bits(raw_info, seg.id, raw_segments)
-    cap = seglc_cap
-    if cap is None and not moved:
-        cap = aggregate_bits(raw_info)
-    if cap is None:
-        raise _unsupported(f"{ctx}no per-segment color capability evidence available.")
-    channels = required_color_channels(cap)
-    if channels is None:
-        raise _unsupported(
-            f"{ctx}unsupported color capability (only RGB and RGBW are supported in this profile)."
-        )
-    if moved and channels == 4:
-        raise _unsupported(
-            f"{ctx}range change with 4-channel colors is not supported under baseline profile 0."
-        )
-    return _validate_colors(colors, channels, ctx)
 
 
 # ---------------------------------------------------------------------------- planner
@@ -385,12 +380,18 @@ def build_layout_plan(
     elif new:
         raise _unsupported("Maximum segment count unknown; new IDs cannot be validated.")
 
+    device = derive_capabilities(raw_state, raw_info)
+    geometry = Geometry(device.matrix)
+    new_keys = option_keys(device, -1, is_new=True)
+
     # Per-segment validation and resolution --------------------------------------
     resolved_by_id: dict[int, dict[str, JsonValue]] = {}
     payloads: dict[int, dict[str, JsonValue]] = {}
     expectations: dict[int, dict[str, JsonValue]] = {}
     compensation: list[JsonValue] = []
     geometry_changed: set[int] = set()
+    capability_evidence: list[JsonValue] = []
+    rects: dict[int, Rect] = {}
 
     for seg in sorted(segments, key=lambda s: s.id):
         ctx = f"Segment {seg.id}: "
@@ -412,10 +413,31 @@ def build_layout_plan(
 
         cur = current.get(seg.id)
         is_new = cur is None
-        moved = cur is not None and (cur["start"], cur["stop"]) != (seg.start, seg.stop)
-        colors = _check_colors(
-            seg, is_new=is_new, moved=moved, raw_info=raw_info, raw_segments=raw_segments
-        )
+        check_y_pair(seg.id, seg.start_y, seg.stop_y)
+        x_moved = cur is not None and (cur["start"], cur["stop"]) != (seg.start, seg.stop)
+        cur_y = _current_y(cur)
+        y_moved = cur is not None and seg.start_y is not None and cur_y != (seg.start_y, seg.stop_y)
+        _check_matrix_geometry(seg, cur, cur_y, geometry, x_moved=x_moved)
+        target_y = (seg.start_y, seg.stop_y) if seg.start_y is not None else cur_y
+        rect = geometry.rect(seg.start, seg.stop, *target_y)
+        if rect is None:
+            raise _unsupported(f"{ctx}2D bounds unknown; the overlap check cannot be made.")
+        rects[seg.id] = rect
+        moved = x_moved or y_moved
+
+        colors: list[list[int]] | None = None
+        if seg.colors is None:
+            if is_new:
+                raise _fail(f"{ctx}a new segment requires explicit colors.")
+        else:
+            colors, _source = check_colors(
+                seg.id, seg.colors, device, raw_info, raw_segments, is_new=is_new, moved=moved
+            )
+        supplied = {name: getattr(seg, name) for name, _wire in SEGMENT_FIELDS}
+        items = check_fields(seg.id, supplied, device, option_keys(device, seg.id, is_new=is_new))
+        if seg.cct is not None:
+            items = [("cct", check_cct(seg.id, device, changed=is_new or moved)), *items]
+        capability_evidence.extend(evidence_entries(seg.id, items))
 
         # Shared name and power/brightness rules (ISSUE-48-DEC-001, same helper as #6).
         # A new ID resolves omitted power to its default on=true.
@@ -426,13 +448,13 @@ def build_layout_plan(
         )
 
         if cur is None:
-            resolved = _resolve_new(seg, colors)
+            resolved = _resolve_new(seg, colors, device, new_keys)
             payload = _create_payload(seg, resolved)
             compensation_entries: list[JsonValue] = []
         else:
             cur_raw = raw_by_id.get(seg.id)
             resolved, payload, compensation_entries = _update_plan(
-                seg, cur, _raw_name(cur_raw), colors, power, moved
+                seg, cur, _raw_name(cur_raw), colors, power, x_moved, y_moved
             )
             if moved:
                 geometry_changed.add(seg.id)
@@ -441,11 +463,15 @@ def build_layout_plan(
         expectations[seg.id] = _expectation_from_resolved(resolved, seg.brightness == 0, is_new)
         compensation.extend(compensation_entries)
 
-    # Desired layout must not overlap itself ----------------------------------------
-    ordered = sorted((s.start, s.stop, s.id) for s in segments)
-    for (_a, a_stop, a_id), (b_start, _b, b_id) in zip(ordered, ordered[1:], strict=False):
-        if b_start < a_stop:
-            raise _fail(f"Segments {a_id} and {b_id} overlap in the desired layout.")
+    # Desired layout must not overlap itself unless allowed (ISSUE-19-DEC-001) ---------
+    desired_pairs = overlapping_pairs(rects)
+    if desired_pairs and not request.allow_overlap:
+        a_id, b_id = desired_pairs[0]
+        raise _fail(
+            f"Segments {a_id} and {b_id} overlap in the desired layout; pass "
+            "allow_overlap=true to permit overlapping segments."
+        )
+    allowed_pairs = {frozenset(pair) for pair in desired_pairs}
 
     # Allocation of new IDs (PD-4): next appended slot is max(active)+1 at the latest.
     bound = max(old) + 1 if old else 0
@@ -475,18 +501,25 @@ def build_layout_plan(
         )
     for new_id in new:
         if new_id < base_bound:
-            plan_warnings.append(
-                f"inherited_unexposed_state: segment {new_id} reuses an inactive slot; "
-                "unexposed legacy state (for example cct, c1-c3, o1-o3) cannot be observed "
-                "or reset."
-            )
+            inherited = [key for key in _RESETTABLE_KEYS if key not in payloads[new_id]]
+            if inherited:
+                plan_warnings.append(
+                    f"inherited_unexposed_state: segment {new_id} reuses an inactive slot; "
+                    f"its legacy {', '.join(inherited)} state cannot be observed or reset "
+                    "(the device does not report these fields)."
+                )
+    frozen = [seg.id for seg in sorted(segments, key=lambda s: s.id) if seg.freeze is True]
+    if frozen:
+        plan_warnings.append(FREEZE_WARNING.format(ids=frozen))
 
     # Ordering (PD-1) ------------------------------------------------------------------
     layout: Layout = {}
+    occupied: dict[int, Rect | None] = {}
     for old_id in sorted(old):
         old_start, old_stop = current[old_id]["start"], current[old_id]["stop"]
         assert isinstance(old_start, int) and isinstance(old_stop, int)
         layout[old_id] = (old_start, old_stop)
+        occupied[old_id] = geometry.rect(old_start, old_stop, *_current_y(current[old_id]))
     steps: list[WriteStep] = []
     texts: list[JsonValue] = []
     actions: list[JsonValue] = []
@@ -512,6 +545,17 @@ def build_layout_plan(
         actions.append(action)
         payload_list.append(payload)
 
+    def blocked(cand: int) -> bool:
+        """A step must not create an overlap the final layout does not have."""
+        target_rect = rects[cand]
+        for other, rect in occupied.items():
+            if other == cand or not (rect is None or rect.overlaps(target_rect)):
+                continue
+            if request.allow_overlap and frozenset((cand, other)) in allowed_pairs:
+                continue
+            return True
+        return False
+
     main_step_index: int | None = None
     if main_step_first:
         assert target is not None
@@ -526,6 +570,7 @@ def build_layout_plan(
         )
     for stale_id in stale:
         del layout[stale_id]
+        del occupied[stale_id]
         add(
             "remove",
             stale_id,
@@ -542,15 +587,10 @@ def build_layout_plan(
         candidates = list(pending_updates) + pending_creates[:1]
         chosen: int | None = None
         for cand in candidates:
-            target_range = (desired[cand].start, desired[cand].stop)
-            if cand in layout and layout[cand] == target_range:
+            if cand in occupied and occupied[cand] == rects[cand]:
                 chosen = cand
                 break
-            blocked = any(
-                other != cand and r_start < target_range[1] and target_range[0] < r_stop
-                for other, (r_start, r_stop) in layout.items()
-            )
-            if not blocked:
+            if not blocked(cand):
                 chosen = cand
                 break
         if chosen is None:
@@ -560,20 +600,19 @@ def build_layout_plan(
             )
         seg = desired[chosen]
         layout[chosen] = (seg.start, seg.stop)
+        occupied[chosen] = rects[chosen]
         seg_payload = payloads[chosen]
+        area = _area(seg, geometry)
         if chosen in pending_updates:
             pending_updates.remove(chosen)
             if chosen in geometry_changed:
-                text = (
-                    f"Move ID {chosen} to [{seg.start},{seg.stop}), preserving omitted "
-                    "fields; verify."
-                )
+                text = f"Move ID {chosen} to {area}, preserving omitted fields; verify."
             else:
                 text = f"Update ID {chosen} fields; verify."
             action = "update"
         else:
             pending_creates.remove(chosen)
-            text = f"Create ID {chosen} at [{seg.start},{seg.stop}) with explicit defaults; verify."
+            text = f"Create ID {chosen} at {area} with explicit defaults; verify."
             action = "create"
         add(
             action,
@@ -634,6 +673,10 @@ def build_layout_plan(
         "warnings": list(plan_warnings),
         "noop": not steps,
     }
+    if capability_evidence:
+        public["capability_evidence"] = capability_evidence
+    if request.allow_overlap:
+        public.update(overlap_plan(rects))
     postconditions: list[JsonValue] = [
         "No writes occur during a dry run; a live call re-reads and re-plans under the lock.",
         "After a successful live call the active IDs are exactly "
@@ -643,12 +686,67 @@ def build_layout_plan(
         "On any uncertain or mismatching step the sequence stops: completed and remaining "
         "steps are reported, nothing is replayed, rolled back or corrected.",
     ]
+    if request.allow_overlap:
+        postconditions.append(
+            "Overlapping segments are permitted (allow_overlap); a higher segment ID is "
+            "rendered on top, blended with its blend_mode."
+        )
     return LayoutPlan(
         sequence=SequencePlan(tuple(steps), final_matches, _observe),
         public=public,
         postconditions=postconditions,
         warnings=plan_warnings,
     )
+
+
+# ---------------------------------------------------------------------------- geometry
+
+
+def _current_y(cur: dict[str, JsonValue] | None) -> tuple[int | None, int | None]:
+    if cur is None:
+        return None, None
+    start_y, stop_y = cur.get("start_y"), cur.get("stop_y")
+    return (
+        start_y if isinstance(start_y, int) else None,
+        stop_y if isinstance(stop_y, int) else None,
+    )
+
+
+def _check_matrix_geometry(
+    seg: LayoutSegment,
+    cur: dict[str, JsonValue] | None,
+    cur_y: tuple[int | None, int | None],
+    geometry: Geometry,
+    *,
+    x_moved: bool,
+) -> None:
+    """Matrix rules (TD-19-7): X columns, explicit rows for a new ID, trailing strip."""
+    if geometry.matrix is None:
+        return
+    ctx = f"Segment {seg.id}: "
+    cur_start = cur["start"] if cur is not None else None
+    if isinstance(cur_start, int) and geometry.is_trailing(cur_start):
+        if x_moved:
+            raise _unsupported(
+                f"{ctx}is the trailing 1D strip after the matrix; moving it is not supported."
+            )
+        if seg.start_y is not None and (seg.start_y, seg.stop_y) != cur_y:
+            raise _unsupported(
+                f"{ctx}is the trailing 1D strip after the matrix; its rows are not changed."
+            )
+        return
+    geometry.check_x(seg.id, seg.start, seg.stop)
+    if cur is None and seg.start_y is None:
+        raise _fail(f"{ctx}on a matrix a new segment needs explicit start_y and stop_y.")
+    if seg.start_y is not None and seg.stop_y is not None:
+        geometry.check_y(seg.id, seg.start_y, seg.stop_y)
+
+
+def _area(seg: LayoutSegment, geometry: Geometry) -> str:
+    text = f"[{seg.start},{seg.stop})"
+    if geometry.matrix is not None and seg.start_y is not None:
+        text += f" rows [{seg.start_y},{seg.stop_y})"
+    return text
 
 
 # ---------------------------------------------------------------------------- per segment
@@ -683,7 +781,40 @@ def _public(
     return resolved
 
 
-def _resolve_new(seg: LayoutSegment, colors: list[list[int]] | None) -> dict[str, JsonValue]:
+def _new_field_values(
+    seg: LayoutSegment, device: DeviceCapabilities, new_keys: frozenset[str]
+) -> dict[str, JsonValue]:
+    """#19 values of a new ID: supplied, else the WLED default where the readback proves
+    the field (TD-19-6), else ``None`` (not sent). ``frz`` is always reset (stage 1)."""
+    values: dict[str, JsonValue] = {}
+    if seg.cct is not None:
+        values["cct"] = seg.cct
+    else:
+        values["cct"] = CCT_DEFAULT if "cct" in new_keys else None
+    for field in OPTION_FIELDS:
+        supplied = getattr(seg, field.name)
+        if supplied is not None:
+            values[field.name] = supplied
+        elif field.wire == "frz" or field.wire in new_keys:
+            values[field.name] = field.default
+        else:
+            values[field.name] = None
+    values["start_y"] = seg.start_y
+    values["stop_y"] = seg.stop_y
+    for name, _wire in ORIENTATION_FIELDS:
+        supplied = getattr(seg, name)
+        values[name] = (
+            supplied if supplied is not None else (False if device.matrix is not None else None)
+        )
+    return values
+
+
+def _resolve_new(
+    seg: LayoutSegment,
+    colors: list[list[int]] | None,
+    device: DeviceCapabilities,
+    new_keys: frozenset[str],
+) -> dict[str, JsonValue]:
     assert colors is not None
     width = len(colors[0])
     slots = [list(slot) for slot in colors] + [[0] * width for _ in range(3 - len(colors))]
@@ -691,6 +822,7 @@ def _resolve_new(seg: LayoutSegment, colors: list[list[int]] | None) -> dict[str
     for public, _wire in _SIMPLE_FIELDS:
         supplied = getattr(seg, public)
         values[public] = supplied if supplied is not None else _DEFAULTS[public]
+    values.update(_new_field_values(seg, device, new_keys))
     on = seg.on if seg.on is not None else True
     brightness = seg.brightness if seg.brightness is not None else 255
     name = seg.name if seg.name is not None else ""
@@ -705,11 +837,14 @@ def _create_payload(seg: LayoutSegment, resolved: dict[str, JsonValue]) -> dict[
         "on": resolved["on"],
         "bri": resolved["brightness"],
         "col": resolved["colors"],
-        "frz": False,
+        "frz": resolved["freeze"],
         "n": resolved["name"],
     }
     for public, wire in _SIMPLE_FIELDS:
         payload[wire] = resolved[public]
+    for public, wire in SEGMENT_FIELDS:
+        if resolved[public] is not None and wire not in payload:
+            payload[wire] = resolved[public]
     return payload
 
 
@@ -720,6 +855,7 @@ def _update_plan(
     colors: list[list[int]] | None,
     power: SegmentPower,
     moved: bool,
+    y_moved: bool = False,
 ) -> tuple[dict[str, JsonValue], dict[str, JsonValue], list[JsonValue]]:
     ctx = f"Segment {seg.id}: "
     length = seg.stop - seg.start
@@ -737,6 +873,10 @@ def _update_plan(
                     f"{ctx}the existing offset would be clamped by the firmware; "
                     "supply offset explicitly."
                 )
+    if y_moved:
+        # Rows only: the firmware keeps the name (json.cpp L144-151 compares start/stop).
+        payload["startY"] = seg.start_y
+        payload["stopY"] = seg.stop_y
     # Power and brightness (ISSUE-48-DEC-001, shared with #6): an explicit on accompanies a
     # sent bri; a positive bri with omitted on on an off segment is sent with the resolved
     # on=false (targeted compensation), because the firmware would otherwise switch the
@@ -763,6 +903,12 @@ def _update_plan(
         supplied = getattr(seg, public)
         if supplied is not None and supplied != cur[public]:
             payload[wire] = supplied
+    for public, wire in SEGMENT_FIELDS:
+        if public in ("start_y", "stop_y"):
+            continue
+        supplied = getattr(seg, public)
+        if supplied is not None and supplied != cur.get(public):
+            payload[wire] = supplied
     # Name: geometry changes clear the name in profile 0, so resend it.
     resolved_name = seg.name if seg.name is not None else cur_name
     if moved and resolved_name is None:
@@ -778,6 +924,9 @@ def _update_plan(
     for public, _wire in _SIMPLE_FIELDS:
         supplied = getattr(seg, public)
         values[public] = supplied if supplied is not None else cur[public]
+    for public, _wire in SEGMENT_FIELDS:
+        supplied = getattr(seg, public)
+        values[public] = supplied if supplied is not None else cur.get(public)
     brightness = seg.brightness if seg.brightness is not None else cur["brightness"]
     brightness_value = brightness if isinstance(brightness, int) else None
     if colors is not None:
