@@ -569,8 +569,39 @@ def leaves(value: Any, pointer: str = "") -> Iterator[tuple[str, Any]]:
     if isinstance(value, dict) and value:
         for key, item in value.items():
             yield from leaves(item, f"{pointer}/{escape(key)}")
+    elif isinstance(value, list) and value:
+        # The length is a value of its own, so only new object keys inside elements add.
+        yield f"{pointer}/#length", len(value)
+        for index, item in enumerate(value):
+            yield from leaves(item, f"{pointer}/{index}")
     else:
         yield pointer, value
+
+
+def envelope_difference(old: Any, new: Any) -> tuple[list[str], list[str]]:
+    """(missing, changed) leaf pointers of ``old`` in ``new``; extra leaves are additions."""
+    before, after = dict(leaves(old)), dict(leaves(new))
+    missing = sorted(set(before) - set(after))
+    changed = sorted(p for p in set(before) & set(after) if before[p] != after[p])
+    return missing, changed
+
+
+def test_list_elements_are_compared_by_index_and_length():
+    old = {"segments": [{"id": 0, "on": True}], "unknown": ["a"]}
+    added_key = {"segments": [{"id": 0, "on": True, "cct": 127}], "unknown": ["a"]}
+    assert envelope_difference(old, added_key) == ([], [])
+    changed = {"segments": [{"id": 0, "on": False}], "unknown": ["a"]}
+    assert envelope_difference(old, changed) == ([], ["/segments/0/on"])
+    grown = {"segments": [{"id": 0, "on": True}], "unknown": ["a", "b"]}
+    assert envelope_difference(old, grown) == ([], ["/unknown/#length"])
+    shrunk = {"segments": [{"id": 0, "on": True}], "unknown": []}
+    assert envelope_difference(old, shrunk) == (["/unknown/#length", "/unknown/0"], [])
+    no_segment = {"segments": [], "unknown": ["a"]}
+    assert envelope_difference(old, no_segment)[0] == [
+        "/segments/#length",
+        "/segments/0/id",
+        "/segments/0/on",
+    ]
 
 
 # Values that legitimately differ between the release that wrote the fixture and now.
