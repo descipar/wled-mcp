@@ -73,7 +73,6 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
 | DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
 | DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
-| DEC-025 | Project / stage 4 | Introduce stage 4 for verification with secured controllers: tracker #127 and child #128 plan a hardware test with a settings-PIN-locked and OTA-locked WLED. Nothing is commissioned or authorized by the plan, and work starts only after stage 3. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-025](#dec-025--stage-4-for-verification-with-secured-controllers) and [docs/STAGE-4.md](STAGE-4.md) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -673,35 +672,6 @@ can explicitly amend them.
 - Supersedes: DEC-018 item 3 (branch rules) only.
 - Affected: docs/validation/issue-90.md (runbook), issue #90 acceptance item on the
   ruleset, agents/coordinator.md and DEC-022 item 4 (merge command, follow-up).
-
-### DEC-025 — Stage 4 for verification with secured controllers
-
-- Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-08 (no
-  permalink), after the coordinator reported that the official WLED documentation does not
-  say whether a settings PIN or OTA lock affects the JSON API and that the server's behavior
-  against such a controller is untested: "irgendwo stage 4 oder so einen test mit einem pin
-  gesperrten wled vorsehen" (English: "somewhere, stage 4 or so, provide a test with a
-  PIN-locked WLED"), typing errors kept.
-- Owner decision: plan a test with a PIN-locked WLED controller in a new stage 4.
-- Owner correction, same session, after the planning was reported: "stage 4 sachen sollen
-  doch jetzt noch nicht gemacht werden, sondern nach stage 3" (English: "stage 4 things are
-  not supposed to be done now, but after stage 3"). Stage 4 work starts only after stage 3
-  (#26 and its children) is done; until then stage 4 is a plan and nothing of it is
-  implemented, tested or scheduled.
-- Coordinator-derived (not owner statements): the stage is named "verification with secured
-  controllers" and tracked by #127 (`Stage 4 epic:`, label `stage:4`, DEC-010 conventions) with
-  child #128 for the settings-PIN and OTA-lock test; the OTA lock is included because the
-  PIN and the OTA lock are separate WLED settings; HTTP authentication or a credentialed proxy
-  stays out of scope until separately decided.
-- Conditions: planning only, and not before stage 3 is done (owner correction above). No
-  hardware run, setting change on a controller, deployment or publication is authorized;
-  every physical run needs its own owner authorization (read-only probes first, restorable
-  state, DEC-021 "Hardware"). Stage 4 does not block earlier stages.
-- Rationale supplied: none beyond the observation above.
-- Supersedes: none.
-- Affected: docs/STAGE-4.md, docs/PROJECT.md, README limitations and docs/VALIDATION.md
-  "Known limitations" (planned-test note), issues #127 and #128.
 
 ## Issue-specific decisions (pointers)
 

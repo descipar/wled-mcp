@@ -68,8 +68,7 @@ State of the evidence and the limits of the first source release (see also the
   the JSON API or presets under these locks. The server sends no device credentials and
   rejects credentials in a device URL, so a controller behind HTTP authentication or a
   credentialed proxy is not supported. Behavior with a settings PIN or OTA lock has not been
-  tested; the test is planned in stage 4 ([#128](https://github.com/descipar/wled-mcp/issues/128),
-  [docs/STAGE-4.md](STAGE-4.md)).
+  tested; a test is planned ([#128](https://github.com/descipar/wled-mcp/issues/128)).
 - One writer per controller: locks are per process, so a second process or service against
   the same devices is not coordinated.
 - In stdio mode the MCP host may stop the subprocess without waiting for a running call; a
