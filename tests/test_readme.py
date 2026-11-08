@@ -309,7 +309,9 @@ def test_quickstart_check_rejects_regressions(old, new, expected):
 def test_tool_table_check_rejects_drift(old, new):
     text = TOOL_CONTRACT.read_text("utf-8")
     assert old in text
-    assert tool_table_problems(text.replace(old, new, 1), tool_hints()) != []
+    assert tool_table_problems(text.replace(old, new, 1), tool_hints()) == [
+        "TOOL-CONTRACT tool table differs from the registered tools and hints"
+    ]
 
 
 @pytest.mark.parametrize(

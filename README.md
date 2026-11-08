@@ -15,6 +15,7 @@ promised ([Support](#support)).
 
 ## What it does
 
+- Self-hosted: no cloud service, account, MQTT broker or public endpoint is needed.
 - Named inventory of controllers in a TOML file. The server and its tools discover
   nothing; `wled-mcp discover` is an opt-in command.
 - Normalized state, capabilities and each device's own effect and palette catalogs.
@@ -36,7 +37,8 @@ WLED feature coverage: 58 % of the planned scope, 47 % of WLED overall ([method 
 ## Try it
 
 You need [uv](https://docs.astral.sh/uv/), an MCP host that can start a stdio server and
-a WLED controller reachable over HTTP. Replace `v<version>` with the tag of the
+a WLED controller reachable over HTTP; the optional HTTP service also needs Docker with
+Docker Compose. Replace `v<version>` with the tag of the
 [latest release](https://github.com/descipar/wled-mcp/releases/latest); without a tag,
 `uvx` takes the current `main`, which can change at any time. The commands are for a POSIX
 shell; Windows is experimental ([docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)).
@@ -82,8 +84,9 @@ runs. For pinned runtime constraints, a checksum-verified wheel, more devices, t
   read back; a write that timed out is reported as
   possibly applied and is never retried blindly.
 - **Snapshots.** Overwriting or deleting a preset first stores a durable snapshot in the
-  data directory. Restores, imports and playlist saves change the live output before they
-  store, and the previous lighting is not restored.
+  data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
+  playlist saves change the live output before they store, and the previous lighting is not
+  restored.
 - **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
   caller-supplied hosts, no silent preset overwrite (`overwrite=true` is required).
 - **Authorization.** Whether a person may run a tool is the MCP host's job; tool
@@ -124,6 +127,12 @@ segment fields, profiles and `discover` have no hardware run yet. Other limits:
 - One writer per controller: locks are per process, so a second process or service against
   the same devices is not coordinated.
 - No inventory reload; changes need `wled-mcp config validate` and a restart.
+- No device authentication: WLED has none for its light API ("Anyone with your IP and port
+  can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
+  sends no device credentials and rejects credentials in a device URL, so a controller
+  behind HTTP authentication or a credentialed proxy is not supported. Behavior with a
+  settings PIN or OTA lock is untested; a test is planned
+  ([#128](https://github.com/descipar/wled-mcp/issues/128)).
 - `tools/list` is CPU-heavy on small hosts.
 - No package on PyPI, no image on GHCR, no registry entry. A live update and rollback of a
   deployed service has not been checked yet.

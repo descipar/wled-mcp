@@ -71,7 +71,7 @@ controller: do not register a stdio entry and an HTTP service against the same d
 
 ## Quickstart: Streamable HTTP service
 
-The service runs as its own Docker Compose project and the MCP host connects to it over
+The service needs Docker with Docker Compose. It runs as its own Compose project and the MCP host connects to it over
 a private Docker network. No host port is published.
 
 1. Build the image locally from the copied release directory (`<release-dir>`, for

@@ -53,11 +53,23 @@ State of the evidence and the limits of the first source release (see also the
   run covers them yet.
 - Storing, restoring or importing a preset without changing the live output is not possible
   on WLED 16, and saving a playlist starts it. Imports do not rescale LED ranges or convert
-  matrix layouts, and import one playlist per call.
+  matrix layouts, and import one playlist per call
+  ([#18](https://github.com/descipar/wled-mcp/issues/18), closed).
 - CCT, grouping, mirror and 2D coordinates are written only when the device reports the
   capability; segment `rpt` and `fxdef` and matrix or panel configuration are not exposed,
-  and there is no raw state patch tool.
-- No inventory reload; changes need `wled-mcp config validate` and a restart.
+  and there is no raw state patch tool ([#19](https://github.com/descipar/wled-mcp/issues/19),
+  closed).
+- No inventory reload; changes need `wled-mcp config validate` and a restart
+  ([#16](https://github.com/descipar/wled-mcp/issues/16), closed).
+- No device authentication. The official WLED documentation states that anyone with a
+  controller's IP and port can control the lights ([OTA lock](https://kno.wled.ge/advanced/ota-lock/)),
+  describes the settings PIN as protecting the settings pages and the OTA lock as protecting
+  firmware updates ([settings](https://kno.wled.ge/features/settings/)), and says nothing about
+  the JSON API or presets under these locks. The server sends no device credentials and
+  rejects credentials in a device URL, so a controller behind HTTP authentication or a
+  credentialed proxy is not supported. Behavior with a settings PIN or OTA lock has not been
+  tested; the test is planned in stage 4 ([#128](https://github.com/descipar/wled-mcp/issues/128),
+  [docs/STAGE-4.md](STAGE-4.md)).
 - One writer per controller: locks are per process, so a second process or service against
   the same devices is not coordinated.
 - In stdio mode the MCP host may stop the subprocess without waiting for a running call; a
