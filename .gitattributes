@@ -5,3 +5,10 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 *.py text eol=lf
+# Files that enter the wheel or the staged release directory: the same bytes on every
+# operating system (#131). Without a rule `text=auto` checks them out with CRLF on Windows.
+LICENSE text eol=lf
+NOTICE text eol=lf
+Dockerfile text eol=lf
+Dockerfile.dockerignore text eol=lf
+*.txt text eol=lf

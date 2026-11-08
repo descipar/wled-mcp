@@ -115,6 +115,7 @@ completion.
 | [Sources](SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Stage 2](STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
 | [Stage 3](STAGE-3.md) | Five additional usability features, dependencies and acceptance scenarios |
+| [Stage 5](STAGE-5.md) | Public distribution and backlog, worked on a trigger |
 | [Marketplace plan](MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
 
 ## Working on an issue
