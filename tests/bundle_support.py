@@ -13,7 +13,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+import anyio
 import httpx2 as httpx
+import pytest
 
 from tests.preset_support import PresetDevice, PresetFleet
 from tests.state_catalog_support import FakeClock, make_info, make_state
@@ -67,6 +69,31 @@ class BundleDevice(PresetDevice):
             }[path]
             return httpx.Response(200, json=copy.deepcopy(value))
         return super().handle(request)
+
+
+class DeadlineClock:
+    """Controlled deadline time: ``Deadline`` reads ``anyio.current_time``."""
+
+    def __init__(self, base: float) -> None:
+        self.base = base
+        self.offset = 0.0
+
+    def now(self) -> float:
+        return self.base + self.offset
+
+
+def freeze_deadline_clock(monkeypatch: pytest.MonkeyPatch) -> DeadlineClock:
+    """Freeze the time the import deadlines run on; only ``clock.offset`` advances it.
+
+    The import's per-write window also covers planning and the snapshot files, whose real
+    I/O time depends on the host (issue #111: a slow arm64 runner exhausted the 1 s window
+    before the first POST). With a frozen clock no deadline expires from slowness, and a
+    test that needs an expiry advances ``offset`` explicitly. Poll sleeps stay real and
+    short, so no test waits for a deadline.
+    """
+    clock = DeadlineClock(anyio.current_time())
+    monkeypatch.setattr(anyio, "current_time", clock.now)
+    return clock
 
 
 def fleet_of(desk: BundleDevice) -> PresetFleet:
