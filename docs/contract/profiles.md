@@ -25,7 +25,7 @@ exists.
 | Class | Meaning | Tools |
 | --- | --- | --- |
 | `read` | No live, storage or local file mutation | `wled_list_devices`, `wled_get_state`, `wled_get_effects`, `wled_get_palettes`, `wled_list_presets`, `wled_get_preset`, `wled_list_snapshots`, `wled_export_presets`, `wled_list_groups`, `wled_list_scenes`, `wled_plan_scene` |
-| `control` | Live device output only; never device storage or a local persistent artifact | `wled_set_state`, `wled_patch_segments`, `wled_replace_layout`, `wled_activate_preset` |
+| `control` | Live device output only; never device storage or a local persistent artifact | `wled_set_state`, `wled_patch_segments`, `wled_replace_layout`, `wled_activate_preset`, `wled_apply_scene` |
 | `manage` | Device storage or local persistent artifacts | `wled_save_preset`, `wled_delete_preset`, `wled_restore_preset`, `wled_store_preset`, `wled_save_playlist`, `wled_import_presets`, `wled_save_group`, `wled_delete_group`, `wled_save_scene`, `wled_delete_scene` |
 
 `wled_replace_layout` is `control` (ISSUE-20-DEC-001, D1): it changes the live segment
@@ -34,8 +34,9 @@ layout. `wled_import_presets` and `wled_restore_preset` are `manage` although th
 change live output. The group and scene tools that store or delete a definition file are
 `manage` (a local persistent artifact; [groups-scenes.md](groups-scenes.md)); they take no
 `device_id`, so only the registration filter applies to them. `wled_plan_scene` is `read`
-because it never writes. `wled_apply_scene` (#17, next pull request) is `control`, applies
-through the write engines and calls `Resources.require_access` in its preflight.
+because it never writes. `wled_apply_scene` (#17) is `control`, applies
+through the write engines and calls `Resources.require_access` in its preflight, once per
+expanded device (it has no single `device_id`; [groups-scenes.md](groups-scenes.md#apply-wled_apply_scene)).
 
 Profiles are cumulative sets of classes:
 

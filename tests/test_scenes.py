@@ -505,6 +505,61 @@ def test_export_refuses_free_text_with_an_inventory_host_naming_field_not_text()
         export_scene(parsed(doc), include_targets=True, tokens=tokens)
 
 
+def hosted_scene(**changes: Any) -> dict[str, Any]:
+    """The canonical scene with one catalog name or ID changed."""
+    document = canonical_scene()
+    segment = document["targets"][0]["segments"][0]
+    for key, value in changes.items():
+        if key in ("effect_name", "palette_name"):
+            segment[key] = value
+        else:
+            document[key] = value
+    return document
+
+
+@pytest.mark.parametrize(
+    ("changes", "path"),
+    [
+        ({"effect_name": "Fire at DESK.invalid"}, "targets.1.segments.1.effect_name"),
+        ({"palette_name": "http://desk.invalid/ocean"}, "targets.1.segments.1.palette_name"),
+        ({"id": "x-desk-invalid"}, "id"),
+    ],
+)
+@pytest.mark.parametrize("include_targets", [False, True])
+def test_export_scans_every_exported_string_not_only_name_and_description(
+    changes, path, include_targets
+):
+    # The scan covers the catalog names and the scene ID too, with or without the targets.
+    tokens = inventory_tokens([device("desk")]) + ["x-desk-invalid"]
+    with pytest.raises(ClientFailure) as caught:
+        export_scene(
+            parsed(hosted_scene(**changes)), include_targets=include_targets, tokens=tokens
+        )
+    message = caught.value.error.message
+    assert f"'{path}'" in message
+    assert "desk.invalid" not in message.casefold() and "Fire" not in message
+    assert "ocean" not in message
+
+
+def test_export_scans_the_kept_target_references_only_when_they_are_kept():
+    scene = parsed(canonical_scene())  # device "desk" and group "shelf"
+    # A host that equals a device ID: kept references leak it, placeholders do not.
+    with pytest.raises(ClientFailure) as caught:
+        export_scene(scene, include_targets=True, tokens=["desk"])
+    assert "'targets.1.device'" in caught.value.error.message
+    assert export_scene(scene, include_targets=False, tokens=["desk"])
+    # A reference that merely resembles a token is no leak.
+    assert export_scene(scene, include_targets=True, tokens=["shelf-strip.invalid"])
+
+
+def test_a_catalog_name_without_a_host_exports_unchanged():
+    tokens = inventory_tokens([device("desk")])
+    shared_scene = export_scene(
+        parsed(hosted_scene(effect_name="Fire 2012")), include_targets=False, tokens=tokens
+    )
+    assert to_document(shared_scene)["targets"][0]["segments"][0]["effect_name"] == "Fire 2012"
+
+
 def test_a_device_id_inside_free_text_is_not_an_inventory_host():
     # Only addresses are scanned; the placeholder form is what hides device IDs.
     doc = canonical_scene()
