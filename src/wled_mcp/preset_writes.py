@@ -68,6 +68,7 @@ MAX_TRANSITION: Final = 65_535  # playlist transition, tenths of a second (uint1
 MAX_STATE_TRANSITION: Final = 655
 # The firmware masks the blending style with 0x1F (json.cpp, ISSUE-66 evidence).
 MAX_BLENDING_STYLE: Final = 31
+MAX_PLAYLIST_REPEAT: Final = 254  # stored as repeat + 1 in a byte (v16.0.1 playlist.cpp)
 DEFAULT_PLAYLIST_DURATION: Final = 100
 QUICK_LOAD_MAX_BYTES: Final = 8
 
@@ -324,8 +325,11 @@ def check_playlist_entry(entry: dict[str, JsonValue]) -> list[int]:
     _check_per_entry(playlist.get("dur"), "dur", MAX_PLAYLIST_DURATION)
     _check_per_entry(playlist.get("transition"), "transition", MAX_TRANSITION)
     repeat = playlist.get("repeat", 0)
-    if type(repeat) is not int or repeat < 0:
-        raise _unsupported("The playlist repeat count must be a non-negative integer.", reconcile)
+    # The firmware keeps repeat + 1 in a byte, so more than 254 would wrap (255: endless).
+    if type(repeat) is not int or not 0 <= repeat <= MAX_PLAYLIST_REPEAT:
+        raise _unsupported(
+            f"The playlist repeat count must be an integer 0-{MAX_PLAYLIST_REPEAT}.", reconcile
+        )
     end = playlist.get("end", 0)
     if type(end) is not int or not 0 <= end <= MAX_PERSISTENT_ID:
         raise _unsupported(
@@ -600,5 +604,5 @@ def refuse_running_playlist(before: dict[str, JsonValue]) -> None:
             f"Playlist {running} is running; saving a playlist now could store the running "
             "playlist instead of this one, so nothing was written.",
             "Stop the running playlist explicitly (for example by activating a state preset) "
-            "and request the restore again.",
+            "and request the write again.",
         )

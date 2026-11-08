@@ -63,3 +63,64 @@ candidate commit and the Linux CI run are recorded in the pull request descripti
 | `uv run --frozen python scripts/check_coverage.py` | pass (43 % of the planned scope, 34 % overall) |
 | `python scripts/sync_agents.py --check`, `scripts/check_agent_setup.py`, `scripts/check_lock.py`, `scripts/check_private_identifiers.py` | pass |
 | `uv run --frozen python scripts/check_distribution.py` | fails locally only at the uvx stdio handshake (checkout path contains a space), as on `main`; Linux CI is the reference |
+
+## Second pull request: playlist authoring, bundle export and import
+
+Mock transport and `tmp_path` only; no LAN, device or hardware access. The synthetic
+devices of `tests/bundle_support.py` extend the stateful fake with effect and palette
+catalogs and set firmware 16.0.1, LED count, segment maximum, matrix and capability
+bits explicitly. Nothing here is hardware acceptance. The retained bundle fixture
+`examples/contracts/preset-bundle.json` is actual export output of the synthetic
+fixture device.
+
+| Scenario | Evidence |
+| --- | --- |
+| A18-07 playlist authoring: invalid or non-state member, more than 100 members, `end=255`, negative or wrapping `repeat`, out-of-range or non-tenth durations and transitions rejected before any write; valid playlist stored and verified semantically; running playlist and member interference named | `tests/test_playlists.py::test_valid_playlist_is_started_stored_and_verified_with_one_post`, `::test_dry_run_names_playback_effect_and_running_hazard_and_sends_nothing`, `::test_running_playlist_refuses_the_save_before_any_snapshot_or_post`, `::test_playlist_started_after_the_snapshot_is_a_conflict`, `::test_overwrite_snapshots_the_existing_playlist_before_the_post`, `::test_occupied_destination_without_overwrite_is_a_conflict`, `::test_out_of_range_and_unknown_input_is_rejected_by_the_schema`, `::test_shuffle_and_repeat_are_explicit_fields`, `::test_upper_bounds_are_accepted`, `::test_non_state_missing_or_self_members_are_refused_before_any_write`, `::test_member_changed_after_the_snapshot_is_a_conflict`, `::test_timeout_with_unreadable_readback_is_unknown_and_not_resent`, `::test_semantic_difference_in_the_stored_playlist_is_a_mismatch`, `::test_restore_refuses_a_repeat_the_firmware_byte_would_wrap` |
+| A18-08 export of a store with state, playlist, api-command, unknown and malformed entries: no device, address or credential data, verbatim objects including unknown fields, correct types, excluded entries named | `tests/test_bundles.py::test_export_carries_verbatim_typed_objects_and_no_device_data`, `::test_include_unwritable_exports_every_type_for_inspection`, `::test_export_of_selected_ids_and_a_missing_id`, `::test_export_refuses_preset_text_that_contains_a_device_address`, `::test_export_above_the_size_bound_fails_with_a_selection_hint` |
+| A18-09 parser rejects unknown `format`, `format_version` 2 (named), unknown keys, duplicate keys, NaN, oversize and bad IDs with zero device I/O; the retained v1 fixture parses | `tests/test_bundles.py::test_parser_rejects_invalid_bundles_naming_the_problem`, `::test_parser_rejects_a_duplicate_key_in_an_otherwise_valid_bundle`, `::test_parser_rejects_duplicate_keys_non_finite_numbers_and_bad_json` (non-finite numbers and syntax), `::test_parser_rejects_oversize_bundles_in_both_forms`, `::test_rejected_bundles_cause_zero_device_io`, `::test_retained_fixture_is_actual_export_output_and_parses` |
+| A18-10 dry run onto fewer LEDs, fewer segments, a different effect catalog, a different matrix and occupied destinations: each mismatch, required overwrite and mapping named; zero POSTs; no file | `tests/test_bundles.py::test_dry_run_names_every_mismatch_mapping_and_overwrite_without_writing`, `::test_valid_dry_run_shows_destinations_routes_and_sends_nothing`, `::test_explicit_effect_map_accepts_the_proposal_and_rewrites_the_entry`, `::test_unwritable_entries_multiple_playlists_and_stale_overwrite_intent_block`, `::test_matching_2d_geometry_and_cct_without_capability`, `::test_running_playlist_blocks_a_playlist_import_but_names_state_interruption`, `::test_member_mapped_to_an_existing_target_state_preset`, `::test_lowest_free_allocation_skips_id_map_destinations`, `::test_playlist_rewritten_onto_its_own_destination_is_blocked`, `::test_malformed_target_store_blocks_the_import`, `::test_explicit_catalog_map_outside_the_target_catalog_is_blocked`, `::test_segment_stop_boundary_at_the_target_led_count` |
+| A18-11 execution: snapshots before the first POST, backup failure sends nothing, members before playlists, per-entry verification | `tests/test_bundles.py::test_snapshots_precede_the_first_post_and_members_precede_playlists`, `::test_backup_failure_sends_nothing`, `::test_destination_taken_after_planning_is_a_conflict_before_any_post`, `::test_import_snapshots_survive_each_others_retention_pruning`, `::test_playlist_member_turned_into_a_playlist_before_its_write_is_a_conflict`, `::test_playlist_started_before_the_playlist_write_is_a_conflict` |
+| A18-12 partial import: the k-th write times out unreadable, entry k `unknown`, later entries `not_attempted`, no resend, earlier `backup_id`s returned | `tests/test_bundles.py::test_unreadable_kth_write_stops_the_import_without_any_resend`, `::test_first_entry_mismatch_and_later_conflict_outcomes` |
+| A18-13 roundtrip export, import into identical capabilities (state exact, playlist semantic) | `tests/test_bundles.py::test_roundtrip_export_import_reproduces_the_objects` |
+| A18-14 transport parity for the new tools | `tests/test_bundles.py::test_protocol_envelope_and_schema_errors_for_the_new_tools` (in-process MCP client: strict schemas, live effect in descriptions, text fallback equals structured content, schema errors as `VALIDATION_ERROR`); both transports serve the same registry, compared generically by `tests/test_http_service.py` and `tests/test_http_cli.py` against `tests/tool_contract.py` |
+| A18-15 log privacy | `tests/test_bundles.py::test_logs_carry_no_bundle_content_names_or_addresses` |
+| Registry and coverage | `tests/tool_contract.py` (three new entries), `tests/test_tool_contract.py`, `tests/test_coverage.py`, `tests/test_readme.py` |
+
+Source facts that shaped the bounds (pinned v16.0.1, recorded in
+[SOURCES.md](../SOURCES.md#issue-18-wled-16-preset-write-evidence), not observed on
+hardware): `repeat` plus one pass is kept in a byte (so 0-254), a step's transition is
+applied as `tr x 100` in a 16-bit millisecond value (so at most 655 tenths), `dur` is
+constrained to 0-42949670 tenths. Because saving a playlist starts it and the playlist
+route is refused while one runs (ISSUE-18-DEC-003), an import carries at most one
+playlist.
+
+Hardware: not run. A hardware check of playlist authoring and import on the shared
+WLED 16 controller needs its own human authorization naming the controller and a
+captured, restorable baseline (DEC-021 "Hardware"). Until then the hardware outcome is
+pending.
+
+### Correction round 1 (review of `8f78ef7`, test evidence only)
+
+| Finding | Fix | Evidence |
+| --- | --- | --- |
+| Duplicate-key case failed for missing keys, not the duplicate | Test on an otherwise valid bundle; mutation without the duplicate-key hook fails it | `tests/test_bundles.py::test_parser_rejects_a_duplicate_key_in_an_otherwise_valid_bundle` |
+| Import snapshots protected from each other's pruning untested | Test with `retain_per_device=1` and three overwrites; mutation without the protection fails it | `::test_import_snapshots_survive_each_others_retention_pruning` |
+| Write-time playlist checks untested | Member turned into a playlist, and a playlist started, after POST 1: one POST, `PRESET_CONFLICT` | `::test_playlist_member_turned_into_a_playlist_before_its_write_is_a_conflict`, `::test_playlist_started_before_the_playlist_write_is_a_conflict` |
+| Planning branches untested | Allocation around `id_map` destinations, self-reference, malformed store, catalog-map bound, `stop` boundary | `::test_lowest_free_allocation_skips_id_map_destinations`, `::test_playlist_rewritten_onto_its_own_destination_is_blocked`, `::test_malformed_target_store_blocks_the_import`, `::test_explicit_catalog_map_outside_the_target_catalog_is_blocked`, `::test_segment_stop_boundary_at_the_target_led_count` |
+| Docs | Imported transition range, custom palettes, scope of the address scan (also in the `include_unwritable` export warning) | [contract/presets.md](../contract/presets.md); `::test_include_unwritable_exports_every_type_for_inspection` |
+
+### Commands and results (second pull request)
+
+Local run on Windows (2026-11-08, branch `stage2/issue-18-playlists-bundles`); the exact
+candidate commit and the Linux CI run are recorded in the pull request description.
+
+| Command | Result |
+| --- | --- |
+| `uv run --frozen pytest` | 1420 passed (after correction round 1; 1410 before), 20 skipped; 6 failed and 5 errors in `tests/test_inventory_client.py` and `tests/test_hw_http_probe.py`, the same Windows-only failures as on `main` |
+| `uv run --frozen pytest tests/test_bundles.py tests/test_playlists.py tests/test_restore.py tests/test_preset_writes.py` | 199 passed |
+| `uv run --frozen ruff check` / `ruff format --check` (CI path list) | pass |
+| `uv run --frozen mypy` (strict) | no issues in 32 source files |
+| `uv run --frozen python scripts/check_traceability.py` | pass |
+| `uv run --frozen python scripts/check_coverage.py` | pass (44 % of the planned scope, 35 % overall) |
+| `python scripts/sync_agents.py --check`, `scripts/check_agent_setup.py`, `scripts/check_lock.py`, `scripts/check_private_identifiers.py` | pass |
+| `uv run --frozen python scripts/check_distribution.py` | fails locally only at the uvx stdio handshake (checkout path contains a space), as on `main`; Linux CI is the reference |

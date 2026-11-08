@@ -1,0 +1,147 @@
+{
+  "format": "wled-mcp.preset-bundle",
+  "format_version": 1,
+  "created_at": "2026-01-01T00:16:40Z",
+  "source": {
+    "firmware": {
+      "version": "16.0.1"
+    },
+    "capabilities": {
+      "led_count": 90,
+      "max_segments": 32,
+      "matrix": null
+    }
+  },
+  "catalog": {
+    "effects": {
+      "2": "Breathe",
+      "4": "Fire 2012"
+    },
+    "palettes": {
+      "0": "Default",
+      "3": "Ocean"
+    }
+  },
+  "presets": [
+    {
+      "source_id": 1,
+      "name": "Warm",
+      "type": "state",
+      "preset": {
+        "on": true,
+        "bri": 128,
+        "transition": 7,
+        "bs": 0,
+        "mainseg": 0,
+        "seg": [
+          {
+            "id": 0,
+            "start": 0,
+            "stop": 30,
+            "col": [
+              [
+                255,
+                160,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "fx": 4,
+            "pal": 0,
+            "sx": 128,
+            "ix": 128,
+            "c1": 128,
+            "o1": false,
+            "si": 0
+          },
+          {
+            "stop": 0
+          }
+        ],
+        "n": "Warm"
+      }
+    },
+    {
+      "source_id": 2,
+      "name": "Sea",
+      "type": "state",
+      "preset": {
+        "on": true,
+        "bri": 128,
+        "transition": 7,
+        "bs": 0,
+        "mainseg": 0,
+        "seg": [
+          {
+            "id": 0,
+            "start": 0,
+            "stop": 30,
+            "col": [
+              [
+                255,
+                160,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            "fx": 2,
+            "pal": 3,
+            "sx": 128,
+            "ix": 128,
+            "c1": 128,
+            "o1": false,
+            "si": 0
+          },
+          {
+            "stop": 0
+          }
+        ],
+        "n": "Sea"
+      }
+    },
+    {
+      "source_id": 3,
+      "name": "Evening",
+      "type": "playlist",
+      "preset": {
+        "playlist": {
+          "ps": [
+            1,
+            2
+          ],
+          "dur": [
+            100,
+            100
+          ],
+          "transition": [
+            7,
+            7
+          ],
+          "repeat": 2,
+          "end": 0,
+          "r": 0
+        },
+        "on": true,
+        "n": "Evening"
+      }
+    }
+  ]
+}

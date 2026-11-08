@@ -150,11 +150,15 @@ review and must be announced with a migration note.
 ## Schema evolution
 
 Applies to the inventory configuration (`schema_version`), the result envelope
-(`schema_version`), preset snapshots (`format_version`) and later persistent formats
-(scenes and bundles of #17 and #18 follow the same rules):
+(`schema_version`), preset snapshots (`format_version`), preset bundles
+(`format_version`, delivered by #18, [presets](presets.md#bundle-format-1)) and later persistent
+formats (scenes of #17 follow the same rules):
 
 - Versions are integers. The current server reads configuration `schema_version` 1,
-  envelope `schema_version` 1 and snapshot `format_version` 1.
+  envelope `schema_version` 1, snapshot `format_version` 1 and preset bundle
+  `format_version` 1; a bundle with an unknown or higher version is rejected with a
+  message that names it (`Unsupported preset bundle format_version 2; ...`), only for
+  integers from 0 to 9999.
 - A reader accepts every version it knows and rejects a higher or unknown version.
   Servers from the compatibility-policy change of #21 on name it, for example
   `Unsupported inventory configuration schema_version 2; this server reads
