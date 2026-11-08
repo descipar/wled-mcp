@@ -27,6 +27,7 @@
 - Support both confirmed v1 transports: an independent Streamable HTTP service and client-managed stdio via uvx, sharing the same domain operations and tool contract.
 - User authorization belongs to the MCP host/client. The independent HTTP endpoint also needs its own configured access protection and Host/Origin checks; hub authentication does not protect direct service access. Tool annotations are useful hints, not an execution barrier.
 - Keep stdout reserved for stdio MCP. Diagnostics go to stderr and must omit secrets.
+- Stage release directories (`deploy/stage_release.py`) on the machine that will run them, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another (DEC-026).
 - Do not install a candidate upstream server as part of implementing this project. Upstream code reuse requires license review and preserved notices.
 
 ## Evidence and delivery

@@ -119,7 +119,9 @@ Unsupported or unrecognized firmware is served with a warning and never refused;
 
 Automated tests use mocks and synthetic loopback devices. Hardware acceptance covers the
 first feature set on one RGB controller, and a live check with an offline controller is
-still pending. Groups, scenes, preset bundles, playlists, snapshot restore, advanced
+still pending. A short live check of the second release over HTTP and stdio covered state
+reads, power, brightness and effect changes on that controller
+([record](docs/validation/live-check-2026-11-08.md)). Groups, scenes, preset bundles, playlists, snapshot restore, advanced
 segment fields, profiles and `discover` have no hardware run yet. Other limits:
 
 - Storing, restoring or importing a preset without changing the live output is not
@@ -134,8 +136,9 @@ segment fields, profiles and `discover` have no hardware run yet. Other limits:
   settings PIN or OTA lock is untested; a test is planned
   ([#128](https://github.com/descipar/wled-mcp/issues/128)).
 - `tools/list` is CPU-heavy on small hosts.
-- No package on PyPI, no image on GHCR, no registry entry. A live update and rollback of a
-  deployed service has not been checked yet.
+- No package on PyPI, no image on GHCR, no registry entry. A live update of a deployed HTTP
+  service was checked once, from an earlier build to the second release; a rollback has
+  not been checked.
 
 The complete list and the evidence are in
 [docs/VALIDATION.md](docs/VALIDATION.md#known-limitations).
