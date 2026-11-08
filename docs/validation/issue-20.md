@@ -59,7 +59,12 @@ are in `tests/test_diagnostics.py` unless a row names another file.
 | Carried review nits of PR A | N1 `AccessPolicy.restricted` removed (it was only used by tests; `tests/test_access_profiles.py::test_default_policy_is_unrestricted_and_a_manage_cap_changes_nothing` now checks the ceilings); N2 `tests/test_access_profiles.py::test_the_g3_and_g2_refusals_have_the_same_envelope_shape_including_dry_run`; N3 and N4 wording in [profiles.md](../contract/profiles.md) and [cli.md](../contract/cli.md); N5 the unknown `[access]` key now reads `access: unsupported field` like `devices[i]: unsupported field` (`tests/test_access_profiles.py::test_invalid_access_settings_are_positional_and_value_free`) |
 
 Mutation spot checks run by the implementer (not a substitute for independent review):
-MUTATIONS_PLACEHOLDER
+the omit serializer removed (the retained example test fails), the ID taken from the
+request, a device ID that is not configured passed to the call line, the level filter inverted,
+the monitor observing a rejected address or an exhausted deadline, the monitor storing an
+unconfigured device, an unobserved device reported as reachable, the status tool sending a
+request, unknown tools counted with a class, the log handler writing to stdout and the
+`-32603` message without the ID each fail at least one test above (12 mutations, 12 killed).
 
 Boundaries of the evidence: the status tool and the observer are proven against a mock
 transport and synthetic loopback devices. What a real controller returns after a power loss,

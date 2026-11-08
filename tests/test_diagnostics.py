@@ -294,6 +294,28 @@ async def test_a_call_line_has_only_allowlisted_fields_and_no_planted_value(tmp_
 
 
 @pytest.mark.anyio
+async def test_a_device_id_the_inventory_does_not_know_is_never_logged(caplog):
+    caplog.set_level(logging.INFO, logger="wled_mcp")
+
+    async def reply(arguments: dict[str, Any]) -> Outcome:
+        return Outcome(
+            ok=True,
+            operation="wled_echo",
+            device_id=PLANTED[0],  # an operation that echoes whatever ID it was given
+            application="not_attempted",
+            verification="not_requested",
+        )
+
+    echo = Operation("wled_echo", "echo", Boom, reply, ToolAnnotations(), tool_class=ToolClass.READ)
+    async with Client(create_server([echo], monitor=ServiceMonitor(["desk"]))) as client:
+        envelope = await call(client, "wled_echo")
+    assert envelope["device_id"] == PLANTED[0]  # the envelope is the caller's own data ...
+    (record,) = call_logs(caplog)
+    assert "device_id" not in record.call_fields  # type: ignore[attr-defined]
+    assert PLANTED[0] not in caplog.text  # ... the log line is not
+
+
+@pytest.mark.anyio
 async def test_the_line_carries_the_outcome_facts_and_class(tmp_path, caplog):
     caplog.set_level(logging.INFO, logger="wled_mcp")
     harness = Harness(tmp_path, desk="read")
@@ -693,6 +715,7 @@ def test_the_monitor_ignores_unconfigured_devices_and_keeps_bounded_state():
         monitor.record_call(ToolClass.READ, False, "VALIDATION_ERROR")
         tick[0] += 1
     assert [d["state"] for d in monitor.device_states()] == ["unknown"]
+    assert monitor._observed == {}  # nothing is stored for a device that is not configured
     assert len(monitor.call_counts()["by_error_code"]) == 1
     monitor.observe("desk", "TIMEOUT")
     tick[0] += 7
@@ -731,6 +754,7 @@ async def test_the_client_observer_sees_only_requests_that_reached_the_transport
     finally:
         await client.aclose()
     assert ("desk", "TIMEOUT") in seen  # a timeout is an observation
+    assert ("lamp", "TIMEOUT") not in seen  # an exhausted deadline is not
     assert all(device_id != "shelf" for device_id, _ in seen)  # a rejected address is not
     assert seen.count(("lamp", None)) == 1  # ... and was not observed either
 
