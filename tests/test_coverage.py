@@ -72,7 +72,11 @@ def test_real_list_passes_every_check():
 def test_real_rows_use_every_status_and_area_and_place_every_tool():
     rows, structure = checker.parse_rows(COVERAGE)
     assert structure == []
-    assert {r.status for r in rows} == set(checker.STATUSES)
+    # Since #16 delivered W-INFO-09 no real row is "planned"; that status stays valid and
+    # is exercised by the synthetic rows below (test_planned_* and the C-rule tests).
+    statuses = {r.status for r in rows}
+    assert statuses <= set(checker.STATUSES)
+    assert set(checker.STATUSES) - statuses <= {"planned"}
     assert {r.area for r in rows} == set(checker.AREAS)
     placed = {ref for r in rows if r.status in checker.DELIVERING for ref in r.references}
     server_only = set(checker.server_only_tools(COVERAGE))
@@ -244,10 +248,13 @@ def test_unregistered_tool_fails_c3():
 
 
 def test_unknown_cli_command_fails_c3_and_a_known_one_passes():
+    unknown = edit_row(
+        COVERAGE, "W-INFO-03", **{"Delivered by": "`wled_list_devices`, `cli: wled-mcp frobnicate`"}
+    )
+    assert "C3 W-INFO-03: 'wled-mcp frobnicate' is not a CLI command" in problems(unknown)
     changed = edit_row(
         COVERAGE, "W-INFO-03", **{"Delivered by": "`wled_list_devices`, `cli: wled-mcp discover`"}
     )
-    assert "C3 W-INFO-03: 'wled-mcp discover' is not a CLI command" in problems(changed)
     nested = replace(
         CONTEXT, cli_commands=frozenset({("discover",), ("config",), ("config", "validate")})
     )

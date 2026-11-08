@@ -39,6 +39,7 @@ Format = Literal["text", "json"]
 # A root-level empty inline array, the form `config init` writes for zero devices.
 _EMPTY_DEVICES = re.compile(r"[ \t]*devices[ \t]*=[ \t]*\[[ \t]*\][ \t]*(#[^\n]*)?\r?\n?")
 _TABLE_HEADER = re.compile(r"[ \t]*\[")
+_DEVICES_ASSIGNMENT = re.compile(r"[ \t]*devices[ \t]*=")
 
 _TEMPLATE_HEADER = (
     "# WLED MCP inventory configuration (schema 1), written by `wled-mcp config init`.\n"
@@ -295,6 +296,41 @@ def _read_regular(path: Path) -> tuple[bytes, os.stat_result]:
     return content, info
 
 
+def _check_parent(parent: Path, access: Callable[[Path, int], bool] | None = None) -> None:
+    """The target's directory must exist and be writable; say which one failed."""
+    try:
+        info = parent.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        raise Refusal(
+            "PARENT_MISSING", "The directory of the configuration path does not exist."
+        ) from None
+    except OSError:
+        raise Refusal(
+            "PARENT_INACCESSIBLE",
+            "The directory of the configuration path exists but could not be accessed.",
+        ) from None
+    if not stat.S_ISDIR(info.st_mode):
+        raise Refusal(
+            "PARENT_MISSING", "The directory of the configuration path is not a directory."
+        )
+    check = access if access is not None else os.access
+    if not check(parent, os.W_OK | os.X_OK):
+        raise Refusal(
+            "PARENT_INACCESSIBLE",
+            "The directory of the configuration path is not writable for this user.",
+        )
+
+
+def _inline_devices(text: str) -> bool:
+    """A root-level ``devices = ...`` assignment (an inline array, not tables)."""
+    for line in text.splitlines():
+        if _TABLE_HEADER.match(line):
+            return False
+        if _DEVICES_ASSIGNMENT.match(line):
+            return True
+    return False
+
+
 def config_init(args: argparse.Namespace, environ: Mapping[str, str]) -> CommandResult:
     command = "config init"
     target = _require_absolute(
@@ -303,8 +339,7 @@ def config_init(args: argparse.Namespace, environ: Mapping[str, str]) -> Command
     device = _device_values(args, required=False)
     document = initial_document(device)
     validated = _validated(document, "The new configuration would be invalid")
-    if not data_dir_usable(target.parent):
-        raise Refusal("PARENT_MISSING", "The directory of the configuration path does not exist.")
+    _check_parent(target.parent)
     mode: int | None = None
     try:
         existing = target.lstat()
@@ -356,7 +391,17 @@ def config_add_device(
         raise Refusal("DUPLICATE_ID", "A device with this ID is already configured.")
     text = original.decode("utf-8")
     candidate = append_device(text, device_block(device_id, name, base_url))
-    validated = _validated(candidate, "The configuration with the new device would be invalid")
+    try:
+        validated = _validated(candidate, "The configuration with the new device would be invalid")
+    except Refusal:
+        if _inline_devices(append_device(text, "")):
+            raise Refusal(
+                "INLINE_DEVICES_ARRAY",
+                "The configuration lists its devices as an inline array "
+                "(devices = [...]); config add-device can only append [[devices]] "
+                "tables. Rewrite the existing entries as [[devices]] tables first.",
+            ) from None
+        raise
     added = validated.devices[-1]
     if any(url_identity(d.base_url) == url_identity(added.base_url) for d in current.devices):
         raise Refusal("DUPLICATE_URL", "A device with an equal base URL is already configured.")
@@ -484,6 +529,8 @@ def _unexpected_failure(command: str, exc: BaseException) -> tuple[str, str]:
         return "INVALID_TEXT", "The input is not valid Unicode text; nothing was written."
     if command == "config validate":
         return "CHECK_FAILED", "The configuration could not be checked (file system error)."
+    if command == "discover":
+        return "DISCOVERY_FAILED", "Discovery failed with a system error; nothing was written."
     return "WRITE_FAILED", "The configuration file could not be written; it was left unchanged."
 
 
