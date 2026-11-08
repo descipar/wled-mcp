@@ -25,7 +25,12 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from tests.acceptance_support import LoopbackWLED
-from tests.envelopes import CORRELATION_ID, correlation_id_of, strip_correlation_id
+from tests.envelopes import (
+    CORRELATION_ID,
+    correlation_id_of,
+    strip_correlation_id,
+    without_correlation_id_text,
+)
 from tests.state_catalog_support import FakeClock, make_state
 from tests.test_access_profiles import (
     HOSTS,
@@ -214,6 +219,16 @@ def test_the_strip_helper_validates_before_it_strips():
     with pytest.raises(KeyError):
         strip_correlation_id({"ok": True})
     assert strip_correlation_id({"ok": True}, served=False) == {"ok": True}
+
+
+def test_the_text_helper_removes_an_id_that_contains_a_short_fragment():
+    # A random ID once contained "999" and failed an absence check on a served result.
+    envelope = {"ok": False, "correlation_id": "cb7f80999a123456"}
+    for text in (json.dumps(envelope), repr(envelope), json.dumps(envelope, indent=2)):
+        assert "999" in text
+        assert "999" not in without_correlation_id_text(text)
+        assert "cb7f8" not in without_correlation_id_text(text)
+    assert without_correlation_id_text('{"host":"999.1.1.1"}') == '{"host":"999.1.1.1"}'
 
 
 class Boom(BaseModel):

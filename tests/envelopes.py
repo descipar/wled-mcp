@@ -50,6 +50,15 @@ def comparable_record(record: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def without_correlation_id_text(text: str) -> str:
+    """Rendered text (JSON or repr) without the random ID, for substring-absence checks.
+
+    A random 16-hex-character ID can contain any short digit sequence by chance, so a test
+    that asserts a short fragment is absent from a served result strips the ID first.
+    """
+    return re.sub(r"correlation_id\W+[0-9a-f]{16}", "correlation_id", text)
+
+
 def comparable_message(message: str) -> str:
     """The fixed -32603 message with its ID replaced by a placeholder."""
     match = INTERNAL_FAILURE_MESSAGE.match(message)

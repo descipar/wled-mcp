@@ -10,6 +10,7 @@ from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
+from tests.envelopes import without_correlation_id_text
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import ConfigurationError, Device, HTTPSettings, StartupConfig, load_config
 from wled_mcp.operations import ListDevicesRequest, build_operations
@@ -810,6 +811,7 @@ def unvalidated(host, identifier="bad"):
 
 
 def assert_no_host(text, host):
+    text = without_correlation_id_text(text)  # a random ID can contain "999" by chance
     for value in (host, "999", "01.2.3.4", "0.0.0.256", "http://"):
         assert value not in text
 
