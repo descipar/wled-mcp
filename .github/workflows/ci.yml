@@ -1,8 +1,17 @@
 name: bootstrap checks
 
 on:
+  # Branches are checked by their pull request only; a push to a pull-request branch must
+  # not start a second identical run. `main` is checked after each merge.
   push:
+    branches: [main]
   pull_request:
+
+# A newer push to the same pull request replaces its still running checks; runs on `main`
+# are never cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
