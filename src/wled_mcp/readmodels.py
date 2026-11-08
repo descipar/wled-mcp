@@ -3,6 +3,10 @@
 Required fields fail with INVALID_RESPONSE. Optional fields of the wrong type become
 null plus a warning. Unreported capabilities are null, never false. Raw device data is
 kept next to the normalized view; only the documented info keys are redacted.
+
+WLED 16 segment evidence (ISSUE-19-DEC-003): per-segment color capability and the
+matrix size come from ``wled_mcp.capabilities``; the additional segment fields of #19 are
+reported from their wire keys when present and well-typed (docs/contract/segments.md).
 """
 
 from __future__ import annotations
@@ -12,10 +16,18 @@ from dataclasses import dataclass, field
 
 from pydantic import JsonValue
 
+# CAP_* moved to capabilities.py; re-exported here so existing imports keep working.
+from wled_mcp.capabilities import CAP_CCT as CAP_CCT
+from wled_mcp.capabilities import CAP_RGB as CAP_RGB
+from wled_mcp.capabilities import CAP_WHITE as CAP_WHITE
+from wled_mcp.capabilities import (
+    aligned_seglc,
+    color_flags,
+    derive_capabilities,
+    valid_bits,
+)
 from wled_mcp.client import ClientFailure
 
-# Capability bits per the pinned firmware source (FX.h / const.h at v0.15.1).
-CAP_RGB, CAP_WHITE, CAP_CCT = 0x01, 0x02, 0x04
 # Raw info keys removed from output (runtime privacy default, ISSUE-5-DEC-006).
 REDACTED_KEYS = ("mac", "ip", "wifi.bssid")
 
@@ -137,14 +149,6 @@ def redact_info(info: dict[str, JsonValue]) -> tuple[dict[str, JsonValue], list[
     return clean, removed
 
 
-def _caps(lc: int) -> dict[str, JsonValue]:
-    return {
-        "rgb": bool(lc & CAP_RGB),
-        "white": bool(lc & CAP_WHITE),
-        "cct": bool(lc & CAP_CCT),
-    }
-
-
 def _colors(
     raw: JsonValue, rgb_only: bool, context: str, warnings: Collector
 ) -> tuple[list[JsonValue] | None, int | None]:
@@ -167,6 +171,49 @@ def _colors(
     widths = {len(s) for s in slots}
     channels = widths.pop() if len(widths) == 1 else None
     return [list(s) for s in slots], channels
+
+
+def _segment_extras(
+    raw: dict[str, JsonValue],
+    ctx: str,
+    warnings: Collector,
+    source: str | None,
+) -> dict[str, JsonValue]:
+    """#19 read fields (AC-19-02): wire value when present and well-typed, else null.
+
+    Read bounds are the firmware storage types of the pinned source (uint8_t, the 5-bit
+    ``c3``, uint16_t 2D bounds); write bounds are a separate, stricter contract.
+    """
+    return {
+        "color_capability_source": source,
+        "cct": opt_int(raw, "cct", ctx, warnings, 0, 255),
+        "custom1": opt_int(raw, "c1", ctx, warnings, 0, 255),
+        "custom2": opt_int(raw, "c2", ctx, warnings, 0, 255),
+        "custom3": opt_int(raw, "c3", ctx, warnings, 0, 31),
+        "check1": opt_bool(raw, "o1", ctx, warnings),
+        "check2": opt_bool(raw, "o2", ctx, warnings),
+        "check3": opt_bool(raw, "o3", ctx, warnings),
+        "sound_simulation": opt_int(raw, "si", ctx, warnings, 0, 255),
+        "segment_set": opt_int(raw, "set", ctx, warnings, 0, 255),
+        "map_1d_2d": opt_int(raw, "m12", ctx, warnings, 0, 255),
+        "freeze": opt_bool(raw, "frz", ctx, warnings),
+        "blend_mode": opt_int(raw, "bm", ctx, warnings, 0, 255),
+        "start_y": opt_int(raw, "startY", ctx, warnings, 0, 65535),
+        "stop_y": opt_int(raw, "stopY", ctx, warnings, 0, 65535),
+        "reverse_y": opt_bool(raw, "rY", ctx, warnings),
+        "mirror_y": opt_bool(raw, "mY", ctx, warnings),
+        "transpose": opt_bool(raw, "tp", ctx, warnings),
+    }
+
+
+def _matrix_view(
+    matrix: tuple[int, int] | None, leds: dict[str, JsonValue], warnings: Collector
+) -> dict[str, JsonValue] | None:
+    if matrix is not None:
+        return {"width": matrix[0], "height": matrix[1]}
+    if leds.get("matrix") is not None:
+        warnings.add("Info: field 'leds.matrix' has an unexpected shape; reported as null.")
+    return None
 
 
 def normalize_state(
@@ -199,12 +246,12 @@ def normalize_state(
     leds = as_dict(info.get("leds"))
     lc = leds.get("lc")
     seglc = leds.get("seglc")
-    seg_caps: list[int] | None = None
-    if isinstance(seglc, list) and all(is_int(v) for v in seglc):
-        if len(seglc) == len(segs):
-            seg_caps = [v for v in seglc if isinstance(v, int)]
-        else:
-            warnings.add("Per-segment capability list does not match the segment list.")
+    # Stage-1 color trimming keeps its info.leds.seglc evidence (ISSUE-6-DEC-003); the
+    # reported capability itself follows the #19 evidence chain (state_lc -> info_seglc).
+    seg_caps = aligned_seglc(info, len(segs))
+    if seg_caps is None and isinstance(seglc, list) and all(is_int(v) for v in seglc):
+        warnings.add("Per-segment capability list does not match the segment list.")
+    device = derive_capabilities(state, info)
 
     segments: list[JsonValue] = []
     for index, raw in enumerate(segs):
@@ -212,10 +259,17 @@ def normalize_state(
         ctx = f"Segment {raw['id']}: "
         seg_on = opt_bool(raw, "on", ctx, warnings)
         seg_bri = opt_int(raw, "bri", ctx, warnings, 0, 255)
-        caps = seg_caps[index] if seg_caps is not None else None
+        trim_caps = seg_caps[index] if seg_caps is not None else None
         colors, channels = _colors(
-            raw.get("col"), caps is not None and (caps & 7) == CAP_RGB, ctx, warnings
+            raw.get("col"), trim_caps is not None and (trim_caps & 7) == CAP_RGB, ctx, warnings
         )
+        if "lc" in raw and raw["lc"] is not None and valid_bits(raw["lc"]) is None:
+            warnings.add(f"{ctx}field 'lc' has an unexpected value; not used as capability.")
+        seg_id = raw["id"]
+        assert isinstance(seg_id, int)
+        evidence = device.segment(seg_id)
+        caps = evidence.bits if evidence is not None else None
+        source = evidence.source if evidence is not None else None
         segments.append(
             {
                 "id": raw["id"],
@@ -228,7 +282,7 @@ def normalize_state(
                 ),
                 "colors": colors,
                 "color_channels": channels,
-                "reported_color_capability": None if caps is None else _caps(caps),
+                "reported_color_capability": None if caps is None else color_flags(caps),
                 "effect_id": opt_int(raw, "fx", ctx, warnings, 0),
                 "palette_id": opt_int(raw, "pal", ctx, warnings, 0),
                 "speed": opt_int(raw, "sx", ctx, warnings, 0, 255),
@@ -240,6 +294,7 @@ def normalize_state(
                 "mirror": opt_bool(raw, "mi", ctx, warnings),
                 "selected": opt_bool(raw, "sel", ctx, warnings),
                 "name": opt_str(raw, "n", ctx, warnings),
+                **_segment_extras(raw, ctx, warnings, source),
             }
         )
 
@@ -265,14 +320,15 @@ def normalize_state(
     wide: dict[str, JsonValue] | None = None
     if is_int(lc):
         assert isinstance(lc, int)
-        wide = {"scope": "aggregate_of_active_segments", **_caps(lc)}
+        wide = {"scope": "aggregate_of_active_segments", **color_flags(lc)}
     capabilities: dict[str, JsonValue] = {
         "led_count": led_count,
         "max_segments": max_segments,
         "effect_count": effect_count,
         "palette_count": palette_count,
         "device_wide_color": wide,
-        "segment_color_capability_reported": seg_caps is not None,
+        "segment_color_capability_reported": device.per_segment_reported,
+        "matrix": _matrix_view(device.matrix, leds, warnings),
     }
     unknown = [
         name
@@ -282,7 +338,7 @@ def normalize_state(
             ("effect_count", effect_count),
             ("palette_count", palette_count),
             ("device_wide_color", wide),
-            ("segment_color_capability", seg_caps),
+            ("segment_color_capability", True if device.per_segment_reported else None),
             ("build_id", identity.build_id),
         )
         if value is None

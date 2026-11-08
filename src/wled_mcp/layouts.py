@@ -20,14 +20,14 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from wled_mcp.client import ClientFailure
-from wled_mcp.patches import (
-    _aggregate_capability_bits,
-    _is_rgb_only,
-    _required_color_channels,
-    _segment_capability_bits,
-    _validate_colors,
+from wled_mcp.capabilities import (
+    aggregate_bits,
+    is_rgb_only,
+    required_color_channels,
+    seglc_bits,
 )
+from wled_mcp.client import ClientFailure
+from wled_mcp.patches import _validate_colors
 from wled_mcp.readmodels import as_dict
 from wled_mcp.resources import SequencePlan, WriteStep
 from wled_mcp.segment_rules import (
@@ -296,16 +296,15 @@ def _check_colors(
         raise _fail(f"{ctx}colors must contain 1-3 slots.")
     if is_new:
         leds = as_dict(raw_info.get("leds"))
-        lc = _aggregate_capability_bits(raw_info)
+        lc = aggregate_bits(raw_info)
         seglc = leds.get("seglc")
-        uniform = lc is not None and _is_rgb_only(lc)
+        uniform = lc is not None and is_rgb_only(lc)
         if uniform and seglc is not None:
             uniform = (
                 isinstance(seglc, list)
                 and len(seglc) == len(raw_segments)
                 and all(
-                    isinstance(v, int) and not isinstance(v, bool) and _is_rgb_only(v)
-                    for v in seglc
+                    isinstance(v, int) and not isinstance(v, bool) and is_rgb_only(v) for v in seglc
                 )
             )
         if not uniform:
@@ -318,13 +317,13 @@ def _check_colors(
                 f"{ctx}4-channel colors for a new range are not supported under baseline profile 0."
             )
         return _validate_colors(colors, 3, ctx)
-    seglc_cap = _segment_capability_bits(raw_info, seg.id, raw_segments)
+    seglc_cap = seglc_bits(raw_info, seg.id, raw_segments)
     cap = seglc_cap
     if cap is None and not moved:
-        cap = _aggregate_capability_bits(raw_info)
+        cap = aggregate_bits(raw_info)
     if cap is None:
         raise _unsupported(f"{ctx}no per-segment color capability evidence available.")
-    channels = _required_color_channels(cap)
+    channels = required_color_channels(cap)
     if channels is None:
         raise _unsupported(
             f"{ctx}unsupported color capability (only RGB and RGBW are supported in this profile)."

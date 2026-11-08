@@ -19,8 +19,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
+from wled_mcp.capabilities import aggregate_bits, required_color_channels, seglc_bits
 from wled_mcp.client import ClientFailure
-from wled_mcp.readmodels import CAP_CCT, CAP_RGB, CAP_WHITE, as_dict
 from wled_mcp.segment_rules import (
     GROUPING_MAX,
     SPACING_MAX,
@@ -115,53 +115,6 @@ def _fail(message: str) -> ClientFailure:
 
 def _unsupported(message: str) -> ClientFailure:
     return ClientFailure("UNSUPPORTED_CAPABILITY", message)
-
-
-def _segment_capability_bits(
-    info: dict[str, JsonValue], seg_id: int, segments: list[JsonValue]
-) -> int | None:
-    """Return the capability bitfield for ``seg_id`` from ``info.leds.seglc``.
-
-    ``seglc`` is used only when its length equals the segment list and the
-    target ID resolves to a position in that list. Otherwise ``None`` means
-    no per-segment evidence; the caller may fall back to ``info.leds.lc`` for
-    an *unchanged* range only (``ISSUE-6-DEC-003``).
-    """
-    leds = as_dict(info.get("leds"))
-    seglc = leds.get("seglc")
-    if not isinstance(seglc, list) or len(seglc) != len(segments):
-        return None
-    for index, seg in enumerate(segments):
-        if isinstance(seg, dict) and seg.get("id") == seg_id:
-            value = seglc[index]
-            if isinstance(value, int) and not isinstance(value, bool):
-                return value
-            return None
-    return None
-
-
-def _aggregate_capability_bits(info: dict[str, JsonValue]) -> int | None:
-    leds = as_dict(info.get("leds"))
-    lc = leds.get("lc")
-    if isinstance(lc, int) and not isinstance(lc, bool):
-        return lc
-    return None
-
-
-def _is_rgb_only(cap: int) -> bool:
-    return (cap & (CAP_RGB | CAP_WHITE | CAP_CCT)) == CAP_RGB
-
-
-def _is_rgbw(cap: int) -> bool:
-    return (cap & (CAP_RGB | CAP_WHITE)) == (CAP_RGB | CAP_WHITE)
-
-
-def _required_color_channels(cap: int) -> Literal[3, 4] | None:
-    if _is_rgb_only(cap):
-        return 3
-    if _is_rgbw(cap):
-        return 4
-    return None
 
 
 def _validate_colors(
@@ -352,7 +305,7 @@ def _normalize_patch_colors(
             f"Segment {patch.id}: no per-segment color capability evidence available; "
             "patch with a color change requires info.leds.seglc coverage."
         )
-    channels = _required_color_channels(cap)
+    channels = required_color_channels(cap)
     if channels is None:
         raise _unsupported(
             f"Segment {patch.id}: unsupported color capability "
@@ -706,8 +659,8 @@ def build_segment_patch_plan(
         power = powers[patch.id]
         is_range_change = patch.start is not None and patch.stop is not None
         if patch.colors is not None:
-            seglc_cap = _segment_capability_bits(raw_info, patch.id, raw_segments)
-            agg_cap = _aggregate_capability_bits(raw_info)
+            seglc_cap = seglc_bits(raw_info, patch.id, raw_segments)
+            agg_cap = aggregate_bits(raw_info)
             if seglc_cap is not None:
                 cap_for_colors: int | None = seglc_cap
             elif not is_range_change and agg_cap is not None:

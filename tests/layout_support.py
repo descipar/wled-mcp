@@ -11,6 +11,15 @@ Issue #52 adds the master power/brightness coupling of ``json.cpp`` L314-318 and
 ``led.cpp`` ``toggleOnOff``: ``on = root["on"] | (bri > 0)``, a toggle when power and the
 actual brightness disagree, and a readback of ``on = bri > 0`` with the remembered
 ``briLast`` as ``bri`` (``json.cpp`` L572-575). Segment behavior is unchanged.
+
+WLED 16 segment evidence (ISSUE-19-DEC-003, v16.0.1 29b389d), all opt-in so the stage-1
+behavior above stays the default: ``v16=True`` serializes ``seg[].lc`` and the option keys
+``c1``-``c3``, ``o1``-``o3``, ``si``, ``set``, ``m12``, ``bm`` (``serializeSegment``
+L574-643) and applies them; ``matrix=(w, h)`` adds ``info.leds.matrix``, per-segment
+``startY``/``stopY``/``rY``/``mY``/``tp`` and the X/Y clamping of ``setGeometry``
+(FX_fcn.cpp L460-538, including the trailing 1D strip after the matrix); ``buses`` lists
+``(first, end, lc)`` pixel ranges so each segment's capability is recomputed from the
+pixels it covers after every geometry change (``refreshLightCapabilities`` L1027ff).
 """
 
 from __future__ import annotations
@@ -25,6 +34,21 @@ import httpx2 as httpx
 from tests.state_catalog_support import EFFECTS, FXDATA, PALETTES, make_info, make_segment
 
 DEFAULT_COLORS = [[255, 160, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+# FX.h defaults of the option keys a WLED 16 segment serializes (L42-48, L564-586).
+V16_DEFAULTS: dict[str, Any] = {
+    "c1": 128,
+    "c2": 128,
+    "c3": 16,
+    "o1": False,
+    "o2": False,
+    "o3": False,
+    "si": 0,
+    "set": 0,
+    "m12": 0,
+    "bm": 0,
+}
+V16_SETTERS = ("cct", "c1", "c2", "o1", "o2", "o3", "si", "set", "bm")
+ORIENTATION_KEYS = ("rY", "mY", "tp")
 
 
 def inactive_slot(seg_id: int, **overrides: Any) -> dict[str, Any]:
@@ -48,6 +72,9 @@ class FakeWLED:
         lc: int | Any = 1,
         seglc: list[int] | None | str = "auto",
         name_buffer: int = 32,
+        v16: bool = False,
+        matrix: tuple[int, int] | None = None,
+        buses: list[tuple[int, int, int]] | None = None,
     ) -> None:
         active = (
             segments
@@ -64,6 +91,11 @@ class FakeWLED:
         self.mainseg = mainseg
         self.lc = lc
         self.seglc = seglc
+        self.v16 = v16
+        self.matrix = matrix
+        self.buses = buses
+        for slot in self.slots:
+            self._fill_v16(slot)
         # Master readback: ``on`` is actual power, ``bri`` the remembered ``briLast``.
         self.on = True
         self.bri = 128
@@ -87,16 +119,52 @@ class FakeWLED:
     def layout(self) -> dict[int, tuple[int, int]]:
         return {s["id"]: (s["start"], s["stop"]) for s in self.active()}
 
+    def _fill_v16(self, slot: dict[str, Any]) -> None:
+        if self.v16:
+            for key, value in V16_DEFAULTS.items():
+                slot.setdefault(key, value)
+        if self.matrix is not None:
+            slot.setdefault("startY", 0)
+            slot.setdefault("stopY", self.matrix[1] if slot["stop"] > slot["start"] else 1)
+            for key in ORIENTATION_KEYS:
+                slot.setdefault(key, False)
+
+    def segment_lc(self, slot: dict[str, Any]) -> int:
+        """Capability bits of the pixels a segment covers (1 without a bus model)."""
+        if self.buses is None:
+            return 1
+        width = self.matrix[0] if self.matrix is not None else self.led_count
+        rows = range(slot.get("startY", 0), slot.get("stopY", 1))
+        if self.matrix is not None and slot["start"] >= width * self.matrix[1]:
+            rows = range(0, 1)  # trailing 1D strip: plain indices after the matrix
+            width = 0
+        bits = 0
+        for y in rows:
+            for x in range(slot["start"], slot["stop"]):
+                index = x + width * y
+                for first, end, lc in self.buses:
+                    if first <= index < end:
+                        bits |= lc
+                        break
+        return bits
+
     def info(self) -> dict[str, Any]:
         active = self.active()
-        seglc: Any = [1] * len(active) if self.seglc == "auto" else self.seglc
+        seglc: Any = [self.segment_lc(s) for s in active] if self.seglc == "auto" else self.seglc
+        lc = self.lc
+        if self.buses is not None:
+            lc = 0
+            for slot in active:
+                lc |= self.segment_lc(slot)
         leds: dict[str, Any] = {
             "count": self.led_count,
             "maxseg": self.maxseg,
-            "lc": self.lc,
+            "lc": lc,
         }
         if seglc is not None:
             leds["seglc"] = seglc
+        if self.matrix is not None:
+            leds["matrix"] = {"w": self.matrix[0], "h": self.matrix[1]}
         return make_info(leds=leds)
 
     def state(self) -> dict[str, Any]:
@@ -106,6 +174,8 @@ class FakeWLED:
             seg["len"] = seg["stop"] - seg["start"]
             if not seg.get("n"):
                 seg.pop("n", None)
+            if self.v16:
+                seg["lc"] = self.segment_lc(slot)
             out.append(seg)
         return {
             "on": self.on,
@@ -172,8 +242,12 @@ class FakeWLED:
                 return
             seg_id = len(self.slots)
             self.slots.append(inactive_slot(seg_id))
+            self._fill_v16(self.slots[seg_id])
         slot = self.slots[seg_id]
-        if "start" in obj or "stop" in obj:
+        if self.matrix is not None and any(k in obj for k in ("start", "stop", "startY", "stopY")):
+            if not self._set_geometry_2d(slot, obj, seg_id):
+                return
+        elif "start" in obj or "stop" in obj:
             start = obj.get("start", slot["start"])
             stop = obj.get("stop", slot["stop"])
             changed = (start, stop) != (slot["start"], slot["stop"])
@@ -208,6 +282,53 @@ class FakeWLED:
         for key in ("fx", "sx", "ix", "pal", "frz", "sel", "rev", "mi"):
             if key in obj:
                 slot[key] = obj[key]
+        if self.v16:
+            for key in V16_SETTERS:
+                if key in obj:
+                    slot[key] = obj[key]
+            if "c3" in obj:
+                slot["c3"] = max(0, min(31, obj["c3"]))
+            if "m12" in obj:
+                slot["m12"] = max(0, min(7, obj["m12"]))
+        if self.matrix is not None:
+            for key in ORIENTATION_KEYS:
+                if key in obj:
+                    slot[key] = obj[key]
+
+    def _set_geometry_2d(self, slot: dict[str, Any], obj: dict[str, Any], seg_id: int) -> bool:
+        """``setGeometry`` on a matrix: X against width, Y against height, trailing strip.
+
+        Omitted bounds keep the current value (``elem[key] | seg.key``). Returns False when
+        the segment ends up removed.
+        """
+        assert self.matrix is not None
+        width, height = self.matrix
+        cells = width * height
+        old = (slot["start"], slot["stop"], slot["startY"], slot["stopY"])
+        i1 = obj.get("start", slot["start"])
+        i2 = obj.get("stop", slot["stop"])
+        i1y = obj.get("startY", slot["startY"])
+        i2y = obj.get("stopY", slot["stopY"])
+        if i2 <= i1:
+            slot["stop"] = 0
+            if seg_id == self.mainseg:
+                self.mainseg = 0
+            return False
+        if i1 < width or cells <= i1 < self.led_count:
+            slot["start"] = i1
+        if i2 > cells and i1 >= cells:
+            slot["stop"] = min(i2, self.led_count)
+        else:
+            slot["stop"] = max(1, min(i2, width))
+        slot["startY"] = i1y if i1y < height else 0
+        slot["stopY"] = max(1, min(i2y, height))
+        if slot["start"] >= slot["stop"] or slot["startY"] >= slot["stopY"]:
+            slot["stop"] = 0
+            return False
+        changed = old != (slot["start"], slot["stop"], slot["startY"], slot["stopY"])
+        if changed and "n" not in obj:
+            slot["n"] = ""
+        return True
 
     # ------------------------------------------------------------------ transport
     async def __call__(self, request: httpx.Request) -> httpx.Response:
