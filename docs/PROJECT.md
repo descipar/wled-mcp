@@ -115,7 +115,7 @@ completion.
 | [Sources](SOURCES.md) | Official references, reviewed alternatives, license boundaries |
 | [Stage 2](STAGE-2.md) | Product extensions, public-release requirements, issue map and evidence |
 | [Stage 3](STAGE-3.md) | Five additional usability features, dependencies and acceptance scenarios |
-| [Stage 4](STAGE-4.md) | Verification with secured (PIN- or OTA-locked) controllers |
+| [Stage 4](STAGE-4.md) | Verification with secured (PIN- or OTA-locked) controllers; starts after stage 3 |
 | [Marketplace plan](MARKETPLACE.md) | Separate catalog/registry routes, distribution identities and submission sequence |
 
 ## Working on an issue

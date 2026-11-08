@@ -2,6 +2,10 @@
 
 Planning baseline: 2026-11-08. Tracker: [#127](https://github.com/descipar/wled-mcp/issues/127).
 
+**Order:** stage 4 is a plan only. Work on it starts after stage 3
+([#26](https://github.com/descipar/wled-mcp/issues/26) and its children) is done, on the owner's
+instruction ([DEC-025](DECISIONS.md#dec-025--stage-4-for-verification-with-secured-controllers)).
+
 Stage 4 verifies the server against secured or restricted controllers and similar operating
 conditions. It follows stage 1 (working server, [#1](https://github.com/descipar/wled-mcp/issues/1)),
 stage 2 (public release readiness, [#15](https://github.com/descipar/wled-mcp/issues/15)) and
