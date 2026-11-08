@@ -45,6 +45,7 @@ barrier.
 | Tool | Hint | Purpose |
 | --- | --- | --- |
 | `wled_list_devices` | read-only | Configured device IDs and names; optional bounded reachability probe |
+| `wled_get_service_status` | read-only | Local service facts: profile, per-device ceilings, last observed outcome per device, call counters; contacts no device |
 | `wled_get_state` | read-only | Normalized current state, segments and essential capabilities |
 | `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
 | `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |

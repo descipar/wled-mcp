@@ -307,11 +307,11 @@ def test_registered_tool_without_a_row_fails_c7_and_the_server_only_list_places_
 def test_server_only_entry_for_an_unregistered_tool_fails_c7():
     changed = COVERAGE.replace(
         checker.SERVER_ONLY + "\n",
-        checker.SERVER_ONLY + "\n\n- `wled_get_service_status`: synthetic reason.\n",
+        checker.SERVER_ONLY + "\n\n- `wled_synthetic_unregistered`: synthetic reason.\n",
         1,
     )
     assert problems(changed) == [
-        "C7 wled_get_service_status: listed as server-only but not registered"
+        "C7 wled_synthetic_unregistered: listed as server-only but not registered"
     ]
 
 

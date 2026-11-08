@@ -2,6 +2,7 @@
 
 import json
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import cast
@@ -87,9 +88,15 @@ def validate_json(value: object) -> None:
 
 class WLEDClient:
     def __init__(
-        self, settings: HTTPSettings, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        settings: HTTPSettings,
+        transport: httpx.AsyncBaseTransport | None = None,
+        observer: Callable[[str, ErrorCode | None], None] | None = None,
     ) -> None:
         self.settings = settings
+        # Called with the device ID and None (success) or the failure code of every request
+        # that reached the transport; it must not do I/O (issue #20, TD-20-11).
+        self.observer = observer
         self.http = httpx.AsyncClient(
             transport=transport,
             follow_redirects=False,
@@ -149,8 +156,28 @@ class WLEDClient:
     async def _request(
         self, device: Device, endpoint: Endpoint, deadline: Deadline, body: bytes | None
     ) -> JsonValue:
+        remaining = deadline.remaining()  # an expired deadline sent nothing: not an observation
+        try:
+            value = await self._exchange(device, endpoint, remaining, body)
+        except ClientFailure as failure:
+            # A rejected address (CONFIG_ERROR) never reached the device either.
+            if failure.error.code != "CONFIG_ERROR":
+                self._observe(device, failure.error.code)
+            raise
+        self._observe(device, None)
+        return value
+
+    def _observe(self, device: Device, code: ErrorCode | None) -> None:
+        if self.observer is not None:
+            try:
+                self.observer(device.id, code)
+            except Exception:
+                pass  # a diagnostics fault must never change the outcome of a request
+
+    async def _exchange(
+        self, device: Device, endpoint: Endpoint, remaining: float, body: bytes | None
+    ) -> JsonValue:
         label = endpoint.label
-        remaining = deadline.remaining()
         timeout = httpx.Timeout(
             remaining, connect=min(remaining, self.settings.connect_timeout_seconds)
         )

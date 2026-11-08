@@ -290,7 +290,7 @@ def _locators(exc: ValidationError) -> str:
             elif loc[1] == "profile":
                 text = "access.profile: invalid"
             else:
-                text = "access: unsupported setting"
+                text = "access: unsupported field"
             found.add((_ACCESS_ORDER, 0, text))
             continue
         if len(loc) < 2 or loc[0] != "devices" or type(loc[1]) is not int:

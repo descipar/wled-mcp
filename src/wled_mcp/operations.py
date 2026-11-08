@@ -58,6 +58,7 @@ from wled_mcp.readmodels import (
 from wled_mcp.resources import OperationContext, PolledWrite, Resources, SequencePlan, Verdict
 from wled_mcp.scene_tools import build_scene_operations
 from wled_mcp.server import Operation
+from wled_mcp.status_tool import build_status_operation
 
 
 class ListDevicesRequest(BaseModel):
@@ -1230,6 +1231,7 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
                 open_world_hint=False,
             ),
         ),
+        build_status_operation(resources),
         *_build_read_operations(resources),
         *_build_write_operations(resources),
         *_build_preset_operations(resources),

@@ -11,7 +11,6 @@ Only ``127.0.0.1`` is contacted. No LAN device, no wall-clock sleep for synchron
 
 from __future__ import annotations
 
-import copy
 import json
 import os
 import re
@@ -31,6 +30,7 @@ from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
 
 from tests.acceptance_support import LoopbackWLED, PostMode
+from tests.envelopes import comparable_record
 from tests.test_http_cli import CONSOLE, TOKEN, clean_env, console, free_port, wait_ready
 from tests.tool_contract import expected_names
 
@@ -213,8 +213,8 @@ def test_device_requests_match_the_outcome_and_writes_are_never_replayed(outcome
 
 
 def mask_volatile(record: dict[str, Any]) -> dict[str, Any]:
-    """Replace the only volatile field (a state read's ``read_at``) after validating it."""
-    masked = copy.deepcopy(record)
+    """Replace the volatile fields (a state read's ``read_at``, the per-call correlation ID)."""
+    masked = comparable_record(record)
     for key in ("text", "structured"):
         envelope = masked.get(key)
         freshness = (envelope or {}).get("data", {}).get("freshness") or {}
@@ -336,7 +336,7 @@ def test_console_without_bind_options_selects_the_default_binding_and_binds_noth
         ["--config", str(config), "--data-dir", str(tmp_path), "--transport", "streamable-http"]
     )
     assert code == 0
-    ((_config, settings),) = captured
+    ((_config, settings, _writable),) = captured
     assert (settings.host, settings.port) == ("127.0.0.1", 8000)
     assert settings.allowed_hosts == frozenset({"127.0.0.1:8000", "localhost:8000"})
 
