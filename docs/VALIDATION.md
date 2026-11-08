@@ -1223,6 +1223,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
 
 - [validation/issue-16.md](validation/issue-16.md): setup, `config validate` and
   read-only `doctor` commands (#16, mock evidence).
+- [validation/issue-17.md](validation/issue-17.md): device groups, scenes, the plan and
+  sharing (#17, mock evidence).
 - [validation/issue-18.md](validation/issue-18.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18, mock evidence).
 - [validation/issue-19.md](validation/issue-19.md): capability model, WLED 16 segment

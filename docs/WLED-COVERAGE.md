@@ -116,9 +116,9 @@ owning issue for planned rows and the decision for excluded rows.
 | W-SEG-02 | Create and remove segments, complete layout | `seg` array, `stop: 0` | supported | `wled_replace_layout` | - | Overlapping segments only with `allow_overlap` (W-SEG-19). |
 | W-SEG-03 | Segment power and opacity | `on`, `bri` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-04 | Segment colors (three slots) | `col` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | RGB arrays; other color forms are encodings (rule 2). |
-| W-SEG-05 | Effect | `fx` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID or catalog name. |
+| W-SEG-05 | Effect | `fx` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID; by catalog name only in scenes (#17). |
 | W-SEG-06 | Effect speed and intensity | `sx`, `ix` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
-| W-SEG-07 | Palette | `pal` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID or catalog name. |
+| W-SEG-07 | Palette | `pal` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID; by catalog name only in scenes (#17). |
 | W-SEG-08 | Grouping and spacing | `grp`, `spc` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-09 | Offset | `of` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-10 | Reverse and mirror | `rev`, `mi` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
@@ -231,6 +231,16 @@ counted.
 
 - `wled_list_snapshots`: lists the server's own preset snapshots in the data directory;
   no WLED feature is involved.
+- `wled_list_groups`: lists the server's own device groups (local files in the data
+  directory, #17); WLED's own sync groups are a different feature (W-STATE-08).
+- `wled_save_group`: stores a device group as a local file; no device is contacted.
+- `wled_delete_group`: deletes a stored device group file; no device is contacted.
+- `wled_list_scenes`: lists the server's own scenes and returns a scene document or its
+  shareable export; local files only.
+- `wled_save_scene`: validates and stores a scene as a local file; no device is contacted.
+- `wled_delete_scene`: deletes a stored scene file; no device is contacted.
+- `wled_plan_scene`: reads state and catalogs of the target devices to plan a scene; it
+  writes nothing and delivers no WLED feature (the apply tool of #17 will).
 
 ## Maintenance
 

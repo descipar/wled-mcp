@@ -61,6 +61,13 @@ barrier.
 | `wled_save_playlist` | destructive | Create or replace a playlist of existing state presets; saving starts it |
 | `wled_export_presets` | read-only | A portable, versioned preset bundle without device addresses or credentials |
 | `wled_import_presets` | destructive | Import a bundle with dry-run preview, explicit ID/effect/palette mapping and per-entry verification |
+| `wled_list_groups` | read-only | Stored device groups with their exact member expansion; local files only |
+| `wled_save_group` | destructive | Create or replace a named group of configured devices (local file, no device contact) |
+| `wled_delete_group` | destructive | Delete one stored group file |
+| `wled_list_scenes` | read-only | Stored scenes, one scene document, or a shareable export without device references |
+| `wled_save_scene` | destructive | Validate and store a versioned scene (local file, no device contact); replacing needs `overwrite=true` |
+| `wled_delete_scene` | destructive | Delete one stored scene file |
+| `wled_plan_scene` | read-only | Dry-run plan of a scene: exact targets, per-device preflight, names resolved per device; no write |
 
 The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).
