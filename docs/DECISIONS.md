@@ -544,11 +544,24 @@ can explicitly amend them.
      The PR body or a coordinator comment states "Merged under DEC-022 standing
      approval". Post-merge completion follows as before.
 - Conditions: stage 2 only. Item 4 covers the merges of at most three issues reaching
-  completion (DONE) under it, counted from 2026-11-08, PR-by-PR merges of partial
-  scopes included in their issue. After the third, the coordinator stops merging
+  completion (DONE) under it, counted from 2026-11-08 (first round: #18, #21, #19;
+  renewed for a second round, see Revalidation), PR-by-PR merges of partial scopes
+  included in their issue. After the third, the coordinator stops merging
   without asking and asks the owner to confirm, adjust or end the standing approval;
   the owner may end it at any time. Owner-only actions and hardware authorization
   stay separate.
+- Revalidation, 2026-11-08 (owner, coordinator session): after #18, #21 and #19 had
+  reached completion under item 4, the coordinator stopped merging and asked. The
+  owner answered "Weiter für 3 Issues (meine Empfehlung): Die Bedingungen bleiben
+  gleich, also PASS von Opus für den aktuellen Stand und grüne CI. Danach frage ich
+  wieder nach." (English: "Continue for 3 issues (my recommendation): the conditions
+  stay the same, i.e. PASS from Opus for the current head and green CI. Afterwards I
+  ask again."), quoting the coordinator's option text. Effect: item 4 continues
+  unchanged for the next three issues reaching completion (DONE), counted from this
+  answer; the first of them is #16. After the third, the coordinator stops and asks
+  again. The owner did not answer the second question of that exchange (see
+  ISSUE-19-DEC-003, interpretation S-1, `blend_mode` without `allow_overlap`); it stays
+  a coordinator reading awaiting owner confirmation.
 - Rationale supplied: shorten turnaround without reducing the test suite.
 - Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 4
   "one merge at a time after the owner's merge approval" and item 6 "stops only for
