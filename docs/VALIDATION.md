@@ -37,6 +37,40 @@ Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> star
 
 CI should run on supported Python versions and a Linux environment, with lint/type checking proportional to the implementation. Protocol tests must run the actual console entry point, catching the missing-main class of issue observed in a candidate project. HTTP tests use ephemeral loopback ports and mocked WLED transport, not LAN devices. Build/dependency errors must not be hidden by mocks. T18–T21 are required alongside T01–T16; T17 remains conditional on the optional raw tool.
 
+## Known limitations
+
+State of the evidence and the limits of the first source release (see also the
+[README](../README.md#limitations) and the [compatibility matrix](contract/compatibility.md)).
+
+- Automated tests use mocked or synthetic loopback devices and run in CI without hardware.
+  Hardware acceptance is partial: it was recorded for one RGB controller on WLED 16.0.1 in
+  both transports, and one deployment of both modes on one MCPHub host was checked. The
+  live offline-controller check (H07) is pending ([#25](https://github.com/descipar/wled-mcp/issues/25)),
+  as are reboot persistence and the other "Not run" items below. No compatibility with
+  other controllers or firmware versions is claimed.
+- Groups, scenes, preset bundles, playlist authoring, snapshot restore, advanced segment
+  fields, tool profiles and `discover` have mock and loopback evidence only; no hardware
+  run covers them yet.
+- Storing, restoring or importing a preset without changing the live output is not possible
+  on WLED 16, and saving a playlist starts it. Imports do not rescale LED ranges or convert
+  matrix layouts, and import one playlist per call.
+- CCT, grouping, mirror and 2D coordinates are written only when the device reports the
+  capability; segment `rpt` and `fxdef` and matrix or panel configuration are not exposed,
+  and there is no raw state patch tool.
+- No inventory reload; changes need `wled-mcp config validate` and a restart.
+- One writer per controller: locks are per process, so a second process or service against
+  the same devices is not coordinated.
+- In stdio mode the MCP host may stop the subprocess without waiting for a running call; a
+  write interrupted that way stays uncertain.
+- `tools/list` is CPU-heavy on small hosts ([#67](https://github.com/descipar/wled-mcp/issues/67)).
+- No package on PyPI, no container image on GHCR and no registry entry; the release is
+  installed from Git. Automated tests check that the current server reads the retained
+  data of earlier releases and rejects newer data versions without changing files; an older
+  server reading newer data is not tested and relies on unchanged formats
+  ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update and
+  rollback of a deployed service has not been checked yet; it is part of the deferred
+  launch work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
+
 ## Issue-2 contract traceability
 
 C2 IDs are acceptance criteria for documentation delivery, not runtime tests.
