@@ -78,12 +78,12 @@ filled in below from the final candidate; CI results are in the pull request.
 
 | Command | Result |
 | --- | --- |
-| `pytest` (all tests except the two known-problem files) | 1941 passed, 25 skipped |
+| `pytest` (all tests except the two known-problem files) | 2020 passed, 25 skipped (after merging `main` with #112) |
 | `pytest tests/test_inventory_client.py tests/test_hw_http_probe.py` | 170 passed, 6 failed, 5 errors: the known Windows-only failures, unrelated to #17 |
 | new #17 tests (`test_groups`, `test_scenes`, `test_scene_store`, `test_scene_tools`, `test_scene_parity`) | 287 passed, 2 skipped (POSIX permission bits, directory symlink) |
 | `ruff check`, `ruff format --check` | clean |
 | `mypy` (strict) | no issues in 41 source files |
-| `scripts/check_traceability.py`, `scripts/check_coverage.py` (after `--update`), `scripts/sync_agents.py --check`, `scripts/check_private_identifiers.py`, `scripts/check_agent_setup.py` | pass; coverage unchanged at 89 features, 57 % of the planned scope, 46 % overall |
+| `scripts/check_traceability.py`, `scripts/check_coverage.py` (after `--update`), `scripts/sync_agents.py --check`, `scripts/check_private_identifiers.py`, `scripts/check_agent_setup.py` | pass; coverage unchanged by this pull request (89 features; 58 % of the planned scope, 47 % overall after #112) |
 | `scripts/check_distribution.py` | fails locally only at the stdio handshake of the `uvx` step because the checkout path contains a space; CI is authoritative |
 
 ## Known limits
