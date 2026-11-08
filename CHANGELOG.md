@@ -8,7 +8,7 @@ this file. Fixes are made for the latest release only. See
 ## 0.1.0 - first source release
 
 The first release is a Git tag with a GitHub release. It is not published to PyPI or GHCR;
-install it from Git as described in the [README](README.md#install-from-git).
+install it from Git as described in the [README](README.md#try-it).
 
 ### What it provides
 

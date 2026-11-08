@@ -57,6 +57,41 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 - User authorization belongs to the MCP host; no interactive approval mechanism
   is added inside the server. Precise targets/overwrite flags express intent.
 
+## Tools at a glance
+
+Hints are MCP tool annotations for the host; they are advisory, not an authorization
+barrier. The next section lists the essential inputs of each tool.
+
+| Tool | Hint | Purpose |
+| --- | --- | --- |
+| `wled_list_devices` | read-only | Configured device IDs and names; optional bounded reachability probe |
+| `wled_get_service_status` | read-only | Local service facts: profile, per-device ceilings, last observed outcome per device, call counters; contacts no device |
+| `wled_get_state` | read-only | Normalized current state, segments and essential capabilities |
+| `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
+| `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |
+| `wled_set_state` | write | Master power, brightness and one-call transition |
+| `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
+| `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
+| `wled_list_presets` | read-only | Persistent preset IDs, names and types |
+| `wled_get_preset` | read-only | One stored preset exactly as the device keeps it |
+| `wled_activate_preset` | write | Activate an existing state preset or playlist; never edits storage |
+| `wled_save_preset` | destructive | Save the current live state as a preset; overwriting needs `overwrite=true` |
+| `wled_delete_preset` | destructive | Delete exactly one preset after a durable snapshot |
+| `wled_list_snapshots` | read-only | The server's stored preset snapshots, newest first; no device read |
+| `wled_restore_preset` | destructive | Restore one snapshot entry; applies it live (or starts the playlist), then stores it |
+| `wled_store_preset` | destructive | Store a supplied, validated state as a preset; applies it live, then stores it |
+| `wled_save_playlist` | destructive | Create or replace a playlist of existing state presets; saving starts it |
+| `wled_export_presets` | read-only | A portable, versioned preset bundle without device addresses or credentials |
+| `wled_import_presets` | destructive | Import a bundle with dry-run preview, explicit ID/effect/palette mapping and per-entry verification |
+| `wled_list_groups` | read-only | Stored device groups with their exact member expansion; local files only |
+| `wled_save_group` | destructive | Create or replace a named group of configured devices (local file, no device contact) |
+| `wled_delete_group` | destructive | Delete one stored group file |
+| `wled_list_scenes` | read-only | Stored scenes, one scene document, or a shareable export without device references |
+| `wled_save_scene` | destructive | Validate and store a versioned scene (local file, no device contact); replacing needs `overwrite=true` |
+| `wled_delete_scene` | destructive | Delete one stored scene file |
+| `wled_plan_scene` | read-only | Dry-run plan of a scene: exact targets, per-device preflight, names resolved per device; no write |
+| `wled_apply_scene` | write | Apply a stored scene to its devices: strict preflight by default, master then segments per device, one verified outcome per device; not atomic, no rollback |
+
 ## V1 tools
 
 | Tool | Essential inputs | Behavior | Priority |

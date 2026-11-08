@@ -699,6 +699,7 @@ IMAGE_ID = re.compile(r"sha256:[0-9a-f]{12,}")
 PROJECT = ROOT / "docs/PROJECT.md"
 LIVE_DOCUMENTS = [
     ROOT / "README.md",
+    ROOT / "docs/QUICKSTARTS.md",
     PROJECT,
     VALIDATION,
     DEPLOYMENT,

@@ -33,6 +33,8 @@ ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 PROJECT = ROOT / "docs/PROJECT.md"
 CONTRIBUTING = ROOT / "CONTRIBUTING.md"
+QUICKSTARTS = ROOT / "docs/QUICKSTARTS.md"
+TOOL_CONTRACT = ROOT / "docs/TOOL-CONTRACT.md"
 EXAMPLES = (
     "examples/compose.http.example.yaml",
     "examples/mcphub.http.example.json",
@@ -86,46 +88,68 @@ def tool_hints() -> dict[str, str]:
     return dict(anyio.run(collect))
 
 
-def readme_tool_rows(text: str) -> dict[str, str]:
-    return dict(re.findall(r"^\| `(wled_[a-z_]+)` \| ([a-z-]+) \|", text, flags=re.M))
+def contract_tool_rows(text: str) -> dict[str, str]:
+    """Tool and hint of the "Tools at a glance" table of docs/TOOL-CONTRACT.md."""
+    section = text.split("## Tools at a glance\n", 1)[1].split("\n## ", 1)[0]
+    return dict(re.findall(r"^\| `(wled_[a-z_]+)` \| ([a-z-]+) \|", section, flags=re.M))
 
 
-def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
+def tool_table_problems(contract: str, hints: dict[str, str]) -> list[str]:
+    """The hint table of the tool contract equals the registered tools and hints."""
+    if "## Tools at a glance\n" not in contract:
+        return ["TOOL-CONTRACT lacks section '## Tools at a glance'"]
+    if contract_tool_rows(contract) != hints:
+        return ["TOOL-CONTRACT tool table differs from the registered tools and hints"]
+    return []
+
+
+def quickstart_problems(text: str) -> list[str]:
+    """The quickstarts stay consistent with the example files they tell users to copy."""
+    problems = []
+    flat = " ".join(text.split())
+    linked = {
+        (QUICKSTARTS.parent / target.split("#", 1)[0]).resolve()
+        for target in LINK.findall(text)
+        if "://" not in target
+    }
+    for example in EXAMPLES:
+        if (ROOT / example).resolve() not in linked:
+            problems.append(f"QUICKSTARTS does not link {example}")
+    stdio = hub_stdio()
+    command = " ".join([stdio["command"], *stdio["args"]])
+    if command not in [" ".join(line.split()) for line in code_lines(text)]:
+        problems.append("QUICKSTARTS uvx command differs from examples/mcphub.example.json")
+    url = hub_http()["url"]
+    if f"`{url}`" not in text:
+        problems.append("QUICKSTARTS HTTP URL differs from examples/mcphub.http.example.json")
+    allowed = option(service()["command"], "--allowed-host")
+    if allowed != urlsplit(url).netloc or f"`--allowed-host {allowed}`" not in flat:
+        problems.append("QUICKSTARTS Host allowlist differs from the Compose example")
+    secret = compose()["secrets"]["wled_mcp_http_token"]["file"].removeprefix("./")
+    if f"> {secret})" not in text or f"`{secret}`" not in text:
+        problems.append("QUICKSTARTS does not create and name the Compose credential file")
+    problems.extend(container_command_problems(text, compose()["name"]))
+    return problems
+
+
+def readme_problems(text: str) -> list[str]:
     """What the README must state so that a new user can follow it (R62-2, R62-3)."""
     problems = []
     flat = " ".join(text.split())
     targets = {target.split("#", 1)[0] for target in LINK.findall(text)}
-    for example in EXAMPLES:
-        if example not in targets:
-            problems.append(f"README does not link {example}")
-    stdio = hub_stdio()
-    command = " ".join([stdio["command"], *stdio["args"]])
-    if command not in [" ".join(line.split()) for line in code_lines(text)]:
-        problems.append("README uvx command differs from examples/mcphub.example.json")
-    url = hub_http()["url"]
-    if f"`{url}`" not in text:
-        problems.append("README HTTP URL differs from examples/mcphub.http.example.json")
-    allowed = option(service()["command"], "--allowed-host")
-    if allowed != urlsplit(url).netloc or f"`--allowed-host {allowed}`" not in flat:
-        problems.append("README Host allowlist differs from the Compose example")
-    secret = compose()["secrets"]["wled_mcp_http_token"]["file"].removeprefix("./")
-    if f"> {secret})" not in text or f"`{secret}`" not in text:
-        problems.append("README does not create and name the Compose credential file")
-    problems.extend(container_command_problems(text, compose()["name"]))
-    if readme_tool_rows(text) != hints:
-        problems.append("README tool table differs from the registered tools and hints")
+    for target in ("docs/QUICKSTARTS.md", "docs/TOOL-CONTRACT.md", "docs/DEPLOYMENT.md"):
+        if target not in targets:
+            problems.append(f"README does not link {target}")
+    if "wled-mcp config init" not in text:
+        problems.append("README try-it path lacks 'wled-mcp config init'")
     if not re.search(r"not affiliated with[^.]*WLED project[^.]*MCPHub", flat):
         problems.append("README lacks the non-affiliation statement")
     if "Apache License 2.0" not in flat or "(NOTICE)" not in flat:
         problems.append("README does not state the Apache-2.0 license and NOTICE file")
     for section in (
-        "## Requirements",
-        "## Quickstart: stdio via uvx",
-        "## Quickstart: Streamable HTTP service",
-        "## Inventory",
+        "## Try it",
         "## Safety model",
-        "## Validation status and limitations",
-        "## Project status",
+        "## Limitations",
         "## Support",
         "### How this project is developed",
     ):
@@ -138,7 +162,7 @@ def readme_problems(text: str, hints: dict[str, str]) -> list[str]:
         "No discovery",
         "WLED 16.0.1",
         "Hardware acceptance is partial",
-        "(H07) moved to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25))",
+        "offline controller",
     ):
         if term not in flat:
             problems.append(f"README safety/validation text lacks {term!r}")
@@ -199,8 +223,16 @@ def contributing_problems(text: str) -> list[str]:
     return problems
 
 
-def test_readme_follows_the_examples_registry_and_safety_model():
-    assert readme_problems(README.read_text("utf-8"), tool_hints()) == []
+def test_readme_states_the_safety_model_and_orientation():
+    assert readme_problems(README.read_text("utf-8")) == []
+
+
+def test_quickstarts_follow_the_example_files():
+    assert quickstart_problems(QUICKSTARTS.read_text("utf-8")) == []
+
+
+def test_tool_contract_table_follows_the_registry():
+    assert tool_table_problems(TOOL_CONTRACT.read_text("utf-8"), tool_hints()) == []
 
 
 def test_registry_hint_classes_use_the_readme_vocabulary():
@@ -209,17 +241,19 @@ def test_registry_hint_classes_use_the_readme_vocabulary():
     assert sorted(set(hints.values())) == ["destructive", "read-only", "write"]
 
 
-@pytest.mark.parametrize("path", [README, PROJECT, CONTRIBUTING], ids=lambda path: path.name)
+@pytest.mark.parametrize(
+    "path", [README, PROJECT, CONTRIBUTING, QUICKSTARTS], ids=lambda path: path.name
+)
 def test_local_links_and_anchors_resolve(path):
     assert link_problems(path, path.read_text("utf-8")) == []
 
 
 def test_link_check_rejects_missing_files_and_anchors():
     text = README.read_text("utf-8")
-    broken = text.replace("(docs/DEPLOYMENT.md#changing-the-inventory)", "(docs/DEPLOY.md)", 1)
-    assert "README.md: missing docs/DEPLOY.md" in link_problems(README, broken)
-    broken = text.replace("#changing-the-inventory)", "#changing-inventory)", 1)
-    assert "README.md: missing anchor docs/DEPLOYMENT.md#changing-inventory" in link_problems(
+    broken = text.replace("(docs/QUICKSTARTS.md#inventory)", "(docs/QUICKSTART.md)", 1)
+    assert "README.md: missing docs/QUICKSTART.md" in link_problems(README, broken)
+    broken = text.replace("#inventory)", "#inventories)", 1)
+    assert "README.md: missing anchor docs/QUICKSTARTS.md#inventories" in link_problems(
         README, broken
     )
 
@@ -228,44 +262,68 @@ def test_link_check_rejects_missing_files_and_anchors():
     ("old", "new", "expected"),
     [
         (
-            "(examples/mcphub.http.example.json)",
-            "(docs/DEPLOYMENT.md)",
-            "README does not link examples/mcphub.http.example.json",
+            "(../examples/mcphub.http.example.json)",
+            "(DEPLOYMENT.md)",
+            "QUICKSTARTS does not link examples/mcphub.http.example.json",
         ),
         (
             "--isolated --python 3.13",
             "--python 3.13 --isolated",
-            "README uvx command differs from examples/mcphub.example.json",
+            "QUICKSTARTS uvx command differs from examples/mcphub.example.json",
         ),
         (
             "`http://wled-mcp:8000/mcp`",
             "`http://wled-mcp:8080/mcp`",
-            "README HTTP URL differs from examples/mcphub.http.example.json",
+            "QUICKSTARTS HTTP URL differs from examples/mcphub.http.example.json",
         ),
         (
             "`--allowed-host wled-mcp:8000`",
             "`--allowed-host localhost:8000`",
-            "README Host allowlist differs from the Compose example",
+            "QUICKSTARTS Host allowlist differs from the Compose example",
         ),
         (
             "> secrets/wled_mcp_http_token)",
             "> token.txt)",
-            "README does not create and name the Compose credential file",
+            "QUICKSTARTS does not create and name the Compose credential file",
         ),
         (
             "docker compose -p wled-mcp-http -f compose.yaml ps",
             "docker compose ps",
             "unscoped compose command:    docker compose ps",
         ),
+    ],
+)
+def test_quickstart_check_rejects_regressions(old, new, expected):
+    text = QUICKSTARTS.read_text("utf-8")
+    assert old in text
+    assert expected in quickstart_problems(text.replace(old, new))
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("| `wled_delete_preset` | destructive |", "| `wled_delete_preset` | write |"),
+        ("| `wled_get_preset` | read-only |", "| `wled_get_presets` | read-only |"),
+    ],
+)
+def test_tool_table_check_rejects_drift(old, new):
+    text = TOOL_CONTRACT.read_text("utf-8")
+    assert old in text
+    assert tool_table_problems(text.replace(old, new, 1), tool_hints()) != []
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "expected"),
+    [
         (
-            "| `wled_delete_preset` | destructive |",
-            "| `wled_delete_preset` | write |",
-            "README tool table differs from the registered tools and hints",
+            "docs/QUICKSTARTS.md",
+            "docs/QUICKSTART.md",
+            "README does not link docs/QUICKSTARTS.md",
         ),
         (
-            "| `wled_get_preset` | read-only |",
-            "| `wled_get_presets` | read-only |",
-            "README tool table differs from the registered tools and hints",
+            "wled-mcp config init",
+            "wled-mcp config show",
+            "README try-it path lacks 'wled-mcp config init'",
         ),
         (
             "It is not affiliated with",
@@ -288,8 +346,8 @@ def test_link_check_rejects_missing_files_and_anchors():
             "README lacks section '## Support'",
         ),
         (
-            "not published\nto PyPI or GHCR",
-            "published\nto PyPI and GHCR",
+            "not published to PyPI or\nGHCR",
+            "published to PyPI and\nGHCR",
             "README orientation text lacks 'not published to PyPI or GHCR'",
         ),
         (
@@ -322,7 +380,7 @@ def test_link_check_rejects_missing_files_and_anchors():
 def test_readme_check_rejects_regressions(old, new, expected):
     text = README.read_text("utf-8")
     assert old in text
-    assert expected in readme_problems(text.replace(old, new), tool_hints())
+    assert expected in readme_problems(text.replace(old, new))
 
 
 COMPATIBILITY = ROOT / "docs/contract/compatibility.md"
