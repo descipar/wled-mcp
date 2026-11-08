@@ -796,6 +796,8 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 ## Stage 2 and later files
 
+- [contract/cli.md](contract/cli.md): `wled-mcp config` and `doctor` commands, exit
+  codes, doctor categories and the sanitized export (#16).
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
   firmware tiers (#21).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,

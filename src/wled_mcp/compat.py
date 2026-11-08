@@ -87,3 +87,25 @@ def support_warning(tier: Tier) -> str | None:
     if tier == "unrecognized":
         return UNRECOGNIZED_WARNING
     return None
+
+
+# -- runtime support (DEC-020 items 3 and 4), used by ``wled-mcp doctor`` (#16) -------
+
+RuntimeTier = Literal["supported", "experimental", "untested"]
+
+SUPPORTED_PYTHON: Final = (3, 13)
+_PLATFORM_TIERS: Final[dict[str, RuntimeTier]] = {
+    "Linux": "supported",
+    "Windows": "experimental",
+    "Darwin": "experimental",
+}
+
+
+def platform_tier(system: str) -> RuntimeTier:
+    """DEC-020 platform tier of a ``platform.system()`` name; others are ``untested``."""
+    return _PLATFORM_TIERS.get(system, "untested")
+
+
+def python_tier(version: tuple[int, ...]) -> RuntimeTier:
+    """``supported`` only for the Python minor version that CI runs (DEC-020 item 3)."""
+    return "supported" if tuple(version[:2]) == SUPPORTED_PYTHON else "untested"

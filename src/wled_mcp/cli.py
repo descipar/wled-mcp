@@ -1,14 +1,21 @@
-"""Installed console entry point. stdout is reserved for the SDK."""
+"""Installed console entry point. stdout is reserved for the SDK while serving.
+
+Without a subcommand the console serves MCP exactly as before. The subcommands of
+issue #16 (``config init|add-device|validate`` and ``doctor``,
+docs/contract/cli.md) run as separate processes, never serve and write their result
+to stdout.
+"""
 
 import argparse
 import logging
+import os
 import sys
 from collections.abc import Sequence
 from typing import Never
 
 import anyio
 
-from wled_mcp import __version__
+from wled_mcp import __version__, doctor, setup
 from wled_mcp.config import ConfigurationError, StartupConfig, load_config
 from wled_mcp.http_config import TOKEN_ENV, HTTPServiceSettings, load_http_settings
 from wled_mcp.operations import build_operations
@@ -35,7 +42,16 @@ class SafeParser(argparse.ArgumentParser):
         self.exit(2, "Invalid command-line arguments. Use --help for supported options.\n")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+BACKUPS_ADVISORY = (
+    "Warning: the backups location in the data directory is not writable; the server "
+    "starts, but writes that take a snapshot fail with BACKUP_FAILED. "
+    "Run `wled-mcp doctor` for details."
+)
+SUBCOMMANDS = ("config", "doctor")
+
+
+def build_parser() -> SafeParser:
+    """The complete ``wled-mcp`` parser: serve options plus the #16 subcommands."""
     parser = SafeParser(description="WLED MCP inventory service.", allow_abbrev=False)
     parser.add_argument("--version", action="version", version=f"wled-mcp {__version__}")
     parser.add_argument("--config", help="Absolute TOML configuration path (WLED_MCP_CONFIG).")
@@ -58,7 +74,37 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--http-token-file",
         help=f"Absolute path of the bearer credential file (or environment {TOKEN_ENV}).",
     )
-    args = parser.parse_args(argv)
+    commands = parser.add_subparsers(
+        dest="command",
+        metavar="COMMAND",
+        title="setup and diagnostics (without a command: serve MCP)",
+    )
+    setup.register(commands)
+    doctor.register(commands)
+    return parser
+
+
+def run_subcommand(args: argparse.Namespace) -> int:
+    """Dispatch one subcommand; unexpected failures exit 3 without a traceback."""
+    try:
+        if args.command == "doctor":
+            return doctor.run(args, os.environ)
+        handler = setup.HANDLERS[args.config_command]
+        return setup.run(handler, f"config {args.config_command}", args, os.environ)
+    except Exception:
+        print(f"wled-mcp {args.command}: internal failure.", file=sys.stderr)
+        return setup.EXIT_INTERNAL
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    parser = build_parser()
+    args = parser.parse_args(arguments)
+    if args.command is not None:
+        # Serve options before a subcommand are a usage error (TD-16-1).
+        if arguments[0] != args.command:
+            parser.error("serve options combined with a subcommand")
+        return run_subcommand(args)
     http_given = any(
         value is not None
         for value in (
@@ -87,6 +133,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Startup configuration error: {exc}", file=sys.stderr)
         return 2
     logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+    if not setup.backups_writable(config.data_dir):
+        # OPS-04 (TD-16-7): advisory only; tool-level BACKUP_FAILED stays fail-closed.
+        print(BACKUPS_ADVISORY, file=sys.stderr)
     try:
         if settings is None:
             anyio.run(serve, config)

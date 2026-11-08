@@ -154,6 +154,15 @@ def _resolve_token(token_file: str | None, environ: Mapping[str, str]) -> str:
     return token
 
 
+def resolve_token(token_file: str | None, environ: Mapping[str, str]) -> str:
+    """The configured bearer credential with the service's own source and format rules.
+
+    Public for ``wled-mcp doctor --endpoint`` (#16); messages never echo the credential
+    or its file path.
+    """
+    return _resolve_token(token_file, environ)
+
+
 def load_http_settings(
     *,
     host: str | None,
