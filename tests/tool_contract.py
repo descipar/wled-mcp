@@ -55,6 +55,13 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_save_playlist", MANAGE, destructive=True),
     ExpectedTool("wled_export_presets", READ, destructive=False),
     ExpectedTool("wled_import_presets", MANAGE, destructive=True),
+    ExpectedTool("wled_list_groups", READ, destructive=False),
+    ExpectedTool("wled_save_group", MANAGE, destructive=True),
+    ExpectedTool("wled_delete_group", MANAGE, destructive=True),
+    ExpectedTool("wled_list_scenes", READ, destructive=False),
+    ExpectedTool("wled_save_scene", MANAGE, destructive=True),
+    ExpectedTool("wled_delete_scene", MANAGE, destructive=True),
+    ExpectedTool("wled_plan_scene", READ, destructive=False),
 )
 
 # Cumulative profiles (ISSUE-20-DEC-001); expectation data only, enforcement is #20.

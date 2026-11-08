@@ -1,0 +1,54 @@
+{
+  "format": "wled-mcp.scene",
+  "format_version": 1,
+  "id": "evening",
+  "name": "Evening",
+  "description": "Warm, dim lighting with a slow wipe on the strips",
+  "placeholders": [
+    "t1",
+    "t2"
+  ],
+  "targets": [
+    {
+      "device": "t1",
+      "master": {
+        "on": true,
+        "brightness": 120,
+        "transition_ms": 500
+      },
+      "segments": [
+        {
+          "ids": [
+            0,
+            2
+          ],
+          "colors": [
+            [
+              255,
+              147,
+              41
+            ]
+          ],
+          "effect_name": "Solid",
+          "palette_name": "Default"
+        }
+      ]
+    },
+    {
+      "group": "t2",
+      "segments": [
+        {
+          "colors": [
+            [
+              255,
+              120,
+              20
+            ]
+          ],
+          "effect_name": "Wipe",
+          "speed": 60
+        }
+      ]
+    }
+  ]
+}
