@@ -12,6 +12,7 @@ in ``compat`` (TD-21-6).
 import argparse
 import json
 import platform
+import re
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -39,6 +40,7 @@ from wled_mcp.setup import (
     JSON_SCHEMA_VERSION,
     add_format_option,
     backups_writable,
+    data_dir_usable,
     option_path,
 )
 
@@ -50,6 +52,8 @@ ENDPOINT_TIMEOUT_SECONDS = 10.0
 MAX_ENDPOINT_BODY = 65536
 _MAX_FIRMWARE_TEXT = 64
 _PROTOCOL_VERSION = "2025-11-25"
+# MCP protocol versions are dates; anything else is neither printed nor exported.
+_PROTOCOL_VERSION_FORMAT = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", re.ASCII)
 
 # OPS-04 conditions and the doctor result that reports each (S16-T08).
 OPS04_CONDITIONS: Mapping[str, tuple[str, ...]] = {
@@ -234,8 +238,11 @@ def storage_checks(report: Report, raw: str | None) -> Path | None:
     if not data.is_absolute():
         failed("DATA_DIR_NOT_ABSOLUTE", "The data directory path is not absolute.")
         return None
-    if not data.is_dir():
-        failed("DATA_DIR_NOT_FOUND", "The data directory does not exist or is not a directory.")
+    if not data_dir_usable(data):
+        failed(
+            "DATA_DIR_NOT_FOUND",
+            "The data directory does not exist, is not a directory or cannot be accessed.",
+        )
         return None
     report.add(Check("storage", "ok", "DATA_DIR_OK", "The data directory exists."))
     if backups_writable(data):
@@ -456,7 +463,13 @@ async def endpoint_checks(
                     "ENDPOINT_PROTOCOL_ERROR",
                     "The endpoint did not answer MCP initialize.",
                 )
-            negotiated = str(initialized["protocolVersion"])[:32]
+            negotiated = str(initialized["protocolVersion"])
+            if not _PROTOCOL_VERSION_FORMAT.fullmatch(negotiated):
+                return result(
+                    "failed",
+                    "ENDPOINT_PROTOCOL_ERROR",
+                    "The endpoint answered initialize with an invalid protocol version.",
+                )
             ping_headers = {**headers, "MCP-Protocol-Version": negotiated}
             session = response.headers.get("mcp-session-id")
             if session:
@@ -635,7 +648,9 @@ def render_text(report: Report) -> str:
 
 
 def register(commands: Any) -> None:
-    doctor = commands.add_parser("doctor", help="Read-only diagnostics; changes nothing.")
+    doctor = commands.add_parser(
+        "doctor", help="Read-only diagnostics; changes nothing.", allow_abbrev=False
+    )
     doctor.add_argument("--config", help="Absolute configuration path (WLED_MCP_CONFIG).")
     doctor.add_argument("--data-dir", help="Absolute data directory (WLED_MCP_DATA_DIR).")
     doctor.add_argument("--offline", action="store_true", help="Skip the device reads.")
@@ -644,12 +659,13 @@ def register(commands: Any) -> None:
         "--http-token-file",
         help=f"Absolute credential file for --endpoint (or environment {TOKEN_ENV}).",
     )
-    doctor.add_argument(
+    output = doctor.add_mutually_exclusive_group()
+    output.add_argument(
         "--export",
         action="store_true",
-        help="Print only the sanitized, shareable JSON summary.",
+        help="Print only the sanitized, shareable JSON summary (not with --format).",
     )
-    add_format_option(doctor)
+    add_format_option(output)
 
 
 def run(args: argparse.Namespace, environ: Mapping[str, str]) -> int:

@@ -93,15 +93,28 @@ def backups_writable(data_dir: Path, access: Callable[[Path, int], bool] | None 
     """Advisory: can the server create ``<data-dir>/backups`` snapshots?
 
     Mirrors ``SnapshotStore.plan_backup``: the nearest existing path is checked with
-    ``os.access``; nothing is created. A non-directory ``backups`` entry is unusable.
+    ``os.access``; nothing is created. A non-directory ``backups`` entry is unusable,
+    and so is a location that cannot even be inspected (for example a data directory
+    the user cannot search): any ``OSError`` counts as "not writable".
     """
     check = access if access is not None else os.access
     probe = data_dir / "backups"
-    if probe.exists() and not probe.is_dir():
+    try:
+        if probe.exists() and not probe.is_dir():
+            return False
+        while not probe.exists() and probe != probe.parent:
+            probe = probe.parent
+        return bool(check(probe, os.W_OK | os.X_OK))
+    except OSError:
         return False
-    while not probe.exists() and probe != probe.parent:
-        probe = probe.parent
-    return bool(check(probe, os.W_OK | os.X_OK))
+
+
+def data_dir_usable(data_dir: Path) -> bool:
+    """The directory exists and is a directory; an inaccessible one counts as unusable."""
+    try:
+        return data_dir.is_dir()
+    except OSError:
+        return False
 
 
 # -- TOML rendering --------------------------------------------------------------
@@ -191,7 +204,9 @@ def atomic_write(
 
     ``mode`` is applied to the temporary file (``None``: 0600 for a new file).
     ``before_replace`` may raise to abort; the temporary file is then removed and the
-    target stays untouched.
+    target stays untouched. Once ``os.replace`` succeeded the new content is in place;
+    the directory fsync that follows is best-effort (some filesystems do not support
+    it), so its failure is not reported as a failed write.
     """
     fd, temporary = tempfile.mkstemp(prefix=".wled-mcp-config-", dir=target.parent)
     try:
@@ -210,7 +225,10 @@ def atomic_write(
         except OSError:
             pass
         raise
-    _fsync_directory(target.parent)
+    try:
+        _fsync_directory(target.parent)
+    except OSError:
+        pass
 
 
 # -- commands --------------------------------------------------------------------
@@ -243,6 +261,11 @@ def _device_values(args: argparse.Namespace, required: bool) -> tuple[str, str, 
         raise UsageError("--device-id, --device-name and --base-url are required together.")
     device_id, name, base_url = values
     assert device_id is not None and name is not None and base_url is not None
+    for value in (device_id, name, base_url):
+        try:
+            value.encode("utf-8")
+        except UnicodeError:
+            raise Refusal("INVALID_TEXT", "Device values must be valid Unicode text.") from None
     return device_id, name, base_url
 
 
@@ -280,7 +303,7 @@ def config_init(args: argparse.Namespace, environ: Mapping[str, str]) -> Command
     device = _device_values(args, required=False)
     document = initial_document(device)
     validated = _validated(document, "The new configuration would be invalid")
-    if not target.parent.is_dir():
+    if not data_dir_usable(target.parent):
         raise Refusal("PARENT_MISSING", "The directory of the configuration path does not exist.")
     mode: int | None = None
     try:
@@ -389,11 +412,12 @@ def config_validate(args: argparse.Namespace, environ: Mapping[str, str]) -> Com
                     "message": "The --data-dir path must be absolute.",
                 }
             )
-        elif not data.is_dir():
+        elif not data_dir_usable(data):
             problems.append(
                 {
                     "code": "DATA_DIR_NOT_FOUND",
-                    "message": "The data directory must already exist and be a directory.",
+                    "message": "The data directory must already exist, be a directory and "
+                    "be accessible.",
                 }
             )
         elif args.check_backups:
@@ -445,17 +469,26 @@ def run(
             if command != "config validate"
             else {"problems": [{"code": refusal.code, "message": refusal.message}]},
         )
-    except (OSError, UnicodeError):
-        result = CommandResult(
-            command,
-            EXIT_PROBLEM,
-            [f"{command}: the configuration file could not be written; it was left unchanged."],
-            {"written": False, "problems": [{"code": "WRITE_FAILED", "message": "Write failed."}]},
-        )
+    except (OSError, UnicodeError) as exc:
+        code, message = _unexpected_failure(command, exc)
+        data: dict[str, Any] = {"problems": [{"code": code, "message": message}]}
+        if command != "config validate":
+            data["written"] = False
+        result = CommandResult(command, EXIT_PROBLEM, [f"{command}: {message}"], data)
     return emit(result, output)
 
 
-def add_format_option(parser: argparse.ArgumentParser) -> None:
+def _unexpected_failure(command: str, exc: BaseException) -> tuple[str, str]:
+    """A per-command code for an unexpected I/O or text error (never its text)."""
+    if isinstance(exc, UnicodeError):
+        return "INVALID_TEXT", "The input is not valid Unicode text; nothing was written."
+    if command == "config validate":
+        return "CHECK_FAILED", "The configuration could not be checked (file system error)."
+    return "WRITE_FAILED", "The configuration file could not be written; it was left unchanged."
+
+
+def add_format_option(parser: Any) -> None:
+    """``--format``; ``parser`` may also be a mutually exclusive group."""
     parser.add_argument(
         "--format", choices=("text", "json"), default="text", help="Output format (text)."
     )
@@ -463,14 +496,20 @@ def add_format_option(parser: argparse.ArgumentParser) -> None:
 
 def register(commands: Any) -> None:
     """Add ``config init|add-device|validate`` to the ``wled-mcp`` subcommands."""
-    config = commands.add_parser("config", help="Write or check the inventory configuration.")
+    config = commands.add_parser(
+        "config", help="Write or check the inventory configuration.", allow_abbrev=False
+    )
     actions = config.add_subparsers(dest="config_command", metavar="ACTION", required=True)
 
-    init = actions.add_parser("init", help="Write a new schema 1 configuration file.")
+    init = actions.add_parser(
+        "init", help="Write a new schema 1 configuration file.", allow_abbrev=False
+    )
     init.add_argument("--config", help="Absolute path of the file to write (WLED_MCP_CONFIG).")
     init.add_argument("--force", action="store_true", help="Replace an existing file.")
 
-    add = actions.add_parser("add-device", help="Append one device to a configuration.")
+    add = actions.add_parser(
+        "add-device", help="Append one device to a configuration.", allow_abbrev=False
+    )
     add.add_argument("--config", help="Absolute configuration path (WLED_MCP_CONFIG).")
 
     for parser, optional in ((init, True), (add, False)):
@@ -480,7 +519,9 @@ def register(commands: Any) -> None:
         parser.add_argument("--base-url", help=f"Root URL, e.g. http://192.0.2.10{suffix}.")
         add_format_option(parser)
 
-    validate = actions.add_parser("validate", help="Check a configuration without network.")
+    validate = actions.add_parser(
+        "validate", help="Check a configuration without network.", allow_abbrev=False
+    )
     validate.add_argument("--config", help="Absolute configuration path (WLED_MCP_CONFIG).")
     validate.add_argument("--data-dir", help="Absolute data directory (WLED_MCP_DATA_DIR).")
     validate.add_argument(

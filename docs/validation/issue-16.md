@@ -39,6 +39,23 @@ Accepted by the coordinator on 2026-11-08 (not owner decisions):
    code `ENDPOINT_OTHER_SERVER` marks an MCP endpoint that is not wled-mcp; the export
    maps the envelope's `firmware.version`/`build_id`/`arch` to `ver`/`vid`/`arch`.
 
+## Review round 1 (2026-11-08)
+
+Findings of the independent review of `16e01ee` and their fixes:
+
+| Finding | Fix | Test |
+| --- | --- | --- |
+| M1 unsearchable data directory crashed serve, `doctor` and `validate --check-backups` | `backups_writable` treats any `OSError` as not writable; `data_dir_usable` maps an inaccessible data directory to `DATA_DIR_NOT_FOUND` in `doctor`, `validate` and `init` | `tests/test_doctor.py`: `test_unsearchable_data_dir_still_serves_with_the_advisory`, `test_unsearchable_data_dir_is_reported_not_crashed`, `test_inaccessible_data_dir_maps_to_the_documented_code` (simulated EACCES), `test_real_unsearchable_data_dir` (real mode 0600, POSIX non-root, runs in Linux CI) |
+| S1 failed directory fsync after `os.replace` reported as not written | directory fsync is best-effort after a successful replace; documented in the CLI contract | `test_directory_fsync_failure_after_replace_reports_written` |
+| S2 generic `WRITE_FAILED` for the read-only `validate` and for invalid text | per-command codes `CHECK_FAILED` (validate) and `INVALID_TEXT` (device values checked before anything else) | `test_validate_io_failure_is_a_check_failure_not_a_write_failure`, `test_surrogate_in_device_value_is_an_input_error` |
+| N1 abbreviated subcommand options accepted | `allow_abbrev=False` on every subparser | `test_subcommand_options_cannot_be_abbreviated` |
+| N2 unsanitized server protocol version | only `YYYY-MM-DD` is shown or exported, otherwise `ENDPOINT_PROTOCOL_ERROR` | `test_endpoint_protocol_version_must_be_a_date` |
+| N3 `--export` with `--format` | mutually exclusive (exit 2) | `test_export_and_format_are_mutually_exclusive` |
+| N7, N8 | DEPLOYMENT.md: run the commands as the service user; cli.md: the credential goes to the given URL, use https or loopback | documentation |
+
+The new tests were checked to fail on the unfixed source (10 of 14 selected cases;
+the others are platform-skipped or already-rejected argument forms).
+
 ## Runs
 
 Local runs on the implementation branch (Windows 11, Python 3.13):

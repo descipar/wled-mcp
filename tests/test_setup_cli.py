@@ -540,3 +540,59 @@ def test_fresh_user_setup_validate_serve_both_transports_and_doctor(tmp_path):
         assert list(data.iterdir()) == []
     finally:
         wled.close()
+
+
+# ------------------------------------------------------------------ review round 1 (S1, S2, N1)
+
+
+def test_directory_fsync_failure_after_replace_reports_written(tmp_path, capsys, monkeypatch):
+    config = retained_copy(tmp_path)
+
+    def failing(directory: Path) -> None:
+        raise OSError("synthetic directory fsync failure")
+
+    monkeypatch.setattr(setup, "_fsync_directory", failing)
+    code, out, err = add(
+        capsys, config, "lamp", "Example lamp", "http://192.0.2.20", "--format", "json"
+    )
+    assert code == 0 and json.loads(out)["written"] is True
+    assert [d.id for d in load_config(str(config), str(tmp_path), {}).devices][-1] == "lamp"
+
+
+def test_validate_io_failure_is_a_check_failure_not_a_write_failure(tmp_path, capsys, monkeypatch):
+    config = retained_copy(tmp_path)
+
+    def failing(path: Path) -> tuple[bytes, object]:
+        raise OSError("synthetic")
+
+    monkeypatch.setattr(setup, "_read_regular", failing)
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config), "--format", "json")
+    result = json.loads(out)
+    assert code == 1 and "written" not in result
+    assert [p["code"] for p in result["problems"]] == ["CHECK_FAILED"]
+
+
+def test_surrogate_in_device_value_is_an_input_error(tmp_path, capsys):
+    config = retained_copy(tmp_path)
+    before = snapshot(tmp_path)
+    code, out, _ = add(
+        capsys, config, "lamp", "Bad \udcff name", "http://192.0.2.20", "--format", "json"
+    )
+    result = json.loads(out)
+    assert code == 1 and result["written"] is False
+    assert [p["code"] for p in result["problems"]] == ["INVALID_TEXT"]
+    assert snapshot(tmp_path) == before
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["config", "validate", "--conf", "/x.toml"],
+        ["config", "init", "--conf", "/x.toml"],
+        ["config", "add-device", "--device-i", "x"],
+        ["doctor", "--off"],
+    ],
+)
+def test_subcommand_options_cannot_be_abbreviated(capsys, argv):
+    code, out, err = run(capsys, *argv)
+    assert code == 2 and out == ""

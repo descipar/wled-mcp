@@ -21,7 +21,8 @@ unchanged.
   Each one runs as its own short process, never serves MCP, never reads stdin and
   never prompts. It writes its result to stdout and unexpected diagnostics to stderr.
 - Serve options (`--transport`, `--host`, ...) together with a subcommand are a usage
-  error. So are unknown options and actions; their message is the fixed
+  error. So are unknown options and actions and, as for serving, abbreviated option
+  names; their message is the fixed
   `Invalid command-line arguments. Use --help for supported options.`
 - Every subcommand takes `--format text|json` (default `text`, no terminal detection).
   JSON output is one object with `"schema_version": 1`, `"command"` (for example
@@ -52,7 +53,9 @@ wled-mcp config init --config <abs> [--device-id ID --device-name NAME --base-ur
   is validated with the startup validator before anything is written.
 - Writes only the selected file: a temporary file in the same directory, fsync,
   `os.replace` (plus a directory fsync on POSIX). New files are created with mode
-  0600 on POSIX.
+  0600 on POSIX. The directory fsync is best-effort: on a filesystem that does not
+  support it the file is still written and reported as written, but the rename may not
+  survive a power loss.
 - Refuses with exit 1 and leaves everything unchanged when the target exists (without
   `--force`), is a symbolic link or not a regular file (also with `--force`), or its
   directory does not exist. `--force` keeps the replaced file's mode.
@@ -78,7 +81,8 @@ wled-mcp config add-device --config <abs> --device-id ID --device-name NAME --ba
   file, duplicate ID (`DUPLICATE_ID`), equal URL (`DUPLICATE_URL`), invalid value
   (`CONFIG_INVALID`, with the positional message such as
   `devices[2].base_url: invalid`), result over 64 KiB, symbolic link, the file changed
-  between reading and replacing it (`CONFIG_CHANGED`), failed write (`WRITE_FAILED`).
+  between reading and replacing it (`CONFIG_CHANGED`), a device value that is not
+  valid Unicode text (`INVALID_TEXT`), failed write (`WRITE_FAILED`).
 - Keeps the existing file mode. The change takes effect after a restart.
 
 ## `config validate`
@@ -92,11 +96,16 @@ wled-mcp config validate --config <abs> [--data-dir <abs>] [--check-backups]
   for example `Invalid inventory configuration (devices[1].base_url: invalid): ...` or
   `Unsupported inventory configuration schema_version 2; ...`. It never contacts a
   device or the network and never writes.
-- `--data-dir` additionally checks that the data directory exists.
+- `--data-dir` additionally checks that the data directory exists and is accessible
+  (otherwise `DATA_DIR_NOT_FOUND`).
   `--check-backups` (needs `--data-dir`) adds the advisory backups writability check
   of `doctor` (`os.access`, nothing created).
 - JSON fields: `device_count` (null when unreadable), `problems` (list of `code` and
-  `message`) and, with `--check-backups`, `backups_writable`.
+  `message`) and, with `--check-backups`, `backups_writable`. A file-system error while
+  checking is reported as `CHECK_FAILED`; nothing is written.
+- A location that cannot even be inspected, for example a data directory the user
+  cannot search, counts as not writable (`BACKUPS_NOT_WRITABLE`), here, in `doctor` and
+  for the startup advisory.
 - Exit 0 when valid, 1 otherwise. This is the check step of the inventory change
   procedure: copy, edit, validate, restart
   ([DEPLOYMENT.md](../DEPLOYMENT.md#changing-the-inventory)).
@@ -140,9 +149,12 @@ Read-only diagnostics. Checks run in this order and report one result per check:
   `--http-token-file` with the service's own rules; it is never a command-line value.
   Doctor sends MCP `initialize` and `ping` (10 s timeout, no redirects, no proxy
   environment) and no tool call. HTTP 403 or 421 means the service rejected the
-  Host/Origin; 401 means the credential was rejected.
+  Host/Origin; 401 means the credential was rejected. The credential is sent to the
+  URL given, so use `https` or a loopback address. The negotiated protocol version is
+  shown and exported only when it has the date form `YYYY-MM-DD`; anything else is
+  `ENDPOINT_PROTOCOL_ERROR`.
 - `--format text` and `--format json` are local output: messages and configured device
-  IDs, never URLs or credentials.
+  IDs, never URLs or credentials. `--export` and `--format` cannot be combined (exit 2).
 
 ### Sanitized export
 

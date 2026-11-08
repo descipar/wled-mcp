@@ -413,6 +413,9 @@ changed device `id` does not move or rename the existing snapshots of the old ID
 
 ## Setup and diagnostics
 
+Run the `config` commands and `doctor` as the service user (or in the image), so that
+file modes and the backups writability check reflect what the server will see.
+
 - `wled-mcp config init --config <abs> [--device-id ... --device-name ... --base-url ...]`
   writes a new schema 1 inventory and nothing else; it refuses an existing file unless
   `--force` is given. Create the data directory yourself.

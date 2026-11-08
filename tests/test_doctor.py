@@ -512,3 +512,109 @@ def test_serve_is_silent_when_backups_are_writable(tmp_path, monkeypatch, capsys
     monkeypatch.setattr(cli.anyio, "run", lambda *args: None)
     assert cli.main(["--config", str(config), "--data-dir", str(data)]) == 0
     assert capsys.readouterr() == ("", "")
+
+
+# ------------------------------------------------------------------ review round 1 (M1, N2, N3)
+
+
+@pytest.fixture
+def backups_eacces(monkeypatch):
+    """Model POSIX EACCES on ``<data-dir>/backups``: a data directory that cannot be searched."""
+    import errno
+    import pathlib
+
+    original = pathlib.Path.stat
+
+    def stat(self, *args, **kwargs):
+        if self.name == "backups":
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "stat", stat)
+
+
+def test_unsearchable_data_dir_still_serves_with_the_advisory(
+    tmp_path, monkeypatch, capsys, backups_eacces
+):
+    config, data = layout(tmp_path)
+    served: list[str] = []
+    monkeypatch.setattr(cli.anyio, "run", lambda function, *args: served.append(function.__name__))
+    assert cli.main(["--config", str(config), "--data-dir", str(data)]) == 0
+    out, err = capsys.readouterr()
+    assert served == ["serve"] and out == "" and err.strip() == cli.BACKUPS_ADVISORY
+
+
+def test_unsearchable_data_dir_is_reported_not_crashed(tmp_path, capsys, backups_eacces):
+    config, data = layout(tmp_path)
+    argv = ["--config", str(config), "--data-dir", str(data), "--format", "json"]
+    assert cli.main(["doctor", *argv]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert {"category": "storage", "code": "BACKUPS_NOT_WRITABLE"} in [
+        {"category": c["category"], "code": c["code"]} for c in report["checks"]
+    ]
+    assert cli.main(["config", "validate", *argv, "--check-backups"]) == 1
+    result = json.loads(capsys.readouterr().out)
+    assert [p["code"] for p in result["problems"]] == ["BACKUPS_NOT_WRITABLE"]
+
+
+def test_inaccessible_data_dir_maps_to_the_documented_code(tmp_path, monkeypatch, capsys):
+    import errno
+    import pathlib
+
+    config, data = layout(tmp_path)
+    original = pathlib.Path.stat
+
+    def stat(self, *args, **kwargs):
+        if self.name == "data":
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "stat", stat)
+    report = diagnose(config, data, offline=True)
+    assert codes(report, "storage") == ["DATA_DIR_NOT_FOUND"]
+    argv = ["config", "validate", "--config", str(config), "--data-dir", str(data)]
+    assert cli.main([*argv, "--format", "json"]) == 1
+    assert [p["code"] for p in json.loads(capsys.readouterr().out)["problems"]] == [
+        "DATA_DIR_NOT_FOUND"
+    ]
+
+
+@pytest.mark.skipif(
+    os.name == "nt" or (hasattr(os, "geteuid") and os.geteuid() == 0),
+    reason="real POSIX permission bits; root bypasses them",
+)
+def test_real_unsearchable_data_dir(tmp_path, monkeypatch, capsys):
+    config, data = layout(tmp_path)
+    data.chmod(0o600)
+    try:
+        monkeypatch.setattr(cli.anyio, "run", lambda *args: None)
+        assert cli.main(["--config", str(config), "--data-dir", str(data)]) == 0
+        assert capsys.readouterr().err.strip() == cli.BACKUPS_ADVISORY
+        report = diagnose(config, data, offline=True)
+        assert "BACKUPS_NOT_WRITABLE" in codes(report, "storage") and report.exit_code == 1
+        argv = ["config", "validate", "--config", str(config), "--data-dir", str(data)]
+        assert cli.main([*argv, "--check-backups"]) == 1
+        assert "not writable" in capsys.readouterr().out
+    finally:
+        data.chmod(0o700)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("version", ["2025-11-25\x1b[31m", "x" * 40, "../../etc"])
+async def test_endpoint_protocol_version_must_be_a_date(version):
+    body = {"jsonrpc": "2.0", "id": 1, "result": {"protocolVersion": version}}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=body)
+
+    checks = await doctor.endpoint_checks(
+        "http://127.0.0.1:9/mcp", None, {"WLED_MCP_HTTP_TOKEN": TOKEN}, httpx.MockTransport(handler)
+    )
+    assert [(c.code, c.facts) for c in checks] == [("ENDPOINT_PROTOCOL_ERROR", {})]
+    assert version not in checks[0].message
+
+
+def test_export_and_format_are_mutually_exclusive(capsys):
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["doctor", "--export", "--format", "json"])
+    assert caught.value.code == 2 and capsys.readouterr().out == ""
