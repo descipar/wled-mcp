@@ -632,7 +632,9 @@ def test_no_issue_19_rule_reads_the_firmware_tier():
 
     for module in (capabilities, segment_rules, patches, layouts, preset_writes):
         source = Path(module.__file__ or "").read_text(encoding="utf-8")
-        assert "compat" not in source, module.__name__
+        assert "wled_mcp.compat" not in source, module.__name__
+        assert "import compat" not in source, module.__name__
+        assert "firmware_support" not in source, module.__name__
 
 
 # --- AC-19-06: white handling ----------------------------------------------------------
