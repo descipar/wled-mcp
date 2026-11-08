@@ -73,6 +73,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
 | DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
 | DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
+| DEC-026 | Project / deployment | Stage a release directory on the machine that will run it, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another. Applies to every host. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-026](#dec-026--stage-releases-on-the-target-machine) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -672,6 +673,38 @@ can explicitly amend them.
 - Supersedes: DEC-018 item 3 (branch rules) only.
 - Affected: docs/validation/issue-90.md (runbook), issue #90 acceptance item on the
   ruleset, agents/coordinator.md and DEC-022 item 4 (merge command, follow-up).
+
+### DEC-026 — Stage releases on the target machine
+
+- Status: active project decision. DEC-025 is reserved for the stage 4 plan, whose record is
+  kept in issue #127 until stage 4 starts.
+- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
+  permalink), while a release was being installed on a Linux host after being staged on a
+  Windows machine: "ich will kein staging auf windows und dann kopieren auf linux. stage
+  immer auf dem rechner wo wir installieren wollen" (English: "I do not want staging on
+  Windows and then copying to Linux. Always stage on the machine where we want to install"),
+  typing errors corrected. When the coordinator had stored it as a private note, the owner
+  corrected: "nein, das soll kein memory sein, sondern auch für andere rechner gelten"
+  (English: "no, that should not be a memory, it should also apply to other computers").
+- Owner decision: release directories (`deploy/stage_release.py`) are staged on the machine
+  that will run them, from a clean checkout of the release tag or commit, and are not built
+  on another machine or operating system and copied. The rule applies on every host and for
+  every agent; it is part of the repository rules, not a personal preference.
+- Observed the same day (not owner statements): a wheel and the staged `Dockerfile`,
+  `.dockerignore` and `requirements-runtime.txt` built from a Windows checkout had other
+  hashes than those staged on the Linux host, probably because of CRLF line endings
+  ([#131](https://github.com/descipar/wled-mcp/issues/131)); the Linux constraints file had
+  the SHA-256 recorded for the first release.
+- Conditions: applies to release directories and the images and hub entries built from them.
+  It does not cover running the test suite or the development checks on a development
+  machine. Where the target cannot build (no `uv`, no network, no Docker), the owner decides
+  the exception; it is not assumed.
+- Rationale supplied: the directory that is installed must be the one that was built on that
+  system.
+- Supersedes: the "from a clean checkout ... on a build machine" and "copy the directory
+  unchanged to the target" wording of docs/DEPLOYMENT.md and docs/QUICKSTARTS.md.
+- Affected: docs/DEPLOYMENT.md, docs/QUICKSTARTS.md, AGENTS.md,
+  docs/validation/live-check-2026-11-08.md.
 
 ## Issue-specific decisions (pointers)
 

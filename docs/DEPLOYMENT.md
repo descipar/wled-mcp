@@ -103,8 +103,11 @@ UID/GID 10001 (build arguments `APP_UID`/`APP_GID`), no `environment` credential
 ## Build and stage a release
 
 Releases are immutable versioned directories. Both modes use the same directory, by
-default `/app/binaries/wled-mcp/<version>/` on the target (TD-1). From a clean checkout
-of the selected commit on a build machine:
+default `/app/binaries/wled-mcp/<version>/` on the target (TD-1). Stage the directory on
+the machine that will run it, never on another machine or operating system followed by a
+copy ([DEC-026](DECISIONS.md#dec-026--stage-releases-on-the-target-machine)), from a clean
+checkout of the selected release tag or commit; give `--output` the host directory that
+the hub mounts as `/app/binaries/wled-mcp`:
 
 ```text
 uv sync --locked
@@ -119,8 +122,8 @@ uv run --frozen python deploy/stage_release.py --output .artifacts/release
 creates `.artifacts/release/<version>/` with the wheel, `requirements-runtime.txt`, the
 HTTP `Dockerfile`, its allowlist `.dockerignore`, `SHA256SUMS` and `RELEASE` (version,
 source commit, clean/modified tree). It refuses to overwrite an existing version and
-warns about a modified tree. Copy the directory unchanged to the target and verify it
-there before use (`<version>` is the directory name):
+warns about a modified tree. Verify the directory before use (`<version>` is the
+directory name):
 
 ```text
 cd /app/binaries/wled-mcp/<version>
@@ -128,15 +131,17 @@ sha256sum -c SHA256SUMS
 cat RELEASE
 ```
 
-The checksums travel with the artifacts, so they detect transit corruption, not a
-replaced directory: compare the wheel and constraints values with those printed by
-`stage_release.py` on the build machine. Record the source commit, wheel and
+The checksums are stored next to the artifacts, so they detect later changes of the
+files, not a replaced directory: compare the wheel and constraints values with those
+printed by `stage_release.py`. Record the source commit, wheel and
 constraints SHA-256 values and, for HTTP, the image ID in the [operations record](../deploy/operations-record.template.md). Keep the
 previous release directory until the new one is confirmed; it is the rollback source.
 
-Alternatives, not the default: a private Git source pinned to a full 40-hex commit
-(`git+https://.../wled-mcp@<commit>`; needs credentials in the execution context and is
-never pinned to a branch or tag), and an offline wheelhouse (`--find-links <dir>
+Alternatives, not the default: a Git source pinned to a full 40-hex commit
+(`git+https://.../wled-mcp@<commit>`; a private repository needs credentials in the
+execution context). A release tag, as in the [README](../README.md#try-it), is enough to
+try the server, but a tag can be moved: a deployment pins the commit or uses the release
+directory, never an unpinned branch. Another alternative is an offline wheelhouse (`--find-links <dir>
 --no-index`, architecture-specific for the compiled dependencies). Runtime dependencies
 otherwise come from the package index on first install, pinned by the constraints.
 Constraints pin versions but do not enforce artifact hashes; keep the trusted wheel.

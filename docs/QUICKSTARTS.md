@@ -7,7 +7,9 @@ deployment (verification, update, rollback, removal) is in [DEPLOYMENT.md](DEPLO
 
 ## Build a release directory
 
-Both quickstarts start from a local, versioned release directory. From a checkout:
+Both quickstarts start from a local, versioned release directory. Stage it on the machine
+that will run the server, from a clean checkout of the release tag or commit, and do not
+build it elsewhere and copy it ([DEC-026](DECISIONS.md#dec-026--stage-releases-on-the-target-machine)):
 
 ```text
 uv sync --locked
@@ -21,9 +23,8 @@ the wheel, the pinned runtime constraints `requirements-runtime.txt`, the HTTP
 `Dockerfile`, `SHA256SUMS` and the `RELEASE` record. `<version>` is the package version
 from `pyproject.toml`, or `<version>+g<12hex>` (the first 12 hex digits of the source
 commit) for a non-release build staged with `--non-release`
-([versioning](contract/versioning.md)). Nothing is uploaded or published. Copy
-that directory unchanged to the host that runs the server and check it there with
-`sha256sum -c SHA256SUMS`. On
+([versioning](contract/versioning.md)). Nothing is uploaded or published. Check the
+directory with `sha256sum -c SHA256SUMS` before use. On
 Windows, see [docs/DEVELOPMENT.md](DEVELOPMENT.md) for PowerShell commands.
 
 ## Example files
@@ -75,7 +76,7 @@ The service needs Docker with Docker Compose. It runs as its own Compose project
 a private Docker network. No host port is published.
 
 1. Build the image locally from the copied release directory (`<release-dir>`, for
-   example `.artifacts/release/<version>` on the build machine); the image is never
+   example `.artifacts/release/<version>` on the machine that runs the service); the image is never
    pulled or pushed. The tag is the release version, with `+` replaced by `-` for a
    non-release build (the `image_tag=` line of its `RELEASE`):
 

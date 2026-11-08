@@ -47,7 +47,9 @@ State of the evidence and the limits of the first source release (see also the
   both transports, and one deployment of both modes on one MCPHub host was checked. The
   live offline-controller check (H07) is pending ([#25](https://github.com/descipar/wled-mcp/issues/25)),
   as are reboot persistence and the other "Not run" items below. No compatibility with
-  other controllers or firmware versions is claimed.
+  other controllers or firmware versions is claimed. A short live check of the second
+  release over HTTP and stdio on that controller is recorded in
+  [validation/live-check-2026-11-08.md](validation/live-check-2026-11-08.md).
 - Groups, scenes, preset bundles, playlist authoring, snapshot restore, advanced segment
   fields, tool profiles and `discover` have mock and loopback evidence only; no hardware
   run covers them yet.
@@ -78,9 +80,10 @@ State of the evidence and the limits of the first source release (see also the
   installed from Git. Automated tests check that the current server reads the retained
   data of earlier releases and rejects newer data versions without changing files; an older
   server reading newer data is not tested and relies on unchanged formats
-  ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update and
-  rollback of a deployed service has not been checked yet; it is part of the deferred
-  launch work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
+  ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update of a
+  deployed HTTP service was checked once (earlier build to the second release, see the
+  record above); a rollback has not been checked and stays part of the deferred launch
+  work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
 
 ## Issue-2 contract traceability
 
