@@ -14,7 +14,8 @@ from pydantic import JsonValue
 
 from wled_mcp.client import ClientFailure
 
-# Capability bits per the pinned firmware source (FX.h / const.h at v0.15.1).
+# Capability bits per the baseline profile-0 firmware source (FX.h / const.h at v0.15.1,
+# observed on 16.0.1).
 CAP_RGB, CAP_WHITE, CAP_CCT = 0x01, 0x02, 0x04
 # Raw info keys removed from output (runtime privacy default, ISSUE-5-DEC-006).
 REDACTED_KEYS = ("mac", "ip", "wifi.bssid")

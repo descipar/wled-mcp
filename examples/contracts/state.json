@@ -23,7 +23,7 @@
             "read_at": "2026-01-01T00:16:40+00:00"
           },
           "firmware": {
-            "version": "0.15.1",
+            "version": "16.0.1",
             "build_id": 2510010,
             "product": "FOSS",
             "brand": "WLED",
@@ -317,7 +317,7 @@
               ]
             },
             "info": {
-              "ver": "0.15.1",
+              "ver": "16.0.1",
               "vid": 2510010,
               "cn": "Synthetic",
               "brand": "WLED",
@@ -349,7 +349,11 @@
           },
           "diagnostics": {
             "server_version": "0.0.0+example",
-            "unknown_capabilities": []
+            "unknown_capabilities": [],
+            "firmware_support": {
+              "tier": "tested",
+              "minimum_supported": "16.0.0"
+            }
           }
         },
         "warnings": [],

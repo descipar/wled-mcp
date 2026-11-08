@@ -99,7 +99,10 @@ one deadline and the per-device lock. It is never cached and not an atomic snaps
 build_id,product,brand,arch}` (null if absent; only `ver` is required), `capabilities`
 (`led_count`, `max_segments`, `effect_count`, `palette_count`, `device_wide_color`,
 `segment_color_capability_reported`), `state`, `raw{state,info,redacted_info_keys}` and
-`diagnostics{server_version,unknown_capabilities}`; `warnings` lists tolerated anomalies.
+`diagnostics{server_version,unknown_capabilities,firmware_support{tier,minimum_supported}}`;
+`warnings` lists tolerated anomalies. `firmware_support` is the informational DEC-020
+firmware tier with one warning below 16.0.0 or for an unrecognizable version, never a
+refusal ([compatibility](contract/compatibility.md#wled-firmware-tiers), #21).
 
 - Required: info object with string `ver`; state boolean `on`, integer `bri` 0–255
   (booleans rejected), `seg` list of objects with unique non-negative integer `id` and
@@ -790,7 +793,9 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 ## Stage 2 and later files
 
+- [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
+  firmware tiers (#21).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18).
-- [contract/versioning.md](contract/versioning.md): version source, release mapping and
-  non-release build identity (#21, #70).
+- [contract/versioning.md](contract/versioning.md): version source, release mapping,
+  non-release build identity, contract and schema evolution, migration notes (#21, #70).

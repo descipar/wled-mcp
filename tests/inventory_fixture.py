@@ -24,7 +24,7 @@ async def main():
     def handler(request):
         assert request.method == "GET" and request.url.path == "/json/info"
         if request.url.host == "desk.invalid":
-            return httpx.Response(200, json={"ver": "0.15.1"})
+            return httpx.Response(200, json={"ver": "16.0.1"})
         return httpx.Response(200, text="synthetic-secret", headers={"content-type": "text/html"})
 
     async with Resources(config, httpx.MockTransport(handler)) as resources:

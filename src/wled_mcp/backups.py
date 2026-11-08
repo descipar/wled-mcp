@@ -184,6 +184,12 @@ def parse_snapshot(raw: bytes, device_id: str, backup_id: str) -> Snapshot:
         raise _invalid("Snapshot envelope has missing or unknown keys.")
     version = document["format_version"]
     if not _is_int(version) or version != FORMAT_VERSION:
+        # Issue #21 (TD-21-5): name a plausible integer version; the file stays untouched.
+        if isinstance(version, int) and not isinstance(version, bool) and 0 <= version <= 9999:
+            raise _invalid(
+                f"Unsupported snapshot format version {version}; this server reads format "
+                f"version {FORMAT_VERSION}."
+            )
         raise _invalid("Unsupported snapshot format version.")
     if document["backup_id"] != backup_id:
         raise _invalid("Snapshot backup ID does not match its identity.")

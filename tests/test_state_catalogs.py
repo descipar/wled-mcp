@@ -32,6 +32,7 @@ from wled_mcp.catalogs import (
     resolve_name,
 )
 from wled_mcp.client import ClientFailure
+from wled_mcp.compat import firmware_support
 from wled_mcp.models import Outcome
 from wled_mcp.operations import GetCatalogRequest, GetStateRequest, build_operations
 from wled_mcp.readmodels import InfoIdentity
@@ -126,7 +127,7 @@ async def test_state_full_fixture_normalized_raw_redacted(tmp_path):
     assert data["freshness"]["source"] == "device"
     assert data["freshness"]["read_at"].endswith("+00:00")
     assert data["firmware"] == {
-        "version": "0.15.1",
+        "version": "16.0.1",
         "build_id": 2510010,
         "product": "FOSS",
         "brand": "WLED",
@@ -163,6 +164,11 @@ async def test_state_full_fixture_normalized_raw_redacted(tmp_path):
     assert "192.0.2.10" not in dumped and "00:00:5E" not in dumped and "00005e" not in dumped
     assert data["diagnostics"]["server_version"] == canonical_version()
     assert data["diagnostics"]["unknown_capabilities"] == []
+    # #21 A21-04: additive, informational tier; the default fixture is the tested release.
+    assert data["diagnostics"]["firmware_support"] == {
+        "tier": "tested",
+        "minimum_supported": "16.0.0",
+    }
     assert [router.count(DESK, "/json/state"), router.count(DESK, "/json/info")] == [1, 1]
     Outcome.model_validate(result.model_dump())  # stays a valid envelope
 
@@ -311,10 +317,10 @@ async def test_state_and_info_are_never_cached(tmp_path):
     async with open_resources(tmp_path, router, FakeClock()) as resources:
         first = await call(resources, "wled_get_state")
         router.set(DESK, "/json/state", make_state(on=False, bri=9))
-        router.set(DESK, "/json/info", make_info(vid=2510011, ver="0.15.2"))
+        router.set(DESK, "/json/info", make_info(vid=2510011, ver="16.1.0"))
         second = await call(resources, "wled_get_state")
     assert first.data["state"]["on"] is True and second.data["state"]["on"] is False
-    assert second.data["firmware"]["version"] == "0.15.2"
+    assert second.data["firmware"]["version"] == "16.1.0"
     assert router.count(DESK, "/json/state") == 2 and router.count(DESK, "/json/info") == 2
     assert len(resources.metadata_cache) == 0
 
@@ -474,7 +480,7 @@ async def test_effect_catalog_preserves_ids_gaps_placeholders_and_metadata(tmp_p
     freshness = result.data["freshness"]
     assert freshness["source"] == "device" and freshness["age_seconds"] == 0.0
     assert freshness["cache_ttl_seconds"] == 300 and freshness["refreshed"] is False
-    assert freshness["firmware"] == {"version": "0.15.1", "build_id": 2510010}
+    assert freshness["firmware"] == {"version": "16.0.1", "build_id": 2510010}
     assert router.count(DESK, "/json/pal") == 0
 
 
@@ -651,7 +657,7 @@ async def test_failed_refresh_keeps_previous_entry_and_no_stale_fallback(tmp_pat
 @pytest.mark.anyio
 @pytest.mark.parametrize(
     "changed",
-    [{"ver": "0.15.2"}, {"vid": 2510011}, {"vid": None}],
+    [{"ver": "16.1.0"}, {"vid": 2510011}, {"vid": None}],
 )
 async def test_firmware_identity_change_invalidates(tmp_path, changed):
     router, clock = fleet(), FakeClock()
@@ -712,7 +718,7 @@ def entry_for(names):
     from datetime import UTC, datetime
 
     return CatalogEntry(
-        tuple(names), None, None, InfoIdentity("0.15.1", 1), 0.0, datetime.now(UTC), ()
+        tuple(names), None, None, InfoIdentity("16.0.1", 1), 0.0, datetime.now(UTC), ()
     )
 
 
@@ -838,6 +844,11 @@ def test_contract_examples_are_valid_envelopes_and_redacted():
             assert "192.0.2.10" not in json.dumps(case["expected"])
     state = json.loads((folder / "state.json").read_text(encoding="utf-8"))["cases"]["state"]
     assert state["expected"]["data"]["raw"]["redacted_info_keys"] == ["mac", "ip", "wifi.bssid"]
+    example = state["expected"]["data"]
+    assert example["diagnostics"]["firmware_support"] == firmware_support(
+        example["raw"]["info"]["ver"]
+    )
+    assert example["firmware"]["version"] == example["raw"]["info"]["ver"]
     effects = json.loads((folder / "catalogs.json").read_text(encoding="utf-8"))["cases"]
     assert (
         effects["effects_cache_hit_after_42s"]["expected"]["data"]["freshness"]["source"] == "cache"

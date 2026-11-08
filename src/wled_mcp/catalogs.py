@@ -1,8 +1,9 @@
 """Effect/palette catalogs: ID-preserving reads, optional fxdata, cache and name resolver.
 
 A catalog ID is the array index of the device list (`/json/eff`, `/json/pal`); lists
-are never compacted. Unavailable effect slots are serialized by the pinned firmware
-(v0.15.1) as the literal name "RSVD" and are flagged as placeholders. `/json/fxdata`
+are never compacted. Unavailable effect slots are serialized by the baseline firmware
+(profile 0: v0.15.1 source, observed on 16.0.1) as the literal name "RSVD" and are
+flagged as placeholders. `/json/fxdata`
 is optional metadata: a raw string per effect, never a source of names.
 """
 

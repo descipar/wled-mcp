@@ -94,9 +94,11 @@ uv run --frozen python deploy/stage_release.py --output .artifacts/release
 it in a clean environment; `stage_release.py` writes `.artifacts/release/<version>/` with
 the wheel, the pinned runtime constraints `requirements-runtime.txt`, the HTTP
 `Dockerfile`, `SHA256SUMS` and the `RELEASE` record. `<version>` is the package version
-from `pyproject.toml`, or `<version>+g<commit>` for a non-release build staged with
-`--non-release` ([versioning](docs/contract/versioning.md)). Nothing is uploaded or published. Copy that directory unchanged to the
-host that runs the server and check it there with `sha256sum -c SHA256SUMS`. On
+from `pyproject.toml`, or `<version>+g<12hex>` (the first 12 hex digits of the source
+commit) for a non-release build staged with `--non-release`
+([versioning](docs/contract/versioning.md)). Nothing is uploaded or published. Copy
+that directory unchanged to the host that runs the server and check it there with
+`sha256sum -c SHA256SUMS`. On
 Windows, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for PowerShell commands.
 
 ## Example files
@@ -172,8 +174,8 @@ a private Docker network. No host port is published.
 
    Edit `data/wled-mcp/config/devices.toml` ([Inventory](#inventory)), replace
    `REPLACE_WITH_HUB_NETWORK` in `compose.yaml` with the existing Docker network of your
-   MCP host and `REPLACE_WITH_IMAGE_TAG` with the tag built in step 1. The credential stays in `secrets/wled_mcp_http_token`; never commit or
-   print it.
+   MCP host and `REPLACE_WITH_IMAGE_TAG` with the tag built in step 1. The credential
+   stays in `secrets/wled_mcp_http_token`; never commit or print it.
 3. Start and inspect only this project:
 
    ```text
@@ -247,6 +249,28 @@ without echoing values. Nothing is discovered automatically.
   the server adds no interactive approval. The HTTP service additionally requires its
   own bearer credential and Host allowlist. Tool annotations are hints only.
 
+## Compatibility
+
+What the checks cover; the evidence for each row and the firmware tiers are in
+[docs/contract/compatibility.md](docs/contract/compatibility.md). This is not a
+support commitment (see [Support](#support)).
+
+| Area | Status |
+| --- | --- |
+| Python 3.13 | supported |
+| Linux amd64 | supported |
+| Linux arm64 | supported |
+| HTTP container image, amd64 and arm64 | supported |
+| stdio via uvx on Linux | supported |
+| Windows | experimental |
+| macOS | experimental |
+| WLED 16.0.1 | tested |
+| WLED 16.x other than 16.0.1 | unknown |
+| WLED below 16.0.0, including 0.15.x | unsupported |
+
+Unsupported or unrecognized firmware is served with a warning and never refused;
+`wled_get_state` reports the tier in `diagnostics.firmware_support`.
+
 ## Validation status and limitations
 
 Automated tests use mocked or synthetic loopback devices and run in CI without
@@ -274,8 +298,13 @@ Known limitations:
   call; a write interrupted that way stays uncertain.
 - `tools/list` is CPU-heavy on small hosts
   ([#67](https://github.com/descipar/wled-mcp/issues/67)).
-- No published package, image or registry entry; live updates between versions are
-  part of stage 2 ([#21](https://github.com/descipar/wled-mcp/issues/21)).
+- No published package, image or registry entry. Automated tests check that the
+  current server reads the retained data of earlier releases and rejects newer data
+  versions without changing files; an older server reading newer data is not tested
+  and relies on unchanged formats
+  ([versioning](docs/contract/versioning.md#upgrade-downgrade-and-rollback)). A live
+  update and rollback of a deployed service is checked with the first published
+  release ([#25](https://github.com/descipar/wled-mcp/issues/25)).
 
 ## Documentation
 

@@ -434,7 +434,7 @@ async def test_overwrite_snapshots_exact_object_before_the_post(tmp_path):
         snapshot = await resources.load_snapshot("desk", backup_id)
     assert seen_at_post == [[f"{backup_id}.json"]]
     assert snapshot.preset == original and snapshot.preset_id == 5
-    assert snapshot.firmware.version == "0.15.1"
+    assert snapshot.firmware.version == "16.0.1"
     assert desk.store["5"]["n"] == "New" and "vendor_extension" not in desk.store["5"]
 
 

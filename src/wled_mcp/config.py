@@ -21,6 +21,7 @@ _HOST_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9])?")
 _NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9a-fA-F]*")
 _DEVICE_FIELDS = ("id", "name", "base_url")
 _MAX_LOCATORS = 5
+SCHEMA_VERSION = 1
 
 
 class ConfigurationError(ValueError):
@@ -112,7 +113,7 @@ class InventoryConfig(StrictModel):
     @field_validator("schema_version")
     @classmethod
     def version_one(cls, value: int) -> int:
-        if value != 1:
+        if value != SCHEMA_VERSION:
             raise ValueError("Unsupported schema version")
         return value
 
@@ -158,6 +159,7 @@ def load_config(
         if len(content) > 65536:
             raise ConfigurationError("Configuration exceeds the 64 KiB limit.")
         parsed = tomllib.loads(content.decode("utf-8"))
+        _check_schema_version(parsed.get("schema_version"))
         validated = InventoryConfig.model_validate(parsed)
     except (OSError, ValueError, UnicodeError, ValidationError, RecursionError) as exc:
         if isinstance(exc, ConfigurationError):
@@ -174,6 +176,27 @@ def load_config(
         validated.http,
         validated.backups,
     )
+
+
+def _check_schema_version(version: object) -> None:
+    """Name an unsupported integer ``schema_version`` (issue #21, TD-21-5).
+
+    Only an integer from 0 to 9999 is echoed (as for snapshots); any other value keeps
+    the generic message, which never quotes file content. The file is only read, never
+    rewritten.
+    """
+    if type(version) is not int or version == SCHEMA_VERSION or not 0 <= version <= 9999:
+        return
+    message = (
+        f"Unsupported inventory configuration schema_version {version}; this server reads "
+        f"schema_version {SCHEMA_VERSION}."
+    )
+    if version > SCHEMA_VERSION:
+        message += (
+            " The file was written for a newer server version; after a downgrade, use the "
+            "configuration kept for this version (docs/contract/versioning.md)."
+        )
+    raise ConfigurationError(message)
 
 
 def _device_locators(exc: ValidationError) -> str:
