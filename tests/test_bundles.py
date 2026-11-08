@@ -26,6 +26,7 @@ from tests.bundle_support import (
     BundleDevice,
     call,
     fleet_of,
+    freeze_deadline_clock,
     load_fixture,
     open_resources,
     state_preset,
@@ -432,7 +433,10 @@ async def test_running_playlist_blocks_a_playlist_import_but_names_state_interru
 
 
 @pytest.mark.anyio
-async def test_snapshots_precede_the_first_post_and_members_precede_playlists(tmp_path):
+async def test_snapshots_precede_the_first_post_and_members_precede_playlists(
+    tmp_path, monkeypatch
+):
+    freeze_deadline_clock(monkeypatch)  # snapshot I/O time must not race the 1 s window
     bundle = load_fixture()
     bundle["presets"] = [bundle["presets"][2], *bundle["presets"][:2]]  # playlist listed first
     desk = BundleDevice({"1": state_preset("Old one"), "2": state_preset("Old two")})
@@ -484,12 +488,20 @@ async def test_destination_taken_after_planning_is_a_conflict_before_any_post(tm
 
 
 @pytest.mark.anyio
-async def test_unreadable_kth_write_stops_the_import_without_any_resend(tmp_path):
+async def test_unreadable_kth_write_stops_the_import_without_any_resend(tmp_path, monkeypatch):
     bundle = bundle_with(*[item(i, state_preset(f"P{i}")) for i in (1, 2, 3)])
     desk = BundleDevice({str(i): state_preset(f"Old {i}") for i in (1, 2, 3)})
-    desk.presets_get_failure = lambda _count: (
-        httpx.ConnectError("synthetic") if len(desk.posts) >= 2 else None
-    )
+    clock = freeze_deadline_clock(monkeypatch)
+
+    def unreadable_after_second_post(_count: int) -> Exception | None:
+        if len(desk.posts) < 2:
+            return None
+        # The readback stays unreadable until the entry's deadline: advance the controlled
+        # clock past the 1 s per-write window (but not the 5 s overall one), without waiting.
+        clock.offset = 2.0
+        return httpx.ConnectError("synthetic")
+
+    desk.presets_get_failure = unreadable_after_second_post
     desk.post_mode = "ok"
 
     def timeout_second(body: dict[str, Any]) -> None:
@@ -675,7 +687,8 @@ def test_parser_rejects_a_duplicate_key_in_an_otherwise_valid_bundle():
 
 
 @pytest.mark.anyio
-async def test_import_snapshots_survive_each_others_retention_pruning(tmp_path):
+async def test_import_snapshots_survive_each_others_retention_pruning(tmp_path, monkeypatch):
+    freeze_deadline_clock(monkeypatch)  # three snapshot files must not race the 1 s window
     bundle = bundle_with(*[item(i, state_preset(f"P{i}")) for i in (1, 2, 3)])
     desk = BundleDevice({str(i): state_preset(f"Old {i}") for i in (1, 2, 3)})
     async with open_resources(tmp_path, fleet_of(desk)) as resources:
