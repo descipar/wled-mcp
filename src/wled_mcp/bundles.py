@@ -26,6 +26,7 @@ from urllib.parse import urlsplit
 
 from pydantic import JsonValue
 
+from wled_mcp.capabilities import parse_matrix
 from wled_mcp.client import ClientFailure, validate_json
 from wled_mcp.models import ErrorCode
 from wled_mcp.preset_writes import (
@@ -61,7 +62,6 @@ ENTRY_TYPES: Final = ("state", "playlist", "api-command", "unknown")
 WRITABLE_TYPES: Final = ("state", "playlist")
 TIMESTAMP_RE: Final = re.compile(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
 CANONICAL_ID_RE: Final = re.compile(r"^(0|[1-9][0-9]{0,4})$")
-CAP_CCT: Final = 0x04
 
 CatalogKind = Literal["effect", "palette"]
 
@@ -215,17 +215,6 @@ def _optional_count(value: object, where: str) -> int | None:
         raise _bad(f"'{where}' must be null or a non-negative integer.")
     assert isinstance(value, int)
     return value
-
-
-def parse_matrix(value: object) -> tuple[int, int] | None:
-    """A reported 2D size ``{w, h}`` (both positive integers), else None."""
-    if not isinstance(value, dict) or set(value) - {"w", "h"}:
-        return None
-    width, height = value.get("w"), value.get("h")
-    if _is_int(width) and _is_int(height) and width > 0 and height > 0:  # type: ignore[operator]
-        assert isinstance(width, int) and isinstance(height, int)
-        return width, height
-    return None
 
 
 def _parse_source(value: object) -> tuple[str, int | None, int | None, tuple[int, int] | None]:

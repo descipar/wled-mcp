@@ -574,6 +574,9 @@ Stage 2 (recorded 2026-11-07):
   accepts repeat/shuffle and refuses while a playlist runs.
 - [ISSUE-19-DEC-001 and -002](decisions/issue-19.md) (human): overlap only with an
   explicit `allow_overlap`; `rpt`, `fxdef` and matrix/panel configuration not exposed.
+- [ISSUE-19-DEC-003](decisions/issue-19.md) (coordinator): technical defaults TD-19-1 to
+  TD-19-14 and acceptance scenarios AC-19-01 to AC-19-18 for #19 (capability module,
+  evidence chain, field presence, matrix geometry, two pull requests).
 - [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device
   maximum class, status tool, classes `read`/`control`/`manage`; applies to every
   tool-adding issue.

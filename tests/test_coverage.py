@@ -338,7 +338,9 @@ def test_supported_row_without_a_reference_fails_c3():
     ],
 )
 def test_planned_row_needs_one_roadmap_issue(link, expected):
-    assert problems(edit_row(COVERAGE, "W-SEG-14", Link=link)) == [expected]
+    # The row is made planned explicitly; its live status changes as #19 progresses.
+    row = {"Status": "planned", "Delivered by": "-", "Link": link}
+    assert problems(edit_row(COVERAGE, "W-SEG-14", **row)) == [expected]
 
 
 def test_roadmap_issues_come_from_the_stage_maps():
@@ -347,7 +349,9 @@ def test_roadmap_issues_come_from_the_stage_maps():
 
 
 def test_planned_row_with_a_reference_fails_c4():
-    changed = edit_row(COVERAGE, "W-SEG-14", **{"Delivered by": "`wled_patch_segments`"})
+    changed = edit_row(
+        COVERAGE, "W-SEG-14", Status="planned", **{"Delivered by": "`wled_patch_segments`"}
+    )
     assert problems(changed) == ["C4 W-SEG-14: planned row must not name a Delivered by reference"]
 
 
