@@ -20,7 +20,8 @@ from wled_mcp.config import ConfigurationError, load_config
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = "synthetic-secret-marker"
-RETAINED = ROOT / "tests" / "fixtures" / "compat" / "0.1.0" / "config.toml"
+# The oldest retained release configuration (tests/test_upgrade_compat.py layout).
+RETAINED = min((ROOT / "tests" / "fixtures" / "compat").glob("*/config.toml"))
 EXAMPLES = [
     ROOT / "examples" / "bootstrap.toml",
     ROOT / "examples" / "devices.example.toml",

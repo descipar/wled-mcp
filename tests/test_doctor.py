@@ -249,8 +249,8 @@ def test_runtime_tiers_follow_dec_020(tmp_path):
     assert "PLATFORM_EXPERIMENTAL" in anyio.run(run_on, "Windows", (3, 13, 0))
     assert "PLATFORM_UNTESTED" in anyio.run(run_on, "Plan9", (3, 13, 0))
     assert "PYTHON_UNTESTED" in anyio.run(run_on, "Linux", (3, 14, 0))
-    assert doctor.build_kind("0.1.0") == "release"
-    assert doctor.build_kind("0.1.0+g0123456789ab.dirty") == "non-release"
+    assert doctor.build_kind("9.8.7") == "release"
+    assert doctor.build_kind("9.8.7+g0123456789ab.dirty") == "non-release"
     assert doctor.build_kind("0+unknown") == "unknown"
 
 
