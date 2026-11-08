@@ -81,6 +81,12 @@ open decision, no scope change beyond the issue/packet, no visibility, secret,
 ruleset, publication, deployment or hardware/LAN change), note "Merged under DEC-022
 standing approval" and report the merge. After the third issue completed under it,
 stop and ask the owner to confirm, adjust or end it.
+Merge with `gh pr merge --squash --match-head-commit <sha>`. Under the DEC-024
+rulesets a pull request without an approving review is refused (review required):
+repeat the same command with `--admin`, the owner's bypass for pull-request merges,
+only when that was the sole reason and the merge is owner-approved or covered by an
+active standing approval. The required checks still apply; never use `--admin` to
+merge with failing checks, an open decision or a changed candidate.
 
 Route actionable findings to the implementer. Allow at most two correction rounds
 per packet by default; unresolved repeated failures or scope changes return to

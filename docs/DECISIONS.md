@@ -564,6 +564,12 @@ can explicitly amend them.
   again. The owner did not answer the second question of that exchange (see
   ISSUE-19-DEC-003, interpretation S-1, `blend_mode` without `allow_overlap`); it stays
   a coordinator reading awaiting owner confirmation.
+- Coordinator note (not an owner statement), 2026-11-08: since the DEC-024 rulesets the
+  merge command of item 4 is `gh pr merge --squash --match-head-commit <sha>` and, when
+  that is refused only because no approving review exists, the same command with
+  `--admin` (the owner's bypass for pull-request merges). The conditions of item 4 are
+  unchanged; `--admin` is no additional permission and never covers failing checks. See
+  `agents/coordinator.md`.
 - Rationale supplied: shorten turnaround without reducing the test suite.
 - Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 4
   "one merge at a time after the owner's merge approval" and item 6 "stops only for
@@ -652,7 +658,10 @@ can explicitly amend them.
   direct pushes would choose "always allow" in ruleset B. Reading 3: the squash merge by
   the coordinator needs `gh pr merge --admin` once ruleset B is active; that command
   change, with `agents/coordinator.md` and DEC-022 item 4, is made after ruleset B exists
-  and the first merge has been observed. Rulesets and the fork-approval setting cannot be
+  and the first merge has been observed. Observed 2026-11-08 on the first merge under the
+  rulesets: the plain squash merge was refused (review required) and `--admin` merged it
+  with green checks, which confirms reading 3 and the documented bypass of ruleset B for a
+  pull-request merge; the command change was then made. Rulesets and the fork-approval setting cannot be
   read or created while the repository is private (observed 2026-11-08: HTTP 403 and
   422), so verification is possible only after the visibility change.
 - Conditions: creating the rulesets and the setting is an owner-only action; this decision

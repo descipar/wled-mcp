@@ -132,7 +132,9 @@ flowchart TD
 6. A passing review and human merge decision refer to the actual candidate. New
    commits invalidate previous review; refresh affected checks and approval as
    needed. Never merge automatically from an agent verdict, except under an active
-   owner-granted standing approval and its conditions (DEC-022 item 4).
+   owner-granted standing approval and its conditions (DEC-022 item 4). With the
+   DEC-024 rulesets the squash merge is refused without an approving review and then
+   uses `--admin` (the owner's bypass), only for an owner-approved or covered merge.
 7. After actual merge verification, hand off to `wled_completion`. DONE requires
    full current acceptance and verified issue body/state; a merged PR alone is
    insufficient. Partial completion keeps exact outstanding criteria visible.
