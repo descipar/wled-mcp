@@ -16,6 +16,7 @@ such as `profile` and `expected` are not tool arguments.
 | [errors.json](errors.json) | Unknown/mismatch application, #7 partial layout application, backup failure, transition boundaries and MCP parity | C2-05/09/10; T06/T08/T09/T12–T14/T18 |
 | [state.json](state.json) | #5 normalized state: explicit segment IDs, remembered vs effective brightness, trimmed zero white only for proven RGB-only, raw retained, redaction list; unknown device | C5-01/02/08; T02/T14/T15 |
 | [catalogs.json](catalogs.json) | #5 catalogs: preserved IDs with `RSVD` placeholder, fxdata metadata, cache hit with age, metadata unavailable (length mismatch) | C5-03/05/06; T03 |
+| [preset-bundle.json](preset-bundle.json) | Retained preset bundle format 1: actual `wled_export_presets` output (`data.bundle`) of the synthetic #18 fixture device, checked by `tests/test_bundles.py`; verbatim objects with their types, referenced catalog names only, no device data | S2-PRESET-01/02; #18 |
 | [snapshot.json](snapshot.json) | Versioned exact saved object (validated by `tests/test_backups.py`), unknown fields retained, no integrity/authenticity claim | C2-09; T12 |
 
 `expected` values are normalized domain envelopes. MCP wraps them in

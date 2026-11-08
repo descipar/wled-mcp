@@ -1,6 +1,7 @@
-"""Preset workflow tools of issue #18: snapshot listing, restore and supplied-state save.
+"""Preset workflow tools of issue #18: snapshot listing, restore, supplied-state save,
+playlist authoring and (through ``bundle_tools``) bundle export and import.
 
-Both writers use the single-entry routes of ``preset_writes`` on the shared
+The single-entry writers use the single-entry routes of ``preset_writes`` on the shared
 ``Resources.write_polled`` engine: planned and rechecked inside the device lock, a
 snapshot of an occupied destination first, exactly one POST, a ``/presets.json``
 readback verdict and no replay. Their live effect is stated in the description, the
@@ -21,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, m
 from wled_mcp.backups import Firmware, Snapshot
 from wled_mcp.client import ClientFailure, Endpoint
 from wled_mcp.models import Outcome
+from wled_mcp.playlists import SavePlaylistRequest, playback_notes, playlist_object
 from wled_mcp.preset_writes import (
     WRITE_RECONCILE,
     Destination,
@@ -141,7 +143,9 @@ Planner = Callable[[OperationContext, bool], Awaitable[WritePlan]]
 
 
 def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, ...]:
-    """Issue #18 tools in registry order: list snapshots, restore, store."""
+    """Issue #18 tools in registry order: list snapshots, restore, store, save playlist,
+    export, import."""
+    from wled_mcp.bundle_tools import build_bundle_operations  # imports this module
 
     def known(device_id: str) -> str | None:
         return device_id if any(d.id == device_id for d in resources.inventory) else None
@@ -398,6 +402,53 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
             return await dry_run(name, device_id, planner)
         return await write(name, device_id, planner)
 
+    # ------------------------------------------------------------- save playlist
+
+    def playlist_planner(request: SavePlaylistRequest) -> Planner:
+        async def planner(context: OperationContext, executing: bool) -> WritePlan:
+            entry = playlist_object(request)
+            members = check_playlist_entry(entry)  # the schema already bounds every value
+            store = await _read_store(context)
+            destination = plan_destination(store, request.preset_id, request.overwrite, "playlist")
+            target = destination.preset_id
+            check_playlist_members(store, members, target)
+            before = live_before(await live_state(context))
+            refuse_running_playlist(before)
+            firmware = _firmware(await context.read(Endpoint.INFO))
+            warnings = [*destination.warnings, *playback_warnings("playlist", before, target)]
+            if executing:
+                await secure_destination(context, destination, firmware, _read_store)
+                try:
+                    check_playlist_members(destination.pre_store, members, target)
+                except ClientFailure:
+                    raise ClientFailure(
+                        "PRESET_CONFLICT",
+                        "A playlist member changed after planning; nothing was written.",
+                        reconciliation="Inspect the members with wled_get_preset; a snapshot "
+                        "taken for the destination is kept.",
+                    ) from None
+                refuse_running_playlist(live_before(await live_state(context)))
+            details: dict[str, JsonValue] = {
+                "playback": playback_notes(members, before, target),
+                "firmware_version": firmware.version,
+            }
+            return WritePlan("playlist", entry, destination, before, warnings, details)
+
+        return planner
+
+    async def save_playlist(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_save_playlist"
+        request = SavePlaylistRequest.model_validate(arguments)
+        device_id = request.device_id
+        try:
+            resources.resolve(device_id)
+        except ClientFailure as failure:
+            return _not_attempted(name, None, failure)
+        planner = playlist_planner(request)
+        if request.dry_run:
+            return await dry_run(name, device_id, planner)
+        return await write(name, device_id, planner)
+
     return (
         Operation(
             name="wled_list_snapshots",
@@ -443,4 +494,23 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
             execute=store_preset,
             annotations=DESTRUCTIVE,
         ),
+        Operation(
+            name="wled_save_playlist",
+            description=(
+                "Create or replace one native WLED playlist under a name, in the lowest free "
+                "ID or an explicit preset_id. entries: 1-100 existing state presets with "
+                "duration_s (0 = until advanced) and transition_s (at most 65.5), both in "
+                "steps of 0.1 s; repeat 0 = endless or 1-254 passes; shuffle; optional "
+                "end_preset_id (an existing state preset; 'restore previous' is not offered). "
+                "LIVE EFFECT: saving starts the playlist, then the firmware stores it; the "
+                "previous lighting is not restored. Refused while any playlist runs. An "
+                "occupied ID needs overwrite=true and is snapshotted first. One POST, verified "
+                "semantically by bounded /presets.json polling, never replayed. dry_run "
+                "performs bounded reads only."
+            ),
+            request_model=SavePlaylistRequest,
+            execute=save_playlist,
+            annotations=DESTRUCTIVE,
+        ),
+        *build_bundle_operations(resources),
     )
