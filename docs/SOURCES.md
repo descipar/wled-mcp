@@ -196,6 +196,21 @@ revisions and forks, and firmware below 16.0.0.
 
 Observed 2026-11-05 by inspecting the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools (no repository changes): the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID, and opens a stream for a GET that offers `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These observations motivate [ISSUE-14-DEC-002 to -004](decisions/issue-14.md) and are re-pinned by tests, not assumed.
 
+## Issue-16 WLED mDNS discovery evidence
+
+Read 2026-11-08 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`
+(GitHub contents API), as required by [ISSUE-16-DEC-001](decisions/issue-16.md).
+
+| Pinned evidence | Consequence for `wled-mcp discover` |
+| --- | --- |
+| [`wled.cpp` L850-L861](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled.cpp#L850-L861): only `if (strlen(cmDNS) > 0)`, WLED calls `MDNS.begin(cmDNS)`, `MDNS.addService("http", "tcp", 80)`, `MDNS.addService("wled", "tcp", 80)` and `MDNS.addServiceTxt("wled", "tcp", "mac", escapedMac.c_str())` | The query asks for the PTR records of `_wled._tcp.local`; the port comes from SRV (80 in this source); the TXT key `mac` is the duplicate key. A controller with an empty mDNS name announces nothing (documented limit) |
+| [`wled.cpp` L471-L473](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled.cpp#L471-L473): `escapedMac = WiFi.macAddress()`, colons removed, lower case | A `mac` value is accepted only as 12 lower-case hex digits (colons removed, case folded); anything else is ignored |
+| [`wled.cpp` L535-L536](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled.cpp#L535-L536): the default mDNS name becomes `wled-` plus the last six MAC hex digits | Typical instance and host names look like `wled-a1b2c3`; the suggested device ID is derived from the instance name |
+
+The multicast exchange itself (an IPv4 one-shot query from an ephemeral port, RFC 6762
+section 5.1, and the responder libraries' answers to it) was not observed on hardware;
+the tests use a fake socket. No firmware code was copied.
+
 ## Licensing
 
 No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.

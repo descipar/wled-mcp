@@ -23,7 +23,7 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 46 %** (40.5 of 89 features). **Planned-scope coverage: 57 %** (40.5 of 71 features, excluded rows removed).
+**WLED coverage: 47 %** (41.5 of 89 features). **Planned-scope coverage: 58 %** (41.5 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -31,12 +31,12 @@ devices and versions are at most expected.
 | Segments (SEG) | 25 | 22 | 0 | 0 | 0 | 3 | 100 % | 88 % |
 | Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
 | Presets and playlists (PRESET) | 13 | 8 | 1 | 0 | 3 | 1 | 71 % | 65 % |
-| Information and diagnostics (INFO) | 9 | 3 | 1 | 1 | 4 | 0 | 39 % | 39 % |
+| Information and diagnostics (INFO) | 9 | 4 | 1 | 0 | 4 | 0 | 50 % | 50 % |
 | Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 89 | 38 | 5 | 1 | 27 | 18 | 57 % | 46 % |
+| **All** | 89 | 39 | 5 | 0 | 27 | 18 | 58 % | 47 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -179,7 +179,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |
 | W-INFO-07 | Wi-Fi network scan | `/json/net` | unplanned | - | - | - |
 | W-INFO-08 | Pin usage | `/json/pins` | unplanned | - | - | - |
-| W-INFO-09 | mDNS discovery | mDNS announcement | planned | - | [#16](https://github.com/descipar/wled-mcp/issues/16) | CLI only, `wled-mcp discover` (ISSUE-16-DEC-001). |
+| W-INFO-09 | mDNS discovery | mDNS announcement | supported | `cli: wled-mcp discover` | - | One-shot IPv4 mDNS query on explicit invocation; candidates only, never enrolled (ISSUE-16-DEC-001). |
 
 ## Configuration
 

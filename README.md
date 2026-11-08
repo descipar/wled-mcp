@@ -16,8 +16,9 @@ service.
 - It is not a cloud service, a web interface, an animation engine or a home-automation
   integration. It needs no account, MQTT broker or public endpoint, and works
   independently of other home-automation systems.
-- It does not discover devices, scan networks or forward arbitrary requests to a
-  controller.
+- It does not scan networks or forward arbitrary requests to a controller. It
+  discovers devices only when you run `wled-mcp discover`, never automatically, and
+  never adds them to the inventory itself.
 - It is not published as a package or container image yet. You build a wheel locally
   from this repository (see the quickstarts and [Project status](#project-status)).
 
@@ -73,7 +74,7 @@ The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).
 
 <!-- wled-coverage:start -->
-WLED feature coverage: 57 % of the planned scope, 46 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
+WLED feature coverage: 58 % of the planned scope, 47 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
 ## Requirements
@@ -234,9 +235,13 @@ read once at startup. To change it, keep a copy of the working file, edit it, ru
 `config validate` and restart the server; there is no reload command
 ([procedure and rollback](docs/DEPLOYMENT.md#changing-the-inventory)). An invalid file
 stops startup with a message that names the rejected entry by position and field,
-without echoing values. Nothing is discovered automatically. The read-only
-`wled-mcp doctor` reports configuration, storage, device and endpoint problems with
-fixed codes and a sanitized `--export` summary ([CLI contract](docs/contract/cli.md)).
+without echoing values. Nothing is discovered automatically: on request,
+`wled-mcp discover` sends one mDNS query on the local network and prints the
+`config add-device` command for each answering controller, without writing anything
+(multicast does not cross VLANs and usually not a container bridge network). The
+read-only `wled-mcp doctor` reports configuration, storage, device and endpoint
+problems with fixed codes and a sanitized `--export` summary
+([CLI contract](docs/contract/cli.md)).
 
 ## Safety model
 
@@ -255,8 +260,9 @@ fixed codes and a sanitized `--export` summary ([CLI contract](docs/contract/cli
   back; like `wled_store_preset`, `wled_save_playlist` and `wled_import_presets` it
   changes the live output before it stores, and the previous lighting is not
   restored.
-- **No hidden reach.** No discovery, no arbitrary endpoints or caller-supplied hosts,
-  no silent preset overwrite; overwriting needs `overwrite=true`.
+- **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints
+  or caller-supplied hosts, no silent preset overwrite; overwriting needs
+  `overwrite=true`.
 - **Authorization.** Deciding whether a person may run a tool is the MCP host's job;
   the server adds no interactive approval. The HTTP service additionally requires its
   own bearer credential and Host allowlist. Tool annotations are hints only.
