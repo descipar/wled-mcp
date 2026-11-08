@@ -220,11 +220,16 @@ base_url = "http://wled-desk.example.invalid"
 - An empty inventory (`devices = []`, as in
   [examples/bootstrap.toml](examples/bootstrap.toml)) also starts.
 
-The file is read once at startup. To change it, keep a copy of the working file, edit
-it and restart the server; there is no reload command
+`wled-mcp config init --config <abs>` writes a new inventory (optionally with one
+device), `wled-mcp config add-device` appends a device and `wled-mcp config validate`
+checks a file with the startup validator, without contacting any device. The file is
+read once at startup. To change it, keep a copy of the working file, edit it, run
+`config validate` and restart the server; there is no reload command
 ([procedure and rollback](docs/DEPLOYMENT.md#changing-the-inventory)). An invalid file
 stops startup with a message that names the rejected entry by position and field,
-without echoing values. Nothing is discovered automatically.
+without echoing values. Nothing is discovered automatically. The read-only
+`wled-mcp doctor` reports configuration, storage, device and endpoint problems with
+fixed codes and a sanitized `--export` summary ([CLI contract](docs/contract/cli.md)).
 
 ## Safety model
 
@@ -290,7 +295,7 @@ Known limitations:
   ([#18](https://github.com/descipar/wled-mcp/issues/18)).
 - No CCT white balance or 2D matrix layouts
   ([#19](https://github.com/descipar/wled-mcp/issues/19)); no raw state patch tool.
-- No inventory reload or validate command; changes need a restart
+- No inventory reload; changes need `wled-mcp config validate` and a restart
   ([#16](https://github.com/descipar/wled-mcp/issues/16)).
 - One writer per controller: locks are per process, so a second process or service
   against the same devices is not coordinated.

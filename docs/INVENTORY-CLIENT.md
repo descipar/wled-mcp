@@ -17,6 +17,10 @@ most 128 characters and explicit HTTP(S) root URLs. Root trailing slash, explici
 ports and bracketed IPv6 are accepted. Credentials, query/fragment, nonroot paths,
 unknown fields and unsupported types/features fail before device access. TOML is
 limited to 64 KiB; absolute path and CLI-over-environment rules are unchanged.
+`wled-mcp config validate --config <abs>` applies exactly these rules (the same
+validator and messages as startup) without starting the server or contacting a device;
+`config init` and `config add-device` write files that pass it
+([CLI contract](contract/cli.md)).
 
 A `base_url` host name is ASCII, at most 253 characters, without a trailing dot. Each
 dot-separated label has 1–63 characters from letters, digits, `-` and `_`, and starts

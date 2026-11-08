@@ -363,23 +363,37 @@ ROOT = Path(__file__).resolve().parents[1]
 FLAG = re.compile(r"--[a-z][a-z-]*")
 
 
-def documented_console_flags(text: str) -> set[str]:
-    """Flags written after a ``wled-mcp`` command word in code blocks and inline code."""
+# Subcommand words of the console (#16). A documented flag is checked against the help
+# of the command it is written after, so a subcommand flag cannot hide a serve flag.
+SUBCOMMAND_WORDS = frozenset({"config", "init", "add-device", "validate", "doctor"})
+
+
+def documented_console_commands(text: str) -> dict[tuple[str, ...], set[str]]:
+    """Flags after a ``wled-mcp`` command word, grouped by the subcommand path written."""
     snippets = re.findall(r"```[^\n]*\n(.*?)```", text, flags=re.S)
     snippets += re.findall(r"`([^`\n]*\bwled-mcp [^`\n]*)`", text)
-    flags: set[str] = set()
+    found: dict[tuple[str, ...], set[str]] = {}
     for snippet in snippets:
         for line in re.sub(r"\\[ \t]*\n", " ", snippet).splitlines():  # join continuations
             tokens = line.split()
             if "wled-mcp" in tokens:
                 after = tokens[tokens.index("wled-mcp") + 1 :]
+                path: list[str] = []
+                while after and after[0] in SUBCOMMAND_WORDS:
+                    path.append(after.pop(0))
+                flags = found.setdefault(tuple(path), set())
                 flags.update(m.group() for t in after if (m := FLAG.fullmatch(t)))
-    return flags
+    return found
 
 
-def console_help_flags() -> set[str]:
+def documented_console_flags(text: str) -> set[str]:
+    """Flags written after a ``wled-mcp`` command word in code blocks and inline code."""
+    return set().union(*documented_console_commands(text).values())
+
+
+def console_help_flags(*command: str) -> set[str]:
     result = subprocess.run(
-        [str(CONSOLE), "--help"],
+        [str(CONSOLE), *command, "--help"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -397,7 +411,20 @@ def test_documented_console_flags_exist_in_the_installed_console():
     # The HTTP service command and the local commands really were found.
     assert {"--transport", "--host", "--port", "--allowed-host", "--http-token-file"} <= deployment
     assert {"--config", "--data-dir", "--transport"} <= development
-    assert (deployment | development) - accepted == set()
+    for name in ("DEPLOYMENT.md", "DEVELOPMENT.md"):
+        commands = documented_console_commands((ROOT / "docs" / name).read_text("utf-8"))
+        for command, flags in commands.items():
+            known = accepted if not command else console_help_flags(*command)
+            assert flags - known == set(), (name, command)
+
+
+def test_subcommand_flags_are_checked_against_their_own_command():
+    """Negative control: a serve-only flag written after a subcommand is reported."""
+    sample = "`wled-mcp config validate --config x --transport stdio`"
+    assert documented_console_commands(sample) == {
+        ("config", "validate"): {"--config", "--transport"}
+    }
+    assert "--transport" not in console_help_flags("config", "validate")
 
 
 def test_documented_command_word_extraction_rejects_an_invented_flag():

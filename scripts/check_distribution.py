@@ -157,6 +157,39 @@ def http_restart(console: Path, config: Path, data: Path, cwd: Path, env: dict[s
         assert leftovers == [], f"HTTP start/stop left unexpected data files: {leftovers}"
 
 
+def setup_smoke(console: Path, directory: Path, env: dict[str, str]) -> None:
+    """Installed `config init`/`config validate`/`doctor --offline` (#16), stdin closed."""
+    directory.mkdir()
+    data = directory / "data"
+    data.mkdir()
+    config = directory / "devices.toml"
+
+    def json_run(*argv: str) -> dict[str, object]:
+        result = subprocess.run(
+            [str(console), *argv, "--format", "json"],
+            cwd=directory,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if result.returncode:
+            raise SystemExit(f"{argv[0]} failed: {result.stdout}{result.stderr}")
+        document: dict[str, object] = json.loads(result.stdout)
+        assert document["schema_version"] == 1 and document["ok"] is True, document
+        return document
+
+    paths = ["--config", str(config)]
+    device = ["--device-id", "desk", "--device-name", "Example desk"]
+    json_run("config", "init", *paths, *device, "--base-url", "http://192.0.2.10")
+    assert json_run("config", "validate", *paths, "--data-dir", str(data))["device_count"] == 1
+    report = json_run("doctor", *paths, "--data-dir", str(data), "--offline")
+    assert report["command"] == "doctor", report
+    leftovers = sorted(path.name for path in directory.rglob("*"))
+    assert leftovers == ["data", "devices.toml"], f"setup commands left files: {leftovers}"
+
+
 def hub_example_uvx(
     root: Path, wheel: Path, constraints: Path, data: Path, env: dict[str, str]
 ) -> tuple[str, list[str], dict[str, str]]:
@@ -259,6 +292,7 @@ def main() -> None:
         assert str(environment).casefold() in installed[1].casefold()
         assert run([str(console), "--version"], outside, env) == f"wled-mcp {VERSION}"
         assert "--transport" in run([str(console), "--help"], outside, env)
+        setup_smoke(console, outside / "setup", env)
         config = outside / "bootstrap.toml"
         config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
         args = ["--config", str(config), "--data-dir", str(outside)]
@@ -286,7 +320,7 @@ def main() -> None:
         leftovers = sorted(path.name for path in hub_data.iterdir())
         assert leftovers == ["config"], f"stdio hub example left data files: {leftovers}"
     print(
-        "Wheel/clean install/stdio/HTTP restart/uvx/stdio hub example: PASS; "
+        "Wheel/clean install/setup commands/stdio/HTTP restart/uvx/stdio hub example: PASS; "
         f"{len(expected)} exact runtime versions verified"
     )
 
