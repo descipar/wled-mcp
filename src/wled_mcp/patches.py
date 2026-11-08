@@ -10,6 +10,12 @@ WLED source, observed on 16.0.1): RGB-only semantics, per-segment capability fro
 compensation. Per-segment channel width follows ``ISSUE-6-DEC-003``:
 ``info.leds.seglc[i]`` when its length equals the state segment list, else
 ``info.leds.lc`` as the aggregate for an existing *unchanged* range.
+
+WLED 16 segment evidence (ISSUE-19-DEC-003, docs/contract/segments.md): per-segment
+capability now follows the #19 chain ``state.seg[].lc`` -> aligned ``info.leds.seglc``
+(``capabilities.derive_capabilities``); ``cct``, white-only colors, the effect options,
+2D bounds/orientation and the ``allow_overlap`` opt-in (ISSUE-19-DEC-001) use the shared
+rules of ``segment_rules``.
 """
 
 from __future__ import annotations
@@ -19,14 +25,34 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from wled_mcp.capabilities import aggregate_bits, required_color_channels, seglc_bits
+from wled_mcp.capabilities import derive_capabilities
 from wled_mcp.client import ClientFailure
 from wled_mcp.segment_rules import (
+    BLEND_MODE_MAX,
+    CCT_MAX,
+    CUSTOM3_MAX,
+    CUSTOM_MAX,
+    FREEZE_WARNING,
     GROUPING_MAX,
+    MAP_1D_2D_MAX,
+    SEGMENT_FIELDS,
+    SEGMENT_SET_MAX,
+    SOUND_SIMULATION_MAX,
     SPACING_MAX,
+    Evidence,
+    Geometry,
+    Rect,
     SegmentPower,
+    check_cct,
+    check_colors,
+    check_fields,
     check_segment_name,
+    check_y_pair,
+    evidence_entries,
+    option_keys,
+    overlap_plan,
     resolve_segment_power,
+    validate_colors,
 )
 
 # ---------------------------------------------------------------------------- requests
@@ -50,7 +76,9 @@ class SetStateRequest(BaseModel):
 class SegmentPatch(BaseModel):
     """One explicit segment patch. At least one mutable field must be set.
 
-    ``start`` and ``stop`` must be supplied together when either is present.
+    ``start`` and ``stop`` must be supplied together when either is present, and so must
+    ``start_y`` and ``stop_y``. The #19 fields after ``name`` are settable only with
+    fresh capability, field-presence or matrix evidence (docs/contract/segments.md).
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
@@ -72,14 +100,37 @@ class SegmentPatch(BaseModel):
     selected: bool | None = None
     # Coarse character bound; the 32 UTF-8 byte limit is checked by the planner.
     name: str | None = Field(default=None, max_length=32)
+    # Issue #19 (ISSUE-19-DEC-003 TD-19-2); additive, all optional.
+    cct: int | None = Field(default=None, ge=0, le=CCT_MAX)
+    custom1: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    custom2: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
+    custom3: int | None = Field(default=None, ge=0, le=CUSTOM3_MAX)
+    check1: bool | None = None
+    check2: bool | None = None
+    check3: bool | None = None
+    sound_simulation: int | None = Field(default=None, ge=0, le=SOUND_SIMULATION_MAX)
+    segment_set: int | None = Field(default=None, ge=0, le=SEGMENT_SET_MAX)
+    map_1d_2d: int | None = Field(default=None, ge=0, le=MAP_1D_2D_MAX)
+    freeze: bool | None = None
+    blend_mode: int | None = Field(default=None, ge=0, le=BLEND_MODE_MAX)
+    start_y: int | None = Field(default=None, ge=0)
+    stop_y: int | None = Field(default=None, ge=1)
+    reverse_y: bool | None = None
+    mirror_y: bool | None = None
+    transpose: bool | None = None
 
 
 class PatchSegmentsRequest(BaseModel):
-    """Nonempty list of segment patches. Omitted segments are untouched."""
+    """Nonempty list of segment patches. Omitted segments are untouched.
+
+    ``allow_overlap`` (ISSUE-19-DEC-001) permits a resulting layout with overlapping
+    segments; without it an overlapping geometry change is refused.
+    """
 
     model_config = ConfigDict(extra="forbid", strict=True)
     device_id: str = Field(min_length=1, max_length=64)
     segments: list[SegmentPatch] = Field(min_length=1, max_length=64)
+    allow_overlap: bool = False
     dry_run: bool = False
 
 
@@ -104,6 +155,8 @@ class SegmentsPlan:
     postconditions: list[JsonValue]
     # Expected per-segment field maps, keyed by segment id.
     expectations: dict[int, dict[str, JsonValue]]
+    # Plan warnings (for example the master power-on unfreeze, TD-19-8).
+    warnings: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------- helpers
@@ -120,17 +173,8 @@ def _unsupported(message: str) -> ClientFailure:
 def _validate_colors(
     colors: list[list[int]], channels: Literal[3, 4], context: str
 ) -> list[list[int]]:
-    if not colors or len(colors) > 3:
-        raise _fail(f"{context}colors must contain 1-3 slots.")
-    normalized: list[list[int]] = []
-    for slot in colors:
-        if len(slot) != channels:
-            raise _fail(f"{context}expected exactly {channels} channels per color slot.")
-        for value in slot:
-            if not (isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 255):
-                raise _fail(f"{context}color channels must be integers 0-255.")
-        normalized.append(list(slot))
-    return normalized
+    """Kept for existing imports; the rule lives in ``segment_rules.validate_colors``."""
+    return validate_colors(colors, channels, context)
 
 
 def _wire_transition(ms: int) -> int:
@@ -294,46 +338,6 @@ def matches_set_state(expected: MasterPlan, state: JsonValue) -> bool:
 # ---------------------------------------------------------------------------- segment plan
 
 
-def _normalize_patch_colors(
-    patch: SegmentPatch, cap: int | None, is_range_change: bool
-) -> list[list[int]] | None:
-    """Enforce RGB-only/RGBW channel widths per ``ISSUE-6-DEC-003``."""
-    if patch.colors is None:
-        return None
-    if cap is None:
-        raise _unsupported(
-            f"Segment {patch.id}: no per-segment color capability evidence available; "
-            "patch with a color change requires info.leds.seglc coverage."
-        )
-    channels = required_color_channels(cap)
-    if channels is None:
-        raise _unsupported(
-            f"Segment {patch.id}: unsupported color capability "
-            "(only RGB and RGBW are supported in this profile)."
-        )
-    if is_range_change and channels == 4:
-        # New or moved ranges require matching range evidence per SEG-03; we
-        # accept RGBW evidence only for *unchanged* ranges per DEC-003 wording.
-        # A range-change that supplies RGBW colors needs explicit RGBW range
-        # evidence; absent a dedicated check, refuse conservatively.
-        raise _unsupported(
-            f"Segment {patch.id}: range change with 4-channel colors is not "
-            "supported under baseline profile 0."
-        )
-    return _validate_colors(patch.colors, channels, f"Segment {patch.id}: ")
-
-
-def _range_overlap(
-    layout: list[tuple[int, int, int]], check_id: int, start: int, stop: int
-) -> bool:
-    for seg_id, seg_start, seg_stop in layout:
-        if seg_id == check_id:
-            continue
-        if seg_start < stop and start < seg_stop:
-            return True
-    return False
-
-
 def _segment_payload(
     patch: SegmentPatch,
     normalized_colors: list[list[int]] | None,
@@ -351,6 +355,9 @@ def _segment_payload(
     if patch.start is not None and patch.stop is not None:
         entry["start"] = patch.start
         entry["stop"] = patch.stop
+    if patch.start_y is not None and patch.stop_y is not None:
+        entry["startY"] = patch.start_y
+        entry["stopY"] = patch.stop_y
     if patch.on is not None:
         entry["on"] = patch.on
     elif power.compensate_off:
@@ -379,6 +386,10 @@ def _segment_payload(
         entry["mi"] = patch.mirror
     if patch.selected is not None:
         entry["sel"] = patch.selected
+    for name, wire in SEGMENT_FIELDS:
+        value = getattr(patch, name)
+        if value is not None and wire not in entry:
+            entry[wire] = value
     if patch.name is not None:
         entry["n"] = patch.name
     elif range_change and compensate_name is not None and "n" not in entry:
@@ -446,6 +457,8 @@ def _resolve_public_segment(
     }
     for field, override in _MUTABLE:
         resolved[field] = pick(field, override)
+    for field, _wire in SEGMENT_FIELDS:
+        resolved[field] = pick(field, getattr(patch, field))
     return resolved
 
 
@@ -495,7 +508,45 @@ def _patch_expectation(
         expectation["sel"] = patch.selected
     if patch.name is not None:
         expectation["n"] = patch.name
+    for name, wire in SEGMENT_FIELDS:
+        value = getattr(patch, name)
+        if value is not None:
+            expectation[wire] = value
     return expectation
+
+
+# Mutable request fields: something other than ``id`` must be set.
+_MUTABLE_FIELDS = (
+    "start",
+    "stop",
+    "on",
+    "brightness",
+    "colors",
+    "effect_id",
+    "palette_id",
+    "speed",
+    "intensity",
+    "grouping",
+    "spacing",
+    "offset",
+    "reverse",
+    "mirror",
+    "selected",
+    "name",
+    *(name for name, _wire in SEGMENT_FIELDS),
+)
+
+
+def _current_rect(geometry: Geometry, seg: dict[str, JsonValue]) -> Rect | None:
+    start, stop = seg.get("start"), seg.get("stop")
+    start_y, stop_y = seg.get("start_y"), seg.get("stop_y")
+    assert isinstance(start, int) and isinstance(stop, int)
+    return geometry.rect(
+        start,
+        stop,
+        start_y if isinstance(start_y, int) else None,
+        stop_y if isinstance(stop_y, int) else None,
+    )
 
 
 def build_segment_patch_plan(
@@ -514,27 +565,7 @@ def build_segment_patch_plan(
 
     # Mutable-field presence check (something other than id must be set).
     for patch in request.segments:
-        has_change = any(
-            getattr(patch, field) is not None
-            for field in (
-                "start",
-                "stop",
-                "on",
-                "brightness",
-                "colors",
-                "effect_id",
-                "palette_id",
-                "speed",
-                "intensity",
-                "grouping",
-                "spacing",
-                "offset",
-                "reverse",
-                "mirror",
-                "selected",
-                "name",
-            )
-        )
+        has_change = any(getattr(patch, field) is not None for field in _MUTABLE_FIELDS)
         if not has_change:
             raise _fail(f"Segment {patch.id}: patch must contain at least one mutable field.")
         check_segment_name(patch.id, patch.name)
@@ -543,6 +574,7 @@ def build_segment_patch_plan(
             raise _fail(f"Segment {patch.id}: a range change requires both 'start' and 'stop'.")
         if patch.start is not None and patch.stop is not None and patch.start >= patch.stop:
             raise _fail(f"Segment {patch.id}: start must be strictly less than stop.")
+        check_y_pair(patch.id, patch.start_y, patch.stop_y)
 
     # Current layout + per-segment lookup.
     segments_view = state_view.get("segments")
@@ -577,9 +609,22 @@ def build_segment_patch_plan(
     max_segments = capabilities.get("max_segments")
     effect_count = capabilities.get("effect_count")
     palette_count = capabilities.get("palette_count")
+    device = derive_capabilities(raw_state, raw_info)
+    geometry = Geometry(device.matrix)
+
+    # Field-presence and matrix evidence for the #19 fields (TD-19-5), before any bound.
+    evidence: dict[int, list[tuple[str, Evidence]]] = {}
+    for patch in request.segments:
+        supplied = {name: getattr(patch, name) for name, _wire in SEGMENT_FIELDS}
+        keys = option_keys(device, patch.id, is_new=False)
+        evidence[patch.id] = check_fields(patch.id, supplied, device, keys)
 
     # Resolve LED-count bounds for geometry changes.
     for patch in request.segments:
+        current = layout_by_id[patch.id]
+        current_start = current.get("start")
+        assert isinstance(current_start, int)
+        trailing = geometry.is_trailing(current_start)
         if patch.start is not None and patch.stop is not None:
             if not isinstance(led_count, int):
                 raise _unsupported(f"Segment {patch.id}: LED count unknown; range change rejected.")
@@ -587,11 +632,24 @@ def build_segment_patch_plan(
                 raise _fail(
                     f"Segment {patch.id}: range must satisfy 0 <= start < stop <= led_count."
                 )
+            if trailing:
+                raise _unsupported(
+                    f"Segment {patch.id}: is the trailing 1D strip after the matrix; moving "
+                    "it is not supported."
+                )
+            geometry.check_x(patch.id, patch.start, patch.stop)
             length = patch.stop - patch.start
             if patch.offset is not None and not 0 <= patch.offset < length:
                 raise _fail(
                     f"Segment {patch.id}: offset must satisfy 0 <= offset < resulting length."
                 )
+        if patch.start_y is not None and patch.stop_y is not None:
+            if trailing:
+                raise _unsupported(
+                    f"Segment {patch.id}: is the trailing 1D strip after the matrix; its rows "
+                    "are not changed."
+                )
+            geometry.check_y(patch.id, patch.start_y, patch.stop_y)
 
     # Effect / palette existence (when the device reported counts).
     for patch in request.segments:
@@ -606,36 +664,47 @@ def build_segment_patch_plan(
                     f"Segment {patch.id}: palette_id out of catalog range (0..{palette_count - 1})."
                 )
 
-    # Build proposed layout (for overlap checks when geometry changes).
-    proposed_layout: list[tuple[int, int, int]] = []
+    # Build the proposed layout (rectangles on a matrix) for overlap checks.
     patched_ids = {patch.id for patch in request.segments}
-    for seg in segments_view:
-        assert isinstance(seg, dict)
-        seg_id, start, stop = seg.get("id"), seg.get("start"), seg.get("stop")
-        if isinstance(seg_id, int) and isinstance(start, int) and isinstance(stop, int):
-            if seg_id in patched_ids:
-                continue
-            proposed_layout.append((seg_id, start, stop))
+    proposed: dict[int, Rect | None] = {}
+    for seg_id, seg in layout_by_id.items():
+        if seg_id not in patched_ids:
+            proposed[seg_id] = _current_rect(geometry, seg)
     geometry_change = False
+    range_change = False
     for patch in request.segments:
         current = layout_by_id[patch.id]
         start = patch.start if patch.start is not None else current.get("start")
         stop = patch.stop if patch.stop is not None else current.get("stop")
+        start_y = patch.start_y if patch.start_y is not None else current.get("start_y")
+        stop_y = patch.stop_y if patch.stop_y is not None else current.get("stop_y")
         assert isinstance(start, int) and isinstance(stop, int)
         if patch.start is not None or patch.stop is not None:
+            geometry_change = range_change = True
+        if patch.start_y is not None:
             geometry_change = True
-        proposed_layout.append((patch.id, start, stop))
+        proposed[patch.id] = geometry.rect(
+            start,
+            stop,
+            start_y if isinstance(start_y, int) else None,
+            stop_y if isinstance(stop_y, int) else None,
+        )
 
-    if geometry_change:
+    known: dict[int, Rect] = {i: r for i, r in proposed.items() if r is not None}
+    if (geometry_change or request.allow_overlap) and len(known) != len(proposed):
+        unknown = sorted(i for i, r in proposed.items() if r is None)
+        raise _unsupported(
+            f"2D bounds unknown for segment(s) {unknown}; the overlap check cannot be made."
+        )
+    if geometry_change and not request.allow_overlap:
         for patch in request.segments:
-            if patch.start is None and patch.stop is None:
+            if patch.start is None and patch.start_y is None:
                 continue
-            start = patch.start if patch.start is not None else layout_by_id[patch.id]["start"]
-            stop = patch.stop if patch.stop is not None else layout_by_id[patch.id]["stop"]
-            assert isinstance(start, int) and isinstance(stop, int)
-            if _range_overlap(proposed_layout, patch.id, start, stop):
+            rect = known[patch.id]
+            if any(o != patch.id and rect.overlaps(r) for o, r in known.items()):
                 raise _fail(
-                    f"Segment {patch.id}: range change would overlap another active segment."
+                    f"Segment {patch.id}: range change would overlap another active segment; "
+                    "pass allow_overlap=true to permit overlapping segments."
                 )
 
     # Max-segments limit is not changed by a patch (we never add segments
@@ -654,23 +723,28 @@ def build_segment_patch_plan(
     resolved_segments: list[JsonValue] = []
     expectations: dict[int, dict[str, JsonValue]] = {}
     compensation: list[JsonValue] = []
+    capability_evidence: list[JsonValue] = []
     for patch in request.segments:
         current = layout_by_id[patch.id]
         power = powers[patch.id]
         is_range_change = patch.start is not None and patch.stop is not None
+        # Any X or Y change can change the pixels a segment covers (TD-19-4).
+        moved = is_range_change or patch.start_y is not None
+        items = evidence[patch.id]
+        normalized_colors: list[list[int]] | None = None
         if patch.colors is not None:
-            seglc_cap = seglc_bits(raw_info, patch.id, raw_segments)
-            agg_cap = aggregate_bits(raw_info)
-            if seglc_cap is not None:
-                cap_for_colors: int | None = seglc_cap
-            elif not is_range_change and agg_cap is not None:
-                # Unchanged range may fall back to the aggregate per DEC-003.
-                cap_for_colors = agg_cap
-            else:
-                cap_for_colors = None
-            normalized_colors = _normalize_patch_colors(patch, cap_for_colors, is_range_change)
-        else:
-            normalized_colors = None
+            normalized_colors, _source = check_colors(
+                patch.id,
+                patch.colors,
+                device,
+                raw_info,
+                raw_segments,
+                is_new=False,
+                moved=moved,
+            )
+        if patch.cct is not None:
+            items = [("cct", check_cct(patch.id, device, changed=moved)), *items]
+        capability_evidence.extend(evidence_entries(patch.id, items))
         compensate_name: str | None = None
         if is_range_change:
             existing_name = current.get("name")
@@ -702,12 +776,16 @@ def build_segment_patch_plan(
         "preserve_segment_ids": preserve_ids,
         "targeted_compensation": compensation,
     }
+    if capability_evidence:
+        public_plan["capability_evidence"] = capability_evidence
+    if request.allow_overlap:
+        public_plan.update(overlap_plan(known))
     postconditions: list[JsonValue] = [
         "No device POST or filesystem mutation occurs during dry_run.",
         "Omitted segment fields and all unrelated active segments are preserved.",
         "Applying this plan requires fresh validation under the per-device lock.",
     ]
-    if geometry_change:
+    if range_change:
         postconditions.append(
             "Baseline profile 0 resends existing segment names to counter "
             "geometry-change name clearing."
@@ -717,11 +795,21 @@ def build_segment_patch_plan(
             "A positive brightness on an off segment is sent with on=false so the omitted "
             "power is preserved; the readback verifies the segment stays off."
         )
+    if request.allow_overlap:
+        postconditions.append(
+            "Overlapping segments are permitted (allow_overlap); a higher segment ID is "
+            "rendered on top, blended with its blend_mode."
+        )
+    warnings: list[str] = []
+    frozen = [patch.id for patch in request.segments if patch.freeze is True]
+    if frozen:
+        warnings.append(FREEZE_WARNING.format(ids=frozen))
     return SegmentsPlan(
         payload=payload,
         public=public_plan,
         postconditions=postconditions,
         expectations=expectations,
+        warnings=tuple(warnings),
     )
 
 

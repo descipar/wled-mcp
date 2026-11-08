@@ -363,7 +363,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
                     "payload": plan.payload,
                     "postconditions": plan.postconditions,
                 },
-                warnings,
+                [*warnings, *plan.warnings],
             )
 
         plan_box: dict[str, SegmentsPlan] = {}
@@ -460,7 +460,10 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
             description=(
                 "Patch one or more existing active segments by explicit ID. Omitted "
                 "fields and unrelated segments are preserved. No segment creation or "
-                "removal. dry_run performs bounded reads only and returns the plan."
+                "removal. cct, effect options, 2D bounds/orientation and blend_mode are "
+                "settable only where the fresh readback proves the capability or field; "
+                "overlapping segments need allow_overlap=true. dry_run performs bounded "
+                "reads only and returns the plan."
             ),
             request_model=PatchSegmentsRequest,
             execute=patch_segments,
@@ -472,8 +475,11 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
                 "Replace the complete active segment layout. Every desired ID needs id, "
                 "start and stop; active IDs not listed are removed one by one (exact "
                 "single-segment removal, no filler segments, no bulk purge). Omitted fields "
-                "of existing IDs are preserved; new IDs need colors and receive documented "
-                "defaults. Master state is never changed. Each step is read back; an "
+                "of existing IDs are preserved; new IDs need colors (and start_y/stop_y on "
+                "a matrix) and receive documented defaults. cct, effect options, 2D fields "
+                "and blend_mode need fresh capability or field evidence; overlapping "
+                "segments need allow_overlap=true. Master state is never changed. Each step "
+                "is read back; an "
                 "uncertain or mismatching step stops the sequence without replay. dry_run "
                 "performs bounded reads only and returns the ordered plan."
             ),
@@ -1140,7 +1146,10 @@ def _enrich_segments_outcome(outcome: Outcome, plan: SegmentsPlan | None) -> Out
         "postconditions": plan.postconditions,
     }
     merged = {**outcome.data, **extra}
-    return outcome.model_copy(update={"data": merged})
+    update: dict[str, Any] = {"data": merged}
+    if plan.warnings:
+        update["warnings"] = [*outcome.warnings, *plan.warnings]
+    return outcome.model_copy(update=update)
 
 
 def build_operations(resources: Resources) -> tuple[Operation, ...]:

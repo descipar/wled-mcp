@@ -13,9 +13,11 @@ Per-segment capability evidence (TD-19-3): ``state.seg[].lc`` (source ``state_lc
 else the position-aligned ``info.leds.seglc`` entry (source ``info_seglc``), else none.
 Unknown capability is ``None``, never ``0``/``False``.
 
-The stage-1 helpers ``seglc_bits`` and ``aggregate_bits`` keep the exact lookup the
-existing write planners use (ISSUE-6-DEC-003); switching the write side to the full
-evidence chain is part of the #19 write work, not of the read model.
+Write side (#19 second pull request): ``wled_patch_segments``, ``wled_replace_layout``
+and ``wled_store_preset`` read per-segment capability from ``derive_capabilities`` (the
+chain above) instead of the stage-1 ``seglc_bits``. ``aggregate_bits`` stays the
+fallback for an existing unchanged range (ISSUE-6-DEC-003); new or moved ranges use
+``DeviceCapabilities.uniform_bits`` (TD-19-4). ``seglc_bits`` is kept for reference only.
 """
 
 from __future__ import annotations
@@ -92,6 +94,25 @@ def required_color_channels(cap: int) -> Literal[3, 4] | None:
         return 3
     if is_rgbw(cap):
         return 4
+    return None
+
+
+def is_white_only(cap: int) -> bool:
+    """A white channel without RGB (with or without the CCT bit)."""
+    return (cap & (CAP_RGB | CAP_WHITE)) == CAP_WHITE
+
+
+def color_channels(cap: int) -> Literal[3, 4] | None:
+    """Channel width of a color slot for #19 writes (TD-19-3).
+
+    Four channels need the white bit (RGBW, or white-only with RGB 0); three channels
+    need RGB without white. The CCT bit does not change the width. ``None`` when the
+    range has neither RGB nor white (for example an on/off bus).
+    """
+    if cap & CAP_WHITE:
+        return 4
+    if cap & CAP_RGB:
+        return 3
     return None
 
 
