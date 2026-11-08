@@ -71,6 +71,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-020 | Project / support and version policy | Pre-1.0 `0.x` releases with migration notes; fixes only for the latest release. WLED support from 16.0.0 only, in tiers tested/expected/unknown; older firmware is unsupported and warned about, not refused. Python as tested in CI; Linux supported, Windows/macOS experimental; best-effort responses. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-020](#dec-020--support-and-version-policy) and [issue #21](https://github.com/descipar/wled-mcp/issues/21) |
 | DEC-021 | Stage 2 / workflow | Adopt docs/STAGE-2-PARALLEL-PLAN.md: at most two implementation tracks, #90 first, per-issue coordinators in isolated worktrees with the main session as integration owner, branches synced by merging `main` (no force-push). "Starte Stage 2 parallel" starts or resumes the plan. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-021](#dec-021--adopt-the-stage-2-parallel-plan) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15) |
 | DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
+| DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -571,6 +572,48 @@ can explicitly amend them.
 - Affected: agents/coordinator.md, agents/reviewer.md and generated adapters,
   AGENTS.md, docs/AGENT-WORKFLOW.md, docs/STAGE-2-PARALLEL-PLAN.md, the recording rules
   above.
+
+### DEC-023 — Staged first public release
+
+- Status: active stage-2 release decision; item 3 contains one coordinator reading
+  awaiting owner confirmation.
+- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
+  permalink). The owner remarked that a lot of tokens and money had been spent without
+  a public release ("wir haben nun schon massiv token und geld verbraucht und sind noch
+  nicht bei einem öffentlichen release" (English: "we have already used a lot of tokens
+  and money and are not yet at a public release"), typing errors corrected) and that the
+  required scope itself can be shortened ("diesen plan was verlangt ist kann man auch
+  kürzen" (English: "what this plan requires can also be shortened")). The coordinator
+  proposed three stages (stage 0: public repository and GitHub release; stage 1: plus
+  PyPI; stage 2: everything else, later). The owner answered "Stufe 0, dann PyPI danach
+  entscheiden" (English: "Stage 0, then decide on PyPI afterwards").
+- Owner decision:
+  1. The first public release is stage 0: after the DEC-015 scan and the owner's approval
+     of its findings, the owner makes the repository public (DEC-019) and a GitHub
+     release is created from an exact `main` commit, tagged with the version of the single
+     version source (S2-COMPAT-01). Installation is from Git
+     (`uvx --from git+https://github.com/descipar/wled-mcp wled-mcp`).
+  2. Whether a PyPI package follows (stage 1: wheel/sdist and one publish workflow) is
+     decided by the owner after the repository is public.
+  3. Everything else listed as Launch in this document is deferred past the first public
+     release, not dropped: the container image pipeline and provenance work of #22
+     beyond a possible PyPI workflow, the remaining documentation of #23 beyond what a
+     reader of the public repository needs (quickstart, changelog), marketplace and
+     registry listings (#24) and the beta/launch report with simulator and H07 (#25).
+     Coordinator reading, awaiting owner confirmation: the DEC-018 CI secret step and the
+     `main` ruleset are not prerequisites of stage 0; the ruleset stays recommended
+     immediately after the visibility change because it needs no further work.
+  4. The DEC-015 scan (issue and PR text with edit histories) and the owner's approval of
+     its findings are not reduced: public content cannot be withdrawn afterwards.
+- Conditions: bounded to the first public release. Publication of any artifact, a
+  visibility change and every secret or ruleset remain owner-only actions that need the
+  owner's explicit instruction at that time; this decision authorizes none of them.
+  Deferred items can be scheduled again by the owner at any time.
+- Rationale supplied: reach a public release with less spend and effort.
+- Supersedes: the Launch classification in docs/STAGE-2.md for the items in item 3, for
+  the first public release only; DEC-018 is not superseded (see item 3 reading).
+- Affected: docs/STAGE-2.md (release staging note), issues #15, #22, #23, #24, #25 and
+  #90 (comments with the deferral; bodies and acceptance lists unchanged).
 
 ## Issue-specific decisions (pointers)
 

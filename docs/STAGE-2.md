@@ -12,6 +12,10 @@ Stage 1 delivers the working server, named devices, typed controls/layouts, pers
 
 The five later ideas—named physical zones, temporary signals, static SVG previews, evidence-based lighting explanations and effect-property search—belong to [stage 3](STAGE-3.md), tracker [#26](https://github.com/descipar/wled-mcp/issues/26), rather than this stage's launch criteria.
 
+## Release staging ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release))
+
+The first public release is deliberately smaller than the Launch set below. Stage 0 is a public repository (after the #90 review) with a GitHub release (tag from the single version source) that is installable from Git. A PyPI package is decided by the owner afterwards. The Launch items of sections F to J that are not needed for this (container images, provenance beyond a possible PyPI workflow, extended documentation, marketplace and registry listings, beta report) are deferred, not dropped, and the owner can schedule them at any time. Until then they must not be described as delivered.
+
 ## Product judgment and priorities
 
 The most useful next features are **setup and diagnosis**, **groups/scenes**, and **preset/playlist workflows**. Advanced CCT/2D support follows demonstrated device needs. Distribution, compatibility and maintenance are first-class release work: a catalog entry alone does not make installation reliable.
