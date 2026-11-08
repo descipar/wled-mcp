@@ -70,6 +70,7 @@ barrier.
 | `wled_save_scene` | destructive | Validate and store a versioned scene (local file, no device contact); replacing needs `overwrite=true` |
 | `wled_delete_scene` | destructive | Delete one stored scene file |
 | `wled_plan_scene` | read-only | Dry-run plan of a scene: exact targets, per-device preflight, names resolved per device; no write |
+| `wled_apply_scene` | write | Apply a stored scene to its devices: strict preflight by default, master then segments per device, one verified outcome per device; not atomic, no rollback |
 
 The complete parameter and result contract is in
 [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md).

@@ -94,9 +94,9 @@ owning issue for planned rows and the decision for excluded rows.
 
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| W-STATE-01 | Master power | `on` | supported | `wled_set_state`, `wled_get_state` | - | Power rules in TOOL-CONTRACT.md. |
-| W-STATE-02 | Master brightness | `bri` | supported | `wled_set_state`, `wled_get_state` | - | Remembered and effective brightness are reported separately. |
-| W-STATE-03 | One-call transition | `tt` | supported | `wled_set_state` | - | `transition_ms`, rounded to 100 ms units. |
+| W-STATE-01 | Master power | `on` | supported | `wled_set_state`, `wled_get_state`, `wled_apply_scene` | - | Power rules in TOOL-CONTRACT.md. |
+| W-STATE-02 | Master brightness | `bri` | supported | `wled_set_state`, `wled_get_state`, `wled_apply_scene` | - | Remembered and effective brightness are reported separately. |
+| W-STATE-03 | One-call transition | `tt` | supported | `wled_set_state`, `wled_apply_scene` | - | `transition_ms`, rounded to 100 ms units. |
 | W-STATE-04 | Default transition time | `transition` | partial | `wled_get_state` | - | Read as `default_transition_ms`; not settable. |
 | W-STATE-05 | Main segment | `mainseg` | partial | `wled_get_state`, `wled_replace_layout` | - | Read; set only implicitly when a layout replacement removes the main segment. |
 | W-STATE-06 | Transition blending style | `bs` | unplanned | - | - | Preserved in saved presets; not settable. |
@@ -114,19 +114,19 @@ owning issue for planned rows and the decision for excluded rows.
 | --- | --- | --- | --- | --- | --- | --- |
 | W-SEG-01 | Segment bounds (1D) | `start`, `stop` (`len`) | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | On a matrix `start`/`stop` are X columns (W-SEG-20). |
 | W-SEG-02 | Create and remove segments, complete layout | `seg` array, `stop: 0` | supported | `wled_replace_layout` | - | Overlapping segments only with `allow_overlap` (W-SEG-19). |
-| W-SEG-03 | Segment power and opacity | `on`, `bri` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
-| W-SEG-04 | Segment colors (three slots) | `col` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | RGB arrays; other color forms are encodings (rule 2). |
-| W-SEG-05 | Effect | `fx` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID; by catalog name only in scenes (#17). |
-| W-SEG-06 | Effect speed and intensity | `sx`, `ix` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
-| W-SEG-07 | Palette | `pal` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | By ID; by catalog name only in scenes (#17). |
+| W-SEG-03 | Segment power and opacity | `on`, `bri` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | - |
+| W-SEG-04 | Segment colors (three slots) | `col` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | RGB arrays; other color forms are encodings (rule 2). |
+| W-SEG-05 | Effect | `fx` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | By ID; by catalog name only in scenes (#17). |
+| W-SEG-06 | Effect speed and intensity | `sx`, `ix` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | - |
+| W-SEG-07 | Palette | `pal` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | By ID; by catalog name only in scenes (#17). |
 | W-SEG-08 | Grouping and spacing | `grp`, `spc` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-09 | Offset | `of` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-10 | Reverse and mirror | `rev`, `mi` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-11 | Segment selection | `sel` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | - |
 | W-SEG-12 | Segment name | `n` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Up to 32 UTF-8 bytes. |
 | W-SEG-13 | White channel (RGBW) | `col` fourth channel | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Existing ranges by their reported capability; new or moved RGBW and white-only ranges under the uniform-capability rule. |
-| W-SEG-14 | Correlated color temperature | `cct` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-255 only where the range reports the CCT bit; no Kelvin input (ISSUE-19-DEC-002). |
-| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Settable where the readback carries the key; ranges only, no `fxdata` parsing. |
+| W-SEG-14 | Correlated color temperature | `cct` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | 0-255 only where the range reports the CCT bit; no Kelvin input (ISSUE-19-DEC-002). |
+| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | Settable where the readback carries the key; ranges only, no `fxdata` parsing. |
 | W-SEG-16 | Sound simulation | `si` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-3, where the readback carries the key. |
 | W-SEG-17 | Segment LED set | `set` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-3, where the readback carries the key. |
 | W-SEG-18 | Freeze | `frz` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Master power-on unfreezes every segment; the plan warns. |
@@ -243,7 +243,8 @@ counted.
 - `wled_save_scene`: validates and stores a scene as a local file; no device is contacted.
 - `wled_delete_scene`: deletes a stored scene file; no device is contacted.
 - `wled_plan_scene`: reads state and catalogs of the target devices to plan a scene; it
-  writes nothing and delivers no WLED feature (the apply tool of #17 will).
+  writes nothing and delivers no WLED feature (`wled_apply_scene` delivers the master and
+  segment features it sets, see the rows above).
 
 ## Maintenance
 

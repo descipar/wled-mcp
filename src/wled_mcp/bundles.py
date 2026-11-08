@@ -28,6 +28,7 @@ from pydantic import JsonValue
 
 from wled_mcp.capabilities import parse_matrix
 from wled_mcp.client import ClientFailure, validate_json
+from wled_mcp.formats import check_format
 from wled_mcp.models import ErrorCode
 from wled_mcp.preset_writes import (
     Route,
@@ -48,7 +49,6 @@ from wled_mcp.presets import (
 BUNDLE_FORMAT: Final = "wled-mcp.preset-bundle"
 BUNDLE_FORMAT_VERSION: Final = 1
 SUPPORTED_FORMAT_VERSIONS: Final = frozenset({BUNDLE_FORMAT_VERSION})
-MAX_FORMAT_VERSION: Final = 9999
 MAX_BUNDLE_BYTES: Final = 192 * 1024  # below the 256 KiB HTTP request body limit
 MAX_IMPORT_ENTRIES: Final = 50
 MAX_BUNDLE_ENTRIES: Final = MAX_PERSISTENT_ID
@@ -159,16 +159,14 @@ def parse_bundle(raw: str | dict[str, JsonValue]) -> Bundle:
         raise _bad(f"The bundle exceeds {MAX_BUNDLE_BYTES} bytes; export or import fewer presets.")
     if not isinstance(document, dict):
         raise _bad("A preset bundle must be a JSON object.")
-    if document.get("format") != BUNDLE_FORMAT:
-        raise _bad(f"Not a preset bundle: 'format' must be {BUNDLE_FORMAT!r}.")
-    version = document.get("format_version")
-    if not _is_int(version) or not 0 <= version <= MAX_FORMAT_VERSION:  # type: ignore[operator]
-        raise _bad(f"'format_version' must be an integer 0-{MAX_FORMAT_VERSION}.")
-    if version not in SUPPORTED_FORMAT_VERSIONS:
-        raise _bad(
-            f"Unsupported preset bundle format_version {version}; this server reads "
-            f"format_version {BUNDLE_FORMAT_VERSION}."
-        )
+    check_format(
+        document,
+        format_name=BUNDLE_FORMAT,
+        label="preset bundle",
+        supported=SUPPORTED_FORMAT_VERSIONS,
+        current=BUNDLE_FORMAT_VERSION,
+        reconciliation=BUNDLE_RECONCILE,
+    )
     unknown = sorted(str(key) for key in document if key not in ENVELOPE_KEYS)
     if unknown:
         raise _bad(f"Unknown bundle key {_echo(unknown[0])}.")

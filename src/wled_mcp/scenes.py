@@ -23,10 +23,10 @@ from pydantic import JsonValue, ValidationError
 
 from wled_mcp.client import ClientFailure
 from wled_mcp.config import Device
-from wled_mcp.formats import check_format, decode_document, echo, invalid, is_int
+from wled_mcp.formats import ID_RE, check_format, decode_document, echo, invalid, is_int
 from wled_mcp.groups import (
-    ID_RE,
     Group,
+    check_definition_id,
     check_id,
     check_name,
     check_segment_ids,
@@ -296,7 +296,7 @@ def parse_scene(raw: str | bytes | dict[str, JsonValue], *, allow_placeholders: 
             raise invalid("A stored scene cannot carry 'placeholders'; map them with target_map.")
         placeholders = _parse_placeholders(document["placeholders"], targets)
     return Scene(
-        check_id(document["id"], "scene ID"),
+        check_definition_id(document["id"], "scene ID"),
         check_name(document["name"], "scene name"),
         description,
         targets,
@@ -469,21 +469,46 @@ def inventory_tokens(devices: Collection[Device]) -> list[str]:
     return sorted(tokens)
 
 
-def leaking_fields(scene: Scene, tokens: Sequence[str]) -> list[str]:
-    """Names of the free-text fields that contain an inventory token (never the text)."""
-    texts = {"name": scene.name, "description": scene.description or ""}
+def exported_strings(scene: Scene, *, include_targets: bool) -> list[tuple[str, str]]:
+    """Every string value a shareable export of ``scene`` carries, with its field path.
+
+    The fixed envelope (``format``) is not scanned. The target references are scanned only
+    when the export keeps them; otherwise they are placeholders. Catalog names are included:
+    they are free text just like the name and the description.
+    """
+    found: list[tuple[str, str]] = [("id", scene.id), ("name", scene.name)]
+    if scene.description is not None:
+        found.append(("description", scene.description))
+    for position, target in enumerate(scene.targets, start=1):
+        if include_targets:
+            found.append((f"targets.{position}.{target.kind}", target.ref))
+        for index, entry in enumerate(target.segments, start=1):
+            for key in NAME_FIELDS:
+                value = entry.fields.get(key)
+                if isinstance(value, str):
+                    found.append((f"targets.{position}.segments.{index}.{key}", value))
+    return found
+
+
+def leaking_fields(
+    scene: Scene, tokens: Sequence[str], *, include_targets: bool = False
+) -> list[str]:
+    """Paths of the exported string values that contain an inventory token (never the text)."""
     return [
-        field for field, text in texts.items() if any(token in text.casefold() for token in tokens)
+        path
+        for path, text in exported_strings(scene, include_targets=include_targets)
+        if any(token in text.casefold() for token in tokens)
     ]
 
 
 def export_scene(scene: Scene, *, include_targets: bool, tokens: Sequence[str]) -> Scene:
     """The shareable form: placeholders ``t1``..``tn`` unless ``include_targets``.
 
-    Raises VALIDATION_ERROR naming the scene and field (not the text) when free text
-    contains an inventory host token.
+    Raises VALIDATION_ERROR naming the scene and field (not the text) when any exported
+    string value (ID, name, description, effect or palette name and, with
+    ``include_targets``, the target references) contains an inventory host token.
     """
-    leaks = leaking_fields(scene, tokens)
+    leaks = leaking_fields(scene, tokens, include_targets=include_targets)
     if leaks:
         raise invalid(
             f"Scene {scene.id!r}: field {leaks[0]!r} contains a configured device host; edit "

@@ -11,14 +11,21 @@ Schema evolution follows TD-21-5 through ``formats.check_format``. No I/O.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Collection
 from dataclasses import dataclass
 from typing import Final
 
 from pydantic import JsonValue
 
-from wled_mcp.formats import check_format, decode_document, echo, invalid, is_int
+from wled_mcp.formats import (
+    ID_RE,
+    check_format,
+    decode_document,
+    echo,
+    invalid,
+    is_definition_id,
+    is_int,
+)
 
 GROUP_FORMAT: Final = "wled-mcp.group"
 GROUP_FORMAT_VERSION: Final = 1
@@ -29,7 +36,6 @@ MAX_SEGMENT_ID: Final = 254
 MAX_MEMBER_SEGMENTS: Final = 64
 MAX_NAME: Final = 128
 
-ID_RE: Final = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 GROUP_KEYS: Final = ("format", "format_version", "id", "name", "members")
 MEMBER_KEYS: Final = frozenset({"device", "segments"})
 
@@ -52,6 +58,18 @@ def check_id(value: object, label: str) -> str:
     """An ID in the configured-device pattern; also keeps it path-safe."""
     if not isinstance(value, str) or ID_RE.match(value) is None:
         raise invalid(f"The {label} must match [a-z0-9][a-z0-9_-]{{0,63}}.")
+    return value
+
+
+def check_definition_id(value: object, label: str) -> str:
+    """The ID of a group or scene, which is also its file name: the ID pattern, and not a
+    reserved Windows device name (``con``, ``nul``, ``com1`` ...)."""
+    if not is_definition_id(value):
+        raise invalid(
+            f"The {label} must match [a-z0-9][a-z0-9_-]{{0,63}} and must not be a reserved "
+            "device name such as con, nul, aux, prn, com1-com9 or lpt1-lpt9."
+        )
+    assert isinstance(value, str)
     return value
 
 
@@ -133,7 +151,7 @@ def parse_group(raw: str | bytes | dict[str, JsonValue]) -> Group:
     if missing:
         raise invalid(f"Missing group key {missing[0]!r}.")
     return Group(
-        check_id(document["id"], "group ID"),
+        check_definition_id(document["id"], "group ID"),
         check_name(document["name"], "group name"),
         _parse_members(document["members"]),
     )

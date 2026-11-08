@@ -101,9 +101,14 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-08.
     because only numeric IDs are accepted by the segment tools.
   - TD-17-15 Documentation in `docs/contract/groups-scenes.md` and
     `docs/validation/issue-17.md`, retained example `examples/contracts/scene.json`.
-  - TD-17-16 Tool classes are declared in `tests/tool_contract.py`; the apply path will
-    reach each device through `Resources.operation` with one per-device entry function
-    that #20 can guard.
+  - TD-17-16 Tool classes are declared in `tests/tool_contract.py` and on the `Operation`
+    (`tool_class`). The access guard lives in the write engines of `Resources` (G3), not in
+    `Resources.operation`. `wled_apply_scene` has no `device_id`, so it reaches every device
+    through `Resources.write_verified` (the ambient class and each device's ceiling are
+    checked at every write) and its preflight calls the public `Resources.require_access`
+    once per expanded device; the operation has `tool_class=ToolClass.CONTROL`. (Amended by
+    amendment 1; the earlier wording named `Resources.operation` and a per-device entry
+    function.)
   - TD-17-17 No firmware gating; capability evidence comes from fresh readbacks through
     the planners.
   - TD-17-18 Review depth is full (DEC-022 item 3).
@@ -117,4 +122,26 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-08.
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: issue-17 packet; implementer and reviewer
   handoffs.
-- Revalidation needed / next action: none before pull request B.
+- Amendments:
+  - Amendment 1, recorded with pull request B. Authority: technical proposal accepted by
+    the coordinator (not a human decision). Source: the independent review of pull request A
+    at candidate `9b48a09`, whose findings the coordinator accepted for pull request B.
+    It changes only the points below and nothing else in this decision.
+    1. Reading choice 2: a device that is not configured, named directly by a target or as a
+       group member, is a per-device `UNKNOWN_DEVICE` preflight failure at plan and at apply
+       time, with no I/O for that device. `strict` blocks every device; `best_effort` skips
+       that device. An unknown group, a duplicate device, the device and patch limits and an
+       entry without `ids` on a member that designates none refuse the whole request. Saving
+       a scene refuses an unconfigured directly named device.
+    2. TD-17-16 as amended above (the guard is in the write engines; the preflight calls
+       `Resources.require_access` once per expanded device; `tool_class=CONTROL`).
+    3. The leak check of a shareable export (TD-17-12) scans every exported string value
+       (scene `id`, `name`, `description`, every `effect_name` and `palette_name` and, only
+       when `include_targets` keeps them, the target references), not only `name` and
+       `description`. This is a contract-text change
+       ([groups-scenes.md](../contract/groups-scenes.md#sharing)).
+    4. Group and scene IDs may not be Windows device names; the definition store lock is per
+       directory.
+  - Reading choices made while implementing pull request B are listed in
+    [validation/issue-17.md](../validation/issue-17.md#reading-choices-pull-request-b).
+- Revalidation needed / next action: none.

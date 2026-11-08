@@ -1,13 +1,20 @@
-"""Group and scene tools of issue #17, pull request A: definitions and plan, no device write.
+"""Group and scene tools of issue #17: definitions, the plan and the apply.
 
 ``wled_list_groups``/``wled_list_scenes`` (read), ``wled_save_group``/``wled_delete_group``/
-``wled_save_scene``/``wled_delete_scene`` (manage; local files only) and ``wled_plan_scene``
-(read). Nothing in this module sends a device write: the plan uses bounded read-only
-requests under the existing per-device lock, with at most four devices in flight, and builds
-its master and segment plans with the planners of ``wled_set_state`` and
-``wled_patch_segments``. A local definition change reports ``application=not_attempted``
-because no device write is attempted; ``data.saved``/``data.removed`` state what happened to
-the file. Scene contents and names are never logged.
+``wled_save_scene``/``wled_delete_scene`` (manage; local files only), ``wled_plan_scene``
+(read) and ``wled_apply_scene`` (control, the only device-write path of scenes).
+
+The plan uses bounded read-only requests under the existing per-device lock, with at most
+four devices in flight, and builds its master and segment plans with the planners of
+``wled_set_state`` and ``wled_patch_segments``. The apply preflights every device with the
+same plan (plus the per-device access check), then writes each device through
+``Resources.write_verified`` (the write engine that guards the tool class and the per-device
+ceiling): the master step first, then the segment step, each replanned under the device lock
+and verified by readback. A timed-out or unreadable write is uncertain and is never retried,
+replayed or compensated, and nothing is rolled back across devices. A local definition
+change reports ``application=not_attempted`` because no device write is attempted;
+``data.saved``/``data.removed`` state what happened to the file. Scene contents and names
+are never logged.
 """
 
 from __future__ import annotations
@@ -19,7 +26,8 @@ from functools import partial
 from typing import Annotated, Any, Final, Literal
 
 import anyio
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+from mcp.types import ToolAnnotations
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, model_validator
 
 from wled_mcp.access import ToolClass
 from wled_mcp.catalogs import AmbiguousName, CatalogView, Kind, load_catalog, resolve_name
@@ -36,12 +44,16 @@ from wled_mcp.groups import (
     member_views,
     parse_group,
 )
-from wled_mcp.models import DomainError, Outcome
+from wled_mcp.models import Application, DomainError, Outcome, Verification
 from wled_mcp.patches import (
+    MasterPlan,
     PatchSegmentsRequest,
+    SegmentsPlan,
     SetStateRequest,
     build_segment_patch_plan,
     build_set_state_plan,
+    matches_segments,
+    matches_set_state,
 )
 from wled_mcp.preset_tools import DESTRUCTIVE, READ_ONLY
 from wled_mcp.readmodels import Collector, as_dict, normalize_state
@@ -75,6 +87,22 @@ MAX_SCENES: Final = 500
 
 PLAN_RECONCILE: Final = (
     "Correct the scene, its groups or the device as listed in data.targets; nothing was written."
+)
+# A live write: not read-only, and not destructive (no stored artifact is replaced).
+APPLY_ANNOTATIONS: Final = ToolAnnotations(
+    read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=False
+)
+APPLY_RECONCILE: Final = (
+    "Read the state of the devices listed in data.devices before any new call. Nothing was "
+    "retried, replayed, compensated or rolled back; devices that were not attempted were not "
+    "touched."
+)
+APPLY_NOTES: Final = (
+    "A scene is not atomic and not synchronized: each device is written and verified "
+    "independently (up to four at a time, master state first, then segments), and nothing is "
+    "rolled back or compensated across devices.",
+    "A write whose outcome could not be verified is never retried; the device entry says "
+    "whether the readback differed or could not be read.",
 )
 PLAN_NOTES: Final = (
     "The plan is read-only and not a reservation: state, catalogs and reachability can change "
@@ -159,6 +187,12 @@ class PlanSceneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     scene_id: Identifier
     mode: Literal["strict", "best_effort"] = "strict"
+
+
+class ApplySceneRequest(PlanSceneRequest):
+    """The plan's arguments plus ``dry_run``, which returns exactly the plan."""
+
+    dry_run: bool = False
 
 
 # ------------------------------------------------------------------------------ outcomes
@@ -273,9 +307,16 @@ _CATALOGS: Final[tuple[tuple[str, Kind], ...]] = (("effect", "effects"), ("palet
 
 
 async def _resolve_segment_patches(
-    resources: Resources, context: OperationContext, target: ExpandedTarget, plan: DevicePlan
+    resources: Resources,
+    context: OperationContext,
+    target: ExpandedTarget,
+    resolved: list[JsonValue],
+    warnings: list[str],
 ) -> list[dict[str, JsonValue]]:
-    """Resolve names per device inside the device operation; build the patch list."""
+    """Resolve names per device inside the device operation; build the patch list.
+
+    Appends what each name resolved to and the numeric-ID portability warnings.
+    """
     views: dict[Kind, CatalogView] = {}
     numeric: set[str] = set()
     patches: list[dict[str, JsonValue]] = []
@@ -293,27 +334,32 @@ async def _resolve_segment_patches(
                 index = resolve_name(views[kind].entry, kind, query)
                 fields[id_key] = index
                 affected: list[JsonValue] = [*entry.ids]
-                plan.resolved.append(
-                    {"segments": affected, "field": key, "name": query, "id": index}
-                )
+                resolved.append({"segments": affected, "field": key, "name": query, "id": index})
         patches.extend({"id": segment_id, **fields} for segment_id in entry.ids)
     for key in sorted(numeric):
-        plan.warnings.append(
+        warnings.append(
             f"A numeric {key}_id is used as given; numeric IDs are specific to a device and "
             f"firmware. Use {key}_name to resolve it per device."
         )
     return patches
 
 
-async def plan_device(resources: Resources, target: ExpandedTarget) -> DevicePlan:
+async def plan_device(
+    resources: Resources, target: ExpandedTarget, tool_class: ToolClass | None = None
+) -> DevicePlan:
     """Read-only preflight of one device: reads, name resolution and the real planners.
 
     Never raises for a device problem and never sends a write; a failure is the device's
-    own refusal, reported in the result.
+    own refusal, reported in the result. With ``tool_class`` (the apply) the device must
+    first admit that class (``Resources.require_access``), before any read of it.
     """
     plan = DevicePlan(target)
     try:
-        # An unknown device is UNKNOWN_DEVICE from `operation`, before any device I/O.
+        # An unknown device is UNKNOWN_DEVICE before any device I/O, and before the access
+        # check (an unconfigured device has no ceiling to read).
+        resources.resolve(target.device_id)
+        if tool_class is not None:
+            resources.require_access(target.device_id, tool_class)
         async with resources.operation(target.device_id) as context:
             (
                 state_view,
@@ -324,7 +370,9 @@ async def plan_device(resources: Resources, target: ExpandedTarget) -> DevicePla
             ) = await _read_state_and_info(context)
             plan.reachable = True
             plan.warnings.extend(read_warnings)
-            patches = await _resolve_segment_patches(resources, context, target, plan)
+            patches = await _resolve_segment_patches(
+                resources, context, target, plan.resolved, plan.warnings
+            )
         if target.master is not None:
             master_request = SetStateRequest.model_validate(
                 {"device_id": target.device_id, **target.master}
@@ -426,6 +474,405 @@ def plan_outcome(
         verification="not_requested",
         data=data,
         warnings=warnings,
+    )
+
+
+# ------------------------------------------------------------------------------- apply
+
+
+@dataclass
+class StepReport:
+    """What one write step (master or segments) of one device reported, unchanged.
+
+    ``application``/``verification``/``error`` are those of ``Resources.write_verified``
+    for the step; nothing is reinterpreted.
+    """
+
+    step: Literal["master", "segments"]
+    application: Application
+    verification: Verification
+    error: DomainError | None
+    data: dict[str, JsonValue] = field(default_factory=dict)
+
+    @property
+    def verified(self) -> bool:
+        return self.application == "applied" and self.verification == "verified"
+
+    def entry(self) -> dict[str, JsonValue]:
+        return {
+            "step": self.step,
+            "application": self.application,
+            "verification": self.verification,
+            "ok": self.verified,
+            "error": self.error.model_dump(mode="json") if self.error is not None else None,
+            **self.data,
+        }
+
+
+@dataclass
+class DeviceApply:
+    """The independent outcome of one device: its steps and the result they add up to."""
+
+    target: ExpandedTarget
+    application: Application = "not_attempted"
+    verification: Verification = "not_requested"
+    error: DomainError | None = None
+    steps: list[StepReport] = field(default_factory=list)
+    skipped: str | None = None
+    warnings: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return self.application == "applied" and self.verification == "verified"
+
+    def take(self, step: StepReport) -> None:
+        """Adopt a step's result as the device result."""
+        self.application, self.verification, self.error = (
+            step.application,
+            step.verification,
+            step.error,
+        )
+
+    def entry(self) -> dict[str, JsonValue]:
+        return {
+            "device_id": self.target.device_id,
+            "origin": self.target.origin,
+            "target_index": self.target.target_index,
+            "application": self.application,
+            "verification": self.verification,
+            "ok": self.ok,
+            "error": self.error.model_dump(mode="json") if self.error is not None else None,
+            "step": self.steps[-1].step if self.steps else None,
+            "skipped": self.skipped,
+            "steps": [step.entry() for step in self.steps],
+            "warnings": list(self.warnings),
+        }
+
+
+def _step_data(
+    plan: MasterPlan | SegmentsPlan | None, extra: dict[str, JsonValue]
+) -> dict[str, JsonValue]:
+    data: dict[str, JsonValue] = dict(extra)
+    if plan is not None:
+        data["plan"] = plan.public
+        data["postconditions"] = plan.postconditions
+    return data
+
+
+def _report(
+    step: Literal["master", "segments"],
+    outcome: Outcome,
+    build: Callable[[], dict[str, JsonValue]],
+) -> StepReport:
+    """The step's result is the engine's outcome, unchanged.
+
+    The write may already have been sent when this runs, so it must not raise: a failure
+    while building the report data loses only the data, never the engine's verdict (a
+    possibly applied write is never reported as not attempted).
+    """
+    try:
+        data = build()
+    except Exception as error:
+        LOGGER.warning("scene apply report failure class=%s", type(error).__name__)
+        data = {}
+    return StepReport(step, outcome.application, outcome.verification, outcome.error, data)
+
+
+def _refused_step(step: Literal["master", "segments"], message: str) -> StepReport:
+    """A step that failed in this module before anything was sent."""
+    return StepReport(
+        step,
+        "not_attempted",
+        "not_requested",
+        DomainError(code="VALIDATION_ERROR", message=message, reconciliation=PLAN_RECONCILE),
+    )
+
+
+async def _write_master(resources: Resources, target: ExpandedTarget, name: str) -> StepReport:
+    """Master state of one device: replan under the lock, one POST, one readback."""
+    assert target.master is not None
+    box: dict[str, MasterPlan] = {}
+    try:
+        request = SetStateRequest.model_validate({"device_id": target.device_id, **target.master})
+    except ValidationError:
+        return _refused_step("master", "The master state is not valid.")
+
+    async def prepare(context: OperationContext) -> dict[str, JsonValue]:
+        state_view, _capabilities, _info, _state, _warnings = await _read_state_and_info(context)
+        box["plan"] = build_set_state_plan(request, state_view)
+        return box["plan"].payload
+
+    def matches(state: JsonValue) -> bool:
+        plan = box.get("plan")
+        return plan is not None and matches_set_state(plan, state)
+
+    outcome = await resources.write_verified(target.device_id, name, prepare, matches)
+    return _report("master", outcome, lambda: _step_data(box.get("plan"), {}))
+
+
+async def _write_segments(resources: Resources, target: ExpandedTarget, name: str) -> StepReport:
+    """Segment state of one device: names resolve against the fresh catalog under the lock."""
+    boxed: dict[str, Any] = {}
+    resolved: list[JsonValue] = []
+    warnings: list[str] = []
+
+    async def prepare(context: OperationContext) -> dict[str, JsonValue]:
+        state_view, capabilities, raw_info, raw_state, read_warnings = await _read_state_and_info(
+            context
+        )
+        warnings.extend(read_warnings)
+        try:
+            patches = await _resolve_segment_patches(resources, context, target, resolved, warnings)
+        except AmbiguousName as failure:
+            boxed["candidates"], boxed["total"] = failure.candidates, failure.total
+            raise
+        request = PatchSegmentsRequest.model_validate(
+            {"device_id": target.device_id, "segments": patches}
+        )
+        plan = build_segment_patch_plan(request, state_view, capabilities, raw_info, raw_state)
+        boxed["plan"] = plan
+        warnings.extend(plan.warnings)
+        return plan.payload
+
+    def matches(state: JsonValue) -> bool:
+        plan: SegmentsPlan | None = boxed.get("plan")
+        return plan is not None and matches_segments(plan.expectations, state)
+
+    outcome = await resources.write_verified(target.device_id, name, prepare, matches)
+
+    def build() -> dict[str, JsonValue]:
+        extra: dict[str, JsonValue] = {"resolved": resolved, "warnings": list(warnings)}
+        if "candidates" in boxed:
+            extra["candidates"], extra["candidate_total"] = boxed["candidates"], boxed["total"]
+        return _step_data(boxed.get("plan"), extra)
+
+    return _report("segments", outcome, build)
+
+
+async def apply_device(resources: Resources, plan: DevicePlan, name: str) -> DeviceApply:
+    """Write one device: master state first, then segments; never raises, never retries.
+
+    Each step replans against a fresh read under the device lock (the preflight is not a
+    reservation) and goes through ``Resources.write_verified``, which guards the tool class
+    and the device ceiling, sends one POST and verifies by one readback. The segment step is
+    not attempted when the master step is not verified-applied. A step that is not verified
+    is the device's result as it stands: no retry, no compensating write.
+    """
+    target = plan.target
+    result = DeviceApply(target)
+    dispatching = False
+    try:
+        master: StepReport | None = None
+        if target.master is not None:
+            dispatching = True
+            master = await _write_master(resources, target, name)
+            result.steps.append(master)
+            result.take(master)
+            if not master.verified:
+                if target.segments:
+                    result.skipped = (
+                        "The segment step was not attempted because the master step was not "
+                        "verified."
+                    )
+                return result
+        if target.segments:
+            dispatching = True
+            segments = await _write_segments(resources, target, name)
+            result.steps.append(segments)
+            result.take(segments)
+            if (
+                master is not None
+                and not segments.verified
+                and segments.application == "not_attempted"
+            ):
+                # The master step is proven, the segment step was refused before any POST:
+                # "proven partial steps, final postcondition not reached".
+                result.application, result.verification = "applied", "mismatch"
+                result.skipped = (
+                    "The master step was applied and verified; the segment step was refused "
+                    "before it was sent."
+                )
+        result.warnings.extend(warning for step in result.steps for warning in _step_warnings(step))
+    except Exception as error:  # a bug here must not hide the other devices
+        LOGGER.warning("scene apply failure class=%s", type(error).__name__)
+        if dispatching and result.steps:
+            result.application, result.verification = "unknown", "unknown"
+            result.error = DomainError(
+                code="WRITE_OUTCOME_UNKNOWN",
+                message="Write outcome could not be verified.",
+                reconciliation="Perform an explicit read; do not replay the write.",
+            )
+        elif not result.steps:
+            result.take(_refused_step("master", "Applying failed for this device."))
+    return result
+
+
+def _step_warnings(step: StepReport) -> list[str]:
+    value = step.data.get("warnings")
+    return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+
+
+def _device_error(device_id: str, error: DomainError) -> DomainError:
+    """A device's refusal as the aggregate's error, with the device named."""
+    return DomainError(
+        code=error.code,
+        message=f"Device {device_id!r}: {error.message}",
+        read_retryable=error.read_retryable,
+        reconciliation=APPLY_RECONCILE,
+    )
+
+
+def _preflight_entry(plan: DevicePlan, reason: str) -> dict[str, JsonValue]:
+    """A device that was not written: the preflight refusal (if any) and why it was skipped."""
+    item: dict[str, JsonValue] = {
+        "device_id": plan.target.device_id,
+        "origin": plan.target.origin,
+        "target_index": plan.target.target_index,
+        "application": "not_attempted",
+        "verification": "not_requested",
+        "ok": False,
+        "error": plan.error.model_dump(mode="json") if plan.error is not None else None,
+        "step": None,
+        "skipped": reason,
+        "steps": [],
+        "warnings": list(plan.warnings),
+    }
+    if plan.candidates is not None:
+        item["candidates"] = plan.candidates
+        item["candidate_total"] = plan.candidate_total
+    return item
+
+
+def apply_outcome(
+    name: str,
+    scene: Scene,
+    mode: str,
+    plans: Sequence[DevicePlan],
+    results: Sequence[DeviceApply],
+) -> Outcome:
+    """Aggregate an apply onto the shared envelope; ``data.devices`` is authoritative.
+
+    No new application or verification value: the aggregate maps onto the existing table.
+    Nothing was dispatched to any device -> ``not_attempted/not_requested``; at least one
+    device ``unknown`` -> ``unknown/unknown`` + ``WRITE_OUTCOME_UNKNOWN``; every device
+    applied and verified -> ``applied/verified``; otherwise some devices were applied and the
+    rest were skipped, refused or did not verify -> ``applied/mismatch`` +
+    ``VERIFICATION_MISMATCH`` (the "proven partial steps" row). The aggregate never claims
+    a state a device did not report.
+    """
+    by_device = {result.target.device_id: result for result in results}
+    entries: list[dict[str, JsonValue]] = []
+    for plan in plans:
+        result = by_device.get(plan.target.device_id)
+        if result is not None:
+            entries.append(result.entry())
+        elif not plan.ok:
+            reason = (
+                "Skipped: it failed preflight and the mode is best_effort."
+                if mode == "best_effort"
+                else "Not written: it failed preflight and the mode is strict, which writes "
+                "nothing when any target fails."
+            )
+            entries.append(_preflight_entry(plan, reason))
+        else:
+            entries.append(
+                _preflight_entry(
+                    plan,
+                    "Not written: another device failed preflight and the mode is strict, "
+                    "which writes nothing when any target fails."
+                    if mode == "strict"
+                    else "Not written: no device passed preflight.",
+                )
+            )
+    counts = {"verified": 0, "mismatch": 0, "unknown": 0, "not_attempted": 0}
+    for item in entries:
+        verification = item["verification"]
+        key = {"verified": "verified", "mismatch": "mismatch", "unknown": "unknown"}.get(
+            str(verification), "not_attempted"
+        )
+        counts[key] += 1
+    data: dict[str, JsonValue] = {
+        "scene": {"id": scene.id, "name": scene.name},
+        "mode": mode,
+        "max_concurrency": MAX_CONCURRENCY,
+        "device_count": len(plans),
+        "summary": {"devices": len(plans), **counts},
+        "devices": [*entries],
+        "notes": list(APPLY_NOTES),
+    }
+    warnings = [APPLY_NOTES[0]]
+
+    def failed(application: Application, verification: Verification, error: DomainError) -> Outcome:
+        return Outcome(
+            ok=False,
+            operation=name,
+            device_id=None,
+            application=application,
+            verification=verification,
+            data=data,
+            warnings=warnings,
+            error=error,
+        )
+
+    if any(result.application == "unknown" for result in results):
+        unknown = sum(1 for result in results if result.application == "unknown")
+        return failed(
+            "unknown",
+            "unknown",
+            DomainError(
+                code="WRITE_OUTCOME_UNKNOWN",
+                message=(
+                    f"The write outcome of {unknown} device(s) could not be established; "
+                    "other devices may have been applied. See data.devices."
+                ),
+                reconciliation=APPLY_RECONCILE,
+            ),
+        )
+    if not any(result.application == "applied" for result in results):
+        # Nothing reached any device: the first refusal in expansion order, device named.
+        refusals = [
+            (
+                plan.target.device_id,
+                by_device[plan.target.device_id].error
+                if plan.target.device_id in by_device
+                else plan.error,
+            )
+            for plan in plans
+        ]
+        first = next(((device, error) for device, error in refusals if error is not None), None)
+        return failed(
+            "not_attempted",
+            "not_requested",
+            _device_error(*first)
+            if first is not None
+            else DomainError(
+                code="VALIDATION_ERROR",
+                message="No device was written.",
+                reconciliation=APPLY_RECONCILE,
+            ),
+        )
+    if len(results) == len(plans) and all(result.ok for result in results):
+        return Outcome(
+            ok=True,
+            operation=name,
+            device_id=None,
+            application="applied",
+            verification="verified",
+            data=data,
+            warnings=warnings,
+        )
+    verified = counts["verified"]
+    return failed(
+        "applied",
+        "mismatch",
+        DomainError(
+            code="VERIFICATION_MISMATCH",
+            message=(
+                f"{verified} of {len(plans)} device(s) were applied and verified; the others "
+                "were skipped, not attempted or did not verify. See data.devices."
+            ),
+            reconciliation=APPLY_RECONCILE,
+        ),
     )
 
 
@@ -693,6 +1140,29 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         plans = await run_bounded(expanded, partial(plan_device, resources))
         return plan_outcome(name, scene, mode, plans)
 
+    async def apply_scene(arguments: dict[str, Any]) -> Outcome:
+        name = "wled_apply_scene"
+        mode: str = arguments["mode"]
+        dry_run: bool = arguments["dry_run"]
+        try:
+            scene = await read_store(scenes.load, arguments["scene_id"])
+            expanded = expand_scene(scene, await load_groups(scene))
+        except ClientFailure as failure:
+            return _local_failed(name, failure, dry_run=dry_run)
+        # Preflight of every device first, with the plan's own code plus the per-device
+        # access check of the class this tool has. Nothing is written yet.
+        plans = await run_bounded(
+            expanded, partial(plan_device, resources, tool_class=ToolClass.CONTROL)
+        )
+        if dry_run:
+            return plan_outcome(name, scene, mode, plans)
+        passing = [plan for plan in plans if plan.ok]
+        blocked = len(passing) < len(plans) if mode == "strict" else not passing
+        written: list[DeviceApply] = []
+        if not blocked:
+            written = await run_bounded(passing, partial(apply_device, resources, name=name))
+        return apply_outcome(name, scene, mode, plans, written)
+
     return (
         Operation(
             name="wled_list_groups",
@@ -795,5 +1265,28 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
             request_model=PlanSceneRequest,
             execute=plan_scene,
             annotations=READ_ONLY,
+        ),
+        Operation(
+            name="wled_apply_scene",
+            tool_class=ToolClass.CONTROL,
+            description=(
+                "Apply a stored scene: changes the live output of every target device. Expands "
+                "groups, preflights every device with the plan (fresh reads, names resolved per "
+                "device, capability checks, the device's access ceiling), then writes each "
+                "device through the verified write path: master state first, then segments, "
+                "each replanned under the device lock and checked by readback. At most four "
+                "devices are written at once, at most 16 per scene. mode strict (default) "
+                "writes nothing anywhere when any target fails preflight; best_effort skips "
+                "failing devices and writes the rest. The result lists one independent "
+                "outcome per device in data.devices. A scene is not atomic and not "
+                "synchronized: there is no rollback, compensation or replay, a write that "
+                "could not be verified is never retried, and if the call is stopped "
+                "(timeout, shutdown) devices not yet started are untouched while writes in "
+                "flight may or may not have been applied. dry_run returns exactly the plan "
+                "of wled_plan_scene and sends no write."
+            ),
+            request_model=ApplySceneRequest,
+            execute=apply_scene,
+            annotations=APPLY_ANNOTATIONS,
         ),
     )

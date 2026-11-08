@@ -33,7 +33,7 @@ from tests.scene_support import (
     write_raw,
     write_scene_file,
 )
-from tests.tool_contract import MANAGE, READ, expected_tool
+from tests.tool_contract import CONTROL, MANAGE, READ, expected_tool
 from wled_mcp.scene_tools import MAX_CONCURRENCY
 from wled_mcp.scenes import MAX_EXPANDED_DEVICES
 
@@ -93,6 +93,7 @@ def test_new_tools_are_classified_in_the_expected_contract():
         "wled_save_scene": (MANAGE, True),
         "wled_delete_scene": (MANAGE, True),
         "wled_plan_scene": (READ, False),
+        "wled_apply_scene": (CONTROL, False),
     }
     for name, (tool_class, destructive) in classes.items():
         expected = expected_tool(name)
@@ -432,6 +433,24 @@ async def test_export_refuses_a_name_that_contains_a_configured_host(tmp_path):
             outcome = await call(resources, "wled_list_scenes", scene_id="evening", **kwargs)
             assert error_of(outcome)["code"] == "VALIDATION_ERROR"
             assert "'name'" in outcome.error.message and "desk.invalid" not in outcome.error.message
+        plain = await call(resources, "wled_list_scenes", scene_id="evening")
+        assert plain.ok, "the local document stays readable"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("field", ["effect_name", "palette_name"])
+async def test_export_refuses_a_catalog_name_that_contains_a_configured_host(tmp_path, field):
+    document = scene_document(
+        device_target("desk", segments=[{"ids": [0], field: "Glow at desk.invalid"}])
+    )
+    async with open_fleet(tmp_path, three()) as resources:
+        await stored_scene(resources, document)
+        for kwargs in ({"shareable": True}, {"shareable": True, "include_targets": True}):
+            outcome = await call(resources, "wled_list_scenes", scene_id="evening", **kwargs)
+            assert error_of(outcome)["code"] == "VALIDATION_ERROR"
+            message = outcome.error.message
+            assert f"'targets.1.segments.1.{field}'" in message
+            assert "desk.invalid" not in message and "Glow" not in message
         plain = await call(resources, "wled_list_scenes", scene_id="evening")
         assert plain.ok, "the local document stays readable"
 

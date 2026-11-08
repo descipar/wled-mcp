@@ -17,8 +17,10 @@ service; #9 adds the five persistent-preset tools (see
 `wled_save_playlist`, `wled_export_presets` and `wled_import_presets` (see
 [contract/presets.md](contract/presets.md)). #17 adds the group and scene tools
 `wled_list_groups`, `wled_save_group`, `wled_delete_group`, `wled_list_scenes`,
-`wled_save_scene`, `wled_delete_scene` and `wled_plan_scene`: local definitions and a
-read-only plan, no device write yet (see [contract/groups-scenes.md](contract/groups-scenes.md)).
+`wled_save_scene`, `wled_delete_scene`, `wled_plan_scene` and `wled_apply_scene`: local
+definitions, a read-only plan and the apply, the only device-write path of scenes, which is not
+atomic and not synchronized across devices (see
+[contract/groups-scenes.md](contract/groups-scenes.md)).
 `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -85,6 +87,7 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | `wled_save_scene` | `scene` (JSON text or object), optional `target_map`, `overwrite=false`, `dry_run` | Validate and store a versioned scene as a local file; placeholders need `target_map`; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_delete_scene` | `scene_id`, `dry_run` | Delete one stored scene file | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_plan_scene` | `scene_id`, `mode=strict` | Read-only plan: exact targets, per-device preflight with the real planners, names resolved per device, no write | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_apply_scene` | `scene_id`, `mode=strict`, `dry_run` | Preflight of every device, then per device master state first and segments second through the verified write path; one independent outcome per device, no cross-device atomicity, rollback or replay; `dry_run` returns exactly the plan | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; excluded from stage 1, `raw_state_patch = true` rejected at startup, no owning issue (ISSUE-13-DEC-001) |
 
 Tool descriptions state physical output, playback and storage effects. State/layout
@@ -237,9 +240,11 @@ No physical timing precision is promised.
 
 ## Segments: schema and omissions
 
-Core fields: `id`, `start`, `stop`, `on`, `brightness`, `colors`, `effect_id` or
-`effect_name`, `palette_id` or `palette_name`, `speed`, `intensity`. ID/name forms
-are mutually exclusive; ambiguous names return candidates. Brightness/speed/
+Core fields: `id`, `start`, `stop`, `on`, `brightness`, `colors`, `effect_id`,
+`palette_id`, `speed`, `intensity`. The segment tools accept numeric `effect_id` and
+`palette_id` only. Catalog names (`effect_name`, `palette_name`) exist only in scenes,
+where they resolve per device and an ambiguous name returns candidates (see
+[contract/groups-scenes.md](contract/groups-scenes.md)). Brightness/speed/
 intensity are integers 0â€“255; effects/palettes must exist in target catalogs.
 Should fields: `grouping`, `spacing`, `offset`, `reverse`, `mirror`, `selected`,
 `name`. If exposed, offset is 0 <= offset < resulting physical range length (no

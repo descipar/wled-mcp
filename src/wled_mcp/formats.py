@@ -12,6 +12,7 @@ No network or filesystem access. Messages never quote document content.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Collection
 
 from pydantic import JsonValue
@@ -20,6 +21,25 @@ from wled_mcp.client import ClientFailure, validate_json
 
 MAX_FORMAT_VERSION = 9999
 KEY_ECHO = 32
+
+# A group or scene ID is also the file name. The pattern keeps it free of separators, dots
+# and case, and the reserved names keep it from naming a Windows device (``con.json`` opens
+# the console device there), so a stored definition is portable between hosts.
+ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+RESERVED_FILE_STEMS = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{number}" for number in range(1, 10)}
+    | {f"lpt{number}" for number in range(1, 10)}
+)
+
+
+def is_definition_id(value: object) -> bool:
+    """A usable group or scene ID: the ID pattern and not a reserved Windows device name."""
+    return (
+        isinstance(value, str)
+        and ID_RE.match(value) is not None
+        and value not in RESERVED_FILE_STEMS
+    )
 
 
 def is_int(value: object) -> bool:
@@ -105,6 +125,7 @@ def check_format(
     label: str,
     supported: Collection[int],
     current: int,
+    reconciliation: str = LOCAL_RECONCILE,
 ) -> int:
     """Check ``format`` and ``format_version`` (TD-21-5); return the version.
 
@@ -112,14 +133,17 @@ def check_format(
     this server does not read is named. Nothing of the document is quoted otherwise.
     """
     if document.get("format") != format_name:
-        raise invalid(f"Not a {label}: 'format' must be {format_name!r}.")
+        raise invalid(f"Not a {label}: 'format' must be {format_name!r}.", reconciliation)
     version = document.get("format_version")
     if not is_int(version) or not 0 <= version <= MAX_FORMAT_VERSION:  # type: ignore[operator]
-        raise invalid(f"'format_version' must be an integer 0-{MAX_FORMAT_VERSION}.")
+        raise invalid(
+            f"'format_version' must be an integer 0-{MAX_FORMAT_VERSION}.", reconciliation
+        )
     assert isinstance(version, int)
     if version not in supported:
         raise invalid(
             f"Unsupported {label} format_version {version}; this server reads "
-            f"format_version {current}."
+            f"format_version {current}.",
+            reconciliation,
         )
     return version

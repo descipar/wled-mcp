@@ -63,8 +63,10 @@ BackupId = Annotated[str, Field(min_length=1, max_length=64)]
 READ_ONLY = ToolAnnotations(
     read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False
 )
-# Storage writers replace or create a persistent entry and change the live output. The
-# hint is advisory; authorization belongs to the MCP host/client.
+# Persistent writers replace, create or delete a stored artifact: a device preset entry
+# (which also changes the live output) or a local group or scene definition file (which
+# does not touch any device). The hint is advisory; authorization belongs to the MCP
+# host/client.
 DESTRUCTIVE = ToolAnnotations(
     read_only_hint=False, destructive_hint=True, idempotent_hint=False, open_world_hint=False
 )

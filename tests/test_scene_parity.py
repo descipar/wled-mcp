@@ -1,10 +1,11 @@
-"""Issue #17 (AC-17-12): groups, scenes and the plan over stdio and Streamable HTTP.
+"""Issue #17 (AC-17-12): groups, scenes, the plan and the apply over stdio and HTTP.
 
 The installed console serves the same synthetic inventory once over stdio and once over
 loopback Streamable HTTP, each with its own empty data directory. The ordered steps save a
-group and scenes, list, share, plan and delete; every step must return identical envelopes
-on both transports, ``text == structuredContent`` and ``isError == !ok``, and the loopback
-device must never receive a POST. Only ``127.0.0.1`` is contacted.
+group and scenes, list, share, plan, apply and delete; every step must return identical
+envelopes on both transports, ``text == structuredContent`` and ``isError == !ok``. Only the
+real ``wled_apply_scene`` step sends POSTs to the loopback device (the master step and the
+segment step); every other step sends none. Only ``127.0.0.1`` is contacted.
 """
 
 from __future__ import annotations
@@ -51,6 +52,10 @@ STEPS: dict[str, tuple[str, dict[str, Any], bool]] = {
     "export_scene": ("wled_list_scenes", {"scene_id": "evening", "shareable": True}, True),
     "plan_strict": ("wled_plan_scene", {"scene_id": "evening"}, True),
     "plan_best_effort": ("wled_plan_scene", {"scene_id": "evening", "mode": "best_effort"}, True),
+    "apply_dry_run": ("wled_apply_scene", {"scene_id": "evening", "dry_run": True}, True),
+    "apply_schema_error": ("wled_apply_scene", {"scene_id": "evening", "mode": "eager"}, False),
+    "apply_missing_scene": ("wled_apply_scene", {"scene_id": "absent"}, False),
+    "apply": ("wled_apply_scene", {"scene_id": "evening"}, True),
     "save_duplicate_scene": (
         "wled_save_scene",
         {
@@ -62,6 +67,7 @@ STEPS: dict[str, tuple[str, dict[str, Any], bool]] = {
     ),
     "schema_error": ("wled_plan_scene", {"scene_id": "evening", "mode": "eager"}, False),
     "plan_missing_scene": ("wled_plan_scene", {"scene_id": "absent"}, False),
+    "apply_again": ("wled_apply_scene", {"scene_id": "evening"}, True),
     "delete_scene": ("wled_delete_scene", {"scene_id": "evening"}, True),
     "delete_group": ("wled_delete_group", {"group_id": "shelf"}, True),
 }
@@ -150,9 +156,46 @@ def test_stdio_and_http_return_identical_envelopes(outcomes, name):
     assert comparable(outcomes["stdio"][name]) == comparable(outcomes["http"][name])
 
 
+# The real applies send one master POST and one segment POST each; nothing else writes.
+POSTS_PER_APPLY = 2
+APPLY_STEPS = ("apply", "apply_again")
+
+
+def expected_posts() -> dict[str, int]:
+    total, expected = 0, {}
+    for name in STEPS:
+        total += POSTS_PER_APPLY if name in APPLY_STEPS else 0
+        expected[name] = total
+    return expected
+
+
 @pytest.mark.parametrize("transport", ["stdio", "http"])
-def test_no_step_sends_a_device_post(outcomes, transport):
-    assert all(record["posts"] == 0 for record in outcomes[transport].values())
+def test_only_the_real_applies_send_device_posts(outcomes, transport):
+    expected = expected_posts()
+    assert {name: record["posts"] for name, record in outcomes[transport].items()} == expected
+
+
+@pytest.mark.parametrize("transport", ["stdio", "http"])
+def test_the_apply_over_a_real_transport_writes_master_then_segments_and_verifies(
+    outcomes, transport
+):
+    result = outcomes[transport]["apply"]["structured"]
+    assert (result["application"], result["verification"], result["ok"]) == (
+        "applied",
+        "verified",
+        True,
+    )
+    assert result["dry_run"] is False and result["device_id"] is None
+    (device,) = result["data"]["devices"]
+    assert device["device_id"] == DESK and device["origin"] == "group:shelf/member:1"
+    assert [step["step"] for step in device["steps"]] == ["master", "segments"]
+    dry = outcomes[transport]["apply_dry_run"]["structured"]
+    plan = outcomes[transport]["plan_strict"]["structured"]
+    assert dry["dry_run"] is True and dry["data"] == plan["data"]
+    assert outcomes[transport]["apply_schema_error"]["structured"]["error"]["code"] == (
+        "VALIDATION_ERROR"
+    )
+    assert outcomes[transport]["apply_missing_scene"]["structured"]["data"] == {}
 
 
 @pytest.mark.parametrize("transport", ["stdio", "http"])
