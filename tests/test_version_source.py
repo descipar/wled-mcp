@@ -82,6 +82,7 @@ def test_main_carries_a_release_version_and_its_identical_image_tag(tmp_path):
 LITERAL_ALLOWLIST = (
     "pyproject.toml",
     "uv.lock",
+    "CHANGELOG.md",
     "docs/VALIDATION.md",
     "docs/validation/",
     "docs/DECISIONS.md",
