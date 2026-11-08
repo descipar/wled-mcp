@@ -560,8 +560,21 @@ def _step_data(
 
 
 def _report(
-    step: Literal["master", "segments"], outcome: Outcome, data: dict[str, JsonValue]
+    step: Literal["master", "segments"],
+    outcome: Outcome,
+    build: Callable[[], dict[str, JsonValue]],
 ) -> StepReport:
+    """The step's result is the engine's outcome, unchanged.
+
+    The write may already have been sent when this runs, so it must not raise: a failure
+    while building the report data loses only the data, never the engine's verdict (a
+    possibly applied write is never reported as not attempted).
+    """
+    try:
+        data = build()
+    except Exception as error:
+        LOGGER.warning("scene apply report failure class=%s", type(error).__name__)
+        data = {}
     return StepReport(step, outcome.application, outcome.verification, outcome.error, data)
 
 
@@ -594,7 +607,7 @@ async def _write_master(resources: Resources, target: ExpandedTarget, name: str)
         return plan is not None and matches_set_state(plan, state)
 
     outcome = await resources.write_verified(target.device_id, name, prepare, matches)
-    return _report("master", outcome, _step_data(box.get("plan"), {}))
+    return _report("master", outcome, lambda: _step_data(box.get("plan"), {}))
 
 
 async def _write_segments(resources: Resources, target: ExpandedTarget, name: str) -> StepReport:
@@ -626,10 +639,14 @@ async def _write_segments(resources: Resources, target: ExpandedTarget, name: st
         return plan is not None and matches_segments(plan.expectations, state)
 
     outcome = await resources.write_verified(target.device_id, name, prepare, matches)
-    extra: dict[str, JsonValue] = {"resolved": resolved, "warnings": list(warnings)}
-    if "candidates" in boxed:
-        extra["candidates"], extra["candidate_total"] = boxed["candidates"], boxed["total"]
-    return _report("segments", outcome, _step_data(boxed.get("plan"), extra))
+
+    def build() -> dict[str, JsonValue]:
+        extra: dict[str, JsonValue] = {"resolved": resolved, "warnings": list(warnings)}
+        if "candidates" in boxed:
+            extra["candidates"], extra["candidate_total"] = boxed["candidates"], boxed["total"]
+        return _step_data(boxed.get("plan"), extra)
+
+    return _report("segments", outcome, build)
 
 
 async def apply_device(resources: Resources, plan: DevicePlan, name: str) -> DeviceApply:
@@ -666,7 +683,7 @@ async def apply_device(resources: Resources, plan: DevicePlan, name: str) -> Dev
             if (
                 master is not None
                 and not segments.verified
-                and segments.application == ("not_attempted")
+                and segments.application == "not_attempted"
             ):
                 # The master step is proven, the segment step was refused before any POST:
                 # "proven partial steps, final postcondition not reached".

@@ -490,6 +490,31 @@ async def test_a_device_failing_in_the_write_phase_never_stops_or_undoes_another
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("failure", ["drop", "fail_before", "readback_lost"])
+async def test_an_uncertain_segment_step_is_never_replayed(tmp_path, failure):
+    # The segment step is POST index 1 on a device with a master step: inject there.
+    fleet = three()
+    desk = fake_of(fleet, "desk")
+    if failure == "readback_lost":
+        desk.fail_reads_from_post = 2
+    else:
+        desk.post_actions = {1: failure}
+    async with open_fleet(tmp_path, fleet) as resources:
+        await stored(resources, look())
+        outcome = await apply(resources)
+    reported = entry(outcome, "desk")
+    assert [s["step"] for s in reported["steps"]] == ["master", "segments"]
+    assert reported["steps"][0]["ok"] is True and reported["steps"][1]["ok"] is False
+    assert reported["application"] == "unknown" and reported["step"] == "segments"
+    expected = "unknown" if failure == "readback_lost" else "mismatch"
+    assert reported["verification"] == expected
+    assert len(posts_of(fleet, "desk")) == 2, "the uncertain segment write is not replayed"
+    assert triple(outcome) == ("unknown", "unknown", False)
+    assert outcome.error.code == "WRITE_OUTCOME_UNKNOWN"
+    assert entry(outcome, "shelf_left")["ok"] and entry(outcome, "shelf_right")["ok"]
+
+
+@pytest.mark.anyio
 async def test_no_device_is_ever_written_twice_and_nothing_is_compensated(tmp_path):
     fleet = three()
     inject(fake_of(fleet, "shelf_left"), "ack_only")
@@ -924,6 +949,47 @@ async def test_a_bug_in_one_device_does_not_hide_the_others_and_is_logged_withou
         text = record.getMessage().casefold() + " " + str(record.args).casefold()
         for secret in ("secret", "glow", "evening", "wipe", "desk", "shelf"):
             assert secret not in text, (secret, record.getMessage())
+
+
+@pytest.mark.anyio
+async def test_a_bug_after_the_master_write_keeps_the_engine_verdict(tmp_path, monkeypatch):
+    # Raised inside `_write_master` after `write_verified` returned: the POST was sent, so the
+    # device must never be reported as not attempted. The engine's verdict is kept.
+    fleet = three()
+    real = scene_tools._step_data
+    hit: list[int] = []
+
+    def broken(plan: Any, extra: Any) -> Any:
+        if not hit:
+            hit.append(1)
+            raise RuntimeError("synthetic")
+        return real(plan, extra)
+
+    monkeypatch.setattr(scene_tools, "_step_data", broken)
+    async with open_fleet(tmp_path, fleet) as resources:
+        await stored(resources, look())
+        outcome = await apply(resources, mode="best_effort")
+    assert hit
+    assert not [d for d in outcome.data["devices"] if d["application"] == "not_attempted"]
+    assert triple(outcome) == ("applied", "verified", True)
+    first = outcome.data["devices"][0]
+    assert first["steps"][0]["ok"] is True and "plan" not in first["steps"][0]
+
+
+@pytest.mark.anyio
+async def test_a_bug_after_an_uncertain_master_write_stays_unknown(tmp_path, monkeypatch):
+    fleet = three()
+    inject(fake_of(fleet, "desk"), "readback_lost")
+    monkeypatch.setattr(
+        scene_tools, "_step_data", lambda plan, extra: (_ for _ in ()).throw(RuntimeError("x"))
+    )
+    async with open_fleet(tmp_path, fleet) as resources:
+        await stored(resources, look())
+        outcome = await apply(resources, mode="best_effort")
+    desk = entry(outcome, "desk")
+    assert (desk["application"], desk["verification"]) == ("unknown", "unknown")
+    assert len(posts_of(fleet, "desk")) == 1
+    assert triple(outcome) == ("unknown", "unknown", False)
 
 
 @pytest.mark.anyio
