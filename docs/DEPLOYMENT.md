@@ -288,6 +288,10 @@ of them restarts, recreates or removes the hub or its network.
   `compose.yaml`, then
   `docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps wled-mcp`. Repeat
   `ps`, `logs` and the authenticated `ping`; the hub reconnects without replaying writes.
+  Right after an update from an earlier build the hub may reject a response that carries
+  new fields, because it still validates against the tool list it cached from the old
+  server (observed once, gone after about a minute; the cause is not confirmed, see
+  [#130](https://github.com/descipar/wled-mcp/issues/130)). Retry, or reload the hub entry.
 - Rollback: set `image:` back to the previous tag (rebuild it from the retained release
   directory if it was removed) and run the same `up -d --no-deps wled-mcp`. Configuration
   is never migrated in place; snapshot local data before any future schema change.

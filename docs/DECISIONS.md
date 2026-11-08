@@ -74,6 +74,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
 | DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
 | DEC-026 | Project / deployment | Stage a release directory on the machine that will run it, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another. Applies to every host. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-026](#dec-026--stage-releases-on-the-target-machine) |
+| DEC-027 | Project / stages | Re-stage the open work by value per effort: stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2 features; stage 3 is worked in the order #31, #30, #28, #27, #29; stage 4 (#128) stays after stage 3; a new stage 5 "public distribution and backlog" takes #22 to #25 and #117. The stage-2 Launch requirements those issues own are not met and not dropped. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-027](#dec-027--re-stage-the-open-work-by-value-per-effort) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -705,6 +706,50 @@ can explicitly amend them.
   unchanged to the target" wording of docs/DEPLOYMENT.md and docs/QUICKSTARTS.md.
 - Affected: docs/DEPLOYMENT.md, docs/QUICKSTARTS.md, AGENTS.md,
   docs/validation/live-check-2026-11-08.md.
+
+### DEC-027 — Re-stage the open work by value per effort
+
+- Status: active project decision. Items 5 to 8 are coordinator defaults the owner did not
+  decide explicitly; they stay open for confirmation.
+- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
+  permalink). The owner asked the coordinator to go through all issues, find an order that
+  brings the most with minimal effort, re-order the work and assign stages, have it reviewed
+  by Opus and present the plan. After the plan and the review result were presented, the owner
+  answered "setze den plan vom review einfach so um" (English: "just implement the plan from
+  the review as it is").
+- Owner decision (the plan as presented, with the review's changes):
+  1. Stage 2 closes out with #130, #131, #67 and a new issue for a hardware check of the
+     stage-2 features on the test controller, narrowed to what one RGB controller can show
+     (preset store, import and restore, a playlist, one single-device scene, groups as local
+     files). Multi-device scenes, CCT, 2D and profiles are not part of it; `discover` runs
+     only on an explicit request; H07 and the live rollback stay with #25 (the rollback after
+     the first release that changes code).
+  2. Stage 3 is worked in value order: #31 (kept small), #30, #28, #27, #29.
+  3. Stage 4 (#127, #128) stays after stage 3, as the owner set earlier.
+  4. A new stage 5 "public distribution and backlog" (tracker #133) takes #22, #23, #24, #25
+     and #117. They are worked only on a trigger: a wish to be listed, outside interest or
+     hardware-verified features. The PyPI decision stays with the owner.
+- Effect on earlier records: the stage-2 Launch requirements owned by #22 to #25 (S2-DIST-01 to
+  03, the remaining S2-PUBLIC-02 and S2-PUBLIC-03, S2-MARKET-01 to 03, S2-LAUNCH-01 and 02 and
+  the live part of S2-COMPAT-03) are not met and are not dropped; they now belong to stage 5.
+  The acceptance line of #15 "every launch-required requirement has evidence" applies to
+  stage 5 for these IDs, and DEC-023 item 3 is refined accordingly: still deferred, now
+  tracked in stage 5. Records that say "moved to stage 2 (#25)" describe #25 as it was when
+  they were written and are not rewritten.
+- Coordinator defaults, not decided by the owner and open for confirmation:
+  5. Merging PR #132 (DEC-026 and the live-check record) was treated as part of the plan.
+  6. The nightlight auto-off idea is not added to stage 3 (it would be a sixth feature beyond
+     DEC-004 and its end behavior is undocumented); no issue was created.
+  7. DEC-021 and DEC-022 are not extended to stage 3 or 5: merges still need the owner's
+     approval.
+  8. The four pending confirmations (DEC-023 item 3, DEC-024 readings 1 and 3,
+     ISSUE-19-DEC-003 S-1, the PyPI decision) stay open.
+- Conditions: no hardware run, setting change, deployment or publication is authorized by
+  this decision.
+- Rationale supplied: the owner wants the next steps ordered by benefit for the least effort.
+- Supersedes: nothing; refines DEC-023 item 3 and the stage assignment of #22 to #25 and #117.
+- Affected: docs/STAGE-2.md, docs/STAGE-3.md, docs/STAGE-5.md, docs/PROJECT.md, issues #15,
+  #22 to #25, #117, #26, #133 and the new hardware-check issue.
 
 ## Issue-specific decisions (pointers)
 
