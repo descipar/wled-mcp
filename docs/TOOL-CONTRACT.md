@@ -721,7 +721,9 @@ suggestion. Safe reconciliation means read/inspect and decide explicitly.
 Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `INVALID_RESPONSE`, `VALIDATION_ERROR`, `UNSUPPORTED_CAPABILITY`, `AMBIGUOUS_NAME`,
 `PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `STORAGE_FAILED`,
-`WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`. A pre-dispatch timeout is distinct from possible write
+`WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`, `ACCESS_DENIED` (a tool profile or a
+device's maximum class does not allow the call; `not_attempted`, nothing was sent;
+[profiles](contract/profiles.md#enforcement)). A pre-dispatch timeout is distinct from possible write
 application. Offline entries in successful inventory probes are per-device data.
 For a device call, `CONFIG_ERROR` means the configured device address cannot be used;
 no request was sent, it is not retried and the address is not echoed.
@@ -822,6 +824,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   and sharing (#17).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18).
+- [contract/profiles.md](contract/profiles.md): tool classes, access profiles,
+  per-device maximum class, guard layers and `ACCESS_DENIED` (#20).
 - [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,
   CCT and 2D layouts (#19).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping,

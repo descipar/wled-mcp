@@ -1229,6 +1229,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
   snapshot listing, playlist authoring and preset bundles (#18, mock evidence).
 - [validation/issue-19.md](validation/issue-19.md): capability model, WLED 16 segment
   fields, CCT and 2D layouts (#19, mock and source evidence).
+- [validation/issue-20.md](validation/issue-20.md): tool profiles, per-device maximum
+  class and the guard layers (#20, mock and loopback evidence).
 - [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
   the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
   upgrade compatibility) (#21, #70).

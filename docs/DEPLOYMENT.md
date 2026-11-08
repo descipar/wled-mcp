@@ -87,6 +87,7 @@ wled-mcp --config /app/data/wled-mcp/config/devices.toml --data-dir /app/data/wl
 - Endpoint: fixed path `/mcp`; one worker; process-local locks do not coordinate a second process or worker against the same controllers.
 - Credential: exactly one of `WLED_MCP_HTTP_TOKEN` or `--http-token-file` (absolute path, at most 1 KiB, read once at startup; rotate by restarting). 32 to 512 printable ASCII characters. The file must be readable only by the service user; permission modes are not enforced. Never pass the value as a CLI argument. A missing, conflicting or invalid credential exits 2 before listening. The Compose example uses only the file form.
 - Bind and allowlists: the default is `127.0.0.1:8000` with allowed hosts `127.0.0.1:8000` and `localhost:8000`. A different host or port, including a wildcard bind such as `0.0.0.0` for a private container interface, requires explicit `--allowed-host` entries naming the authority clients use (exact, case-insensitive, no implicit default-port equivalence). `--allowed-origin` is empty by default and stays empty in the example: MCPHub is a server-side client and sends no browser Origin; requests without Origin are accepted when authenticated. An authenticating proxy must forward the original authority in `Host` and be listed explicitly; forwarded headers are never trusted and no proxy trust option exists.
+- Access profile: `--profile read-only|control|full` or `[access] profile` in the inventory (default `full`) selects which tools the service registers; a per-device `max_class` caps single devices ([profiles](contract/profiles.md)). Both are restart-applied deployment settings, not per-user permissions.
 - Rejections: wrong Host/Origin 403, missing or wrong credential 401, other path 404, any method except POST 405, body over 256 KiB 413, all before any tool or device work.
 - Sessions: none. Responses carry no `Mcp-Session-Id`; a stale ID is ignored; reconnecting clients start new invocations and the service never replays a write. A client that disconnects during a call does not cancel it; verification and lock release continue.
 - Shutdown: SIGTERM/SIGINT stop admission, drain in-flight calls for up to the configured operation timeout plus 2 s (at most 122 s), close shared resources once and exit 0. The example sets `stop_grace_period: 130s` and an exec-form entrypoint so PID 1 receives SIGTERM directly. A forced kill leaves a possibly applied write uncertain and it is never resumed.
@@ -234,7 +235,8 @@ Expected output: `200` and an empty JSON-RPC result. Then register the hub entry
 `Authorization: Bearer <credential>` stored in the hub's protected configuration. The
 example value `REPLACE_WITH_PRIVATE_SERVICE_TOKEN` is literal text; the hub does not
 expand placeholders or environment variables there. Hub authentication does not protect
-the independently reachable endpoint; the bearer credential is mandatory. Check the
+the independently reachable endpoint; the bearer credential is mandatory, and it is one
+shared credential, not tenant isolation. Check the
 actual MCPHub field names before registration, and the entry owner and reload steps in
 [MCPHub notes](#mcphub-notes).
 
@@ -296,7 +298,9 @@ of them restarts, recreates or removes the hub or its network.
   An image rebuild uses the same staged directory and pinned base digest; re-run the
   checks afterwards.
 - Credential rotation: replace the secret file, recreate the service as above, then
-  update the hub header.
+  update the hub header. The credential is shared: whoever holds it has the whole
+  profile's reach (it is not a per-user permission and there are no per-credential
+  scopes), so rotate it when a holder should lose access.
 - Stop without removal: `docker compose -p wled-mcp-http -f compose.yaml stop wled-mcp`
   (graceful SIGTERM, up to 130 s).
 - Removal of only this service, as separate steps: remove the hub entry in MCPHub; then

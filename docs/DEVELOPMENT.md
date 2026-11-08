@@ -101,6 +101,14 @@ installed wheel. A pull request that adds a tool therefore makes, together:
   with its class (`read`, `control` or `manage`, ISSUE-20-DEC-001) and its destructive
   flag; the annotation test derives `read_only_hint`, `destructive_hint` and
   `idempotent_hint` from these;
+- the same class as the required `tool_class=ToolClass.X` keyword of the `Operation`
+  (production code cannot import the test helper; a test compares both, and an
+  `Operation` without a class cannot be constructed). A tool that writes to a device does
+  so only through the `Resources` write engines (or an explicit
+  `Resources.require_write`), never through `WLEDClient.post_state` directly: a test
+  pins the module list. A tool that reaches devices without a top-level `device_id`
+  calls `Resources.require_access` in its preflight
+  ([profiles](contract/profiles.md#enforcement));
 - the affected rows in [WLED-COVERAGE.md](WLED-COVERAGE.md#maintenance) by ID (or an
   entry under "Tools without a WLED feature row"), followed by
   `python scripts/check_coverage.py --update` (ISSUE-94-DEC-002);

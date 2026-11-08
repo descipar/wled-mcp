@@ -5,6 +5,7 @@ from typing import Any, Literal
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict
 
+from wled_mcp.access import ToolClass
 from wled_mcp.models import DomainError, Outcome
 from wled_mcp.server import Operation, create_server, run_stdio
 
@@ -67,6 +68,7 @@ if __name__ == "__main__":
                     ToolAnnotations(
                         read_only_hint=True, destructive_hint=False, idempotent_hint=True
                     ),
+                    tool_class=ToolClass.READ,
                 )
             ]
         )

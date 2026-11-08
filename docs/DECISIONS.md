@@ -599,6 +599,9 @@ Stage 2 (recorded 2026-11-07):
 - [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device
   maximum class, status tool, classes `read`/`control`/`manage`; applies to every
   tool-adding issue.
+  ISSUE-20-DEC-002 (coordinator, technical proposal): TD-20-1 to TD-20-15 (profile and
+  class vocabulary, required `Operation.tool_class`, guard layers G1 to G3, `ACCESS_DENIED`,
+  additive configuration, two pull requests) and C-20-1 (provisional migration release).
 - [ISSUE-21-DEC-001](decisions/issue-21.md) (human): automated update/rollback tests in
   #21, live run as #25 evidence.
 - [ISSUE-21-DEC-002](decisions/issue-21.md) (coordinator): technical defaults TD-21-1 to

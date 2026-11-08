@@ -619,3 +619,78 @@ def test_export_and_format_are_mutually_exclusive(capsys):
     with pytest.raises(SystemExit) as caught:
         cli.main(["doctor", "--export", "--format", "json"])
     assert caught.value.code == 2 and capsys.readouterr().out == ""
+
+
+# ------------------------------------------------------------------ issue #20 access settings
+
+
+def access_layout(tmp_path: Path, host: str = DESK) -> tuple[Path, Path]:
+    data = tmp_path / "data"
+    data.mkdir()
+    config = tmp_path / "devices.toml"
+    config.write_text(
+        "schema_version = 1\n"
+        '[access]\nprofile = "read-only"\n'
+        f'[[devices]]\nid = "secretid"\nname = "Name {SECRET}"\nbase_url = "http://{host}:8080"\n'
+        'max_class = "control"\n',
+        encoding="utf-8",
+    )
+    return config, data
+
+
+def test_doctor_output_is_unchanged_without_access_settings(tmp_path):
+    config, data = layout(tmp_path, DESK)
+    router = Router()
+    router.device(DESK)
+    report = diagnose(config, data, router)
+    assert codes(report, "configuration") == ["CONFIG_VALID"]
+    assert find(report, "CONFIG_VALID").facts == {"device_count": 1}
+    assert "Access" not in doctor.render_text(report)
+    assert "access" not in doctor.full_json(report)
+    exported = doctor.export(report)
+    assert "access" not in exported
+    assert all("max_class" not in device for device in exported["devices"])
+
+
+def test_doctor_reports_the_configured_profile_and_caps(tmp_path):
+    config, data = access_layout(tmp_path)
+    router = Router()
+    router.device(DESK)
+    report = diagnose(config, data, router)
+    assert report.exit_code == 0
+    assert codes(report, "configuration") == ["CONFIG_VALID", "ACCESS_CONFIGURED"]
+    assert find(report, "CONFIG_VALID").message == "Configuration valid: schema 1, 1 device(s)."
+    assert find(report, "ACCESS_CONFIGURED").facts == {"profile": "read-only", "capped_devices": 1}
+    assert (
+        "[ok] configuration ACCESS_CONFIGURED: Access (as configured; a serve --profile "
+        "overrides it): profile read-only, 1 device(s) with a maximum class."
+    ) in doctor.render_text(report).splitlines()
+    assert doctor.full_json(report)["access"] == {"profile": "read-only", "capped_devices": 1}
+
+
+def test_export_carries_only_the_profile_and_class_names(tmp_path):
+    marker_dir = tmp_path / f"path-{SECRET}"
+    marker_dir.mkdir()
+    config, data = access_layout(marker_dir, "synthetic-host-marker.invalid")
+    for offline in (False, True):
+        router = Router()
+        router.device("synthetic-host-marker.invalid")
+        report = diagnose(config, data, router, offline=offline)
+        exported = doctor.export(report)
+        assert exported["access"] == {"profile": "read-only"}
+        assert {"device": "devices[0]", "max_class": "control"}.items() <= next(
+            device for device in exported["devices"] if device["device"] == "devices[0]"
+        ).items()
+        text = json.dumps(exported)
+        for forbidden in (SECRET, "secretid", "synthetic-host-marker", "8080", str(tmp_path)):
+            assert forbidden not in text, forbidden
+        assert {"category": "configuration", "status": "ok", "code": "ACCESS_CONFIGURED"} in (
+            exported["checks"]
+        )
+
+
+def test_doctor_has_no_profile_option_and_never_serves(capsys):
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["doctor", "--profile", "read-only"])
+    assert caught.value.code == 2
+    assert "Invalid command-line arguments" in capsys.readouterr().err

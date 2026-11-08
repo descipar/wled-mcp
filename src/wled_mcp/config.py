@@ -11,6 +11,8 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from wled_mcp.access import AccessPolicy, ClassName, ProfileName, ToolClass
+
 # ASCII DNS names; labels may contain interior "_" (DHCP-derived names) or "-", but each
 # label is 1-63 characters and starts and ends with a letter or digit (ISSUE-61-DEC-002).
 _HOST = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9._-]{0,251}[A-Za-z0-9])?")
@@ -19,8 +21,9 @@ _HOST_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9])?")
 # canonical dotted quad; resolvers would otherwise map 1.2.3, 0x7f.1 or 2130706433 to a
 # different address (ISSUE-74-DEC-002).
 _NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9a-fA-F]*")
-_DEVICE_FIELDS = ("id", "name", "base_url")
+_DEVICE_FIELDS = ("id", "name", "base_url", "max_class")
 _MAX_LOCATORS = 5
+_ACCESS_ORDER = 1_000_000  # access locators sort after every device entry
 SCHEMA_VERSION = 1
 
 
@@ -36,6 +39,8 @@ class Device(StrictModel):
     id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
     name: str = Field(min_length=1, max_length=128)
     base_url: str
+    # Optional ceiling for what may be done to this device (issue #20); absent = no cap.
+    max_class: ClassName | None = None
 
     @field_validator("name")
     @classmethod
@@ -103,12 +108,19 @@ class FeatureSettings(StrictModel):
         return value
 
 
+class AccessSettings(StrictModel):
+    """Deployment access profile (issue #20); the default keeps every tool."""
+
+    profile: ProfileName = "full"
+
+
 class InventoryConfig(StrictModel):
     schema_version: int
     devices: list[Device] = Field(max_length=256)
     http: HTTPSettings = HTTPSettings()
     backups: BackupSettings = BackupSettings()
     features: FeatureSettings = FeatureSettings()
+    access: AccessSettings = AccessSettings()
 
     @field_validator("schema_version")
     @classmethod
@@ -132,6 +144,45 @@ class StartupConfig:
     devices: tuple[Device, ...] = ()
     http: HTTPSettings = HTTPSettings()
     backups: BackupSettings = BackupSettings()
+    access: AccessPolicy = AccessPolicy()
+
+
+def access_policy(inventory: InventoryConfig, profile: ProfileName | None = None) -> AccessPolicy:
+    """Policy from a validated document; an explicit ``profile`` (the CLI option) wins."""
+    caps = {
+        device.id: ToolClass(device.max_class)
+        for device in inventory.devices
+        if device.max_class is not None
+    }
+    chosen = inventory.access.profile if profile is None else profile
+    return AccessPolicy(chosen, caps)
+
+
+def access_configured(inventory: InventoryConfig) -> bool:
+    """True when the document sets any access setting (an ``[access]`` table or a cap)."""
+    return "access" in inventory.model_fields_set or any(
+        "max_class" in device.model_fields_set for device in inventory.devices
+    )
+
+
+def access_facts(inventory: InventoryConfig) -> dict[str, str | int] | None:
+    """Configured access facts for ``config validate`` and ``doctor``; None when unset.
+
+    Reports the file's profile ("as configured"); a serve ``--profile`` overrides it.
+    """
+    if not access_configured(inventory):
+        return None
+    return {
+        "profile": inventory.access.profile,
+        "capped_devices": sum(device.max_class is not None for device in inventory.devices),
+    }
+
+
+def access_line(facts: Mapping[str, str | int]) -> str:
+    return (
+        "Access (as configured; a serve --profile overrides it): "
+        f"profile {facts['profile']}, {facts['capped_devices']} device(s) with a maximum class."
+    )
 
 
 MAX_CONFIG_BYTES = 65536
@@ -157,7 +208,7 @@ def validate_document(content: bytes) -> InventoryConfig:
     except (ValueError, UnicodeError, ValidationError, RecursionError) as exc:
         if isinstance(exc, ConfigurationError):
             raise
-        located = _device_locators(exc) if isinstance(exc, ValidationError) else ""
+        located = _locators(exc) if isinstance(exc, ValidationError) else ""
         raise ConfigurationError(_GENERIC_INVALID.format(located=located)) from None
 
 
@@ -165,8 +216,13 @@ def load_config(
     config_path: str | None,
     data_dir: str | None,
     environ: Mapping[str, str] | None = None,
+    profile: ProfileName | None = None,
 ) -> StartupConfig:
-    """Validate the entire configuration before creating any device request."""
+    """Validate the entire configuration before creating any device request.
+
+    ``profile`` is the serve option ``--profile``; it overrides ``[access] profile``
+    (precedence: option, file, ``full``).
+    """
     env = os.environ if environ is None else environ
     raw_config = config_path if config_path is not None else env.get("WLED_MCP_CONFIG")
     raw_data = data_dir if data_dir is not None else env.get("WLED_MCP_DATA_DIR")
@@ -194,6 +250,7 @@ def load_config(
         tuple(validated.devices),
         validated.http,
         validated.backups,
+        access_policy(validated, profile),
     )
 
 
@@ -218,15 +275,24 @@ def _check_schema_version(version: object) -> None:
     raise ConfigurationError(message)
 
 
-def _device_locators(exc: ValidationError) -> str:
-    """Name offending device entries from error locations only, never from values or text.
+def _locators(exc: ValidationError) -> str:
+    """Name offending entries from error locations only, never from values or text.
 
-    The zero-based index follows the ``[[devices]]`` order. Unknown keys are reported
-    without their name because keys are file content.
+    Device indexes follow the ``[[devices]]`` order; ``access`` entries follow the device
+    entries. Unknown keys are reported without their name because keys are file content.
     """
     found: set[tuple[int, int, str]] = set()
     for error in exc.errors(include_url=False, include_context=False, include_input=False):
         loc = error["loc"]
+        if loc and loc[0] == "access":
+            if len(loc) == 1:
+                text = "access: invalid"
+            elif loc[1] == "profile":
+                text = "access.profile: invalid"
+            else:
+                text = "access: unsupported setting"
+            found.add((_ACCESS_ORDER, 0, text))
+            continue
         if len(loc) < 2 or loc[0] != "devices" or type(loc[1]) is not int:
             continue
         index = loc[1]

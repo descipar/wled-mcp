@@ -11,6 +11,7 @@ import anyio.lowlevel
 import httpx2 as httpx
 from pydantic import JsonValue
 
+from wled_mcp.access import CURRENT_TOOL_CLASS, AccessPolicy, ToolClass, denial_message
 from wled_mcp.backups import BackupRecord, Firmware, RestorePlan, Snapshot, SnapshotStore
 from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
@@ -133,6 +134,8 @@ class Resources:
         self.config = config
         self.clock = clock if clock is not None else Clock()
         self.inventory = config.devices
+        # Profile and per-device ceilings (issue #20); the write engines enforce them (G3).
+        self.access: AccessPolicy = config.access
         self._devices = {device.id: device for device in self.inventory}
         self.client = WLEDClient(config.http, transport)
         self.locks = {device.id: anyio.Lock() for device in self.inventory}
@@ -158,6 +161,55 @@ class Resources:
             return self._devices[device_id]
         except KeyError:
             raise ClientFailure("UNKNOWN_DEVICE", "Unknown configured device ID.") from None
+
+    def require_access(self, device_id: str, tool_class: ToolClass) -> None:
+        """Raise ACCESS_DENIED when ``tool_class`` exceeds the device's effective ceiling.
+
+        The raising form of the check the write engines run first (issue #20); a composite
+        tool such as a scene apply calls it in its preflight so a capped device is
+        refused before any read of it and a strict plan writes nothing. The ceiling is the
+        lower of the profile and the device cap. An unknown device is left to ``resolve``.
+        Pure: no lock, no I/O.
+        """
+        ceiling = self.access.ceiling(device_id)
+        if not self.access.permits(tool_class, device_id):
+            raise ClientFailure(
+                "ACCESS_DENIED",
+                denial_message(device_id, tool_class, ceiling),
+                reconciliation="Nothing was sent. The deployment or device does not allow it.",
+            )
+
+    def require_write(self, device_id: str) -> None:
+        """Guard a state write (G3): the ambient tool class decides what it may do.
+
+        Refuses a write from a ``read`` tool, and from a tool whose class exceeds the
+        device ceiling. Outside a tool call the class is unknown and counts as ``manage``,
+        so an unrestricted policy lets in-process callers through and any restriction
+        fails closed.
+        """
+        ambient = CURRENT_TOOL_CLASS.get()
+        if ambient is ToolClass.READ:
+            raise ClientFailure(
+                "ACCESS_DENIED",
+                f"Device '{device_id}': a read operation cannot write.",
+                reconciliation="Nothing was sent. Read operations never write.",
+            )
+        self.require_access(device_id, ToolClass.MANAGE if ambient is None else ambient)
+
+    def _refused(self, device_id: str, operation: str) -> Outcome | None:
+        """The not_attempted refusal for a guarded engine entry, or None to proceed."""
+        try:
+            self.require_write(device_id)
+        except ClientFailure as failure:
+            return Outcome(
+                ok=False,
+                operation=operation,
+                device_id=device_id,
+                application="not_attempted",
+                verification="not_requested",
+                error=failure.error,
+            )
+        return None
 
     @asynccontextmanager
     async def operation(self, device_id: str) -> AsyncIterator[OperationContext]:
@@ -190,6 +242,8 @@ class Resources:
         matches: Callable[[JsonValue], bool],
     ) -> Outcome:
         """Internal foundation, not a public setter. Prepare validates a full future plan."""
+        if (refused := self._refused(device_id, operation)) is not None:
+            return refused
         seen: list[OperationContext] = []
         outcome = await self._write_verified(device_id, operation, prepare, matches, seen)
         records = seen[0].backup_records if seen else []
@@ -300,6 +354,8 @@ class Resources:
         outcome (segment/layout writes need no snapshot). The preset tools use
         `write_polled`, which does carry them.
         """
+        if (refused := self._refused(device_id, operation)) is not None:
+            return refused
         plan: SequencePlan | None = None
         statuses: list[str] = []
         in_flight: int | None = None
@@ -435,6 +491,8 @@ class Resources:
         readback endpoint is polled until the postcondition holds or the deadline ends.
         The last readable observation survives an expired deadline.
         """
+        if (refused := self._refused(device_id, operation)) is not None:
+            return refused
         seen: list[OperationContext] = []
         outcome = await self._write_polled(device_id, operation, prepare, seen)
         records = seen[0].backup_records if seen else []
