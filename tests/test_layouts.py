@@ -125,6 +125,8 @@ async def test_T05_fixture_case_exact_post_sequence_and_final_layout(tmp_path):
                 "rev": False,
                 "mi": False,
                 "sel": False,
+                # #19 TD-19-6: every active segment reports cct, so the default is reset.
+                "cct": 127,
             }
         },
     ]
@@ -615,8 +617,30 @@ async def test_T06_rgbw_rules(tmp_path):
         )
     assert three.error.code == "VALIDATION_ERROR"
     assert four.ok, four.error  # exact 4 channels on an unchanged RGBW range
-    assert moved.error.code == "UNSUPPORTED_CAPABILITY"
-    assert new.error.code == "UNSUPPORTED_CAPABILITY"
+    # #19 AC-19-06 / TD-19-4 (deliberate change from stage 1): every active segment
+    # reports RGBW equal to info.leds.lc, so a moved or new range may take 4 channels.
+    assert moved.ok and new.ok, (moved.error, new.error)
+    assert fake.posts == []
+
+
+@pytest.mark.anyio
+async def test_T06_rgbw_new_or_moved_range_without_uniform_evidence(tmp_path):
+    """Mixed RGB/RGBW segments (lc=3, seglc [1, 3, 1]): no uniform rule, so 4 channels on a
+    moved or new range stay refused, as in stage 1."""
+    fake = fixture_fake(lc=3, seglc=[1, 3, 1])
+    async with open_resources(tmp_path, fake) as resources:
+        moved = await replace(
+            resources,
+            [{"id": 2, "start": 10, "stop": 22, "colors": [[1, 2, 3, 4]]}],
+            dry_run=True,
+        )
+        new = await replace(
+            resources,
+            [*keep_all(), {"id": 6, "start": 30, "stop": 40, "colors": [[1, 2, 3, 4]]}],
+            dry_run=True,
+        )
+    assert moved.error.code == "UNSUPPORTED_CAPABILITY", moved.error
+    assert new.error.code == "UNSUPPORTED_CAPABILITY", new.error
     assert fake.posts == []
 
 
@@ -735,6 +759,58 @@ def test_T06_limits_are_shared_with_patch_segments():
         assert (grouping["minimum"], grouping["maximum"]) == (1, 255)
         assert (spacing["minimum"], spacing["maximum"]) == (0, 255)
         assert name["maxLength"] == 32
+
+
+# Issue #19 (AC-19-15, TD-19-2): public name -> (wire key, minimum, maximum); booleans None.
+FIELDS_19 = {
+    "cct": ("cct", 0, 255),
+    "custom1": ("c1", 0, 255),
+    "custom2": ("c2", 0, 255),
+    "custom3": ("c3", 0, 31),
+    "check1": ("o1", None, None),
+    "check2": ("o2", None, None),
+    "check3": ("o3", None, None),
+    "sound_simulation": ("si", 0, 3),
+    "segment_set": ("set", 0, 3),
+    "map_1d_2d": ("m12", 0, 4),
+    "freeze": ("frz", None, None),
+    "blend_mode": ("bm", 0, 16),
+    "start_y": ("startY", 0, None),
+    "stop_y": ("stopY", 1, None),
+    "reverse_y": ("rY", None, None),
+    "mirror_y": ("mY", None, None),
+    "transpose": ("tp", None, None),
+}
+
+
+def _bounds(prop):
+    option = next(o for o in prop["anyOf"] if o.get("type") != "null")
+    if option["type"] == "boolean":
+        return (None, None)
+    return (option.get("minimum"), option.get("maximum"))
+
+
+def test_T06_issue19_fields_share_bounds_across_both_tools_and_the_store():
+    """AC-19-15 / TD-19-12: every #19 field has the same bounds in wled_patch_segments,
+    wled_replace_layout and (under its wire key) wled_store_preset; allow_overlap exists
+    in both segment tools only, and no #19 field is required."""
+    from wled_mcp.patches import PatchSegmentsRequest
+    from wled_mcp.preset_writes import SuppliedSegment, SuppliedState
+
+    layout_schema = ReplaceLayoutRequest.model_json_schema()
+    patch_schema = PatchSegmentsRequest.model_json_schema()
+    layout = layout_schema["$defs"]["LayoutSegment"]
+    patch = patch_schema["$defs"]["SegmentPatch"]
+    supplied = SuppliedSegment.model_json_schema()
+    for name, (wire, low, high) in FIELDS_19.items():
+        for schema in (layout, patch):
+            assert _bounds(schema["properties"][name]) == (low, high), name
+            assert name not in schema.get("required", [])
+        assert _bounds(supplied["properties"][wire]) == (low, high), wire
+        assert wire not in supplied.get("required", [])
+    assert "allow_overlap" in layout_schema["properties"]
+    assert "allow_overlap" in patch_schema["properties"]
+    assert "allow_overlap" not in SuppliedState.model_json_schema()["properties"]
 
 
 @pytest.mark.anyio

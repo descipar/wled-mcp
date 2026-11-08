@@ -372,7 +372,9 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
             info_raw = await context.read(Endpoint.INFO)
             collector = Collector()
             _view, capabilities, _fw, _unknown = normalize_state(state_raw, info_raw, collector)
-            validate_supplied_state(request.state, capabilities, as_dict(info_raw))
+            validate_supplied_state(
+                request.state, capabilities, as_dict(info_raw), as_dict(state_raw)
+            )
             entry = state_object(request.state, request.name)
             if classify(entry)[0] != "state":  # defensive: the input model allows state only
                 raise ClientFailure("VALIDATION_ERROR", "The supplied object is not plain state.")

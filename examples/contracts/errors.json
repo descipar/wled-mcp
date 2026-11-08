@@ -251,7 +251,24 @@
                 "offset": 0,
                 "reverse": false,
                 "mirror": false,
-                "selected": true
+                "selected": true,
+                "cct": 127,
+                "custom1": null,
+                "custom2": null,
+                "custom3": null,
+                "check1": null,
+                "check2": null,
+                "check3": null,
+                "sound_simulation": null,
+                "segment_set": null,
+                "map_1d_2d": null,
+                "freeze": false,
+                "blend_mode": null,
+                "start_y": null,
+                "stop_y": null,
+                "reverse_y": null,
+                "mirror_y": null,
+                "transpose": null
               },
               {
                 "id": 6,
@@ -288,7 +305,24 @@
                 "offset": 0,
                 "reverse": false,
                 "mirror": false,
-                "selected": false
+                "selected": false,
+                "cct": 127,
+                "custom1": null,
+                "custom2": null,
+                "custom3": null,
+                "check1": null,
+                "check2": null,
+                "check3": null,
+                "sound_simulation": null,
+                "segment_set": null,
+                "map_1d_2d": null,
+                "freeze": false,
+                "blend_mode": null,
+                "start_y": null,
+                "stop_y": null,
+                "reverse_y": null,
+                "mirror_y": null,
+                "transpose": null
               }
             ],
             "targeted_compensation": [
@@ -370,7 +404,8 @@
                   "of": 0,
                   "rev": false,
                   "mi": false,
-                  "sel": false
+                  "sel": false,
+                  "cct": 127
                 }
               }
             ],

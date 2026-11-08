@@ -257,6 +257,9 @@ power flip is a `VERIFICATION_MISMATCH`, never a silent success. For
 all are rejected or compensated before the first POST; partial application remains
 possible only for other causes (for example external interference or an uncertain
 step), as described below.
+The #19 segment fields (CCT, white-only colors, effect options, 2D bounds and
+orientation, blend mode) and the `allow_overlap` opt-in follow the same rules in both
+tools; see [contract/segments.md](contract/segments.md#write-rules-second-pull-request).
 Unsupported fields/capabilities fail explicitly. CCT/2D/pixel streaming are separate
 extensions; preservation of an existing unexposed field does not expose its setter.
 
@@ -353,11 +356,14 @@ of ISSUE-48-DEC-001, which supersedes the #7-only exceptions of ISSUE-7-DEC-006.
 Annotations: `destructive_hint=true`, not read-only, not idempotent, closed-world (hints
 only; authorization belongs to the host).
 
-Deferred (not part of #7, no setter is exposed; existing values are preserved):
-CCT (`cct`), 2D geometry and matrix fields, pixel streaming (`i`), `rpt`, freeze setter,
-`c1`-`c3`, `o1`-`o3`, `si`, `set`, `m12`, effect/palette *name* forms and
-`AMBIGUOUS_NAME` for segments (both #6 and #7 take IDs only; name resolution is not part
-of either acceptance list), presets/snapshots and master `on`/`bri`/transition.
+Since #19 both segment tools also accept `cct`, `custom1`-`custom3`, `check1`-`check3`,
+`sound_simulation`, `segment_set`, `map_1d_2d`, `freeze`, `blend_mode`, `start_y`/`stop_y`,
+`reverse_y`/`mirror_y`/`transpose` and the request-level `allow_overlap`, each settable
+only with fresh evidence ([contract/segments.md](contract/segments.md)). Not exposed
+(ISSUE-19-DEC-002, ISSUE-13-DEC-001): pixel streaming (`i`), `rpt`, `fxdef`,
+matrix/panel configuration, effect/palette *name* forms and `AMBIGUOUS_NAME` for
+segments (both #6 and #7 take IDs only; name resolution is not part of either acceptance
+list), presets/snapshots and master `on`/`bri`/transition.
 
 Planning (one fresh read of state and info under the per-device lock and one deadline;
 identical for dry run and live call; an earlier dry run is never a reservation):
@@ -395,8 +401,9 @@ identical for dry run and live call; an earlier dry run is never a reservation):
    difference get no POST (`unchanged_segment_ids`); a request that changes nothing is
    a no-op: `ok=true`, `application=not_attempted`, `verification=not_requested`, one
    warning, zero POSTs. Create steps send every public field explicitly (defaults table
-   above) and `frz=false`; other unexposed inherited state of reused slots cannot be
-   observed or reset and is reported as warning `inherited_unexposed_state`.
+   above) and `frz=false`; since #19 also `cct` and the WLED 16 option defaults where every
+   active segment reports the key (TD-19-6). Keys of a reused slot that stay unreset are
+   listed in warning `inherited_unexposed_state`.
 
 `data.plan` (dry run and live): `update_segment_ids`, `create_segment_ids`,
 `remove_segment_ids`, `unchanged_segment_ids`, `main_segment_id`, `main_segment{current,
