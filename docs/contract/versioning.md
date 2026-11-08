@@ -214,6 +214,8 @@ change is listed here as well, with the tool column `-` and a pointer into that 
 <!-- migration-notes:start -->
 | Release | Tool | JSON pointer | Change | Migration |
 | --- | --- | --- | --- | --- |
+| `0.2.0` | `-` | `/access` | Non-breaking addition: the optional `[access]` table (`profile`) of the inventory configuration (#20). Release number provisional until #25 assigns it. | None needed. A server older than the first release with #20 rejects the unknown key at startup (exit 2); after a downgrade, use the configuration kept for that version ([profiles](profiles.md#upgrade-and-downgrade)). |
+| `0.2.0` | `-` | `/devices/max_class` | Non-breaking addition: the optional per-device `max_class` of the inventory configuration (#20). Release number provisional until #25 assigns it. | None needed. Same downgrade behavior as `/access`. |
 <!-- migration-notes:end -->
 
 No breaking change has been released yet.

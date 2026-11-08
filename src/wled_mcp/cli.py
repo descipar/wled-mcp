@@ -16,24 +16,39 @@ from typing import Never
 import anyio
 
 from wled_mcp import __version__, discovery, doctor, setup
+from wled_mcp.access import PROFILE_NAMES
 from wled_mcp.config import ConfigurationError, StartupConfig, load_config
 from wled_mcp.http_config import TOKEN_ENV, HTTPServiceSettings, load_http_settings
 from wled_mcp.operations import build_operations
 from wled_mcp.resources import Resources
 from wled_mcp.server import create_server, serve_stdio
 
+log = logging.getLogger("wled_mcp")
+
+
+def announce_profile(config: StartupConfig, transport: str) -> None:
+    """One startup event with the effective profile and the number of capped devices."""
+    log.info(
+        "service starting: transport=%s profile=%s capped_devices=%d",
+        transport,
+        config.access.profile,
+        len(config.access.caps),
+    )
+
 
 async def serve(config: StartupConfig) -> None:
+    announce_profile(config, "stdio")
     async with Resources(config) as resources:
-        await serve_stdio(create_server(build_operations(resources)))
+        await serve_stdio(create_server(build_operations(resources), config.access))
 
 
 async def serve_http(config: StartupConfig, settings: HTTPServiceSettings) -> None:
     # Imported lazily: the default stdio path never loads the HTTP stack.
     from wled_mcp.http_service import HTTPService, announce, build_http_app
 
+    announce_profile(config, "streamable-http")
     async with Resources(config) as resources:
-        app = build_http_app(create_server(build_operations(resources)), settings)
+        app = build_http_app(create_server(build_operations(resources), config.access), settings)
         await HTTPService(app, settings, on_started=announce(settings)).serve()
 
 
@@ -57,6 +72,11 @@ def build_parser() -> SafeParser:
     parser.add_argument("--config", help="Absolute TOML configuration path (WLED_MCP_CONFIG).")
     parser.add_argument("--data-dir", help="Absolute existing data directory (WLED_MCP_DATA_DIR).")
     parser.add_argument("--transport", choices=("stdio", "streamable-http"), default="stdio")
+    parser.add_argument(
+        "--profile",
+        choices=PROFILE_NAMES,
+        help="Access profile: read-only, control or full (default: [access] profile, else full).",
+    )
     http = parser.add_argument_group("streamable-http options")
     http.add_argument("--host", help="Bind address (default 127.0.0.1).")
     http.add_argument("--port", type=int, help="Bind port (default 8000).")
@@ -120,7 +140,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     settings: HTTPServiceSettings | None = None
     try:
-        config = load_config(args.config, args.data_dir)
+        config = load_config(args.config, args.data_dir, profile=args.profile)
         if args.transport == "streamable-http":
             settings = load_http_settings(
                 host=args.host,

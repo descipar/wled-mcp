@@ -642,3 +642,63 @@ def test_add_device_hints_at_an_inline_devices_array(tmp_path, capsys):
     assert code == 1 and problem["code"] == "INLINE_DEVICES_ARRAY"
     assert "[[devices]]" in problem["message"]
     assert snapshot(tmp_path) == before
+
+
+# ------------------------------------------------------------------ issue #20 access settings
+
+ACCESS_DOCUMENT = (
+    "schema_version = 1\n"
+    "# keep this comment\n"
+    '[access]\nprofile = "control"\n'
+    '[[devices]]\nid = "desk"\nname = "Example desk"\nbase_url = "http://192.0.2.10"\n'
+    'max_class = "read"\n'
+)
+
+
+def test_validate_output_is_unchanged_without_access_settings(tmp_path, capsys, no_network):
+    config = retained_copy(tmp_path)
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config))
+    assert code == 0 and "Access" not in out
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config), "--format", "json")
+    assert "access" not in json.loads(out)
+
+
+def test_validate_reports_configured_access_settings_additively(tmp_path, capsys, no_network):
+    config = tmp_path / "devices.toml"
+    config.write_text(ACCESS_DOCUMENT, encoding="utf-8")
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config))
+    assert code == 0
+    assert (
+        "Access (as configured; a serve --profile overrides it): profile control, "
+        "1 device(s) with a maximum class." in out.splitlines()
+    )
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config), "--format", "json")
+    result = json.loads(out)
+    assert result["access"] == {"profile": "control", "capped_devices": 1}
+    assert result["device_count"] == 1 and result["problems"] == []
+    assert "192.0.2.10" not in out
+
+
+def test_validate_names_an_invalid_access_value_without_echo(tmp_path, capsys, no_network):
+    config = tmp_path / "devices.toml"
+    config.write_text(
+        ACCESS_DOCUMENT.replace('"control"', f'"{SECRET}"'),
+        encoding="utf-8",
+    )
+    code, out, _ = run(capsys, "config", "validate", "--config", str(config), "--format", "json")
+    result = json.loads(out)
+    assert code == 1 and "access" not in result
+    assert "access.profile: invalid" in result["problems"][0]["message"]
+    assert SECRET not in out
+
+
+def test_add_device_keeps_every_byte_with_access_settings_and_stays_valid(tmp_path, capsys):
+    config = tmp_path / "devices.toml"
+    config.write_text(ACCESS_DOCUMENT, encoding="utf-8")
+    before = config.read_bytes()
+    assert add(capsys, config, "lamp", "Example lamp", "http://192.0.2.20")[0] == 0
+    after = config.read_bytes()
+    assert after.startswith(before)  # nothing before the appended block changed
+    loaded = load_config(str(config), str(tmp_path), {})
+    assert loaded.access.profile == "control"
+    assert [(d.id, d.max_class) for d in loaded.devices] == [("desk", "read"), ("lamp", None)]

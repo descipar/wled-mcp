@@ -19,6 +19,7 @@ from pathlib import Path, PurePosixPath
 
 import anyio
 import httpx2
+from mcp import MCPError
 from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
@@ -38,8 +39,8 @@ def project_version(root: Path = ROOT) -> str:
 VERSION = project_version()
 
 
-def expected_tool_names(path: Path = CONTRACT_PATH) -> list[str]:
-    """Ordered tool names of the default profile, from the source checkout's contract.
+def expected_tool_names(path: Path = CONTRACT_PATH, profile: str = "full") -> list[str]:
+    """Ordered tool names of a profile (default ``full``), from the source checkout's contract.
 
     Loaded by path: the expectation is not part of the wheel, so the installed wheel's
     served list is compared with the source tree (ISSUE-98-DEC-001).
@@ -50,13 +51,14 @@ def expected_tool_names(path: Path = CONTRACT_PATH) -> list[str]:
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module  # dataclasses resolve annotations through sys.modules
     spec.loader.exec_module(module)
-    names = module.expected_names()
+    names = module.expected_names() if profile == "full" else module.expected_names(profile)
     if not isinstance(names, list) or not names or not all(isinstance(n, str) for n in names):
         raise SystemExit(f"{path.name} did not provide an ordered list of tool names")
     return names
 
 
 EXPECTED_TOOL_NAMES = expected_tool_names()
+READ_ONLY_TOOL_NAMES = expected_tool_names(profile="read-only")
 
 
 def run(command: list[str], cwd: Path, env: dict[str, str]) -> str:
@@ -81,6 +83,27 @@ async def handshake(command: str, args: list[str], cwd: Path, env: dict[str, str
                 assert result.structured_content is not None
                 assert result.structured_content["data"] == {"devices": []}
                 assert not result.is_error
+
+
+async def restricted_handshake(
+    command: str, args: list[str], cwd: Path, env: dict[str, str]
+) -> None:
+    """The installed console under ``--profile read-only`` (issue #20, T20-13)."""
+    with anyio.fail_after(30):
+        params = StdioServerParameters(command=command, args=args, cwd=cwd, env=env)
+        async with Client(params, mode="legacy", read_timeout_seconds=10) as client:
+            tools = (await client.list_tools()).tools
+            assert [tool.name for tool in tools] == READ_ONLY_TOOL_NAMES
+            assert len(READ_ONLY_TOOL_NAMES) < len(EXPECTED_TOOL_NAMES)
+            result = await client.call_tool("wled_list_devices", {})
+            assert result.structured_content is not None
+            assert result.structured_content["data"] == {"devices": []}
+            try:
+                await client.call_tool("wled_set_state", {"device_id": "x", "on": True})
+            except MCPError as error:
+                assert error.message == "Unknown tool", error.message
+            else:
+                raise AssertionError("an excluded tool must be an unknown tool")
 
 
 async def http_exchange(port: int, token: str) -> None:
@@ -297,6 +320,9 @@ def main() -> None:
         config.write_text("schema_version = 1\ndevices = []\n", encoding="utf-8")
         args = ["--config", str(config), "--data-dir", str(outside)]
         anyio.run(handshake, str(console), args, outside, env)
+        anyio.run(
+            restricted_handshake, str(console), [*args, "--profile", "read-only"], outside, env
+        )
         http_restart(console, config, outside / "service-data", outside, env)
         uvx = [
             "uvx",
@@ -320,7 +346,8 @@ def main() -> None:
         leftovers = sorted(path.name for path in hub_data.iterdir())
         assert leftovers == ["config"], f"stdio hub example left data files: {leftovers}"
     print(
-        "Wheel/clean install/setup commands/stdio/HTTP restart/uvx/stdio hub example: PASS; "
+        "Wheel/clean install/setup commands/stdio/read-only profile/HTTP restart/uvx/"
+        "stdio hub example: PASS; "
         f"{len(expected)} exact runtime versions verified"
     )
 

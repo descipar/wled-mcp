@@ -20,6 +20,7 @@ from typing import Annotated, Any, Final
 import anyio
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
+from wled_mcp.access import ToolClass
 from wled_mcp.backups import Firmware
 from wled_mcp.bundles import (
     MAX_BUNDLE_BYTES,
@@ -608,6 +609,12 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
         except ClientFailure as failure:
             return _failed(name, None, failure, dry_run=request.dry_run)
         try:
+            # G3 for the import path, which posts outside the shared write engines: refused
+            # before the bundle is parsed, before the lock and before any device I/O.
+            resources.require_write(device_id)
+        except ClientFailure as failure:
+            return _failed(name, device_id, failure, dry_run=request.dry_run)
+        try:
             # Size, strict JSON, envelope and entry count before any device I/O.
             bundle = parse_bundle(request.bundle)
         except ClientFailure as failure:
@@ -707,6 +714,7 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_export_presets",
+            tool_class=ToolClass.READ,
             description=(
                 "Export presets of one configured device as a portable, versioned bundle "
                 "(format wled-mcp.preset-bundle, format_version 1), returned inline. By "
@@ -722,6 +730,7 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_import_presets",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Import a preset bundle (object or JSON text, at most 192 KiB and 50 entries, "
                 "at most one playlist) into one configured device. LIVE EFFECT: each state "

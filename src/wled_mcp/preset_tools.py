@@ -19,6 +19,7 @@ import anyio
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator, model_validator
 
+from wled_mcp.access import ToolClass
 from wled_mcp.backups import Firmware, Snapshot
 from wled_mcp.client import ClientFailure, Endpoint
 from wled_mcp.models import Outcome
@@ -454,6 +455,7 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
     return (
         Operation(
             name="wled_list_snapshots",
+            tool_class=ToolClass.READ,
             description=(
                 "List the server's stored preset snapshots of one configured device, newest "
                 "first, with backup_id, preset_id, time, firmware version, type and name, "
@@ -466,6 +468,7 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
         ),
         Operation(
             name="wled_restore_preset",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Restore exactly one snapshot entry (state preset or playlist) to its preset "
                 "ID or an explicit preset_id. LIVE EFFECT: a state snapshot is applied to the "
@@ -482,6 +485,7 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
         ),
         Operation(
             name="wled_store_preset",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Store a supplied light-state object (WLED keys on, bri, transition, bs, "
                 "mainseg, seg) as a preset under a name, in the lowest free ID or an explicit "
@@ -498,6 +502,7 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
         ),
         Operation(
             name="wled_save_playlist",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Create or replace one native WLED playlist under a name, in the lowest free "
                 "ID or an explicit preset_id. entries: 1-100 existing state presets with "

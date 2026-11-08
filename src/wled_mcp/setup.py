@@ -25,6 +25,8 @@ from wled_mcp.config import (
     MAX_CONFIG_BYTES,
     ConfigurationError,
     InventoryConfig,
+    access_facts,
+    access_line,
     validate_document,
 )
 
@@ -440,9 +442,12 @@ def config_validate(args: argparse.Namespace, environ: Mapping[str, str]) -> Com
         raise UsageError("--check-backups requires --data-dir (or WLED_MCP_DATA_DIR).")
     problems: list[dict[str, str]] = []
     count: int | None = None
+    access: dict[str, str | int] | None = None
     try:
         content, _ = _read_regular(target)
-        count = len(validate_document(content).devices)
+        validated = validate_document(content)
+        count = len(validated.devices)
+        access = access_facts(validated)
     except Refusal as refusal:
         problems.append({"code": refusal.code, "message": refusal.message})
     except ConfigurationError as exc:
@@ -480,6 +485,8 @@ def config_validate(args: argparse.Namespace, environ: Mapping[str, str]) -> Com
         exit_code = EXIT_PROBLEM
     else:
         lines = [f"Configuration valid: schema 1, {count} device(s)."]
+        if access is not None:
+            lines.append(access_line(access))
         if raw_data is not None:
             lines.append("Data directory exists.")
         if backups:
@@ -487,6 +494,8 @@ def config_validate(args: argparse.Namespace, environ: Mapping[str, str]) -> Com
         lines.append("Restart a running server to load a changed configuration.")
         exit_code = EXIT_OK
     data_out: dict[str, Any] = {"device_count": count, "problems": problems}
+    if access is not None and not problems:
+        data_out["access"] = access
     if backups is not None:
         data_out["backups_writable"] = backups
     return CommandResult(command, exit_code, lines, data_out)

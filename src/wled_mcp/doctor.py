@@ -29,6 +29,9 @@ from wled_mcp.config import (
     ConfigurationError,
     InventoryConfig,
     StartupConfig,
+    access_facts,
+    access_line,
+    access_policy,
     validate_document,
 )
 from wled_mcp.http_config import ENDPOINT_PATH, TOKEN_ENV, resolve_token
@@ -124,6 +127,9 @@ class Report:
     checks: list[Check] = field(default_factory=list)
     runtime: dict[str, Any] = field(default_factory=dict)
     device_count: int | None = None
+    # Configured access settings (issue #20); None when the file sets none.
+    access: dict[str, str | int] | None = None
+    max_classes: dict[int, str] = field(default_factory=dict)
     offline: bool = False
     endpoint_checked: bool = False
 
@@ -224,6 +230,22 @@ def configuration_check(
             facts={"device_count": len(inventory.devices)},
         )
     )
+    report.access = access_facts(inventory)
+    if report.access is not None:
+        report.max_classes = {
+            index: device.max_class
+            for index, device in enumerate(inventory.devices)
+            if device.max_class is not None
+        }
+        report.add(
+            Check(
+                "configuration",
+                "ok",
+                "ACCESS_CONFIGURED",
+                access_line(report.access),
+                facts=dict(report.access),
+            )
+        )
     return path, inventory
 
 
@@ -553,6 +575,7 @@ async def diagnose(
             tuple(inventory.devices),
             inventory.http,
             inventory.backups,
+            access_policy(inventory),
         )
         for checks in await read_devices(config, device_transport):
             report.add(*checks)
@@ -590,7 +613,9 @@ def export(report: Report) -> dict[str, Any]:
         if "protocol_version" in check.facts:
             entry["protocol_version"] = check.facts["protocol_version"]
         checks.append(entry)
-    return {
+    for index, max_class in report.max_classes.items():
+        devices.setdefault(index, {"device": f"devices[{index}]"})["max_class"] = max_class
+    result: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
         "command": "doctor",
         "export": True,
@@ -604,11 +629,15 @@ def export(report: Report) -> dict[str, Any]:
         "checks": checks,
         "devices": [devices[index] for index in sorted(devices)],
     }
+    if report.access is not None:
+        # Class names only: the profile name, never a device ID, URL or path.
+        result["access"] = {"profile": report.access["profile"]}
+    return result
 
 
 def full_json(report: Report) -> dict[str, Any]:
     """Local JSON output; includes messages and configured device IDs, never URLs."""
-    return {
+    result: dict[str, Any] = {
         "schema_version": JSON_SCHEMA_VERSION,
         "command": "doctor",
         "ok": report.exit_code == EXIT_OK,
@@ -630,6 +659,9 @@ def full_json(report: Report) -> dict[str, Any]:
             for check in report.checks
         ],
     }
+    if report.access is not None:
+        result["access"] = dict(report.access)
+    return result
 
 
 def render_text(report: Report) -> str:

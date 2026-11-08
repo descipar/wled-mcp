@@ -21,7 +21,11 @@ unchanged.
   `discover`.
   Each one runs as its own short process, never serves MCP, never reads stdin and
   never prompts. It writes its result to stdout and unexpected diagnostics to stderr.
-- Serve options (`--transport`, `--host`, ...) together with a subcommand are a usage
+- `--profile read-only|control|full` selects the access profile and overrides
+  `[access] profile` of the configuration (precedence option, file, `full`; no
+  environment variable); see [profiles](profiles.md#configuration). An invalid value is
+  the usage error below.
+- Serve options (`--transport`, `--host`, `--profile`, ...) together with a subcommand are a usage
   error. So are unknown options and actions and, as for serving, abbreviated option
   names; their message is the fixed
   `Invalid command-line arguments. Use --help for supported options.`
@@ -106,7 +110,11 @@ wled-mcp config validate --config <abs> [--data-dir <abs>] [--check-backups]
   `--check-backups` (needs `--data-dir`) adds the advisory backups writability check
   of `doctor` (`os.access`, nothing created).
 - JSON fields: `device_count` (null when unreadable), `problems` (list of `code` and
-  `message`) and, with `--check-backups`, `backups_writable`. A file-system error while
+  `message`) and, with `--check-backups`, `backups_writable`. When the file sets an
+  access setting (`[access]` or a device `max_class`, #20) a valid result also has
+  `access` (`profile`, `capped_devices`) and the text output one more line
+  `Access (as configured; a serve --profile overrides it): ...`; without access
+  settings both are absent and the output is unchanged. A file-system error while
   checking is reported as `CHECK_FAILED`; nothing is written.
 - A location that cannot even be inspected, for example a data directory the user
   cannot search, counts as not writable (`BACKUPS_NOT_WRITABLE`), here, in `doctor` and
@@ -158,6 +166,11 @@ Read-only diagnostics. Checks run in this order and report one result per check:
   URL given, so use `https` or a loopback address. The negotiated protocol version is
   shown and exported only when it has the date form `YYYY-MM-DD`; anything else is
   `ENDPOINT_PROTOCOL_ERROR`.
+- When the file sets an access setting (#20), a `configuration` check `ACCESS_CONFIGURED`
+  (ok) follows `CONFIG_VALID` with the configured profile and the number of capped
+  devices (facts `profile`, `capped_devices`), and the JSON output gains `access`.
+  Doctor reports the file's values; it has no `--profile` option. Without access
+  settings nothing is added.
 - `--format text` and `--format json` are local output: messages and configured device
   IDs, never URLs or credentials. `--export` and `--format` cannot be combined (exit 2).
 
@@ -169,11 +182,13 @@ from an allowlist:
 - `schema_version` (1), `command` (`"doctor"`), `export` (true), `ok`;
 - `runtime`: `package_version`, `build_kind`, `python_version`, `python_tier`,
   `platform_tier`;
-- `transport_flags`: `offline`, `endpoint_checked`; `device_count`;
+- `transport_flags`: `offline`, `endpoint_checked`; `device_count`; only when the file
+  sets an access setting: `access.profile` (a profile name);
 - `checks`: `category`, `status`, `code`, for device checks `device` as
   `devices[i]`, for the endpoint check `protocol_version`;
 - `devices`: per device `devices[i]` with `firmware` (`ver`, `vid`, `arch`, `tier`,
-  `minimum_supported`) and `unknown_capabilities` names.
+  `minimum_supported`), `unknown_capabilities` names and, for a capped device,
+  `max_class` (a class name).
 
 Never included: device IDs or names, URLs, hosts, addresses, MAC addresses, Wi-Fi
 fields, paths, credentials, message texts and raw device responses. The staged

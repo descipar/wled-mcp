@@ -9,6 +9,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from wled_mcp import __version__, compat
+from wled_mcp.access import ToolClass
 from wled_mcp.backups import Firmware
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
@@ -213,6 +214,7 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_get_state",
+            tool_class=ToolClass.READ,
             description=(
                 "Read normalized state, raw state and essential firmware/capability facts of "
                 "one configured device. Always fresh, never cached; state and info are read "
@@ -224,6 +226,7 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_get_effects",
+            tool_class=ToolClass.READ,
             description=(
                 "Read the effect catalog with original device IDs and names, optional raw "
                 "fxdata metadata and freshness. Cached per device for a configured time; "
@@ -235,6 +238,7 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_get_palettes",
+            tool_class=ToolClass.READ,
             description=(
                 "Read the palette catalog with original device IDs and names and freshness. "
                 "Cached per device for a configured time; refresh=true bypasses the cache. "
@@ -445,6 +449,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_set_state",
+            tool_class=ToolClass.CONTROL,
             description=(
                 "Apply a typed master patch: optional on/brightness/transition_ms. "
                 "Omitted fields remain unchanged. Transition is a one-call tt (ms) "
@@ -457,6 +462,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_patch_segments",
+            tool_class=ToolClass.CONTROL,
             description=(
                 "Patch one or more existing active segments by explicit ID. Omitted "
                 "fields and unrelated segments are preserved. No segment creation or "
@@ -471,6 +477,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_replace_layout",
+            tool_class=ToolClass.CONTROL,
             description=(
                 "Replace the complete active segment layout. Every desired ID needs id, "
                 "start and stop; active IDs not listed are removed one by one (exact "
@@ -1050,6 +1057,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_list_presets",
+            tool_class=ToolClass.READ,
             description=(
                 "List the persistent presets (IDs 1-250) of one configured device with ID, "
                 "name and type (state, playlist, api-command or unknown). Empty slots and "
@@ -1062,6 +1070,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_get_preset",
+            tool_class=ToolClass.READ,
             description=(
                 "Read one stored preset exactly as the device holds it, with its type. The "
                 "object may contain stored commands; it is returned to the caller unchanged. "
@@ -1073,6 +1082,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_activate_preset",
+            tool_class=ToolClass.CONTROL,
             description=(
                 "Activate an existing state preset or a playlist made only of state presets. "
                 "Changes the live output and may interrupt current playback; never writes "
@@ -1085,6 +1095,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_save_preset",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Save the CURRENT live state under a name (at most 32 UTF-8 bytes) into the "
                 "lowest free persistent ID, or into an explicit preset_id. Replacing an "
@@ -1101,6 +1112,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
         ),
         Operation(
             name="wled_delete_preset",
+            tool_class=ToolClass.MANAGE,
             description=(
                 "Delete exactly one stored preset (any type) after a durable snapshot. "
                 "Referencing playlists and the active-preset marker are not edited; a "
@@ -1203,6 +1215,7 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
     return (
         Operation(
             name="wled_list_devices",
+            tool_class=ToolClass.READ,
             description=(
                 "List configured IDs/names without network by default. "
                 "Optional bounded read-only probes; no discovery or writes."

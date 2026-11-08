@@ -20,6 +20,7 @@ ErrorCode = Literal[
     "BACKUP_FAILED",
     "WRITE_OUTCOME_UNKNOWN",
     "VERIFICATION_MISMATCH",
+    "ACCESS_DENIED",
 ]
 
 
