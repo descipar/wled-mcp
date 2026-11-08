@@ -80,3 +80,4 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   tests. Supersedes: none.
 - Propagation: coordinator passes this ID with the packet to the requirements,
   implementer and reviewer roles.
+- Extended by [ISSUE-19-DEC-003](issue-19.md#issue-19-dec-003--technical-defaults-for-the-capability-model-and-segment-fields) (TD-19-3) for #19 and later writes.

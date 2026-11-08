@@ -71,6 +71,23 @@ is v16-shaped and still equals the read model (`::test_state_example_matches_the
 | AC-19-18 hardware honesty | This file: no CCT, RGBW-new-range, 2D or overlap hardware claim (expected tier of DEC-020) |
 | Coverage W-SEG-13 to W-SEG-22 supported, notes on W-SEG-01, -02 and -20 | docs/WLED-COVERAGE.md, `python scripts/check_coverage.py --update` (57 % of the planned scope, 46 % overall) |
 
+Stage-1 hardware evidence: the replace runs on the RGB-only test controller predate
+the extended create payload. The 11 keys a create step may now add (`cct`, `c1`-`c3`,
+`o1`-`o3`, `si`, `set`, `m12`, `bm`) rest on mock and source evidence only.
+
+Review round 1 (b219017): the store no longer moves an existing trailing strip
+(`::test_no_tool_moves_an_existing_trailing_strip_into_the_matrix`); the patch tool
+accepts unchanged bounds on a trailing strip
+(`::test_patch_accepts_unchanged_bounds_on_a_trailing_strip`); tests added for the
+surviving mutants: `::test_allow_overlap_swap_has_no_intermediate_overlap`,
+`::test_rows_change_counts_as_moved_for_cct_in_patch`,
+`::test_rows_change_counts_as_moved_for_cct_in_replace`,
+`::test_unknown_rows_of_another_segment_block_a_geometry_change`,
+`::test_every_overlapping_pair_is_listed`,
+`::test_store_option_on_a_new_id_uses_every_active_segment`,
+`::test_replace_rows_only_change_does_not_resend_the_name`,
+`::test_replace_create_sends_no_cct_default_without_the_key`.
+
 Not covered: any hardware run. A read-only probe of the RGB-only test controller could
 confirm the WLED 16 option keys and `seg[].lc` on real firmware; it needs a separate
 authorization and is not required by the issue.

@@ -140,8 +140,39 @@ owner is recorded as [ISSUE-18-DEC-002](issue-18.md#issue-18-dec-002--capability
   src/wled_mcp/capabilities.py and the segment, preset and bundle modules;
   docs/contract/segments.md; docs/validation/issue-19.md; docs/WLED-COVERAGE.md;
   tests/test_segment_capabilities.py.
-- Supersedes / superseded by: none; ISSUE-18-DEC-003's interim raw-matrix rule is now
-  served by capabilities.py with unchanged behavior.
+- Supersedes / superseded by: extends ISSUE-6-DEC-003 (TD-19-3 adds `/json/state`
+  `seg[].lc` to its read-only `/json/info` evidence source for #19 and later writes; see
+  S-2 below); ISSUE-18-DEC-003's interim raw-matrix rule is now served by
+  capabilities.py with unchanged behavior.
 - Propagated to roles / packet references: issue-19 packet refresh 1; implementer and
   reviewer briefs of both pull requests.
-- Revalidation needed / next action: none before pull request B.
+- Revalidation needed / next action: S-1 below is confirmed with the owner at the next
+  DEC-022 revalidation.
+- Amendment (2026-11-08, from the full review of pull request B at b219017; authority
+  unchanged: coordinator, not a human decision):
+  - S-1 `blend_mode` is settable without `allow_overlap`, with field presence only.
+    Reason: WLED blends every segment over a black frame buffer, so `bm` takes effect
+    without overlap (FX_fcn.cpp L1416-1429, L1699), and the applicability of
+    ISSUE-19-DEC-001 ("settable only where the device reports the field") ties it to
+    field presence. This is a coordinator reading of the owner decision
+    ISSUE-19-DEC-001, to be confirmed with the owner at the next DEC-022 revalidation.
+  - S-2 TD-19-3 extends the ISSUE-6-DEC-003 evidence source from the read-only
+    `/json/info` `leds.seglc` to the `/json/state` `seg[].lc` (still read-only, no
+    probe writes) for #19 and later writes; the aggregate fallback for an existing
+    unchanged range is kept.
+  - (a) A new range keeps the stage-1 RGB-only rule of ISSUE-7-DEC-004 beside TD-19-4,
+    so devices without per-segment evidence do not regress.
+  - (b) `capability_evidence` is present only when a #19 field is supplied and does
+    not list colors.
+  - (d) In `wled_store_preset` an existing ID with unchanged X and rows uses its own
+    evidence; any other entry uses the uniform rule; omitted `startY`/`stopY` of an
+    existing ID take its current rows; an existing trailing strip is never moved.
+  - N-3 The store's color width keeps the stage-1 aggregate `info.leds.lc` rule
+    (extended only by the white-only and RGB+CCT widths of TD-19-3).
+  - (f) Unapplied or uncertain writes keep the stage-1 outcome mappings:
+    `wled_patch_segments` `unknown/mismatch`, a failed replace step after verified
+    steps `applied/mismatch`, a lost readback `unknown/unknown` with
+    `WRITE_OUTCOME_UNKNOWN`.
+  - N-4 The edit of tests/test_upgrade_compat.py (envelope test calls
+    `envelope_difference`) was a coordinator-assigned carried nit of pull request A,
+    outside the packet's path list.

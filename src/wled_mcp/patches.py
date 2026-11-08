@@ -632,24 +632,28 @@ def build_segment_patch_plan(
                 raise _fail(
                     f"Segment {patch.id}: range must satisfy 0 <= start < stop <= led_count."
                 )
-            if trailing:
+            unchanged_x = (patch.start, patch.stop) == (current_start, current.get("stop"))
+            if trailing and not unchanged_x:
                 raise _unsupported(
                     f"Segment {patch.id}: is the trailing 1D strip after the matrix; moving "
                     "it is not supported."
                 )
-            geometry.check_x(patch.id, patch.start, patch.stop)
+            if not trailing:
+                geometry.check_x(patch.id, patch.start, patch.stop)
             length = patch.stop - patch.start
             if patch.offset is not None and not 0 <= patch.offset < length:
                 raise _fail(
                     f"Segment {patch.id}: offset must satisfy 0 <= offset < resulting length."
                 )
         if patch.start_y is not None and patch.stop_y is not None:
-            if trailing:
+            current_y = (current.get("start_y"), current.get("stop_y"))
+            if trailing and (patch.start_y, patch.stop_y) != current_y:
                 raise _unsupported(
                     f"Segment {patch.id}: is the trailing 1D strip after the matrix; its rows "
                     "are not changed."
                 )
-            geometry.check_y(patch.id, patch.start_y, patch.stop_y)
+            if not trailing:
+                geometry.check_y(patch.id, patch.start_y, patch.stop_y)
 
     # Effect / palette existence (when the device reported counts).
     for patch in request.segments:

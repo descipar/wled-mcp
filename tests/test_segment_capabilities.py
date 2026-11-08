@@ -1276,3 +1276,198 @@ def test_store_has_no_allow_overlap():
         StorePresetRequest.model_validate(
             {"device_id": "desk", "name": "N", "state": {"seg": state["seg"]}, "allow_overlap": 1}
         )
+
+
+# ======================================================================================
+# Review round 1 of b219017 (probe P1, test gaps G1-G6, nits N-1/N-2).
+# ======================================================================================
+
+
+@pytest.mark.anyio
+async def test_no_tool_moves_an_existing_trailing_strip_into_the_matrix(tmp_path):
+    """M-1 / P1: the store refuses it like patch and replace (TD-19-7)."""
+    desk = store_device(matrix_fake())
+    segments = [
+        {"id": 0, "start": 0, "stop": 16, "startY": 1, "stopY": 4},
+        {"id": 1, "start": 0, "stop": 16, "startY": 4, "stopY": 8},
+        {"id": 2, "start": 0, "stop": 4},  # existing trailing ID 2 moved into matrix X 0-4
+    ]
+    for dry_run in (True, False):
+        outcome, fleet = await store(tmp_path, desk, {"seg": segments}, dry_run=dry_run)
+        refused(outcome, "UNSUPPORTED_CAPABILITY")
+        assert "trailing" in outcome.error.message and fleet.post_count() == 0
+    fake = matrix_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        patched = await patch(resources, [{"id": 2, "start": 0, "stop": 4}], allow_overlap=True)
+        replaced = await replace(
+            resources,
+            [
+                {"id": 0, "start": 0, "stop": 16},
+                {"id": 1, "start": 0, "stop": 16},
+                {"id": 2, "start": 0, "stop": 4},
+            ],
+            allow_overlap=True,
+        )
+    refused(patched, "UNSUPPORTED_CAPABILITY")  # G6: kills the patch trailing-move mutant
+    refused(replaced, "UNSUPPORTED_CAPABILITY")
+    assert fake.posts == []
+
+
+@pytest.mark.anyio
+async def test_patch_accepts_unchanged_bounds_on_a_trailing_strip(tmp_path):
+    """N-1: unchanged start/stop (and rows) on the trailing strip are not a move."""
+    fake = matrix_fake()
+    rows = (fake.slots[2]["startY"], fake.slots[2]["stopY"])
+    async with open_resources(tmp_path, fake) as resources:
+        result = await patch(
+            resources,
+            [
+                {
+                    "id": 2,
+                    "start": 128,
+                    "stop": 136,
+                    "start_y": rows[0],
+                    "stop_y": rows[1],
+                    "custom1": 5,
+                }
+            ],
+        )
+    assert result.ok and result.verification == "verified", result.error
+    assert (fake.slots[2]["start"], fake.slots[2]["stop"], fake.slots[2]["c1"]) == (128, 136, 5)
+
+
+@pytest.mark.anyio
+async def test_allow_overlap_swap_has_no_intermediate_overlap(tmp_path):
+    """G1: the opt-in permits only overlaps the final layout contains; a swap of two
+    adjacent ranges has none, so no step may create one."""
+    fake = v16_fake()
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(
+            resources,
+            [{"id": 0, "start": 15, "stop": 30}, {"id": 1, "start": 0, "stop": 15}],
+            allow_overlap=True,
+        )
+    for layout in fake.layouts:
+        ranges = sorted(layout.values())
+        assert all(a[1] <= b[0] for a, b in zip(ranges, ranges[1:], strict=False)), layout
+    # A swap needs a temporary segment: refused before any POST, as without the opt-in.
+    refused(result, "UNSUPPORTED_CAPABILITY")
+    assert fake.posts == []
+
+
+def non_uniform_cct_matrix() -> FakeWLED:
+    """Segment 0 (rows 0-4) has CCT per segment; the device is not uniform."""
+    return matrix_fake(buses=[(0, 64, RGB_CCT), (64, 128, RGB), (128, 136, RGB)])
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("rows", [(0, 4), (0, 3)], ids=["same-rows", "fewer-rows"])
+async def test_rows_change_counts_as_moved_for_cct_in_patch(tmp_path, rows):
+    """G2: supplying rows is a moved range for cct, so the uniform rule applies."""
+    fake = non_uniform_cct_matrix()
+    async with open_resources(tmp_path, fake) as resources:
+        plain = await patch(resources, [{"id": 0, "cct": 9}], dry_run=True)
+        moved = await patch(
+            resources, [{"id": 0, "start_y": rows[0], "stop_y": rows[1], "cct": 9}], dry_run=True
+        )
+    assert plain.ok, plain.error  # per-segment CCT evidence for the unchanged range
+    refused(moved, "UNSUPPORTED_CAPABILITY")
+    assert "uniform" in moved.error.message
+
+
+@pytest.mark.anyio
+async def test_rows_change_counts_as_moved_for_cct_in_replace(tmp_path):
+    """G3: the same rule in wled_replace_layout."""
+    fake = non_uniform_cct_matrix()
+    base = [{"id": 1, "start": 0, "stop": 16}, {"id": 2, "start": 128, "stop": 136}]
+    async with open_resources(tmp_path, fake) as resources:
+        plain = await replace(
+            resources, [{"id": 0, "start": 0, "stop": 16, "cct": 9}, *base], dry_run=True
+        )
+        moved = await replace(
+            resources,
+            [{"id": 0, "start": 0, "stop": 16, "start_y": 0, "stop_y": 3, "cct": 9}, *base],
+            dry_run=True,
+        )
+    assert plain.ok, plain.error
+    refused(moved, "UNSUPPORTED_CAPABILITY")
+    assert "uniform" in moved.error.message
+
+
+@pytest.mark.anyio
+async def test_unknown_rows_of_another_segment_block_a_geometry_change(tmp_path):
+    """G4: without the rows of an active matrix segment no overlap check is possible."""
+    fake = matrix_fake()
+    del fake.slots[1]["startY"]
+    del fake.slots[1]["stopY"]
+    async with open_resources(tmp_path, fake) as resources:
+        moved = await patch(resources, [{"id": 0, "start": 0, "stop": 8}], dry_run=True)
+        listed = await patch(resources, [{"id": 0, "speed": 3}], allow_overlap=True, dry_run=True)
+        scalar = await patch(resources, [{"id": 0, "speed": 3}], dry_run=True)
+    refused(moved, "UNSUPPORTED_CAPABILITY")
+    refused(listed, "UNSUPPORTED_CAPABILITY")
+    assert "2D bounds unknown" in moved.error.message
+    assert scalar.ok, scalar.error  # a scalar patch needs no overlap check
+
+
+@pytest.mark.anyio
+async def test_every_overlapping_pair_is_listed(tmp_path):
+    """G5 (AC-19-11): three mutually overlapping ranges give all three pairs."""
+    fake = v16_fake()
+    desired = [
+        {"id": 0, "start": 0, "stop": 20},
+        {"id": 1, "start": 10, "stop": 30},
+        {"id": 2, "start": 5, "stop": 25, "colors": [[1, 2, 3]]},
+    ]
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, desired, allow_overlap=True)
+    assert result.ok and result.verification == "verified", result.error
+    assert result.data["plan"]["overlaps"] == [[0, 1], [0, 2], [1, 2]]
+    assert result.data["plan"]["render_order"] == [0, 1, 2]
+    assert fake.layout() == {0: (0, 20), 1: (10, 30), 2: (5, 25)}
+
+
+@pytest.mark.anyio
+async def test_store_option_on_a_new_id_uses_every_active_segment(tmp_path):
+    """N-2 (M22): a new ID's option is evidenced by the keys every active segment has."""
+    segment = {"id": 5, "start": 0, "stop": 10, "c1": 9, "si": 1}
+    outcome, _fleet = await store(tmp_path, store_device(v16_fake()), {"seg": [segment]})
+    assert outcome.ok, outcome.error
+    fake = v16_fake()
+    del fake.slots[1]["c1"]
+    outcome, fleet = await store(tmp_path, store_device(fake), {"seg": [segment]})
+    refused(outcome, "UNSUPPORTED_CAPABILITY")
+    assert fleet.post_count() == 0
+
+
+@pytest.mark.anyio
+async def test_replace_rows_only_change_does_not_resend_the_name(tmp_path):
+    """N-2 (M27): the firmware keeps the name on a rows-only change (json.cpp L144-151)."""
+    fake = matrix_fake()
+    desired = [
+        {"id": 0, "start": 0, "stop": 16, "start_y": 0, "stop_y": 3},
+        {"id": 1, "start": 0, "stop": 16},
+        {"id": 2, "start": 128, "stop": 136},
+    ]
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, desired)
+    assert result.ok and result.verification == "verified", result.error
+    assert fake.posts == [{"seg": {"id": 0, "startY": 0, "stopY": 3}}]
+    assert result.data["plan"]["targeted_compensation"] == []
+    assert fake.slots[0]["n"] == "Segment 0"
+
+
+@pytest.mark.anyio
+async def test_replace_create_sends_no_cct_default_without_the_key(tmp_path):
+    """N-2 (M28): ``cct`` 127 is sent only where every active segment reports ``cct``."""
+    segment = make_segment(0, 0, 15)
+    del segment["cct"]
+    fake = FakeWLED([segment], led_count=30)
+    desired = [
+        {"id": 0, "start": 0, "stop": 15},
+        {"id": 1, "start": 15, "stop": 30, "colors": [[1, 2, 3]]},
+    ]
+    async with open_resources(tmp_path, fake) as resources:
+        result = await replace(resources, desired, dry_run=True)
+    create = result.data["plan"]["step_payloads"][-1]["seg"]
+    assert "cct" not in create and create["frz"] is False

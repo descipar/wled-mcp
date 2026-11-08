@@ -344,6 +344,13 @@ def _check_segment_19(
     cur_y = (cur.start_y, cur.stop_y) if cur is not None else (None, None)
     same_x = cur_x == (segment.start, segment.stop)
     if geometry.matrix is not None:
+        if cur is not None and cur.start is not None and geometry.is_trailing(cur.start):
+            if not same_x:
+                # An existing trailing strip moved into the matrix (or elsewhere in the strip).
+                raise ClientFailure(
+                    "UNSUPPORTED_CAPABILITY",
+                    f"{ctx}is the trailing 1D strip after the matrix; moving it is not supported.",
+                )
         if geometry.is_trailing(segment.start):
             if not same_x:
                 raise ClientFailure(
