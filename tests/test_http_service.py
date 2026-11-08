@@ -4,6 +4,7 @@ Mock fleet and ``127.0.0.1`` ephemeral sockets only; every test is time-bounded.
 """
 
 import copy
+import json
 import logging
 from dataclasses import replace
 from typing import Any
@@ -15,6 +16,7 @@ from mcp import MCPError
 from mcp.client import Client
 from mcp.types import ToolAnnotations
 
+from tests.envelopes import comparable_message, strip_correlation_id
 from tests.http_support import (
     DESK,
     MCP_HEADERS,
@@ -191,8 +193,14 @@ async def _invoke(client: Client, name: str, arguments: dict[str, Any]) -> Any:
     try:
         result = await client.call_tool(name, arguments)
     except MCPError as error:
-        return ("mcp-error", error.error.code, error.error.message)
-    return ("result", result.structured_content, result.content[0].text, result.is_error)
+        return ("mcp-error", error.error.code, comparable_message(error.error.message))
+    assert result.structured_content is not None
+    return (
+        "result",
+        strip_correlation_id(result.structured_content),
+        strip_correlation_id(json.loads(result.content[0].text)),
+        result.is_error,
+    )
 
 
 @pytest.mark.anyio
@@ -219,7 +227,11 @@ async def test_http_results_match_in_process_server(tmp_path, mode):
                     outcome = observed[0][0]
                     assert SYNTHETIC_SECRET not in repr(outcome), label
                     if label == "crash":
-                        assert outcome == ("mcp-error", -32603, "Internal operation failure")
+                        assert outcome == (
+                            "mcp-error",
+                            -32603,
+                            "Internal operation failure (correlation_id=<id>)",
+                        )
                     if label == "unknown-tool":
                         assert outcome[0] == "mcp-error"
                     if label == "uncertain":

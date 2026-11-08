@@ -229,6 +229,9 @@ owning issue for planned rows and the decision for excluded rows.
 Registered tools that deliver no WLED feature are listed here with a reason and are not
 counted.
 
+- `wled_get_service_status`: reports the server's own profile, per-device ceilings, last
+  observed outcomes and call counters (#20); it reads process memory only and contacts no
+  device, so it is not a WLED reachability feature (W-INFO-03 stays `wled_list_devices`).
 - `wled_list_snapshots`: lists the server's own preset snapshots in the data directory;
   no WLED feature is involved.
 - `wled_list_groups`: lists the server's own device groups (local files in the data

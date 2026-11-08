@@ -17,6 +17,11 @@ unchanged.
 - New at startup (OPS-04): when `<data-dir>/backups` (or its nearest existing parent)
   is not writable for the service user, the server prints one advisory line on stderr
   and still starts. Writes that take a snapshot still fail closed with `BACKUP_FAILED`.
+- Logging (#20): the serving process reads `WLED_MCP_LOG_LEVEL` (`warning`, the default, or
+  `info`) and `WLED_MCP_LOG_FORMAT` (`text`, the default, or `json`) and writes one bounded
+  line per tool call to stderr; an unsupported value is the startup configuration error
+  above (exit 2, variable named, value not echoed). `info` also shows the startup event.
+  See [diagnostics](diagnostics.md#logging). Subcommands ignore both variables.
 - Subcommands: `config init`, `config add-device`, `config validate`, `doctor` and
   `discover`.
   Each one runs as its own short process, never serves MCP, never reads stdin and
@@ -182,8 +187,9 @@ from an allowlist:
 - `schema_version` (1), `command` (`"doctor"`), `export` (true), `ok`;
 - `runtime`: `package_version`, `build_kind`, `python_version`, `python_tier`,
   `platform_tier`;
-- `transport_flags`: `offline`, `endpoint_checked`; `device_count`; only when the file
-  sets an access setting: `access.profile` (a profile name);
+- `transport_flags`: `offline`, `endpoint_checked`; `device_count`; and, only when the
+  file sets an access setting, a top-level `access` object with `profile` (a profile
+  name; it is not part of `transport_flags`);
 - `checks`: `category`, `status`, `code`, for device checks `device` as
   `devices[i]`, for the endpoint check `protocol_version`;
 - `devices`: per device `devices[i]` with `firmware` (`ver`, `vid`, `arch`, `tier`,

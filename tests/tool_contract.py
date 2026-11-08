@@ -38,6 +38,7 @@ MANAGE = ToolClass.MANAGE
 # Registry order; the only tool list in the test suite.
 EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_list_devices", READ, destructive=False),
+    ExpectedTool("wled_get_service_status", READ, destructive=False),
     ExpectedTool("wled_get_state", READ, destructive=False),
     ExpectedTool("wled_get_effects", READ, destructive=False),
     ExpectedTool("wled_get_palettes", READ, destructive=False),

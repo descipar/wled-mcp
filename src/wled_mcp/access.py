@@ -73,13 +73,6 @@ class AccessPolicy:
         """Classes whose tools a server with this profile registers."""
         return PROFILES[self.profile]
 
-    @property
-    def restricted(self) -> bool:
-        """True when anything is lower than the unrestricted default."""
-        return self.profile != DEFAULT_PROFILE or any(
-            cap is not ToolClass.MANAGE for cap in self.caps.values()
-        )
-
     def ceiling(self, device_id: str | None = None) -> ToolClass:
         """Effective ceiling: the lower of the profile and the device cap (if any)."""
         base = profile_ceiling(self.profile)

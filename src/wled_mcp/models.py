@@ -1,8 +1,16 @@
 """Domain outcomes independent of MCP transport and device adapters."""
 
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 Application = Literal["not_attempted", "applied", "not_applied", "unknown"]
 Verification = Literal["not_requested", "verified", "mismatch", "unknown"]
@@ -46,6 +54,18 @@ class Outcome(BaseModel):
     data: dict[str, JsonValue] = Field(default_factory=dict)
     warnings: list[str] = Field(default_factory=list)
     error: DomainError | None = None
+    # Set by the server dispatcher on every served envelope (issue #20, TD-20-9); never by
+    # an operation and never from client input. Optional so direct ``execute`` results and
+    # the retained examples stay as they were.
+    correlation_id: str | None = None
+
+    @model_serializer(mode="wrap")
+    def omit_unset_correlation_id(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        """Leave the key out while no ID is set, so unserved envelopes are unchanged."""
+        dumped: dict[str, Any] = handler(self)
+        if self.correlation_id is None:
+            dumped.pop("correlation_id", None)
+        return dumped
 
     @model_validator(mode="after")
     def consistent_outcome(self) -> Self:

@@ -28,6 +28,7 @@ from mcp.client.streamable_http import streamable_http_client
 from pydantic import BaseModel, ConfigDict
 
 from tests.acceptance_support import LoopbackWLED
+from tests.envelopes import strip_correlation_id
 from tests.patch_support import WriteRouter
 from tests.preset_support import state_entry
 from tests.state_catalog_support import FakeClock
@@ -166,10 +167,11 @@ def test_effective_ceiling_is_the_lower_of_profile_and_cap(profile, cap):
 
 
 def test_default_policy_is_unrestricted_and_a_manage_cap_changes_nothing():
-    assert not AccessPolicy().restricted
-    assert not AccessPolicy("full", {"desk": ToolClass.MANAGE}).restricted
-    assert AccessPolicy("control").restricted
-    assert AccessPolicy("full", {"desk": ToolClass.CONTROL}).restricted
+    assert AccessPolicy().ceiling() is ToolClass.MANAGE
+    assert AccessPolicy("full", {"desk": ToolClass.MANAGE}).ceiling("desk") is ToolClass.MANAGE
+    assert AccessPolicy("control").ceiling() is ToolClass.CONTROL
+    assert AccessPolicy("full", {"desk": ToolClass.CONTROL}).ceiling("desk") is ToolClass.CONTROL
+    assert AccessPolicy("full", {"desk": ToolClass.CONTROL}).ceiling("shelf") is ToolClass.MANAGE
 
 
 def test_policy_rejects_an_unknown_profile_and_freezes_its_caps():
@@ -279,6 +281,7 @@ async def run_tool(resources: Resources, name: str, **arguments: Any) -> Outcome
 
 READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_list_devices": {"probe": True},
+    "wled_get_service_status": {},
     "wled_get_state": {"device_id": "desk"},
     "wled_get_effects": {"device_id": "desk"},
     "wled_get_palettes": {"device_id": "desk"},
@@ -573,6 +576,37 @@ async def test_every_engine_refuses_before_the_lock_and_any_io(tmp_path, ambient
 
 
 @pytest.mark.anyio
+async def test_the_g3_and_g2_refusals_have_the_same_envelope_shape_including_dry_run(tmp_path):
+    router = make_router()
+    config = make_config(tmp_path, "full", desk="read")
+    async with open_resources(config, router) as resources:
+        token = CURRENT_TOOL_CLASS.set(ToolClass.CONTROL)
+        try:
+            engines = await through_each_engine(resources, "desk")
+        finally:
+            CURRENT_TOOL_CLASS.reset(token)
+        server = create_server(build_operations(resources), config.access)
+        async with Client(server) as client:
+            live = await client.call_tool("wled_set_state", {"device_id": "desk", "on": True})
+            dry = await client.call_tool(
+                "wled_set_state", {"device_id": "desk", "on": True, "dry_run": True}
+            )
+    assert live.structured_content is not None and dry.structured_content is not None
+    shape = set(strip_correlation_id(live.structured_content))
+    for name, outcome in engines.items():
+        dumped = outcome.model_dump(mode="json")
+        assert set(dumped) == shape, name  # the same keys, `dry_run` included
+        assert dumped["dry_run"] is False, name  # the engines only ever serve real writes
+        assert (dumped["error"]["code"], dumped["error"]["write_retryable"]) == (
+            "ACCESS_DENIED",
+            False,
+        )
+    assert live.structured_content["dry_run"] is False
+    assert dry.structured_content["dry_run"] is True  # G2 carries the caller's dry_run
+    assert router.calls == []
+
+
+@pytest.mark.anyio
 async def test_the_import_entry_refuses_before_parsing_or_any_io(tmp_path):
     router = make_router()
     async with open_resources(make_config(tmp_path, "full", desk="read"), router) as resources:
@@ -781,7 +815,7 @@ def test_access_settings_are_additive_and_optional():
     [
         (document(f'[access]\nprofile = "{SECRET}"\n'), "access.profile: invalid"),
         (document("[access]\nprofile = 3\n"), "access.profile: invalid"),
-        (document(f'[access]\n{SECRET} = "full"\n'), "access: unsupported setting"),
+        (document(f'[access]\n{SECRET} = "full"\n'), "access: unsupported field"),
         (document(f'access = "{SECRET}"\n', DEVICE), "access: invalid"),
         (document(device=DEVICE + f'max_class = "{SECRET}"\n'), "devices[0].max_class: invalid"),
         (document(device=DEVICE + "max_class = 2\n"), "devices[0].max_class: invalid"),
@@ -912,7 +946,7 @@ async def test_serve_passes_the_policy_to_create_server_and_logs_one_startup_eve
 ):
     received: dict[str, Any] = {}
 
-    def fake_create(operations, access=None):
+    def fake_create(operations, access=None, monitor=None):
         received["access"] = access
         return object()
 
@@ -945,7 +979,7 @@ async def test_serve_http_passes_the_policy_to_create_server_and_logs_the_event(
         async def serve(self) -> None:
             received["served"] = True
 
-    def fake_create(operations, access=None):
+    def fake_create(operations, access=None, monitor=None):
         received["access"] = access
         return object()
 
@@ -1113,8 +1147,8 @@ def test_an_invalid_profile_option_never_reaches_a_server_process(tmp_path, fake
 
 
 def mask(envelope: dict[str, Any]) -> dict[str, Any]:
-    """Drop the one volatile field of a state read (``read_at``)."""
-    masked = json.loads(json.dumps(envelope))
+    """Drop the volatile fields: a state read's ``read_at`` and the per-call ID."""
+    masked = strip_correlation_id(json.loads(json.dumps(envelope)))
     (masked.get("data", {}).get("freshness") or {}).pop("read_at", None)
     return masked
 

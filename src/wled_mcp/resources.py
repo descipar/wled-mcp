@@ -16,6 +16,7 @@ from wled_mcp.backups import BackupRecord, Firmware, RestorePlan, Snapshot, Snap
 from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, StartupConfig
+from wled_mcp.diagnostics import ServiceMonitor
 from wled_mcp.models import DomainError, Outcome
 
 SequenceKind = Literal[
@@ -137,7 +138,12 @@ class Resources:
         # Profile and per-device ceilings (issue #20); the write engines enforce them (G3).
         self.access: AccessPolicy = config.access
         self._devices = {device.id: device for device in self.inventory}
-        self.client = WLEDClient(config.http, transport)
+        # Last observed outcome per device and call counters (issue #20, TD-20-11); fed by
+        # the client's observer, so it never issues a request of its own.
+        self.monitor = ServiceMonitor(
+            (device.id for device in self.inventory), self.clock.monotonic
+        )
+        self.client = WLEDClient(config.http, transport, observer=self.monitor.observe)
         self.locks = {device.id: anyio.Lock() for device in self.inventory}
         # One shared effect/palette catalog cache (issue #5); never holds state/info.
         self.metadata_cache = CatalogCache(config.http.catalog_cache_seconds, self.clock)
@@ -196,8 +202,12 @@ class Resources:
             )
         self.require_access(device_id, ToolClass.MANAGE if ambient is None else ambient)
 
-    def _refused(self, device_id: str, operation: str) -> Outcome | None:
-        """The not_attempted refusal for a guarded engine entry, or None to proceed."""
+    def _refused(self, device_id: str, operation: str, dry_run: bool = False) -> Outcome | None:
+        """The not_attempted refusal for a guarded engine entry, or None to proceed.
+
+        Same envelope shape as the dispatcher's G2 refusal, including ``dry_run``; the engines
+        only ever serve real writes, so their callers leave it ``False``.
+        """
         try:
             self.require_write(device_id)
         except ClientFailure as failure:
@@ -205,6 +215,7 @@ class Resources:
                 ok=False,
                 operation=operation,
                 device_id=device_id,
+                dry_run=dry_run,
                 application="not_attempted",
                 verification="not_requested",
                 error=failure.error,

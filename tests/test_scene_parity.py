@@ -22,6 +22,7 @@ from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
 
 from tests.acceptance_support import LoopbackWLED
+from tests.envelopes import comparable_record
 from tests.scene_support import canonical_scene, device_target, scene_document
 from tests.test_acceptance_parity import DESK, http_args, write_inventory
 from tests.test_http_cli import CONSOLE, TOKEN, clean_env, console, free_port, wait_ready
@@ -139,10 +140,9 @@ def test_text_equals_structured_and_is_error_equals_not_ok(outcomes, transport, 
 def comparable(record: dict[str, Any]) -> dict[str, Any]:
     """The one place that prepares a served result for the stdio/HTTP comparison.
 
-    Today the envelopes are compared as they are; a field that differs per call (for
-    example a correlation ID added later by #20) is stripped here and nowhere else.
+    The per-call correlation ID of #20 is stripped by ``tests/envelopes.py``, nowhere else.
     """
-    return record
+    return comparable_record(record)
 
 
 @pytest.mark.parametrize("name", list(STEPS))

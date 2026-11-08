@@ -8,7 +8,6 @@ Mock transports and loopback only; no device is contacted.
 
 from __future__ import annotations
 
-import copy
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,6 +17,7 @@ import pytest
 from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 
+from tests.envelopes import strip_correlation_id
 from tests.http_support import DESK, running_service, sdk_client
 from tests.layout_support import FakeWLED
 from tests.patch_support import WriteRouter
@@ -200,8 +200,8 @@ anyio.run(main, sys.argv[1])
 
 
 def comparable(envelope: dict[str, Any]) -> dict[str, Any]:
-    """The envelope without the read timestamp, which differs between two processes."""
-    result = copy.deepcopy(envelope)
+    """The envelope without the read timestamp and the per-call correlation ID."""
+    result = strip_correlation_id(envelope)
     result["data"]["freshness"].pop("read_at")
     return result
 

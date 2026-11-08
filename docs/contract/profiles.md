@@ -2,7 +2,8 @@
 
 Contract for [issue #20](https://github.com/descipar/wled-mcp/issues/20) (S2-ACCESS-01 and
 S2-ACCESS-02; scenario S2-T02), first pull request: enforcement. The second pull request
-adds diagnostics (correlation ID, logs, status tool) in its own contract file.
+added diagnostics (correlation ID, logs, status tool) in
+[diagnostics.md](diagnostics.md).
 Decisions: [ISSUE-20-DEC-001](../decisions/issue-20.md#issue-20-dec-001--default-profile-device-restrictions-status-surface-classes)
 (human: default `full`, per-device maximum class, vocabulary) and
 [ISSUE-20-DEC-002](../decisions/issue-20.md#issue-20-dec-002--technical-defaults-td-20-1-to-td-20-15)
@@ -67,8 +68,11 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
 
 - Without `[access]` the profile is `full`; without `max_class` a device has no cap.
   Existing configurations and hub entries keep working unchanged.
-- Place `[access]` after the root keys (`schema_version`, an inline `devices = [...]`)
-  and before the first `[[devices]]` table, as TOML requires for a table.
+- Write the root keys (`schema_version`, an inline `devices = [...]`) before any table
+  header: a key after a `[table]` header belongs to that table. Place `[access]` before the
+  first `[[devices]]` table by convention; TOML itself accepts it in either position, and
+  `config add-device` appends its block after the file so an existing `[access]` table
+  stays valid.
 - The serve option `--profile read-only|control|full` overrides `[access] profile`.
   Precedence: option, then file, then `full`. There is no environment variable. The
   option is a serve option: together with a subcommand it is the usual usage error
@@ -78,7 +82,8 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
   `max_class`.
 - Invalid values stop startup with exit 2 and a positional message that never echoes the
   value: `access.profile: invalid`, `devices[i].max_class: invalid`, or
-  `access: unsupported setting` for an unknown key. A profile outside the three names on
+  `access: unsupported field` for an unknown key (the same wording as
+  `devices[i]: unsupported field`; the key's name is never shown). A profile outside the three names on
   the command line is the fixed usage error.
 - `wled-mcp config validate` and `doctor` report the profile and the number of capped
   devices only when the file sets an access setting; their output is otherwise unchanged
@@ -88,6 +93,9 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
   a `[[devices]]` block after an existing `[access]` table without changing earlier
   bytes; there is no option for `max_class` yet, edit the file and run `config validate`.
 - A restart applies a changed profile or cap; there is no reload.
+- The startup event (`service starting: transport=... profile=... capped_devices=N`) is an
+  INFO line of the `wled_mcp` logger. The default log level is `warning`, so it is not
+  shown unless `WLED_MCP_LOG_LEVEL=info` is set ([diagnostics.md](diagnostics.md#logging)).
 
 ## Enforcement
 

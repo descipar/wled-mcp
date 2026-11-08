@@ -18,6 +18,7 @@ import anyio
 from wled_mcp import __version__, discovery, doctor, setup
 from wled_mcp.access import PROFILE_NAMES
 from wled_mcp.config import ConfigurationError, StartupConfig, load_config
+from wled_mcp.diagnostics import LogSettings, configure_logging, load_log_settings
 from wled_mcp.http_config import TOKEN_ENV, HTTPServiceSettings, load_http_settings
 from wled_mcp.operations import build_operations
 from wled_mcp.resources import Resources
@@ -36,10 +37,18 @@ def announce_profile(config: StartupConfig, transport: str) -> None:
     )
 
 
+def attach_monitor(resources: Resources, transport: str) -> None:
+    """Tell the status tool which transport serves and what the startup check found."""
+    resources.monitor.transport = transport
+    resources.monitor.backups_writable = setup.backups_writable(resources.config.data_dir)
+
+
 async def serve(config: StartupConfig) -> None:
     announce_profile(config, "stdio")
     async with Resources(config) as resources:
-        await serve_stdio(create_server(build_operations(resources), config.access))
+        attach_monitor(resources, "stdio")
+        server = create_server(build_operations(resources), config.access, resources.monitor)
+        await serve_stdio(server)
 
 
 async def serve_http(config: StartupConfig, settings: HTTPServiceSettings) -> None:
@@ -48,7 +57,9 @@ async def serve_http(config: StartupConfig, settings: HTTPServiceSettings) -> No
 
     announce_profile(config, "streamable-http")
     async with Resources(config) as resources:
-        app = build_http_app(create_server(build_operations(resources), config.access), settings)
+        attach_monitor(resources, "streamable-http")
+        server = create_server(build_operations(resources), config.access, resources.monitor)
+        app = build_http_app(server, settings)
         await HTTPService(app, settings, on_started=announce(settings)).serve()
 
 
@@ -139,7 +150,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     )
     settings: HTTPServiceSettings | None = None
+    log_settings = LogSettings()
     try:
+        log_settings = load_log_settings(os.environ)
         config = load_config(args.config, args.data_dir, profile=args.profile)
         if args.transport == "streamable-http":
             settings = load_http_settings(
@@ -155,7 +168,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigurationError as exc:
         print(f"Startup configuration error: {exc}", file=sys.stderr)
         return 2
-    logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+    configure_logging(log_settings)
     if not setup.backups_writable(config.data_dir):
         # OPS-04 (TD-16-7): advisory only; tool-level BACKUP_FAILED stays fail-closed.
         print(BACKUPS_ADVISORY, file=sys.stderr)

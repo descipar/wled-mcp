@@ -60,6 +60,7 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | Tool | Essential inputs | Behavior | Priority |
 | --- | --- | --- | --- |
 | `wled_list_devices` | `probe=false` | Configured IDs/names; optional independent bounded reachability | Must |
+| `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile and per-device ceilings, last observed outcome per device, call counters; never contacts a device | Launch (S2-ACCESS-03); implemented in #20 ([contract/diagnostics.md](contract/diagnostics.md)) |
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
 | `wled_get_effects` | `device_id`, `refresh=false` | Original IDs/names, optional metadata, freshness | Must |
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
@@ -697,7 +698,10 @@ firmware would not store reproducibly); it is untested on hardware.
 
 Domain envelopes always contain `schema_version=1`, boolean `ok`, stable
 `operation`, `device_id` (null for inventory), boolean `dry_run`, `application`,
-`verification`, object `data`, array `warnings`, and `error` (null on success).
+`verification`, object `data`, array `warnings`, and `error` (null on success). Every served envelope also carries an optional
+`correlation_id` (16 hex characters, generated per call by the server, the same value as in
+the call's log line; [diagnostics](contract/diagnostics.md#correlation-id)); a document that
+was not served omits it.
 Errors contain `code`, safe `message`, `read_retryable`, `write_retryable=false`,
 and `reconciliation`. [Examples](../examples/contracts/README.md) include valid
 plans, conflicts and uncertain writes with observable postconditions.
@@ -820,6 +824,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   codes, doctor categories and the sanitized export (#16).
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
   firmware tiers (#21).
+- [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
+  `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
   and sharing (#17).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
