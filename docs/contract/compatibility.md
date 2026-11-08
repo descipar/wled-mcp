@@ -68,7 +68,8 @@ firmware version reported in `info.ver`:
   repeat the device-supplied version, which stays in `data.firmware.version`.
 - The tier is informational only. No tool refuses a request because of it, no write
   plan, payload or verification depends on it, and the other tools do not report it.
-  Later diagnostics (`doctor`, #16) reuse `classify` instead of a second policy.
+  `wled-mcp doctor` ([CLI](cli.md#doctor)) reads this tier from the `wled_get_state`
+  result and uses `support_warning` instead of a second policy.
 - A version is promoted only with recorded evidence: to `tested` with a hardware
   record, to `expected` with a recorded source review plus mock tests. Promotion edits
   `TESTED` or `EXPECTED` in `compat.py` and the matrix above in the same change.

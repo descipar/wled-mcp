@@ -151,8 +151,10 @@ review and must be announced with a migration note.
 
 Applies to the inventory configuration (`schema_version`), the result envelope
 (`schema_version`), preset snapshots (`format_version`), preset bundles
-(`format_version`, delivered by #18, [presets](presets.md#bundle-format-1)) and later persistent
-formats (scenes of #17 follow the same rules):
+(`format_version`, delivered by #18, [presets](presets.md#bundle-format-1)), the JSON
+output of the `wled-mcp` subcommands and the `doctor --export` summary
+(`schema_version`, delivered by #16, [CLI](cli.md)) and later persistent formats
+(scenes of #17 follow the same rules):
 
 - Versions are integers. The current server reads configuration `schema_version` 1,
   envelope `schema_version` 1, snapshot `format_version` 1 and preset bundle
@@ -173,8 +175,10 @@ formats (scenes of #17 follow the same rules):
   version.
 - A migration from an older version happens in memory while reading. The server never
   rewrites a configuration or snapshot file; writing a migrated configuration is an
-  explicit operator action (`config validate` family, #16). Snapshots are immutable;
-  an unreadable newer snapshot is counted as invalid, left untouched and not pruned.
+  explicit operator action with the `wled-mcp config` commands. Only schema 1 exists,
+  so there is nothing to migrate yet; a migrating writer arrives with the first
+  schema 2 (ISSUE-16-DEC-002). Snapshots are immutable; an unreadable newer snapshot
+  is counted as invalid, left untouched and not pruned.
 
 ## Upgrade, downgrade and rollback
 

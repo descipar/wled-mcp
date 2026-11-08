@@ -364,24 +364,35 @@ is the preferred mode where in-flight calls must drain.
 
 ## Changing the inventory
 
-The inventory file is read once at startup in both modes; there is no in-process reload
-and no separate validate command (both deferred to
-[#16](https://github.com/descipar/wled-mcp/issues/16), ISSUE-13-DEC-001). A change takes
-effect through a restart (DEV-03):
+The inventory file is read once at startup in both modes. A change takes effect
+through a restart after `wled-mcp config validate` has accepted the edited file
+(DEV-03); there is no in-process reload (ISSUE-16-DEC-001, closing the deferral of
+ISSUE-13-DEC-001). The procedure is copy, edit, validate, restart:
 
 1. Keep a copy of the working file next to it, for example
    `devices.toml` -> `devices.toml.previous`, in the same config directory
    (`./data/wled-mcp/config/` next to `compose.yaml` for HTTP,
    `/app/data/wled-mcp/config/` in the hub container for stdio).
-2. Edit `devices.toml`. Use synthetic or reserved names when sharing it, for example
-   `base_url = "http://wled-desk.example"`.
-3. Restart only this server, when no write is in flight:
+2. Edit `devices.toml`, or append a device with
+   `wled-mcp config add-device --config <abs> --device-id ... --device-name ...
+   --base-url ...` ([CLI](contract/cli.md#config-add-device)). Use synthetic or reserved
+   names when sharing it, for example `base_url = "http://wled-desk.example"`.
+3. Validate the edited file with the same validator as startup, without contacting a
+   device: `wled-mcp config validate --config <abs> --data-dir <abs>`. For HTTP, run it
+   in the image, for example
+   `docker compose -p wled-mcp-http -f compose.yaml run --rm wled-mcp config validate
+   --config /app/data/wled-mcp/config/devices.toml --data-dir /app/data/wled-mcp`;
+   for stdio, use the hub entry's `uvx ... wled-mcp` command with `config validate`
+   instead of the serve options. Restart only when it exits 0; otherwise fix the named
+   entries (for example `devices[1].base_url: invalid`) or restore the copy.
+4. Restart only this server, when no write is in flight:
    - Streamable HTTP:
      `docker compose -p wled-mcp-http -f compose.yaml restart wled-mcp`, then repeat
      `ps`, `logs` and the authenticated `ping`.
    - stdio via uvx: restart only this hub entry; the hub starts a new subprocess that
      reads the file. The hub does not drain in-flight calls on stop (ISSUE-12-DEC-006).
-4. Confirm with `wled_list_devices` that the expected device IDs are listed.
+5. Confirm with `wled_list_devices` that the expected device IDs are listed, or run
+   `wled-mcp doctor` with the same paths.
 
 An invalid file never partially replaces the inventory: startup stops with exit code 2
 before listening or writing to the data directory, and stderr carries
@@ -391,13 +402,29 @@ values, URLs and credentials are not echoed (tests
 `tests/test_bootstrap.py::test_invalid_configuration_is_safe`,
 `test_console_names_rejected_device_entry_without_values` and
 `test_console_rejects_non_canonical_ipv4_host_without_echo`). The previous process is
-already stopped at that point, so the server is unavailable until rolled back or fixed.
+already stopped at that point, so the server is unavailable until rolled back or fixed;
+step 3 finds the same problems before the restart.
 With `restart: unless-stopped` the HTTP container keeps restarting and failing until the
 file is valid.
 
 Rollback: copy `devices.toml.previous` back to `devices.toml` and restart the same way,
 then confirm with `wled_list_devices`. Snapshots stay under `backups/<device_id>/`; a
 changed device `id` does not move or rename the existing snapshots of the old ID.
+
+## Setup and diagnostics
+
+- `wled-mcp config init --config <abs> [--device-id ... --device-name ... --base-url ...]`
+  writes a new schema 1 inventory and nothing else; it refuses an existing file unless
+  `--force` is given. Create the data directory yourself.
+- `wled-mcp config validate` checks a file as described above.
+- `wled-mcp doctor --config <abs> --data-dir <abs>` reports runtime, configuration,
+  storage and per-device results (reachability, firmware tier, unknown capabilities)
+  with fixed codes and actions; it only reads. `--offline` skips the device reads,
+  `--endpoint <url>` also checks a running Streamable HTTP service (credential from
+  `WLED_MCP_HTTP_TOKEN` or `--http-token-file`), and `--export` prints a sanitized JSON
+  summary that can be attached to a report.
+
+Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md).
 
 ## Device restoration
 
@@ -411,7 +438,7 @@ authorization for the selected device. Snapshots stay under
 ## Persistent paths
 
 - `/app/data/wled-mcp/config/devices.toml`: local inventory, not in Git.
-- `/app/data/wled-mcp/backups/<device_id>/<backup_id>.json`: persistent preset snapshots (directories 0700, files 0600, created on first snapshot; never in Git). The service user needs write access; keep the volume persistent and back it up like other runtime data. Snapshots are published with a hard link, so a filesystem without hard-link support (some network or FAT volumes) makes every snapshot fail closed with `BACKUP_FAILED`.
+- `/app/data/wled-mcp/backups/<device_id>/<backup_id>.json`: persistent preset snapshots (directories 0700, files 0600, created on first snapshot; never in Git). The service user needs write access; keep the volume persistent and back it up like other runtime data. Snapshots are published with a hard link, so a filesystem without hard-link support (some network or FAT volumes) makes every snapshot fail closed with `BACKUP_FAILED`. When the backups location is not writable, the server prints one advisory line on stderr at startup and still starts; `wled-mcp doctor` reports it as `BACKUPS_NOT_WRITABLE` (hard-link support is not checked, because that needs a write).
 - `/app/binaries/wled-mcp/<version>/`: immutable staged release (wheel, constraints, checksums).
 - stdio only: `/app/data/wled-mcp-uv/{cache,tools,python}`: uv runtime environment, rebuildable.
 

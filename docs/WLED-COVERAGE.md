@@ -173,7 +173,7 @@ owning issue for planned rows and the decision for excluded rows.
 | --- | --- | --- | --- | --- | --- | --- |
 | W-INFO-01 | Firmware identity | `/json/info` (`ver`, `vid`, `product`, `brand`, `arch`) | supported | `wled_get_state` | - | - |
 | W-INFO-02 | LED count, segment limit and color capabilities | `/json/info` (`leds.count`, `leds.maxseg`, `leds.lc`, `leds.seglc`) | supported | `wled_get_state` | - | - |
-| W-INFO-03 | Reachability | `/json/info` | supported | `wled_list_devices` | - | Optional bounded probe. |
+| W-INFO-03 | Reachability | `/json/info` | supported | `wled_list_devices`, `cli: wled-mcp doctor` | - | Optional bounded probe. |
 | W-INFO-04 | Runtime diagnostics | `/json/info` (`uptime`, `freeheap`, `wifi`, `fs`) | partial | `wled_get_state` | - | Raw `info` only, not normalized; `mac`, `ip` and `wifi.bssid` are removed. |
 | W-INFO-05 | Live LED colors | `/json/live`, `/liveview`, WebSocket `lv` | unplanned | - | - | - |
 | W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |

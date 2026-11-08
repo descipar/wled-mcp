@@ -564,6 +564,8 @@ can explicitly amend them.
 Stage 2 (recorded 2026-11-07):
 - [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart
   instead of in-process reload; CLI-only standard-library discovery.
+  ISSUE-16-DEC-002 (coordinator, technical proposal): CLI shape and exit codes, atomic
+  config writes, read-only `doctor` with sanitized export, no `config migrate`.
 - [ISSUE-18-DEC-001](decisions/issue-18.md) (human): supplied objects are written as
   single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
   #19 owns the capability model; ISSUE-18-DEC-003 (coordinator, technical proposal):

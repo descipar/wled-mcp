@@ -134,6 +134,33 @@ class StartupConfig:
     backups: BackupSettings = BackupSettings()
 
 
+MAX_CONFIG_BYTES = 65536
+_GENERIC_INVALID = (
+    "Invalid inventory configuration{located}: check schema version, unique device "
+    "IDs, credential-free HTTP(S) root URLs and supported settings."
+)
+
+
+def validate_document(content: bytes) -> InventoryConfig:
+    """Validate complete configuration bytes exactly as startup does (issue #16, TD-16-4).
+
+    Shared by ``load_config``, ``wled-mcp config validate``/``add-device`` and
+    ``doctor``: the same 64 KiB bound, schema-version naming and positional, value-free
+    messages. Never reads or writes a file.
+    """
+    if len(content) > MAX_CONFIG_BYTES:
+        raise ConfigurationError("Configuration exceeds the 64 KiB limit.")
+    try:
+        parsed = tomllib.loads(content.decode("utf-8"))
+        _check_schema_version(parsed.get("schema_version"))
+        return InventoryConfig.model_validate(parsed)
+    except (ValueError, UnicodeError, ValidationError, RecursionError) as exc:
+        if isinstance(exc, ConfigurationError):
+            raise
+        located = _device_locators(exc) if isinstance(exc, ValidationError) else ""
+        raise ConfigurationError(_GENERIC_INVALID.format(located=located)) from None
+
+
 def load_config(
     config_path: str | None,
     data_dir: str | None,
@@ -155,20 +182,12 @@ def load_config(
         if not data.is_dir():
             raise ConfigurationError("The data directory must already exist and be a directory.")
         with config.open("rb") as stream:
-            content = stream.read(65537)
-        if len(content) > 65536:
-            raise ConfigurationError("Configuration exceeds the 64 KiB limit.")
-        parsed = tomllib.loads(content.decode("utf-8"))
-        _check_schema_version(parsed.get("schema_version"))
-        validated = InventoryConfig.model_validate(parsed)
-    except (OSError, ValueError, UnicodeError, ValidationError, RecursionError) as exc:
+            content = stream.read(MAX_CONFIG_BYTES + 1)
+    except (OSError, ValueError) as exc:
         if isinstance(exc, ConfigurationError):
             raise
-        located = _device_locators(exc) if isinstance(exc, ValidationError) else ""
-        raise ConfigurationError(
-            f"Invalid inventory configuration{located}: check schema version, unique device "
-            "IDs, credential-free HTTP(S) root URLs and supported settings."
-        ) from None
+        raise ConfigurationError(_GENERIC_INVALID.format(located="")) from None
+    validated = validate_document(content)
     return StartupConfig(
         config.resolve(),
         data.resolve(),
