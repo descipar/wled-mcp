@@ -9,9 +9,10 @@ effort), a bound on the directory scan, and symlinks and non-regular files refus
 
 Save and delete refuse to touch a file that cannot be read by this server (invalid,
 written by a newer version, not a regular file), so a stored newer-version document is
-never overwritten. A per-process lock serializes writes; several server processes sharing
-one data directory are not coordinated. Diagnostics go to the logging system (stderr) and
-never carry paths, names or document content.
+never overwritten. A per-process lock per directory serializes writes, also between two
+store instances over the same directory (for example two operation sets in one process);
+several server processes sharing one data directory are not coordinated. Diagnostics go
+to the logging system (stderr) and never carry paths, names or document content.
 """
 
 from __future__ import annotations
@@ -31,13 +32,12 @@ from typing import Final
 from pydantic import JsonValue
 
 from wled_mcp.client import ClientFailure
-from wled_mcp.formats import invalid
+from wled_mcp.formats import invalid, is_definition_id
 
 LOGGER = logging.getLogger("wled_mcp.scene_store")
 
 MAX_DIRECTORY_ENTRIES: Final = 10_000
 FILE_NAME_RE: Final = re.compile(r"^([a-z0-9][a-z0-9_-]{0,63})\.json$")
-ID_RE: Final = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 STORE_RECONCILE: Final = (
     "Repair the configured data path; no device was contacted. Then repeat the request explicitly."
@@ -46,6 +46,17 @@ UNREADABLE_RECONCILE: Final = (
     "The stored file is left untouched. Repair or remove it outside this server, or choose "
     "another ID."
 )
+
+
+_DIRECTORY_LOCKS: dict[str, threading.Lock] = {}
+_DIRECTORY_LOCKS_GUARD = threading.Lock()
+
+
+def _directory_lock(directory: Path) -> threading.Lock:
+    """The one write lock of a directory, shared by every store instance over it."""
+    key = os.path.normcase(os.path.abspath(directory))
+    with _DIRECTORY_LOCKS_GUARD:
+        return _DIRECTORY_LOCKS.setdefault(key, threading.Lock())
 
 
 def storage_failed(
@@ -93,12 +104,12 @@ class DefinitionStore[T]:
         self._id_of = id_of
         self.max_items = max_items
         self.max_bytes = max_bytes
-        self._lock = threading.Lock()
+        self._lock = _directory_lock(directory)
 
     # -- helpers ---------------------------------------------------------------
 
     def _check_id(self, identifier: str) -> None:
-        if not isinstance(identifier, str) or ID_RE.match(identifier) is None:
+        if not is_definition_id(identifier):
             raise invalid(f"The {self.kind} ID is not valid.")
 
     def _path(self, identifier: str) -> Path:

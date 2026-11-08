@@ -9,6 +9,7 @@ an in-flight gauge. The firmware model, bus capability bits and matrix shapes ar
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,7 @@ import httpx2 as httpx
 from tests.layout_support import FakeWLED
 from tests.state_catalog_support import FakeClock
 from tests.test_inventory_client import config, device
+from wled_mcp.access import CURRENT_TOOL_CLASS, AccessPolicy
 from wled_mcp.operations import build_operations
 from wled_mcp.resources import Resources
 
@@ -76,16 +78,24 @@ class SceneFleet:
         self.calls: list[tuple[str, str, str]] = []
         self.in_flight = 0
         self.max_in_flight = 0
+        self.host_in_flight: dict[str, int] = {}
+        self.host_max_in_flight: dict[str, int] = {}
 
     async def __call__(self, request: httpx.Request) -> httpx.Response:
         self.calls.append((request.method, request.url.host, request.url.path))
+        host = request.url.host
         self.in_flight += 1
         self.max_in_flight = max(self.max_in_flight, self.in_flight)
+        self.host_in_flight[host] = self.host_in_flight.get(host, 0) + 1
+        self.host_max_in_flight[host] = max(
+            self.host_max_in_flight.get(host, 0), self.host_in_flight[host]
+        )
         try:
             await anyio.sleep(0)
-            return await self.devices[request.url.host](request)
+            return await self.devices[host](request)
         finally:
             self.in_flight -= 1
+            self.host_in_flight[host] -= 1
 
     def transport(self) -> httpx.MockTransport:
         return httpx.MockTransport(self)
@@ -96,6 +106,10 @@ class SceneFleet:
     def hosts_called(self) -> set[str]:
         return {host for _method, host, _path in self.calls}
 
+    def post_hosts(self) -> list[str]:
+        """The host of every POST, in the order they arrived."""
+        return [host for method, host, _path in self.calls if method == "POST"]
+
 
 def strip(**kwargs: Any) -> SceneDevice:
     """A default three-segment v16-style device (segments 0, 2, 5)."""
@@ -104,19 +118,36 @@ def strip(**kwargs: Any) -> SceneDevice:
 
 
 def open_fleet(
-    tmp_path: Path, fleet: SceneFleet, *, timeout: float = 2.0, **settings: Any
+    tmp_path: Path,
+    fleet: SceneFleet,
+    *,
+    timeout: float = 2.0,
+    access: AccessPolicy | None = None,
+    **settings: Any,
 ) -> Resources:
-    """Resources over the fleet; one configured device per fake, data under ``tmp_path``."""
+    """Resources over the fleet; one configured device per fake, data under ``tmp_path``.
+
+    ``access`` selects a profile and per-device ceilings (issue #20); the default is the
+    unrestricted ``full`` profile.
+    """
     settings.setdefault("operation_timeout_seconds", timeout)
     devices = [device(name.removesuffix(".invalid")) for name in fleet.devices]
-    return Resources(
-        config(tmp_path, devices=devices, **settings), fleet.transport(), clock=FakeClock().clock()
-    )
+    startup = config(tmp_path, devices=devices, **settings)
+    if access is not None:
+        startup = dataclasses.replace(startup, access=access)
+    return Resources(startup, fleet.transport(), clock=FakeClock().clock())
 
 
 async def call(resources: Resources, tool: str, **arguments: Any) -> Any:
+    """Run one tool as the server dispatcher does, including the ambient tool class (G3)."""
     operation = {op.name: op for op in build_operations(resources)}[tool]
-    return await operation.execute(operation.request_model.model_validate(arguments).model_dump())
+    token = CURRENT_TOOL_CLASS.set(operation.tool_class)
+    try:
+        return await operation.execute(
+            operation.request_model.model_validate(arguments).model_dump()
+        )
+    finally:
+        CURRENT_TOOL_CLASS.reset(token)
 
 
 def group_arguments(group_id: str = "shelf", *members: Any, **extra: Any) -> dict[str, Any]:

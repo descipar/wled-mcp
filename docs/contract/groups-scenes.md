@@ -1,14 +1,15 @@
 # Device groups and scenes
 
-Contract for named device groups, versioned scenes, the dry-run plan and sharing, introduced by
-[#17](https://github.com/descipar/wled-mcp/issues/17) (S2-GROUP-01, S2-GROUP-02). Decisions:
+Contract for named device groups, versioned scenes, the dry-run plan, the apply and sharing,
+introduced by [#17](https://github.com/descipar/wled-mcp/issues/17) (S2-GROUP-01,
+S2-GROUP-02). Decisions:
 [ISSUE-17-DEC-001 and -002](../decisions/issue-17.md); tool classes follow ISSUE-20-DEC-001.
 Evidence is in [validation/issue-17.md](../validation/issue-17.md). Examples use synthetic IDs.
 
-Status: pull request A delivers the definitions, the local store, sharing and
-`wled_plan_scene`. **No tool in this document sends a device write.** `wled_apply_scene`
-(the only write path, class `control`) is pull request B and is specified here only where its
-policy is already fixed.
+Status: pull request A delivered the definitions, the local store, sharing and
+`wled_plan_scene`, which send no device write. Pull request B delivers `wled_apply_scene`
+(class `control`), the only tool of this document that writes to a device; every other tool
+here reads local files, or reads devices, only.
 
 ## Storage
 
@@ -18,7 +19,9 @@ untouched. Written by the `manage`-class tools, read by the `read`-class tools.
 
 - **IDs** match the device ID pattern `^[a-z0-9][a-z0-9_-]{0,63}$` (separate namespaces for
   groups, scenes and devices) and are the file names; a file whose `id` differs from its name
-  is not usable.
+  is not usable. A group or scene ID that is a Windows device name (`con`, `prn`, `aux`,
+  `nul`, `com1`-`com9`, `lpt1`-`lpt9`) is refused, so a stored definition is portable between
+  hosts; the check applies to the ID of a definition, not to a device reference.
 - **Bounds:** at most 64 KiB per document, 100 groups, 500 scenes, 10 000 directory entries
   scanned. Files that cannot be used count toward the item bound.
 - **Directories** are created at the first save, 0700, files 0600 on POSIX. A symlink or
@@ -34,8 +37,10 @@ untouched. Written by the `manage`-class tools, read by the `read`-class tools.
   a regular file) are counted in the listing (`data.invalid_count`, one warning) and never
   named, rewritten, migrated or pruned. Loading one by ID is `VALIDATION_ERROR` with the
   version named when it is an integer 0-9999.
-- **Concurrency:** a per-process lock serializes writes. Several server processes sharing one
-  data directory are not coordinated; the last replace wins.
+- **Concurrency:** one lock per directory serializes writes inside a process, also between
+  two store objects over the same directory, so a second save of one ID cannot create it
+  twice. Several server processes sharing one data directory are not coordinated; the last
+  replace wins.
 - Diagnostics (stderr) carry the kind and exception class only, never an ID, name, path or
   document content.
 
@@ -71,7 +76,8 @@ timestamp, address, credential or URL, and no field takes a free URL.
   as a conflict. One device may belong to several groups.
 - Saving checks every member against the inventory (`VALIDATION_ERROR` before the write). Every
   use rechecks it: a member that left the inventory is listed with `in_inventory=false` and a
-  warning, and a plan reports it as `UNKNOWN_DEVICE` for that device.
+  warning, and a plan or an apply reports it as `UNKNOWN_DEVICE` for that device, without any
+  I/O for it.
 
 ### Scene, format `wled-mcp.scene` 1
 
@@ -96,7 +102,11 @@ timestamp, address, credential or URL, and no field takes a free URL.
 - `id` and `name` as above; optional `description` of 1-256 characters without control
   characters; `targets` 1-16 entries.
 - A target names exactly one of `device` or `group` (a configured device or a stored group) and
-  at least one of `master` and `segments`.
+  at least one of `master` and `segments`. Saving refuses a directly named device that is not
+  configured. A device that is not configured at plan or apply time (it left the inventory, or
+  a hand-edited file names it, directly or as a group member) is a per-device `UNKNOWN_DEVICE`
+  preflight failure with no I/O for it; strict blocks the whole scene, best-effort skips that
+  device.
 - `master`: `on`, `brightness`, `transition_ms` with the `wled_set_state` bounds; at least `on`
   or `brightness` (the `wled_set_state` rule), so `transition_ms` alone is refused.
 - `segments`: 1-16 entries, each with `ids` and the fields below. The same fields apply to every
@@ -139,8 +149,8 @@ always expands again.
 
 ## Tools
 
-All local tools report `device_id=null`, `application=not_attempted` and
-`verification=not_requested`: no device write is attempted. `data.saved` / `data.removed` state
+All local tools (every tool above except `wled_apply_scene`) report `device_id=null`,
+`application=not_attempted` and `verification=not_requested`: no device write is attempted. `data.saved` / `data.removed` state
 what happened to the file. Failures are `VALIDATION_ERROR` (invalid document, unknown reference,
 not found, conflict, unusable file) or `STORAGE_FAILED` (the store could not be read or written;
 no device was contacted; additive code). Schema errors (a malformed ID, an unknown argument)
@@ -155,6 +165,7 @@ use the existing generic `VALIDATION_ERROR` of the tool schema.
 | `wled_save_scene(scene, target_map?, overwrite=false, dry_run=false)` | manage | `scene`, `saved`, `replaced` |
 | `wled_delete_scene(scene_id, dry_run=false)` | manage | `removed`, `deleted` |
 | `wled_plan_scene(scene_id, mode="strict")` | read | see below |
+| `wled_apply_scene(scene_id, mode="strict", dry_run=false)` | control | see [Apply](#apply-wled_apply_scene) |
 
 `dry_run` on a save or delete performs the same bounded reads and checks and writes nothing (no
 directory, no temporary file); the result has `dry_run=true`. Deleting a group does not edit
@@ -194,7 +205,8 @@ configured (`UNKNOWN_DEVICE`, no device I/O).
 
 **Policy (`mode`).** `strict` is the default (ISSUE-17-DEC-001): if any target fails preflight,
 nothing would be written anywhere. `best_effort` is an explicit opt-in: failing targets are
-skipped and reported and the rest would be written. The plan always covers every target. The
+skipped and reported and the rest would be written. The same rules govern
+[`wled_apply_scene`](#apply-wled_apply_scene). The plan always covers every target. The
 envelope reports what an apply would do: `ok=true` when something would be written under the
 mode; `ok=false` when strict blocks on a failure or best-effort has no passing device, with the
 error of the first failing device in expansion order (the device named in the message and
@@ -206,16 +218,24 @@ The plan is **not a reservation**: state, catalogs and reachability can change b
 which plans again under each device lock. A scene is **not atomic and not synchronized** across
 devices.
 
+`wled_plan_scene` is `read`-class and does not check the per-device ceiling of `control`: it
+previews on a device that an apply would be refused on. `wled_apply_scene dry_run=true` runs
+the same plan with that ceiling check.
+
 ## Sharing
 
 `wled_list_scenes(scene_id, shareable=true)` returns the export as inline JSON, never a file.
 By default the device and group references are replaced by positional placeholders `t1` ... `tn`
 (one per target) and the document carries a top-level `placeholders` list (names only, no IDs),
 so no inventory identity leaves the server. `include_targets=true` keeps the references and has
-no `placeholders` key. The export refuses (naming the scene and the field, never the text) a
-`name` or `description` that contains a configured device host, root URL or authority, as a
-case-folded substring scan of the current inventory; that check also applies with
-`include_targets`. Free text beyond host tokens remains the author's responsibility. A stored
+no `placeholders` key. The export refuses (naming the scene and the field path, never the
+text) a document in which any exported string value contains a configured device host, root
+URL or authority, as a case-folded substring scan of the current inventory. The scan covers
+the scene `id`, `name` and `description`, every `effect_name` and `palette_name` (field paths
+such as `targets.2.segments.1.effect_name`) and, only when `include_targets` keeps them, the
+device and group references; the fixed `format` envelope is not scanned. The check applies
+with and without `include_targets`. Free text beyond host tokens remains the author's
+responsibility. A stored
 scene never carries `placeholders`.
 
 `wled_save_scene` accepts a stored-form document or a shared document. A document with
@@ -227,28 +247,116 @@ original references reproduces the original document. The retained synthetic exa
 [scene.json](../../examples/contracts/scene.json) is a shareable export and is checked with the
 real parser.
 
-## Apply (pull request B, policy already fixed)
+## Apply: `wled_apply_scene`
 
-`wled_apply_scene` (class `control`, not destructive, also accepting `dry_run` with exactly the
-plan above) will write each device through the existing per-device path (lock, deadline,
-readback verification, uncertain-write rule: no replay), master step first and then the segment
-step, with at most 4 devices in flight, an independent outcome per device, no cross-device
-atomicity, frame synchronization or rollback, and the strict/best-effort policy above. A device
-failing in the write phase never stops or undoes another. This document is extended by that
-pull request.
+`wled_apply_scene(scene_id, mode="strict", dry_run=false)`: class `control`, not destructive,
+the only device-write path of scenes. It changes the live output of every target device. It
+has no `device_id`: the per-device ceiling of [profiles](profiles.md) is checked for each
+expanded device instead of by the registration filter alone.
 
-Access control (#20): the execution-time class guard will live in the write engines of
+**Phases.**
+
+1. *Request.* The scene is loaded and expanded exactly as for the plan. A request that fails
+   here (missing or unusable scene, unknown group, a duplicate device, more than 16 devices or
+   64 segment patches for one, an entry without `ids` on a member that designates none) is
+   `not_attempted/not_requested`, `ok=false`, with no `data` and no device I/O.
+2. *Preflight of every device,* with the plan's code and the same results, at most 4 devices
+   in flight. For each expanded device, in this order: (a) it must be a configured device
+   (`UNKNOWN_DEVICE`, no I/O); (b) the public `Resources.require_access(device, control)` check
+   (`ACCESS_DENIED` when the profile or the device's `max_class` is below `control`), before
+   any read of that device; (c) the reads under the device lock, name resolution and the real
+   master and segment planners (every refusal of the single-device tools). A device below
+   `control` therefore fails preflight like any other per-device refusal and is handled by
+   the policy.
+3. *Policy gate.* `strict` (default): when any device failed preflight nothing is written
+   anywhere, in particular no device that would have passed. `best_effort`: failing devices
+   are skipped and reported and the rest are written; when no device passes, nothing is
+   written.
+4. *Write phase.* Each remaining device is written independently; a device that fails here
+   never stops, delays or undoes another.
+
+`dry_run=true` stops after phase 2 and returns exactly the plan of `wled_plan_scene` for the
+same `mode` (`data` and the envelope are equal; `operation` names the tool called). The one
+difference is the ceiling check of phase 2(b), which the read-class plan does not have (a
+preview is not a lower class, TD-20-2). It sends no write.
+
+**Per device: master first, then segments.** The master step (`on`, `brightness`,
+`transition_ms`, the `wled_set_state` planner) is written first, then the segment step (the
+`wled_patch_segments` planner, all segment entries of the device in one write). Each step
+goes through `Resources.write_verified`, the engine of the single-device tools:
+
+- It runs under the existing per-device lock with one operation deadline, replans against a
+  fresh read (the preflight is not a reservation; names resolve against the device's fresh
+  catalog), sends one POST and verifies by readback. The engine also checks the tool class
+  and the device ceiling (G3), so a ceiling that dropped after the preflight refuses the
+  write with nothing sent.
+- The segment step is not attempted when the master step is not verified-applied; the device
+  entry says so (`skipped`). A device with only a master or only segments has one step.
+- Two applies on one device, or an apply and any other tool, serialize on that device's lock
+  and may interleave across devices. There is no scene-level lock and no cross-call
+  atomicity.
+
+**Limits (fixed, not configuration).** At most 4 devices in flight and 16 expanded devices per
+request. The wall time is bounded by `ceil(devices / 4)` operation timeouts for the preflight
+plus `ceil(devices / 4) * 2` for the write phase (two steps per device).
+
+**Per-device outcomes.** The envelope carries `device_id=null` and `data`: `scene`, `mode`,
+`max_concurrency`, `device_count`, `summary`, `devices[]` in expansion order and `notes`.
+`summary` counts devices by verification: `verified`, `mismatch`, `unknown`, `not_attempted`.
+Each `devices[]` entry has:
+
+| Field | Meaning |
+| --- | --- |
+| `device_id`, `origin`, `target_index` | The device and where it came from |
+| `application`, `verification`, `ok`, `error` | The device's own result: the values of its last step as the shared write engine reported them, unchanged; `ok` only for `applied/verified`. A proven master step followed by a segment step that was refused before it was sent is `applied/mismatch` (the "proven partial steps" row) |
+| `step`, `skipped` | The step that ended the device, and why a step was not run (or null) |
+| `steps[]` | Per step: `step` (`master` or `segments`), `application`, `verification`, `ok`, `error`, the `plan` and `postconditions` of the planner, and for segments `resolved` (name to ID per device), `warnings` and, for an ambiguous name, `candidates` |
+| `warnings` | Read anomalies, planner warnings and the numeric-ID portability warning |
+
+A device that was not written (preflight failure, or blocked by `strict`) is
+`not_attempted/not_requested` with `skipped` stating why and the preflight `error` when it was
+the failing one.
+
+**Aggregate envelope** (no new application or verification value). `data.devices[]` is
+authoritative; the aggregate never claims a state a device did not report. The first matching
+row applies:
+
+| Situation | application | verification | ok | error |
+| --- | --- | --- | --- | --- |
+| At least one device is `application=unknown` (readback lost, or a readback that differs after a possible dispatch) | unknown | unknown | false | `WRITE_OUTCOME_UNKNOWN`; the entries say `unknown` or `mismatch` per device |
+| No device was applied (strict block, best-effort with no passing device, or every write refused before dispatch) | not_attempted | not_requested | false | the first device refusal in expansion order, the device named |
+| Every targeted device is `applied/verified` | applied | verified | true | none |
+| Some devices applied, the others skipped, refused, partial or not verified | applied | mismatch | false | `VERIFICATION_MISMATCH` (the "proven partial steps" row); a `best_effort` run that skipped a failing device always ends here |
+
+**No replay, no compensation, no rollback.** A timed-out or unreadable write is uncertain and
+is never retried or replayed. After a failure on one device nothing is written to restore any
+device, including the devices that already succeeded: their new state stays. Nothing is rolled
+back across devices, frames are not synchronized, and the scene is not atomic. An explicit
+second call is a new request; read the state first (`data.devices` says which devices to
+check).
+
+**Stopped scenes.** If the call is stopped while devices are written (client cancellation, a
+timeout of the host or transport, or a shutdown, whose graceful drain is only the operation
+timeout plus two seconds), devices that had not started are untouched (no write request was
+sent), writes in flight are uncertain (the device may or may not have applied them) and no
+result is returned for the call. Read the state of every device of the scene before repeating
+it. The service never resumes or replays a scene.
+
+Scene contents, names and IDs are never logged; diagnostics carry the exception class only.
+
+**Access control (#20).** The execution-time class guard lives in the write engines of
 `Resources` and the preset-import path, not in `Resources.operation`, which also serves reads
-and dry runs. Scene apply must therefore reach every device through those write engines, and
-its preflight must call the public `Resources.require_access` that #20 adds, once per expanded
-device (a scene has no single `device_id`). A `dry_run` does not lower a tool's class
-(TD-20-2); `wled_plan_scene` is class `read` because it never writes at all. Pull request A
-sends no device write and is not affected; nothing of this is implemented here.
+and dry runs. The apply reaches every device through the write engine (so the ambient class
+`control` and each device's ceiling are checked at every write) and calls the public
+`Resources.require_access` once per expanded device in its preflight. A read-only profile does
+not register the tool; the `control` and `full` profiles do, and a device capped below
+`control` is refused as described above. `wled_plan_scene` stays `read`.
 
 ## Not provided
 
 Discovery or implicit enrollment, inventory edits, saving a scene as a preset, scheduling,
 triggers, server-orchestrated transitions, synchronized frames, cross-device atomicity,
-rollback, restoring the lighting before a scene, a background watcher, per-user ownership,
+rollback or compensating writes, restoring the lighting before a scene, a background
+watcher, per-user ownership,
 firmware version gates (DEC-020; capability comes from fresh readbacks), fuzzy name matching
 and name mapping between firmware families. No hardware or multi-device claim is made.

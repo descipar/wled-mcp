@@ -140,6 +140,53 @@ def test_ids_are_path_safe_before_any_filesystem_access(tmp_path, identifier):
     assert files(tmp_path) == []
 
 
+@pytest.mark.parametrize("identifier", ["../escape", "a/b", "a\b", "Upper", ".hidden", "a.json"])
+def test_the_store_id_check_is_the_refusal_not_a_missing_file(tmp_path, identifier):
+    # With the directory present, an escaping ID that was only "not found" would still
+    # touch a path outside it: plant a file there and require the ID refusal itself.
+    store = scene_store(tmp_path)
+    save(store, scene())
+    (tmp_path / "escape.json").write_text("{}")
+    for call in (lambda: store.load(identifier), lambda: store.delete(identifier, dry_run=False)):
+        error = refused(call).error
+        assert error.code == "VALIDATION_ERROR" and "ID is not valid" in error.message
+    assert (tmp_path / "escape.json").exists()
+
+
+RESERVED = ["con", "prn", "aux", "nul", *[f"com{n}" for n in range(1, 10)]] + [
+    f"lpt{n}" for n in range(1, 10)
+]
+
+
+@pytest.mark.parametrize("identifier", RESERVED)
+def test_windows_device_names_are_not_usable_ids(tmp_path, identifier):
+    store = scene_store(tmp_path)
+    for call in (lambda: store.load(identifier), lambda: store.delete(identifier, dry_run=True)):
+        assert "ID is not valid" in refused(call).error.message
+    document = scene_document(id=identifier)
+    with pytest.raises(ClientFailure) as caught:
+        parse_scene(document, allow_placeholders=False)
+    assert "reserved device name" in caught.value.error.message
+    document = {
+        "format": "wled-mcp.group",
+        "format_version": 1,
+        "id": identifier,
+        "name": "Reserved",
+        "members": [{"device": "desk"}],
+    }
+    with pytest.raises(ClientFailure) as caught:
+        parse_group(document)
+    assert "reserved device name" in caught.value.error.message
+    assert files(tmp_path) == []
+
+
+@pytest.mark.parametrize("identifier", ["console", "com10", "lpt0", "nul2", "aux-1", "c0n"])
+def test_names_that_only_resemble_a_device_name_stay_valid(tmp_path, identifier):
+    store = scene_store(tmp_path)
+    assert save(store, scene(identifier)).stored is True
+    assert store.load(identifier).id == identifier
+
+
 def test_foreign_and_temporary_names_are_ignored_not_counted_invalid(tmp_path):
     store = scene_store(tmp_path)
     save(store, scene())
@@ -409,6 +456,47 @@ def test_concurrent_saves_of_one_id_serialize_and_keep_a_complete_file(tmp_path)
     assert results.count("ok") == 8
     assert store.load("evening").name.startswith("Writer ")
     assert files(tmp_path / "scenes") == ["evening.json"]
+
+
+def test_two_store_instances_over_one_directory_cannot_create_the_same_id(tmp_path):
+    # Two operation sets in one process (two `Resources`) each own a store object over the
+    # same directory. The write lock is per directory, so the existence check and the
+    # create of the second save cannot interleave with the first.
+    first, second = scene_store(tmp_path), scene_store(tmp_path)
+    item = scene()
+    entered, second_looked = threading.Event(), threading.Event()
+    real_write, real_load = first._write, second._load_existing
+
+    def slow_write(identifier: str, body: bytes) -> None:
+        entered.set()
+        # Without a shared lock the second save checks "absent" while this one is paused.
+        second_looked.wait(timeout=0.5)
+        real_write(identifier, body)
+
+    def watched_load(identifier: str) -> Any:
+        second_looked.set()
+        return real_load(identifier)
+
+    first._write = slow_write  # type: ignore[method-assign]
+    second._load_existing = watched_load  # type: ignore[method-assign]
+    results: dict[str, str] = {}
+
+    def run(name: str, store: DefinitionStore[Scene]) -> None:
+        try:
+            store.save(item, body_of(item), overwrite=False, dry_run=False)
+            results[name] = "created"
+        except ClientFailure as failure:
+            results[name] = failure.error.message
+
+    one = threading.Thread(target=run, args=("first", first))
+    one.start()
+    assert entered.wait(timeout=5)
+    two = threading.Thread(target=run, args=("second", second))
+    two.start()
+    one.join(timeout=10)
+    two.join(timeout=10)
+    assert results["first"] == "created"
+    assert "already exists" in results["second"]
 
 
 # --------------------------------------------------------------------------- groups

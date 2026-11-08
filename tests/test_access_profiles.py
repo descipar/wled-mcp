@@ -236,7 +236,14 @@ def test_create_server_refuses_a_class_that_is_not_a_tool_class(tmp_path, value)
 # A deliberate change detector: reclassifying a tool must edit these literals (and the
 # tests/tool_contract.py entry, and be a recorded decision).
 CONTROL_TOOLS = frozenset(
-    {"wled_set_state", "wled_patch_segments", "wled_replace_layout", "wled_activate_preset"}
+    {
+        "wled_set_state",
+        "wled_patch_segments",
+        "wled_replace_layout",
+        "wled_activate_preset",
+        # A scene has no device_id: the per-device ceiling is checked per expanded device.
+        "wled_apply_scene",
+    }
 )
 MANAGE_TOOLS = frozenset(
     {
@@ -299,6 +306,8 @@ CONTROL_CALLS: dict[str, dict[str, Any]] = {
         "segments": [{"id": 0, "start": 0, "stop": 20}],
     },
     "wled_activate_preset": {"device_id": "desk", "preset_id": 1},
+    # Refused without a stored scene (the scene tests apply one); it never writes then.
+    "wled_apply_scene": {"scene_id": "evening"},
 }
 
 
@@ -405,8 +414,11 @@ def test_build_operations_stays_unfiltered_under_a_restricted_policy(tmp_path):
 
 # -------------------------------------------------------- G2: the per-device ceiling (T20-08)
 
+# A control tool without a device_id: the per-device ceiling is checked per expanded device
+# (preflight and write engine), covered by tests/test_scene_apply.py, not by the G2 filter.
+DEVICELESS_CONTROL_TOOLS = frozenset({"wled_apply_scene"})
 WRITE_CALLS: dict[str, dict[str, Any]] = {
-    **CONTROL_CALLS,
+    **{k: v for k, v in CONTROL_CALLS.items() if k not in DEVICELESS_CONTROL_TOOLS},
     "wled_save_preset": {"device_id": "desk", "name": "Mine"},
     "wled_delete_preset": {"device_id": "desk", "preset_id": 1},
     "wled_restore_preset": {"device_id": "desk", "backup_id": "b-20260101T000000Z-aaaaaaaaaaaa"},
@@ -424,8 +436,9 @@ DEVICE_TOOLS = [t.name for t in EXPECTED_TOOLS if t.name != "wled_list_devices"]
 
 
 def test_the_cap_cases_cover_every_write_tool():
-    assert set(WRITE_CALLS) | LOCAL_FILE_TOOLS == names_of(CONTROL, MANAGE)
-    assert not set(WRITE_CALLS) & LOCAL_FILE_TOOLS
+    covered = LOCAL_FILE_TOOLS | DEVICELESS_CONTROL_TOOLS
+    assert set(WRITE_CALLS) | covered == names_of(CONTROL, MANAGE)
+    assert not set(WRITE_CALLS) & covered
 
 
 async def call(client: Client, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
