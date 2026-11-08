@@ -75,7 +75,9 @@ def test_real_rows_use_every_status_and_area_and_place_every_tool():
     assert {r.status for r in rows} == set(checker.STATUSES)
     assert {r.area for r in rows} == set(checker.AREAS)
     placed = {ref for r in rows if r.status in checker.DELIVERING for ref in r.references}
-    assert CONTEXT.tools and CONTEXT.tools <= placed
+    server_only = set(checker.server_only_tools(COVERAGE))
+    assert not placed & server_only  # a server-only tool has no WLED feature row
+    assert CONTEXT.tools and CONTEXT.tools <= placed | server_only
 
 
 def test_console_script_reports_success_on_the_real_documents():
@@ -233,11 +235,11 @@ def test_percent_rounds_half_up(score, denominator, expected):
 
 
 def test_unregistered_tool_fails_c3():
-    # Named in TOOL-CONTRACT.md but deferred to #18, so it is not registered.
-    assert "wled_restore_preset" not in CONTEXT.tools
-    changed = edit_row(COVERAGE, "W-PRESET-06", **{"Delivered by": "`wled_restore_preset`"})
+    # A synthetic name that no registry provides.
+    assert "wled_synthetic_unregistered" not in CONTEXT.tools
+    changed = edit_row(COVERAGE, "W-PRESET-06", **{"Delivered by": "`wled_synthetic_unregistered`"})
     found = problems(changed)
-    assert "C3 W-PRESET-06: wled_restore_preset is not a registered tool" in found
+    assert "C3 W-PRESET-06: wled_synthetic_unregistered is not a registered tool" in found
     assert any(p.startswith("C7 wled_delete_preset:") for p in found)
 
 

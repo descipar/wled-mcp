@@ -24,7 +24,7 @@ Bootstrap mapping: C3-01/02/08 -> distribution/lock scripts; C3-03/04/07 -> star
 | T09 | Possible dispatched timeout/reset stays unknown unless bounded readback establishes postcondition; readable mismatch does not prove never applied. No mutation replay; partial sequences stop without further destructive steps, include completed/remaining state; reads/retries share one overall deadline | REL-01–02 |
 | T10 | Per-device lock spans fresh reads, validation, backup, all mutation steps and verification; same-device calls cannot interleave, different devices progress. Actual writes revalidate dry-run plans; external client race is acknowledged | MULTI-01, REL-03 |
 | T11 | List/read preserve types and unknown fields; key 0/temporary 255 excluded, null/empty absent, unknown nonempty occupied. Lowest-free allocation rechecks chosen ID; observed conflict does not reallocate. Explicit overwrite/name byte validation; storage-only capture controls; supported activation leaves storage unchanged | PRE-01–02, PLAY-01 |
-| T12 | Snapshot format/version/source/device/preset/firmware/path validation, exact unknown-field retention, atomic durable backup and safe retention. Backup failure prevents overwrite/delete; changed prior object aborts before overwrite. Restore execution is Should pending safe single-entry storage path; no apply/bulk shortcut or claimed restore acceptance from export | PRE-04 |
+| T12 | Snapshot format/version/source/device/preset/firmware/path validation, exact unknown-field retention, atomic durable backup and safe retention. Backup failure prevents overwrite/delete; changed prior object aborts before overwrite. Restore execution (Should) uses one verified single-entry write with a documented live effect (#18, [validation/issue-18.md](validation/issue-18.md)); no bulk shortcut or claimed restore acceptance from export | PRE-04 |
 | T13 | Delay persistent visibility within one deadline; compare saved name plus all captured included state, not only ID/name. Delete verifies target absence and reports unrelated interference. Asynchronous capture may mismatch; uncertain save/delete/allocation is never resent; unavailable readback and readable mismatch differ | PRE-05, REL-02 |
 | T14 | Real subprocess SDK handshake/list/call, no stdout diagnostics; structured envelope equals JSON text fallback, isError=!ok across success/domain error/uncertainty. Test SDK argument-shape/protocol errors separately | MCP-01–02 |
 | T15 | Mocked HTTP redirect, HTML response, malformed JSON, huge response, missing capabilities and connection reset return actionable bounded errors | READ-01, REL-01, OPS-03 |
@@ -63,8 +63,9 @@ MCP-03/MCP-04/OPS-05 map to #14 implementation, #10 T18–T21 acceptance, and #1
 integration/deployment evidence. H02/H03 remain separate authorized operational
 checks. The SDK version is selected (MCP SDK 2.3.0) and mocked/loopback protocol
 execution is automated (see [TRACEABILITY.md](TRACEABILITY.md)); hardware
-compatibility and deployment remain pending. PRE-03 and restore execution are explicitly deferred
-Should work; durable backup before destructive operations remains Must.
+compatibility and deployment remain pending. PRE-03 and restore execution are Should work
+added by #18 (mock evidence in [validation/issue-18.md](validation/issue-18.md)); durable
+backup before destructive operations remains Must.
 
 ## Issue #8 implementation evidence
 
@@ -89,7 +90,8 @@ Mock/tmp_path only; no LAN, device or hardware access. H06 is not run and stays
 separately authorized and pending; nothing here is hardware acceptance. Tests in
 `tests/test_presets.py` with the stateful fake `tests/preset_support.py` (which models
 only the facts in SOURCES.md "Issue-9 preset evidence"); executed results are
-recorded in the PR, not here. PRE-03 stays deferred to #18 (ISSUE-13-DEC-001) and is not covered.
+recorded in the PR, not here. PRE-03 is not covered by #9; #18 adds it
+([validation/issue-18.md](validation/issue-18.md)).
 
 | Criteria | Test coverage |
 | --- | --- |
@@ -1219,6 +1221,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
 
 ## Stage 2 and later files
 
+- [validation/issue-18.md](validation/issue-18.md): preset restore, supplied-state save
+  and snapshot listing (#18, mock evidence).
 - [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
   the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
   upgrade compatibility) (#21, #70).

@@ -23,20 +23,20 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 33 %** (29 of 89 features). **Planned-scope coverage: 41 %** (29 of 71 features, excluded rows removed).
+**WLED coverage: 34 %** (30.5 of 89 features). **Planned-scope coverage: 43 %** (30.5 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Master state (STATE) | 13 | 3 | 2 | 0 | 8 | 0 | 31 % | 31 % |
 | Segments (SEG) | 25 | 12 | 1 | 9 | 0 | 3 | 57 % | 50 % |
 | Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
-| Presets and playlists (PRESET) | 13 | 6 | 1 | 2 | 3 | 1 | 54 % | 50 % |
+| Presets and playlists (PRESET) | 13 | 7 | 2 | 0 | 3 | 1 | 67 % | 62 % |
 | Information and diagnostics (INFO) | 9 | 3 | 1 | 1 | 4 | 0 | 39 % | 39 % |
 | Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 89 | 26 | 6 | 12 | 27 | 18 | 41 % | 33 % |
+| **All** | 89 | 27 | 7 | 10 | 27 | 18 | 43 % | 34 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -160,8 +160,8 @@ owning issue for planned rows and the decision for excluded rows.
 | W-PRESET-05 | Save the current state as a preset | `psave` | supported | `wled_save_preset` | - | Overwrite needs `overwrite=true` and takes a snapshot. |
 | W-PRESET-06 | Delete a preset | `pdel` | supported | `wled_delete_preset` | - | Snapshot first. |
 | W-PRESET-07 | API-command presets | `win` in a preset | partial | `wled_list_presets`, `wled_get_preset` | - | Readable and backed up; activation is refused. |
-| W-PRESET-08 | Write a supplied preset object | `psave` with a supplied state object | planned | - | [#18](https://github.com/descipar/wled-mcp/issues/18) | Supplied-state save and restore; write route per ISSUE-18-DEC-001. |
-| W-PRESET-09 | Create and edit playlists | `playlist` (`ps`, `dur`, `transition`, `repeat`, `end`, `r`) | planned | - | [#18](https://github.com/descipar/wled-mcp/issues/18) | - |
+| W-PRESET-08 | Write a supplied preset object | `psave` with a supplied state object | supported | `wled_store_preset`, `wled_restore_preset` | - | Applied live, then stored (ISSUE-18-DEC-001); storing without a live change is unsupported on WLED 16; control keys are refused. |
+| W-PRESET-09 | Create and edit playlists | `playlist` (`ps`, `dur`, `transition`, `repeat`, `end`, `r`) | partial | `wled_restore_preset` | [#18](https://github.com/descipar/wled-mcp/issues/18) | Restores a playlist snapshot only; authoring follows in the second #18 pull request. |
 | W-PRESET-10 | Upload the whole preset file | `/upload` (`presets.json`) | excluded | - | [ISSUE-18-DEC-001](decisions/issue-18.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects) | - |
 | W-PRESET-11 | Quick-load labels | `ql` | unplanned | - | - | Preserved in stored presets; not settable. |
 | W-PRESET-12 | Preset cycling and random selection | `ps` (`"a~b~"`, `"r"`) | unplanned | - | - | - |
@@ -227,7 +227,10 @@ owning issue for planned rows and the decision for excluded rows.
 ## Tools without a WLED feature row
 
 Registered tools that deliver no WLED feature are listed here with a reason and are not
-counted. None at present: every registered tool appears in at least one row above.
+counted.
+
+- `wled_list_snapshots`: lists the server's own preset snapshots in the data directory;
+  no WLED feature is involved.
 
 ## Maintenance
 

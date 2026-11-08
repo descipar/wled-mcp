@@ -58,7 +58,8 @@ Implement issue #2 and follow the defined workflow.
 AGENTS.md routes issue implementation to this workflow by default. The main
 session reads `agents/coordinator.md`, retrieves the current issue/dependencies,
 derives the stage, delegates requirements/implementation/review and presents the
-reviewed PR for the human merge decision. The user does not need to repeat role
+reviewed PR for the human merge decision (or merges it under an active standing
+approval, DEC-022). The user does not need to repeat role
 names, file paths, test steps, stage or existing merge rules in every request.
 After verified authorized merge, the coordinator invokes `wled_completion` to
 reconcile the selected issue's acceptance checklist and close fully satisfied
@@ -130,7 +131,8 @@ flowchart TD
    indefinitely, weaken requirements or remove tests merely to obtain PASS.
 6. A passing review and human merge decision refer to the actual candidate. New
    commits invalidate previous review; refresh affected checks and approval as
-   needed. Never merge automatically from an agent verdict.
+   needed. Never merge automatically from an agent verdict, except under an active
+   owner-granted standing approval and its conditions (DEC-022 item 4).
 7. After actual merge verification, hand off to `wled_completion`. DONE requires
    full current acceptance and verified issue body/state; a merged PR alone is
    insufficient. Partial completion keeps exact outstanding criteria visible.
@@ -198,6 +200,12 @@ owner, at most two implementation tracks run in isolated worktrees with one
 coordinator per issue, branches are kept current by merging `main` (no force-push),
 and "Starte Stage 2 parallel" starts or resumes the plan (see
 [coordinator.md](../agents/coordinator.md)).
+[DEC-022](DECISIONS.md#dec-022--proportionate-review-and-standing-merge-approval)
+keeps review proportionate: nits go to the next PR instead of a new round, a sync
+without own code changes keeps the PASS after the coordinator's diff check, and
+docs-only PRs get a light review. While its standing merge approval is active, the
+coordinator merges PRs with a current-head PASS and green CI without asking and
+revalidates the approval with the owner after three issues.
 
 ### Where new documentation goes
 

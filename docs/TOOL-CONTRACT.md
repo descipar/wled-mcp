@@ -13,9 +13,9 @@ and `wled_patch_segments`; #7 adds `wled_replace_layout` (see
 [Layout replacement](#layout-replacement-implemented-in-7)); #14 adds the protected HTTP
 service; #9 adds the five persistent-preset tools (see
 [Persistent presets, implementation](#persistent-presets-implemented-in-9)).
-`wled_restore_preset` and `wled_patch_raw_state` remain design requirements, not
-executable behavior: the restore tool is deferred to
-[#18](https://github.com/descipar/wled-mcp/issues/18) and the raw state patch is excluded from stage 1
+#18 adds `wled_list_snapshots`, `wled_restore_preset` and `wled_store_preset` (see
+[contract/presets.md](contract/presets.md)). `wled_patch_raw_state` remains a design
+requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06);
 activating a preset saved by WLED 16 is refused there
@@ -66,7 +66,9 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 | `wled_activate_preset` | `device_id`, `preset_id`, `dry_run` | Activate supported existing state/playlist entry, no storage edit | Must |
 | `wled_save_preset` | `device_id`, `name`, optional `preset_id`, `overwrite=false`, `dry_run` | Save current state; lowest free ID if omitted; persistent verification | Must |
 | `wled_delete_preset` | `device_id`, `preset_id`, `dry_run` | Snapshot first; delete exactly that ID; verify absence | Must |
-| `wled_restore_preset` | `device_id`, `backup_id`, `preset_id`, `overwrite=false`, `dry_run` | Explicit single-entry storage restoration | Should; execution deferred to #18 pending safe adapter (ISSUE-13-DEC-001) |
+| `wled_list_snapshots` | `device_id`, optional `preset_id` | Server snapshot metadata, newest first; no device I/O | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_restore_preset` | `device_id`, `backup_id`, optional `preset_id`, `overwrite=false`, `dry_run` | Explicit single-entry storage restoration; applies the entry live (or starts the playlist), then stores it | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
+| `wled_store_preset` | `device_id`, `name`, `state`, optional `preset_id`, `overwrite=false`, `dry_run` | Supplied, validated light state; applied live, then stored | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_patch_raw_state` | `device_id`, JSON object `patch`, `dry_run` | Restricted advanced state patch | Should; excluded from stage 1, `raw_state_patch = true` rejected at startup, no owning issue (ISSUE-13-DEC-001) |
 
 Tool descriptions state physical output, playback and storage effects. State/layout
@@ -467,12 +469,12 @@ Activation verifies supported state/playlist acceptance through bounded readback
 playlist identity/status replaces invariant frame equality. Missing acceptance
 observability gives uncertainty, and saved contents stay unchanged.
 
-PRE-03 supplied-state save remains a capability-gated Should deferred to #18
-(ISSUE-13-DEC-001) and is not part of #9 (ISSUE-9-DEC-001):
-no proven no-live-output route in the reviewed source, no implicit apply/save/
-restore workaround. Restore execution is also deferred until a safe single-entry
-storage adapter exists; do not upload a whole filesystem or execute stored commands
-as a shortcut.
+PRE-03 supplied-state save is not part of #9 (ISSUE-9-DEC-001). #18 implements it as
+`wled_store_preset` and restore execution as `wled_restore_preset`, both through one
+single-entry JSON API write with a documented live effect (ISSUE-18-DEC-001; see
+[contract/presets.md](contract/presets.md)). The storage-only variant ("without
+changing live output") is unsupported on WLED 16; there is no implicit apply/save/
+restore workaround, no whole-file upload and no execution of stored commands.
 
 ### Persistent presets, implemented in #9
 
@@ -574,10 +576,11 @@ authorized caller verbatim.
 
 ## Snapshot and explicit restoration
 
-Implemented in #8 as a store plus a `Resources` seam; restoration execution stays
-deferred (ISSUE-8-DEC-001) and **no tool is registered** for it. `wled_save_preset`
-(overwrite) and `wled_delete_preset` call the store through `OperationContext.
-backup_preset` (#9).
+Implemented in #8 as a store plus a `Resources` seam. `wled_save_preset`
+(overwrite), `wled_delete_preset`, `wled_store_preset` and `wled_restore_preset`
+(overwrite) call the store through `OperationContext.backup_preset` (#9, #18).
+Restoration execution is `wled_restore_preset` and the listing is
+`wled_list_snapshots`, both in [contract/presets.md](contract/presets.md) (#18).
 
 Format 1 contains exactly `format_version`, opaque server-generated `backup_id`,
 configured `device_id`, `preset_id` (1-250), `firmware` identity (`version`, optional
@@ -623,7 +626,8 @@ advisory writability flag without creating directories, temp files or pruning.
 Retention: default 20 valid snapshots per device (`backups.retain_per_device`,
 1-1000). Only after the new snapshot is durable, the oldest valid recognized
 snapshots beyond the limit are deleted, ordered by (`created_at`, `backup_id`); the
-new snapshot is never deleted. Invalid, temporary, foreign-named, symlink and other
+new snapshot and the source snapshot of a running `wled_restore_preset` are never
+deleted. Invalid, temporary, foreign-named, symlink and other
 devices' files are never deleted nor counted. Prune failure is a warning on the
 result, never a failure of the operation. Listing/pruning examines at most 10,000
 directory entries.
@@ -639,25 +643,25 @@ Restoration planning (`SnapshotStore.plan_restore`, read-only, no device I/O, no
 writes): requires the exact `device_id` and the exact firmware `version`; a target
 preset ID differing from the snapshot's must be passed explicitly. An occupied
 destination requires overwrite intent and a valid prior snapshot of that destination.
-The plan states `execution: deferred` and the manual steps below. A plan or export is
-not restore evidence.
+The helper's `as_data` describes the manual steps below with `execution: deferred`. A
+plan or export is not restore evidence. `wled_restore_preset` (#18) uses the helper as
+its final check after it has taken the prior snapshot itself.
 
-Manual restoration procedure (execution deferred; nothing here is automated, and
-the manual route itself is untested on hardware). `plan_restore` is a library helper
-only: no tool or CLI exposes restoration planning, and it needs a `prior_backup_id`
-that already exists in the store when the destination is occupied.
+Restoration execution (#18): `wled_restore_preset` writes one `state` or `playlist`
+snapshot entry through a verified single-entry write; the procedure, refusals and
+live effect are in [contract/presets.md](contract/presets.md#restore-wled_restore_preset).
+The manual procedure below remains only for what the tool refuses (for example an
+`api-command` or `unknown` snapshot, a firmware-version mismatch, or a playlist the
+firmware would not store reproducibly); it is untested on hardware.
 1. Read the snapshot file in the backups directory and verify `device_id`, firmware
    `version` and `preset_id` against the target controller.
 2. Before changing anything, copy the destination's current entry from the
    controller's `/presets.json` verbatim into a file outside Git (`wled_get_preset`
-   returns the exact object; `wled_save_preset` with `overwrite=true` and
-   `wled_delete_preset` snapshot automatically, but no tool restores). If the
-   destination is empty, note that instead.
+   returns the exact object; the destructive preset tools snapshot automatically). If
+   the destination is empty, note that instead.
 3. Enter exactly the one `preset` object for the target ID through the WLED UI or
-   API. This is unproven: the reviewed sources do not show a single-entry write
-   without possible live-output effect, nor that re-entry through the UI preserves
-   unknown fields. Never upload or bulk-restore a whole presets file; activating a
-   preset does not restore its storage; do not execute stored commands.
+   API. Never upload or bulk-restore a whole presets file; activating a preset does
+   not restore its storage; do not execute stored commands.
 4. Read `/presets.json` back and compare the stored entry with the snapshot,
    unknown fields included. If anything differs, treat the restoration as failed or
    partial: do not retry blindly or re-enter repeatedly; keep the snapshot and the
@@ -787,5 +791,7 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
   firmware tiers (#21).
+- [contract/presets.md](contract/presets.md): preset restore, supplied-state save and
+  snapshot listing (#18).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping,
   non-release build identity, contract and schema evolution, migration notes (#21, #70).

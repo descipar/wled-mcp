@@ -166,6 +166,30 @@ Source evidence only, not hardware evidence; no firmware code was copied. Basis 
 Not verified: hardware save-then-activate on WLED 16 (pending as a #12 follow-up),
 other 16.x revisions and forks, and the visible effect of a restored `bs`.
 
+## Issue-18 WLED 16 preset write evidence
+
+Read 2026-11-07 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`
+(the Phase-0 requirements review, re-read for the first #18 pull request). Source
+evidence only, not hardware evidence; no firmware code was copied. Basis of
+[ISSUE-18-DEC-001](decisions/issue-18.md) and the write routes in
+[contract/presets.md](contract/presets.md).
+
+| Pinned fact (v16.0.1) | Consequence |
+| --- | --- |
+| [`deserializeState`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/json.cpp#L370-L505) applies `bri`, `on`, `transition`, `bs`, `seg` and other light state before it reaches `psave`; [`psave` 1-250 calls `savePreset`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/json.cpp#L504-L505) with the request document | A state object sent with `psave` changes the live output first; no storage-only JSON path |
+| [`savePreset`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/presets.cpp#L218-L278): with a non-null `o` and no `playlist` key the document minus `o`, `v`, `time`, `error`, `psave` (and `bootps`, removed earlier) is written immediately with `writeObjectToFileUsingId`; `n` is set to `Preset <id>` when absent; the firmware comment warns that this path often causes `presets.json` corruption | State route: one entry, stored verbatim; verification compares the sent object minus these keys, with the default name |
+| Without `o`, `savePreset` only schedules [`doSaveState`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/presets.cpp#L29-L80) (`ib`, `sb`, `sc`), which serializes the live state | The #9 save-current path is unchanged and is not a supplied-object route |
+| With `o` and `playlist`, `savePreset` sets `playlistSave`; the request's [`playlist` is loaded afterwards](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/json.cpp#L539-L544) and starts; `doSaveState` then stores [`serializePlaylist`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/playlist.cpp#L185-L198) plus `on: true`, the name and `ql` | Playlist route: the playlist starts, then is stored re-serialized; fields other than `ps`, `dur`, `transition`, `repeat`, `end`, `r`, `on`, `n`, `ql` are dropped |
+| [`loadPlaylist`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/playlist.cpp#L58-L147): at most 100 entries; `dur` constrained to 0-42949670 tenths, a scalar or short list padded with the last value (default 100); `transition` likewise (default: the device transition); a negative `repeat` means shuffle; `end` 255 restores the previous preset, above 250 means none; `r` sets shuffle | Restore refuses values the firmware would clamp or reinterpret and compares per-entry values semantically |
+| [`serializePlaylist`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/playlist.cpp#L190-L192) stores `repeat` minus the extra pass only while `playlistIndex` is -1 (not yet advanced) and `r` as `playlistOptions & 1` (an integer). The main loop runs [`handlePlaylist` only when no preset save is pending](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled.cpp#L123-L126), the request holds the [JSON buffer lock across `deserializeState`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled_server.cpp#L414-L447) so the save follows `loadPlaylist`, and [`shufflePlaylist` runs only inside `handlePlaylist`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/playlist.cpp#L173). The `savePreset` comment ("will have repeat counter increased by 1 it will also be randomised if selected") is outdated | A finite `repeat` and shuffle are stored unchanged and are accepted; the semantic readback checks `repeat`, `r` and the `ps` order. Source-derived; hardware pending |
+| [`loadPlaylist`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/playlist.cpp#L58) returns early when a nested playlist is already active and otherwise keeps the running playlist as parent; the save then serializes the runtime playlist | The playlist route is refused while `state.pl` reports a running playlist (planning and after the snapshot) |
+| [`transitionDelay`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/wled.h#L609) is a `uint16_t` in milliseconds set from `transition` tenths x 100 | Supplied `transition` is bounded to 655 tenths |
+| After `psave`, [`win`, `ps`, `playlist`, `rmcpal`, `np`, `wifi`](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/json.cpp#L507-L560) still run | Supplied and restored objects never contain these keys |
+
+Not verified: hardware behavior of both routes, flash timing and the corruption risk
+named in the firmware comment, the save/playlist ordering on hardware, other 16.x
+revisions and forks, and firmware below 16.0.0.
+
 ## Issue-14 HTTP service evidence
 
 Observed 2026-11-05 by inspecting the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools (no repository changes): the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID, and opens a stream for a GET that offers `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These observations motivate [ISSUE-14-DEC-002 to -004](decisions/issue-14.md) and are re-pinned by tests, not assumed.

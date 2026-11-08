@@ -24,6 +24,7 @@ from wled_mcp.patches import (
     matches_segments,
     matches_set_state,
 )
+from wled_mcp.preset_tools import build_preset_workflow_operations
 from wled_mcp.presets import (
     ActivatePresetRequest,
     CaptureReference,
@@ -1209,4 +1210,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *_build_read_operations(resources),
         *_build_write_operations(resources),
         *_build_preset_operations(resources),
+        *build_preset_workflow_operations(resources),
     )

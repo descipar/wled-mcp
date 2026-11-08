@@ -7,6 +7,13 @@ selects a preset in the main loop, and a POST of ``psave`` never changes live st
 Persistence is delayed by a configurable number of readbacks of the affected resource.
 A WLED 16 profile is modelled by a live state carrying ``bs`` (docs/SOURCES.md "Issue-66
 WLED 16 preset evidence"): only then does a saved entry carry ``bs`` too.
+
+Issue #18 adds the two single-entry routes of docs/SOURCES.md "Issue-18 WLED 16 preset
+write evidence": ``psave`` with a non-null ``o`` and no ``playlist`` applies the request
+to the live state and stores it verbatim minus ``o``, ``v``, ``time``, ``error``,
+``psave`` and ``bootps``; ``psave`` with ``o`` and ``playlist`` starts the playlist and
+stores it re-serialized (full per-entry ``dur``/``transition`` arrays, ``repeat``,
+``end``, ``r``, ``on: true``, the name; unknown fields dropped).
 """
 
 from __future__ import annotations
@@ -105,12 +112,67 @@ class PresetDevice:
             self.entry_mutator(entry)
         return entry
 
+    def store_verbatim(self, body: dict[str, Any]) -> None:
+        """State route: apply the request live, then store it minus the removed keys."""
+        for key in ("on", "bri", "transition", "bs", "mainseg"):
+            if key in body:
+                self.state[key] = body[key]
+        live = {seg["id"]: seg for seg in self.state["seg"]}
+        for patch in body.get("seg") or []:
+            if isinstance(patch, dict) and patch.get("id") in live:
+                live[patch["id"]].update({k: v for k, v in patch.items() if k != "id"})
+        removed = {"o", "v", "time", "error", "psave", "bootps"}
+        entry = {key: copy.deepcopy(value) for key, value in body.items() if key not in removed}
+        if entry.get("n") is None:
+            entry["n"] = f"Preset {body['psave']}"
+        if self.entry_mutator is not None:
+            self.entry_mutator(entry)
+        self.store[str(body["psave"])] = entry
+
+    def store_playlist(self, body: dict[str, Any]) -> None:
+        """Playlist route: start the playlist, then store it from runtime data."""
+        playlist = body["playlist"]
+        ids = list(playlist["ps"])
+
+        def expand(value: Any, default: int) -> list[int]:
+            if value is None:
+                return [default] * len(ids)
+            values = [value] if isinstance(value, int) else list(value)
+            values = values[: len(ids)]
+            return values + [values[-1]] * (len(ids) - len(values))
+
+        entry: dict[str, Any] = {
+            "playlist": {
+                "ps": ids,
+                "dur": expand(playlist.get("dur"), 100),
+                "transition": expand(playlist.get("transition"), self.state["transition"]),
+                "repeat": playlist.get("repeat", 0),
+                "end": playlist.get("end", 0),
+                "r": int(bool(playlist.get("r", False))),  # playlistOptions & 1
+            },
+            "on": True,
+            "n": body.get("n") or f"Preset {body['psave']}",
+        }
+        if body.get("ql"):
+            entry["ql"] = body["ql"]
+        if self.entry_mutator is not None:
+            self.entry_mutator(entry)
+        self.state["pl"] = body["psave"]
+        self.state["ps"] = ids[0]
+        self.store[str(body["psave"])] = entry
+
     def psave_count(self) -> int:
         return sum(1 for body in self.posts if "psave" in body)
 
     def _apply(self, kind: str, body: dict[str, Any]) -> None:
         if kind == "psave":
-            if self.persist:
+            if body.get("o") is not None:
+                if self.persist:
+                    if "playlist" in body:
+                        self.store_playlist(body)
+                    else:
+                        self.store_verbatim(body)
+            elif self.persist:
                 self.store[str(body["psave"])] = self.entry_from_state(body["n"])
         elif kind == "pdel":
             if self.persist:
