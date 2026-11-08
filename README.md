@@ -19,8 +19,9 @@ service.
 - It does not scan networks or forward arbitrary requests to a controller. It
   discovers devices only when you run `wled-mcp discover`, never automatically, and
   never adds them to the inventory itself.
-- It is not published as a package or container image yet. You build a wheel locally
-  from this repository (see the quickstarts and [Project status](#project-status)).
+- It is not published as a package or container image. Install it from Git at a release
+  tag ([Install from Git](#install-from-git)) or build a wheel locally from this
+  repository (see the quickstarts and [Project status](#project-status)).
 
 ## Features
 
@@ -31,7 +32,16 @@ service.
 - Typed changes: master power/brightness/transition, a patch of selected segments, or
   a replacement of the complete segment layout. Omitted fields stay unchanged.
 - Preset listing, inspection, activation, saving and deletion, with a durable snapshot
-  before a preset is overwritten or deleted.
+  before a preset is overwritten or deleted; preset bundles (export and import), snapshot
+  restore, supplied-state saves and native playlists.
+- Named device groups and reusable multi-device scenes, with a dry-run plan and a strict
+  or best-effort apply that reports one verified outcome per device.
+- Advanced segment fields (grouping, spacing, offset, mirror, several colors, CCT and 2D
+  coordinates) where the device reports them, with an explicit opt-in for overlapping
+  segments.
+- Server-enforced tool profiles (`read-only`, `control`, `full`), a service status tool,
+  bounded logs with a correlation ID, and the `wled-mcp` commands `config init`,
+  `config add-device`, `config validate`, `doctor` and `discover`.
 - `dry_run` on every write, read-back verification after writes, and explicit
   reporting of uncertain outcomes.
 - Streamable HTTP service with its own bearer credential and Host/Origin allowlists;
@@ -89,6 +99,33 @@ WLED feature coverage: 58 % of the planned scope, 47 % of WLED overall ([method 
 - WLED controllers reachable over HTTP from where the server runs. Hardware acceptance
   so far covers one controller on WLED 16.0.1 (see
   [Validation status](#validation-status-and-limitations)).
+
+## Install from Git
+
+The first release is a source release: a Git tag with a GitHub release, not a package on
+PyPI. Pick the tag in the [releases list](https://github.com/descipar/wled-mcp/releases)
+and use it for `v<version>` below. Without a tag, `uvx` takes the current `main`, which
+can change at any time.
+
+Check the installation first; it needs only Python 3.13 through uv, no device and no
+configuration:
+
+```text
+uvx --isolated --python 3.13 --from git+https://github.com/descipar/wled-mcp@v<version> wled-mcp --version
+```
+
+Run it as a stdio server after creating the inventory as in
+[Quickstart: stdio via uvx](#quickstart-stdio-via-uvx) step 2 and [Inventory](#inventory)
+(keep each argument separate in the host configuration):
+
+```text
+uvx --isolated --python 3.13 --from git+https://github.com/descipar/wled-mcp@v<version> wled-mcp --transport stdio --config <absolute path>/devices.toml --data-dir <absolute path to a writable directory>
+```
+
+This route builds the package from the tag on your machine, needs network access to
+GitHub and PyPI when it first runs, and resolves the dependencies that are not pinned in
+`pyproject.toml` at that time. For the pinned runtime constraints, a checksum-verified
+wheel and the HTTP service, use the release directory below.
 
 ## Build a release directory
 
@@ -308,8 +345,13 @@ Known limitations:
   possible on WLED 16, and saving a playlist starts it. Imports do not rescale LED
   ranges or convert matrix layouts, and import one playlist per call
   ([#18](https://github.com/descipar/wled-mcp/issues/18)).
-- No CCT white balance or 2D matrix layouts
-  ([#19](https://github.com/descipar/wled-mcp/issues/19)); no raw state patch tool.
+- CCT, grouping, mirror and 2D coordinates are written only when the device reports the
+  capability; segment `rpt` and `fxdef` and matrix or panel configuration are not
+  exposed, and there is no raw state patch tool
+  ([#19](https://github.com/descipar/wled-mcp/issues/19)).
+- Groups, scenes, preset bundles, playlist authoring, snapshot restore, advanced segment
+  fields, tool profiles and `discover` have mock and loopback evidence only; no hardware
+  run covers them yet.
 - No inventory reload; changes need `wled-mcp config validate` and a restart
   ([#16](https://github.com/descipar/wled-mcp/issues/16)).
 - One writer per controller: locks are per process, so a second process or service
@@ -318,7 +360,8 @@ Known limitations:
   call; a write interrupted that way stays uncertain.
 - `tools/list` is CPU-heavy on small hosts
   ([#67](https://github.com/descipar/wled-mcp/issues/67)).
-- No published package, image or registry entry. Automated tests check that the
+- No package on PyPI, no container image on GHCR and no registry entry; the release is
+  installed from Git. Automated tests check that the
   current server reads the retained data of earlier releases and rejects newer data
   versions without changing files; an older server reading newer data is not tested
   and relies on unchanged formats
@@ -341,10 +384,10 @@ Known limitations:
 
 ## Project status
 
-wled-mcp is pre-release software. No release has been made, and it is not published
-to PyPI or GHCR: there is no package, container image or registry entry to install.
-Build it locally from a checkout as described in the quickstarts. Future releases will
-use `0.x` versions, which may contain breaking changes.
+wled-mcp is early software with `0.x` versions, which may contain breaking changes
+([CHANGELOG.md](CHANGELOG.md)). The first release is a source release that is installed
+from Git ([Install from Git](#install-from-git)); it is not published
+to PyPI or GHCR, so there is no package, container image or registry entry.
 
 ## Support
 

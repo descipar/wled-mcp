@@ -162,8 +162,8 @@ def orientation_problems(text: str) -> list[str]:
         if target not in targets:
             problems.append(f"README does not link {target}")
     for term in (
-        "pre-release software",
-        "No release has been made",
+        "early software",
+        "installed from Git",
         "not published to PyPI or GHCR",
         "There is no support commitment",
         "best effort",
