@@ -5,6 +5,28 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## 0.1.1 - documentation release
+
+No change to the server, its tools or its configuration: the package behaves exactly as in
+0.1.0. This release carries the restructured documentation, so that the README at the
+release tag is the short one.
+
+### Changed
+
+- The README is about 175 lines instead of 419: a short summary, the status, a three-step
+  "Try it" path (installation check, `wled-mcp config init`, host registration), the safety
+  model, the support matrix and the limits.
+- The release-directory, stdio and HTTP quickstarts and the inventory format moved to
+  [docs/QUICKSTARTS.md](docs/QUICKSTARTS.md); the tool table moved to
+  [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md#tools-at-a-glance); the full list of known
+  limitations moved to [docs/VALIDATION.md](docs/VALIDATION.md#known-limitations).
+- The Git installation route now creates its inventory with `wled-mcp config init` instead
+  of pointing at a container-path step.
+
+### Tested and not tested, limitations, migration
+
+Unchanged from 0.1.0. Migration: none.
+
 ## 0.1.0 - first source release
 
 The first release is a Git tag with a GitHub release. It is not published to PyPI or GHCR;
