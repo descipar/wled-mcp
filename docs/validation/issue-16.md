@@ -25,6 +25,20 @@ real network; no hardware evidence is claimed or needed for these boxes.
 | S16-T08 OPS-04 | `test_every_ops04_condition_maps_to_a_doctor_result_with_an_action`: each condition (bad configuration, unsupported firmware, unavailable backup storage, offline device, invalid response) is produced and reported with a code from `OPS04_CONDITIONS` and a non-empty action. `test_serve_prints_one_backups_advisory_and_still_starts` and `test_serve_is_silent_when_backups_are_writable`: one stderr line, no path, serving continues. Tool-level `BACKUP_FAILED` tests are unchanged. |
 | S16-T09 console compatibility | All existing `tests/test_bootstrap.py` and `tests/test_http_cli.py` cases pass unchanged; `test_parser_exposes_the_subcommands_to_the_coverage_check` (`scripts/check_coverage.py` reads `config`, `config init`, `config add-device`, `config validate`, `doctor` through `cli.build_parser()`); serve options with a subcommand, unknown actions and options exit 2 with the fixed message; an internal failure exits 3 without traceback or values. `tests/test_acceptance_parity.py` now checks every documented console flag against the `--help` of the (sub)command it is written after, with the negative control `test_subcommand_flags_are_checked_against_their_own_command`. |
 
+## Coordinator-accepted deviations
+
+Accepted by the coordinator on 2026-11-08 (not owner decisions):
+
+1. `tests/test_acceptance_parity.py`, outside the packet's path list, was extended
+   instead of weakened: documented console flags are checked against the `--help` of
+   the (sub)command they follow, with a negative control.
+2. Interpretations of TD-16-1/TD-16-5: a missing required path option of a `config`
+   subcommand exits 2, a relative or unusable path exits 1; `doctor` reports a missing
+   path as a failed check (exit 1), not a usage error; `doctor --endpoint` without a
+   configured credential fails the check without sending a request; the added warning
+   code `ENDPOINT_OTHER_SERVER` marks an MCP endpoint that is not wled-mcp; the export
+   maps the envelope's `firmware.version`/`build_id`/`arch` to `ver`/`vid`/`arch`.
+
 ## Runs
 
 Local runs on the implementation branch (Windows 11, Python 3.13):
