@@ -144,6 +144,20 @@ def stage(
     return target
 
 
+def command_label(command: object) -> str:
+    """The program and subcommand of a failed command, for example ``git archive``."""
+    parts = command if isinstance(command, (list, tuple)) else [command]
+    return " ".join(map(str, parts[:2]))
+
+
+def stderr_tail(stderr: str | bytes | None, limit: int = 2000) -> str:
+    """The end of a failed command's stderr as a message suffix (empty if there is none)."""
+    if isinstance(stderr, bytes):
+        stderr = stderr.decode("utf-8", errors="replace")
+    text = (stderr or "").strip()
+    return f"\n{text[-limit:]}" if text else ""
+
+
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(
         ["git", *args], cwd=root, capture_output=True, text=True, check=True, timeout=30
@@ -263,7 +277,15 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except subprocess.CalledProcessError as exc:
         print(
-            f"Staging failed: {' '.join(map(str, exc.cmd[:2]))} exited {exc.returncode}.",
+            f"Staging failed: {command_label(exc.cmd)} exited {exc.returncode}."
+            f"{stderr_tail(exc.stderr)}",
+            file=sys.stderr,
+        )
+        return 1
+    except subprocess.TimeoutExpired as exc:
+        print(
+            f"Staging failed: {command_label(exc.cmd)} did not finish within "
+            f"{exc.timeout:g} seconds.",
             file=sys.stderr,
         )
         return 1

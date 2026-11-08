@@ -816,7 +816,8 @@ async def test_48_patch_and_replace_apply_the_same_rules(tmp_path, seg0, fields,
 #
 # Master side of ``wled_set_state`` against the firmware-like fake of
 # ``tests/layout_support.py``, which models ``on = root["on"] | (bri > 0)`` and
-# ``toggleOnOff`` (pinned v0.15.1). ``ISSUE-52-DEC-001``; mock-only.
+# ``toggleOnOff`` (baseline profile 0: v0.15.1 source, observed on 16.0.1).
+# ``ISSUE-52-DEC-001``; mock-only.
 
 
 def master_fake(*, on: bool, bri: int) -> FakeWLED:

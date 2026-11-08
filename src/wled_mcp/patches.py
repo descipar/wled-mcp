@@ -4,8 +4,8 @@ Pure request -> plan transformation. The planner never calls the network. It
 consumes a fresh normalized `/json/state` view plus the raw info payload and
 returns the exact WLED payload plus a public plan + postconditions.
 
-Baseline compensation follows ``ISSUE-6-DEC-002`` (profile 0, pinned v0.15.1
-WLED source): RGB-only semantics, per-segment capability from
+Baseline compensation follows ``ISSUE-6-DEC-002`` (baseline profile 0: v0.15.1
+WLED source, observed on 16.0.1): RGB-only semantics, per-segment capability from
 ``info.leds.seglc``, single-object segment edit path, geometry-change name
 compensation. Per-segment channel width follows ``ISSUE-6-DEC-003``:
 ``info.leds.seglc[i]`` when its length equals the state segment list, else
@@ -181,9 +181,9 @@ def build_set_state_plan(request: SetStateRequest, state_view: dict[str, JsonVal
                 "remembered brightness is zero."
             )
 
-    # Pinned v0.15.1 firmware couples master power to brightness
-    # (``on = root["on"] | (bri > 0)``): a positive ``bri`` alone switches an off
-    # master on. An omitted ``on`` is preserved by sending the resolved
+    # Baseline profile-0 firmware (v0.15.1 source, observed on 16.0.1) couples master
+    # power to brightness (``on = root["on"] | (bri > 0)``): a positive ``bri`` alone
+    # switches an off master on. An omitted ``on`` is preserved by sending the resolved
     # ``on=false`` together with ``bri`` (targeted compensation,
     # ``ISSUE-52-DEC-001``); the master stays off and remembers the brightness.
     compensate_off = (

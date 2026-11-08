@@ -1,0 +1,2625 @@
+[
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List configured IDs/names without network by default. Optional bounded read-only probes; no discovery or writes.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "probe": {
+          "default": false,
+          "title": "Probe",
+          "type": "boolean"
+        }
+      },
+      "title": "ListDevicesRequest",
+      "type": "object"
+    },
+    "name": "wled_list_devices",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read normalized state, raw state and essential firmware/capability facts of one configured device. Always fresh, never cached; state and info are read one after the other, not as an atomic snapshot. Read-only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "title": "GetStateRequest",
+      "type": "object"
+    },
+    "name": "wled_get_state",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read the effect catalog with original device IDs and names, optional raw fxdata metadata and freshness. Cached per device for a configured time; refresh=true bypasses the cache. Read-only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "refresh": {
+          "default": false,
+          "title": "Refresh",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "title": "GetCatalogRequest",
+      "type": "object"
+    },
+    "name": "wled_get_effects",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read the palette catalog with original device IDs and names and freshness. Cached per device for a configured time; refresh=true bypasses the cache. Read-only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "refresh": {
+          "default": false,
+          "title": "Refresh",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "title": "GetCatalogRequest",
+      "type": "object"
+    },
+    "name": "wled_get_palettes",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Apply a typed master patch: optional on/brightness/transition_ms. Omitted fields remain unchanged. Transition is a one-call tt (ms) that does not touch persistent 'transition'. dry_run performs bounded reads only and returns the resolved plan.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "description": "Master patch. At least one of ``on`` / ``brightness`` must be present.\n\nTransition is a one-call ``tt`` value in milliseconds. Persistent\n``transition`` is never touched.",
+      "properties": {
+        "brightness": {
+          "anyOf": [
+            {
+              "maximum": 255,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brightness"
+        },
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "On"
+        },
+        "transition_ms": {
+          "anyOf": [
+            {
+              "maximum": 65500,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Transition Ms"
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "title": "SetStateRequest",
+      "type": "object"
+    },
+    "name": "wled_set_state",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Patch one or more existing active segments by explicit ID. Omitted fields and unrelated segments are preserved. No segment creation or removal. dry_run performs bounded reads only and returns the plan.",
+    "inputSchema": {
+      "$defs": {
+        "SegmentPatch": {
+          "additionalProperties": false,
+          "description": "One explicit segment patch. At least one mutable field must be set.\n\n``start`` and ``stop`` must be supplied together when either is present.",
+          "properties": {
+            "brightness": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Brightness"
+            },
+            "colors": {
+              "anyOf": [
+                {
+                  "items": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Colors"
+            },
+            "effect_id": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Effect Id"
+            },
+            "grouping": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Grouping"
+            },
+            "id": {
+              "minimum": 0,
+              "title": "Id",
+              "type": "integer"
+            },
+            "intensity": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Intensity"
+            },
+            "mirror": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mirror"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Name"
+            },
+            "offset": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Offset"
+            },
+            "on": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "On"
+            },
+            "palette_id": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Palette Id"
+            },
+            "reverse": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Reverse"
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Selected"
+            },
+            "spacing": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Spacing"
+            },
+            "speed": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Speed"
+            },
+            "start": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Start"
+            },
+            "stop": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Stop"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "title": "SegmentPatch",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Nonempty list of segment patches. Omitted segments are untouched.",
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/SegmentPatch"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "device_id",
+        "segments"
+      ],
+      "title": "PatchSegmentsRequest",
+      "type": "object"
+    },
+    "name": "wled_patch_segments",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Replace the complete active segment layout. Every desired ID needs id, start and stop; active IDs not listed are removed one by one (exact single-segment removal, no filler segments, no bulk purge). Omitted fields of existing IDs are preserved; new IDs need colors and receive documented defaults. Master state is never changed. Each step is read back; an uncertain or mismatching step stops the sequence without replay. dry_run performs bounded reads only and returns the ordered plan.",
+    "inputSchema": {
+      "$defs": {
+        "LayoutSegment": {
+          "additionalProperties": false,
+          "description": "One segment of the complete desired layout (id, start and stop are required).",
+          "properties": {
+            "brightness": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Brightness"
+            },
+            "colors": {
+              "anyOf": [
+                {
+                  "items": {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Colors"
+            },
+            "effect_id": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Effect Id"
+            },
+            "grouping": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Grouping"
+            },
+            "id": {
+              "minimum": 0,
+              "title": "Id",
+              "type": "integer"
+            },
+            "intensity": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Intensity"
+            },
+            "mirror": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Mirror"
+            },
+            "name": {
+              "anyOf": [
+                {
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Name"
+            },
+            "offset": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Offset"
+            },
+            "on": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "On"
+            },
+            "palette_id": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Palette Id"
+            },
+            "reverse": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Reverse"
+            },
+            "selected": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Selected"
+            },
+            "spacing": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Spacing"
+            },
+            "speed": {
+              "anyOf": [
+                {
+                  "maximum": 255,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Speed"
+            },
+            "start": {
+              "minimum": 0,
+              "title": "Start",
+              "type": "integer"
+            },
+            "stop": {
+              "minimum": 1,
+              "title": "Stop",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id",
+            "start",
+            "stop"
+          ],
+          "title": "LayoutSegment",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "The complete desired active layout. Active IDs not listed here are removed.",
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "segments": {
+          "items": {
+            "$ref": "#/$defs/LayoutSegment"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "device_id",
+        "segments"
+      ],
+      "title": "ReplaceLayoutRequest",
+      "type": "object"
+    },
+    "name": "wled_replace_layout",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "List the persistent presets (IDs 1-250) of one configured device with ID, name and type (state, playlist, api-command or unknown). Empty slots and reserved IDs are omitted. Always read fresh from the device, never cached. Read-only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "device_id"
+      ],
+      "title": "ListPresetsRequest",
+      "type": "object"
+    },
+    "name": "wled_list_presets",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    },
+    "description": "Read one stored preset exactly as the device holds it, with its type. The object may contain stored commands; it is returned to the caller unchanged. PRESET_NOT_FOUND for an empty slot. Always fresh. Read-only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "preset_id": {
+          "maximum": 250,
+          "minimum": 1,
+          "title": "Preset Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "device_id",
+        "preset_id"
+      ],
+      "title": "GetPresetRequest",
+      "type": "object"
+    },
+    "name": "wled_get_preset",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Activate an existing state preset or a playlist made only of state presets. Changes the live output and may interrupt current playback; never writes storage. API-command and unknown entries are refused. Verified by bounded state readback. dry_run performs bounded reads only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "preset_id": {
+          "maximum": 250,
+          "minimum": 1,
+          "title": "Preset Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "device_id",
+        "preset_id"
+      ],
+      "title": "ActivatePresetRequest",
+      "type": "object"
+    },
+    "name": "wled_activate_preset",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Save the CURRENT live state under a name (at most 32 UTF-8 bytes) into the lowest free persistent ID, or into an explicit preset_id. Replacing an occupied ID needs overwrite=true and takes a durable snapshot first; playlists are never replaced. Sends storage controls only (no state fields), so nothing is applied or activated, but firmware side effects of saving are not verified. Outcome is decided by bounded /presets.json polling; an uncertain outcome is never replayed. No supplied-state input exists. dry_run performs bounded reads only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "description": "Save the current live state; there is deliberately no supplied-state input.",
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "overwrite": {
+          "default": false,
+          "title": "Overwrite",
+          "type": "boolean"
+        },
+        "preset_id": {
+          "anyOf": [
+            {
+              "maximum": 250,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preset Id"
+        }
+      },
+      "required": [
+        "device_id",
+        "name"
+      ],
+      "title": "SavePresetRequest",
+      "type": "object"
+    },
+    "name": "wled_save_preset",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  },
+  {
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    },
+    "description": "Delete exactly one stored preset (any type) after a durable snapshot. Referencing playlists and the active-preset marker are not edited; a warning names them. Outcome is decided by bounded /presets.json polling for absence; an uncertain outcome is never replayed. dry_run performs bounded reads only.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "device_id": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Device Id",
+          "type": "string"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "preset_id": {
+          "maximum": 250,
+          "minimum": 1,
+          "title": "Preset Id",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "device_id",
+        "preset_id"
+      ],
+      "title": "DeletePresetRequest",
+      "type": "object"
+    },
+    "name": "wled_delete_preset",
+    "outputSchema": {
+      "$defs": {
+        "DomainError": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "CONFIG_ERROR",
+                "UNKNOWN_DEVICE",
+                "UNREACHABLE",
+                "TIMEOUT",
+                "INVALID_RESPONSE",
+                "VALIDATION_ERROR",
+                "UNSUPPORTED_CAPABILITY",
+                "AMBIGUOUS_NAME",
+                "PRESET_NOT_FOUND",
+                "PRESET_CONFLICT",
+                "BACKUP_FAILED",
+                "WRITE_OUTCOME_UNKNOWN",
+                "VERIFICATION_MISMATCH"
+              ],
+              "title": "Code",
+              "type": "string"
+            },
+            "message": {
+              "title": "Message",
+              "type": "string"
+            },
+            "read_retryable": {
+              "default": false,
+              "title": "Read Retryable",
+              "type": "boolean"
+            },
+            "reconciliation": {
+              "title": "Reconciliation",
+              "type": "string"
+            },
+            "write_retryable": {
+              "const": false,
+              "default": false,
+              "title": "Write Retryable",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "reconciliation"
+          ],
+          "title": "DomainError",
+          "type": "object"
+        },
+        "JsonValue": {}
+      },
+      "additionalProperties": false,
+      "properties": {
+        "application": {
+          "enum": [
+            "not_attempted",
+            "applied",
+            "not_applied",
+            "unknown"
+          ],
+          "title": "Application",
+          "type": "string"
+        },
+        "data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Data",
+          "type": "object"
+        },
+        "device_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Device Id"
+        },
+        "dry_run": {
+          "default": false,
+          "title": "Dry Run",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DomainError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "operation": {
+          "minLength": 1,
+          "title": "Operation",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "verification": {
+          "enum": [
+            "not_requested",
+            "verified",
+            "mismatch",
+            "unknown"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "ok",
+        "operation",
+        "device_id",
+        "application",
+        "verification"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    }
+  }
+]

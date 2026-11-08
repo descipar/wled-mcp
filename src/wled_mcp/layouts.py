@@ -7,10 +7,10 @@ check of every step and an exact final check.
 
 Technical baseline (accepted by delegated decision, ``ISSUE-7-DEC-003``..``-005``,
 docs/decisions/issue-7.md):
-profile 0 (pinned WLED v0.15.1 source), exact stale removal with one ``stop: 0`` POST per
-ID (never an array payload, which could purge/renumber slots), no filler segments, no
-temporary segment, creates only in ascending ID order within the observable allocation
-bound, and no reset of the master state.
+baseline profile 0 (WLED v0.15.1 source, observed on 16.0.1), exact stale removal with
+one ``stop: 0`` POST per ID (never an array payload, which could purge/renumber slots),
+no filler segments, no temporary segment, creates only in ascending ID order within the
+observable allocation bound, and no reset of the master state.
 """
 
 from __future__ import annotations

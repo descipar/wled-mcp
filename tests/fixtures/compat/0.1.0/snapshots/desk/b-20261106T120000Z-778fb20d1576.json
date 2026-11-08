@@ -1,0 +1,38 @@
+{
+  "format_version": 1,
+  "backup_id": "b-20261106T120000Z-778fb20d1576",
+  "device_id": "desk",
+  "preset_id": 5,
+  "firmware": {
+    "version": "16.0.1",
+    "build_id": 2510010
+  },
+  "created_at": "2026-11-06T12:00:00Z",
+  "preset": {
+    "n": "Saved scene",
+    "on": true,
+    "bri": 180,
+    "seg": [
+      {
+        "id": 1,
+        "start": 30,
+        "stop": 60,
+        "col": [
+          [
+            255,
+            80,
+            0
+          ]
+        ],
+        "fx": 1
+      }
+    ],
+    "vendor_extension": {
+      "opaque_value": [
+        "preserved",
+        1.5,
+        null
+      ]
+    }
+  }
+}

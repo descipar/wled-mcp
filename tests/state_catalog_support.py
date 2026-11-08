@@ -18,7 +18,7 @@ SECRET = "synthetic-secret"
 
 def make_info(**overrides: Any) -> dict[str, Any]:
     info: dict[str, Any] = {
-        "ver": "0.15.1",
+        "ver": "16.0.1",
         "vid": 2510010,
         "cn": "Synthetic",
         "brand": "WLED",

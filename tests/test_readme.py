@@ -325,6 +325,75 @@ def test_readme_check_rejects_regressions(old, new, expected):
     assert expected in readme_problems(text.replace(old, new), tool_hints())
 
 
+COMPATIBILITY = ROOT / "docs/contract/compatibility.md"
+
+
+def table_pairs(text: str) -> list[tuple[str, str]]:
+    """(Area, Status) of every data row of the table rows in ``text``."""
+    rows = [line for line in text.splitlines() if line.startswith("| ")]
+    pairs = []
+    for line in rows:
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells[0] == "Area" or set(cells[0]) <= {"-", " "}:
+            continue
+        pairs.append((cells[0], cells[1]))
+    return pairs
+
+
+def readme_support_table(text: str) -> list[tuple[str, str]]:
+    section = text.split("## Compatibility\n", 1)[1].split("\n## ", 1)[0]
+    return table_pairs(section)
+
+
+def compatibility_matrix(text: str) -> list[tuple[str, str]]:
+    match = re.search(r"<!-- support-matrix:start -->(.*?)<!-- support-matrix:end -->", text, re.S)
+    assert match, "compatibility.md lacks the support-matrix block"
+    return table_pairs(match.group(1))
+
+
+def support_table_problems(readme: str, compatibility: str) -> list[str]:
+    """#21 A21-08: the README support table matches compatibility.md, row for row."""
+    problems = []
+    if "## Compatibility\n" not in readme:
+        return ["README lacks section '## Compatibility'"]
+    if "(docs/contract/compatibility.md)" not in readme:
+        problems.append("README does not link docs/contract/compatibility.md")
+    shown, matrix = readme_support_table(readme), compatibility_matrix(compatibility)
+    if not matrix:
+        problems.append("compatibility.md support matrix is empty")
+    if shown != matrix:
+        problems.append(f"README support table {shown} differs from compatibility.md {matrix}")
+    return problems
+
+
+def test_readme_support_table_matches_the_compatibility_matrix():
+    readme, compatibility = README.read_text("utf-8"), COMPATIBILITY.read_text("utf-8")
+    assert support_table_problems(readme, compatibility) == []
+    assert ("Windows", "experimental") in compatibility_matrix(compatibility)
+    assert ("WLED 16.0.1", "tested") in compatibility_matrix(compatibility)
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("| Windows | experimental |", "| Windows | supported |"),
+        ("| macOS | experimental |\n", ""),
+        ("(docs/contract/compatibility.md)", "(docs/contract/versioning.md)"),
+    ],
+)
+def test_support_table_check_rejects_drift(old, new):
+    readme, compatibility = README.read_text("utf-8"), COMPATIBILITY.read_text("utf-8")
+    assert old in readme
+    assert support_table_problems(readme.replace(old, new, 1), compatibility) != []
+
+
+def test_support_table_check_rejects_a_matrix_change_not_shown_in_the_readme():
+    readme, compatibility = README.read_text("utf-8"), COMPATIBILITY.read_text("utf-8")
+    changed = compatibility.replace("| WLED 16.0.1 | tested |", "| WLED 16.0.1 | expected |")
+    assert changed != compatibility
+    assert support_table_problems(readme, changed) != []
+
+
 def test_contributing_states_the_minimal_rules():
     assert contributing_problems(CONTRIBUTING.read_text("utf-8")) == []
 

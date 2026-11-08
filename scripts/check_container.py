@@ -68,6 +68,12 @@ def docker(*args: str, timeout: float = 120, check: bool = True) -> str:
     return result.stdout.strip()
 
 
+def require(condition: bool, message: str) -> None:
+    """Fail the smoke check explicitly; unlike ``assert`` this is never optimized away."""
+    if not condition:
+        raise SystemExit(f"container check failed: {message}")
+
+
 def free_port() -> int:
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
@@ -81,15 +87,22 @@ async def exchange(port: int, token: str, version: str, expected: list[str]) -> 
                 f"http://127.0.0.1:{port}/mcp", http_client=http, terminate_on_close=False
             )
             async with Client(transport, read_timeout_seconds=20) as client:
-                assert client.server_info is not None
-                assert client.server_info.name == "wled-mcp"
-                assert client.server_info.version == version, client.server_info.version
-                tools = (await client.list_tools()).tools
-                assert [tool.name for tool in tools] == expected
+                info = client.server_info
+                if info is None:
+                    raise SystemExit("container check failed: the server sent no serverInfo")
+                require(info.name == "wled-mcp", f"serverInfo.name is {info.name!r}")
+                require(info.version == version, f"serverInfo.version is {info.version!r}")
+                names = [tool.name for tool in (await client.list_tools()).tools]
+                require(names == expected, f"tools/list names {names} != {expected}")
                 result = await client.call_tool("wled_list_devices", {})
-                assert not result.is_error
-                assert result.structured_content is not None
-                assert result.structured_content["data"] == {"devices": []}
+                require(not result.is_error, "wled_list_devices returned an error result")
+                content = result.structured_content
+                if content is None:
+                    raise SystemExit("container check failed: wled_list_devices has no content")
+                require(
+                    content.get("data") == {"devices": []},
+                    f"wled_list_devices data is {content.get('data')!r}",
+                )
 
 
 def container_logs(name: str) -> str:
@@ -123,7 +136,7 @@ def smoke(directory: Path) -> None:
     try:
         architecture = docker("image", "inspect", "--format", "{{.Architecture}}", tag)
         console = docker("run", "--rm", "--network", "none", tag, "--version")
-        assert console == f"wled-mcp {version}", console
+        require(console == f"wled-mcp {version}", f"--version printed {console!r}")
         with tempfile.TemporaryDirectory() as temporary:
             data = Path(temporary) / "data"
             (data / "config").mkdir(parents=True)
@@ -176,11 +189,11 @@ def smoke(directory: Path) -> None:
             anyio.run(exchange, port, token, version, expected)
             docker("stop", "--time", "130", name, timeout=180)
             code = docker("inspect", "--format", "{{.State.ExitCode}}", name)
-            assert code == "0", f"service exit code {code} after SIGTERM"
+            require(code == "0", f"service exit code {code} after SIGTERM")
             stdout = subprocess.run(
                 ["docker", "logs", name], capture_output=True, text=True, timeout=30
             ).stdout
-            assert stdout == "", "stdout stays unused in HTTP mode"
+            require(stdout == "", "stdout must stay unused in HTTP mode")
     finally:
         docker("rm", "--force", name, check=False)
         docker("image", "rm", tag, check=False)

@@ -1,7 +1,8 @@
 """Stateful fake WLED for layout-replacement tests (issue #7). Never touches the network.
 
-Models the pinned v0.15.1 behavior that matters for a layout replacement (source-derived,
-``docs/SOURCES.md#issue-7-layout-evidence``): single-object ``seg`` edits, removal by
+Models the baseline profile-0 behavior (v0.15.1 source, observed on 16.0.1) that matters
+for a layout replacement (source-derived, ``docs/SOURCES.md#issue-7-layout-evidence``):
+single-object ``seg`` edits, removal by
 ``stop <= start`` that keeps the slot, append-at-end allocation that ignores the requested
 ID, ``id >= maxseg`` ignored, geometry change clearing the name unless ``n`` is sent,
 offset clamping, main reset to 0 when the main slot is removed, ``mainseg < slots``,
