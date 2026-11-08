@@ -72,6 +72,9 @@ interpretations (agent, for coordinator review):
 - The printed command uses a literal `<CONFIG>` placeholder instead of the configured
   path, keeping the rule that command output names no path.
 
+The upper-case codes and the `<CONFIG>` placeholder were coordinator-accepted on
+2026-11-08, not an owner decision.
+
 Carried nits from the first-change review:
 
 | Nit | Fix | Test |
@@ -83,6 +86,22 @@ Carried nits from the first-change review:
 used `discover` as its example of an unknown command; it now uses a synthetic name and
 still checks that `discover` passes in a context that has it (outside the packet path
 list, needed because the command now exists).
+
+## Second change: review round 1 (2026-11-08)
+
+Findings of the independent review of `548dce8` and their fixes (no must-fix items):
+
+| Finding | Fix | Test |
+| --- | --- | --- |
+| S1 non-encodable answer text made `discover` exit 3 with empty stdout on a non-UTF-8 stdout | answer text is printed as ASCII only (one rule for text and JSON: other characters become `?`) | `test_non_encodable_answer_text_does_not_hide_other_candidates` (invalid UTF-8 and an emoji, cp1252 stdout, text and json, other candidates still printed), `test_safe_text_is_ascii_printable_only` |
+| S2 answer source never checked | datagrams not from IPv4 port 5353 are dropped and counted (`dropped_datagrams`, also toward the datagram bound); other addresses with port 5353 stay accepted; no on-link/TTL check, documented | `test_answers_not_from_ipv4_port_5353_are_dropped`, `test_other_source_address_with_port_5353_stays_accepted`, `test_dropped_datagrams_count_toward_the_datagram_bound` |
+| S3 scope test bypassable with `from wled_mcp.discovery import ...` | AST check of Import, ImportFrom (absolute, relative, `from wled_mcp import discovery`) and module-path string constants across all of `src/wled_mcp` | `test_scope_check_detects_every_import_form` (negative control: planted import in a scratch copy of a module), `test_discovery_is_never_used_outside_the_discover_command` |
+| N1 leading dash in a name read as an option | leading dashes removed from the suggested name | `test_leading_dashes_in_a_name_cannot_become_an_option` |
+| N2 missing bounds tests | lower timeout bound, `MAX_TXT_STRINGS`, `MAX_DATAGRAMS`, follow-up with known addresses sends nothing unicast, malformed cases assert their own reason (not truncation) | `test_lower_timeout_bound_is_accepted_and_just_below_is_not`, `test_txt_string_count_is_bounded`, `test_datagram_bound_stops_a_flood`, `test_known_addresses_with_a_follow_up_send_nothing_to_candidates`, `test_malformed_answers_are_dropped` (reason match) |
+| N3 `0.0.0.0/8` and `240.0.0.0/4` suggested | filtered | `test_this_network_and_reserved_ranges_are_not_suggested` |
+| N4, N6 | long line wrapped; limits sentences added (junk can fill the collections early; default multicast interface only) | documentation |
+
+The new tests were checked to fail on the unfixed source (S1, S2 and N1 mutants).
 
 ## Runs
 
@@ -100,7 +119,7 @@ Second change, same platform:
 
 | Command | Result |
 | --- | --- |
-| `uv run --frozen pytest` | 1872 passed, 23 skipped (after merging main with #19); only the known Windows-local failures (6 failed, 5 errors in `test_inventory_client.py` and `test_hw_http_probe.py`) |
+| `uv run --frozen pytest` | 1899 passed, 23 skipped (after review round 1); only the known Windows-local failures (6 failed, 5 errors in `test_inventory_client.py` and `test_hw_http_probe.py`) |
 | `uv run --frozen ruff check .` / `ruff format --check .` / `mypy` | pass |
 | `python scripts/check_coverage.py --update`, then without `--update` | W-INFO-09 supported; after merging main with #19: 47 % overall (41.5 of 89), 58 % planned scope (41.5 of 71); INFO 4 supported, 0 planned; no planned row is left |
 | `check_traceability.py`, `check_private_identifiers.py`, `sync_agents.py --check`, `uv lock --check` | pass |

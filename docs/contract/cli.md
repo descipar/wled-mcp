@@ -198,33 +198,48 @@ and the user runs `config add-device` explicitly.
 - Listen window: `--timeout` seconds, default 3, from 0.5 to 10 (outside: exit 2,
   nothing sent). The follow-up is sent after at most 1 s (half the window when it is
   shorter).
-- Limits for untrusted answers: datagrams up to 9000 bytes, at most 512 datagrams and
-  128 records per datagram, names up to 255 bytes, compression pointers only backwards
-  and at most 16 per name, at most 64 TXT strings. A malformed datagram is dropped and
-  counted (`malformed_responses`); it never stops the command.
+- Limits for untrusted answers: datagrams up to 9000 bytes, at most 512 datagrams
+  (dropped ones included) and 128 records per datagram, names up to 255 bytes,
+  compression pointers only backwards and at most 16 per name, at most 64 TXT strings.
+  A malformed datagram is dropped and counted (`malformed_responses`); it never stops
+  the command. Junk datagrams or junk instances can fill these bounded collections
+  early and so crowd out real controllers; a repeated run, or adding the controller by
+  address, works around it.
+- Source check (RFC 6762 section 6): only datagrams from an IPv4 address with source
+  port 5353 are read; any other source is dropped and counted (`dropped_datagrams`).
+  Answers are unauthenticated: there is no check that the sender is on the local link
+  (no TTL or interface check; user space cannot verify it here), so a host that can send
+  to the ephemeral port can inject a candidate. Candidates are suggestions the user
+  reviews before running `config add-device`; nothing is enrolled or contacted. The
+  query leaves through the default multicast interface only, so on a multi-homed host
+  controllers on other interfaces are not found.
 - Candidates: at most 64 instances (`truncated` when more answered). Each candidate has
-  the instance name, the SRV host name, IPv4 addresses (unspecified, loopback,
-  multicast and broadcast addresses are ignored), the SRV port and the TXT `mac`
+  the instance name, the SRV host name, IPv4 addresses (`0.0.0.0/8`, `240.0.0.0/4`,
+  loopback and multicast addresses are ignored), the SRV port and the TXT `mac`
   (12 hex digits, otherwise ignored). Candidates are merged by `mac`, else by the first
   address, else by instance name.
 - Suggestion: `suggested_base_url` is `http://<IPv4>` (with `:<port>` when the port is
   not 80), because container resolvers usually cannot resolve `.local` names. A URL
   with the mDNS host name (in the `.local` domain) is shown as `alternative_base_url`
-  only for a plain letter-digit-hyphen host name; it needs a `.local` resolver, and the address can change with
-  DHCP. The `add_device_command` reads
+  only for a plain letter-digit-hyphen host name; it needs a `.local` resolver, and the
+  address can change with DHCP. The `add_device_command` reads
   `wled-mcp config add-device --config <CONFIG> --device-id ID --device-name "NAME" --base-url URL`
   with a literal `<CONFIG>` placeholder (no path is printed). The ID is derived from
   the instance name (`[a-z0-9-]`, unique against the configured IDs); the name keeps
-  only letters, digits, space, `.`, `_` and `-`, so the command is safe to paste into a
+  only letters, digits, space, `.`, `_` and `-` (leading dashes removed, so it cannot be
+  read as an option), so the command is safe to paste into a
   POSIX shell, PowerShell or cmd.exe.
 - `--config` (or `WLED_MCP_CONFIG`) is optional and only read: a candidate whose
   address or `.local` name equals a configured `base_url` host is marked
   `already_configured` and gets no command. An invalid or missing file is refused
   (exit 1) before anything is sent.
-- Answer text (instance and host names) is printed with every non-printable character
-  (control, format and line-separator characters) replaced by `?`.
+- Answer text (instance and host names) is printed as ASCII only, in text and JSON
+  alike: every character that is not printable ASCII (control, format and separator
+  characters, non-ASCII text, the replacement character of invalid UTF-8) becomes `?`.
+  The output therefore cannot fail on a non-UTF-8 stdout (a redirect on a legacy code
+  page), and one odd responder cannot suppress the other candidates.
 - JSON fields: `timeout_seconds`, `queries_sent`, `follow_up_sent`, `candidate_count`,
-  `truncated`, `malformed_responses`, `candidates` (`instance`, `host`, `addresses`,
+  `truncated`, `malformed_responses`, `dropped_datagrams`, `candidates` (`instance`, `host`, `addresses`,
   `port`, `mac`, `suggested_base_url`, `alternative_base_url`, `already_configured`,
   `suggested_device_id`, `suggested_device_name`, `add_device_command`) and `problems`.
   This is local output; it contains addresses and MAC values and is not an export.

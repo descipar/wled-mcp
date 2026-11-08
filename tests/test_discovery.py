@@ -6,6 +6,8 @@ from a script on a simulated clock. Answers use synthetic documentation addresse
 (192.0.2.0/24) and invented MAC values.
 """
 
+import ast
+import io
 import ipaddress
 import json
 import os
@@ -13,6 +15,7 @@ import random
 import re
 import socket
 import struct
+import sys
 from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
@@ -105,6 +108,8 @@ def questions(packet: bytes) -> list[tuple[tuple[str, ...], int, int]]:
 # ------------------------------------------------------------------ fake network
 
 Responder = Callable[[bytes, int], list[tuple[float, bytes]]]
+SOURCE = ("192.0.2.200", MDNS_PORT)
+Sources = dict[bytes, Any]  # packet -> source address override
 
 
 class FakeNetwork:
@@ -114,6 +119,7 @@ class FakeNetwork:
         self.now = 100.0
         self.sent: list[tuple[bytes, tuple[str, int]]] = []
         self.queue: list[tuple[float, bytes]] = []
+        self.sources: Sources = {}
         self.responder = responder or (lambda packet, number: [])
         self.fail_open = fail_open
         self.fail_send = False
@@ -159,7 +165,7 @@ class FakeSocket:
         if net.queue and net.queue[0][0] <= net.now + self.timeout:
             at, packet = net.queue.pop(0)
             net.now = max(net.now, at)
-            return packet[:size], ("192.0.2.200", MDNS_PORT)
+            return packet[:size], net.sources.get(packet, SOURCE)
         net.now += self.timeout
         raise TimeoutError
 
@@ -496,9 +502,29 @@ MALFORMED = {
 }
 
 
-@pytest.mark.parametrize("packet", MALFORMED.values(), ids=MALFORMED.keys())
-def test_malformed_answers_are_dropped(packet):
-    with pytest.raises(discovery.MalformedPacket):
+REASONS = {
+    "short header": "bad datagram size",
+    "query not response": "not a successful standard response",
+    "error rcode": "not a successful standard response",
+    "self pointer": "forward or self pointer",
+    "forward pointer": "forward or self pointer",
+    "pointer cycle": "forward or self pointer",
+    "name over 255 bytes": "name too long",
+    "label type 0x40": "unsupported label type",
+    "rdata past end": "record data runs past the datagram",
+    "bad A length": "bad A record",
+    "TXT overrun": "TXT string runs past the record",
+    "SRV trailing data": "bad SRV record",
+    "too many records": "too many records",
+    "oversized datagram": "bad datagram size",
+}
+
+
+@pytest.mark.parametrize("case", MALFORMED, ids=MALFORMED.keys())
+def test_malformed_answers_are_dropped(case):
+    packet = MALFORMED[case]
+    # Each case must fail for its own reason, not through an accidental truncation.
+    with pytest.raises(discovery.MalformedPacket, match=REASONS[case]):
         discovery.parse_response(packet)
     collector = discovery.Collector()
     collector.feed(packet)
@@ -623,19 +649,58 @@ def test_default_socket_is_ipv4_udp_on_an_ephemeral_port(monkeypatch):
     ]
 
 
+def references_discovery(source: str) -> bool:
+    """Does the module import ``wled_mcp.discovery`` in any form (AST, not text)?"""
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            if any(a.name.split(".")[:2] == ["wled_mcp", "discovery"] for a in node.names):
+                return True
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module.split(".")[:2] == ["wled_mcp", "discovery"]:
+                return True
+            if node.level > 0 and module.split(".")[0] == "discovery":
+                return True
+            if (module == "wled_mcp" or (node.level > 0 and not module)) and any(
+                a.name == "discovery" for a in node.names
+            ):
+                return True
+        elif isinstance(node, ast.Constant) and node.value in ("wled_mcp.discovery", "discovery"):
+            return True  # importlib.import_module and similar
+    return False
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "from wled_mcp.discovery import discover as _d",
+        "import wled_mcp.discovery",
+        "import wled_mcp.discovery as d",
+        "from wled_mcp import discovery",
+        "from wled_mcp import cli, discovery as d",
+        "from . import discovery",
+        "from .discovery import discover",
+        "import importlib; importlib.import_module('wled_mcp.discovery')",
+    ],
+)
+def test_scope_check_detects_every_import_form(line):
+    # Negative control: a planted import in a scratch copy of a real module must fail.
+    scratch = (ROOT / "src" / "wled_mcp" / "doctor.py").read_text(encoding="utf-8") + chr(10) + line
+    assert references_discovery(scratch)
+
+
 def test_discovery_is_never_used_outside_the_discover_command():
     package = ROOT / "src" / "wled_mcp"
     users = sorted(
         path.name
-        for path in package.glob("*.py")
-        if path.name != "discovery.py"
-        and re.search(r"\bimport\b.*\bdiscovery\b|\bdiscovery\.", path.read_text(encoding="utf-8"))
+        for path in package.rglob("*.py")
+        if path.name != "discovery.py" and references_discovery(path.read_text(encoding="utf-8"))
     )
     assert users == ["cli.py"]
     source = (package / "cli.py").read_text(encoding="utf-8")
     assert source.count("discovery.") == 2  # register + the discover dispatch only
     assert "224.0.0.251" not in "".join(
-        p.read_text(encoding="utf-8") for p in package.glob("*.py") if p.name != "discovery.py"
+        p.read_text(encoding="utf-8") for p in package.rglob("*.py") if p.name != "discovery.py"
     )
 
 
@@ -652,3 +717,180 @@ def test_serve_options_with_discover_are_a_usage_error(monkeypatch, capsys):
         code = int(exc.code or 0)
     assert code == 2 and network.sent == []
     capsys.readouterr()
+
+
+# ------------------------------------------------------------------ correction round 1
+
+
+class RedirectedStdout:
+    """A text stream with a non-UTF-8 encoding, like a redirect on a legacy code page."""
+
+    def __init__(self, encoding: str) -> None:
+        self.raw = io.BytesIO()
+        self.stream = io.TextIOWrapper(self.raw, encoding=encoding, errors="strict")
+
+    def text(self) -> str:
+        self.stream.flush()
+        return self.raw.getvalue().decode("ascii")  # fails if any non-ASCII byte was written
+
+
+def odd_responder_packets() -> list[bytes]:
+    """One controller with invalid UTF-8 labels, one with an emoji name, one good one."""
+    bad_owner = label_name([b"wled-\xff\xfe-bad", b"_wled", b"_tcp", b"local"])
+    bad_host = label_name([b"host-\xc3", b"local"])
+    invalid = response(
+        [record(name(SERVICE), TYPE_PTR, bad_owner, rclass=1)],
+        [
+            record(bad_owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + bad_host),
+            record(bad_owner, TYPE_TXT, b""),
+            record(bad_host, TYPE_A, bytes([192, 0, 2, 31])),
+        ],
+    )
+    emoji_owner = label_name(["wled-\U0001f4a1".encode(), b"_wled", b"_tcp", b"local"])
+    emoji = response(
+        [record(name(SERVICE), TYPE_PTR, emoji_owner, rclass=1)],
+        [
+            record(emoji_owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + name(mdns("wled-e"))),
+            record(emoji_owner, TYPE_TXT, b""),
+            record(name(mdns("wled-e")), TYPE_A, bytes([192, 0, 2, 32])),
+        ],
+    )
+    return [invalid, emoji, device("wled-a1b2c3", "192.0.2.21")]
+
+
+@pytest.mark.parametrize("fmt", ["text", "json"])
+def test_non_encodable_answer_text_does_not_hide_other_candidates(monkeypatch, fmt):
+    """S1: the output is ASCII, so a legacy stdout encoding cannot make it fail."""
+    install(monkeypatch, FakeNetwork(answer_first(*odd_responder_packets())))
+    stdout = RedirectedStdout("cp1252")
+    monkeypatch.setattr(sys, "stdout", stdout.stream)
+    code = cli.main(["discover", "--format", fmt])
+    written = stdout.text()
+    assert code == 0
+    assert "192.0.2.21" in written and "192.0.2.31" in written and "192.0.2.32" in written
+    assert "wled-a1b2c3" in written
+    if fmt == "json":
+        document = json.loads(written)
+        assert document["candidate_count"] == 3
+        assert all(c["instance"].isascii() for c in document["candidates"])
+    else:
+        assert "wled-??-bad" in written and "wled-?" in written
+
+
+def test_safe_text_is_ascii_printable_only():
+    assert discovery.safe_text("aé�\U0001f4a1\x1b‮ z") == "a????? z"
+    assert discovery.safe_text("plain-1.2_x") == "plain-1.2_x"
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        ("192.0.2.200", 5354),
+        ("192.0.2.200", 0),
+        ("2001:db8::1", 5353),
+        ("not-an-address", 5353),
+        None,
+    ],
+)
+def test_answers_not_from_ipv4_port_5353_are_dropped(monkeypatch, capsys, source):
+    """S2 (RFC 6762 section 6): the response source port must be 5353 on IPv4."""
+    packet = device("wled-a1b2c3", "192.0.2.21")
+    network = FakeNetwork(answer_first(packet))
+    network.sources[packet] = source
+    install(monkeypatch, network)
+    code, document = run_json(capsys)
+    assert code == 1 and document["candidates"] == []
+    assert document["dropped_datagrams"] == 1 and document["malformed_responses"] == 0
+    assert document["problems"][0]["code"] == "NO_CANDIDATES"
+
+
+def test_other_source_address_with_port_5353_stays_accepted(monkeypatch, capsys):
+    # On-link cannot be verified from user space; this is documented (cli.md).
+    packet = device("wled-a1b2c3", "192.0.2.21")
+    network = FakeNetwork(answer_first(packet))
+    network.sources[packet] = ("198.51.100.7", MDNS_PORT)
+    install(monkeypatch, network)
+    code, document = run_json(capsys)
+    assert code == 0 and document["candidate_count"] == 1 and document["dropped_datagrams"] == 0
+
+
+def test_dropped_datagrams_count_toward_the_datagram_bound(monkeypatch, capsys):
+    packet = device("wled-a1b2c3", "192.0.2.21")
+    network = FakeNetwork(lambda p, n: [(0.0001, packet)] * 600 if n == 1 else [])
+    network.sources[packet] = ("192.0.2.200", 1)
+    install(monkeypatch, network)
+    _, document = run_json(capsys)
+    assert document["dropped_datagrams"] == discovery.MAX_DATAGRAMS
+
+
+def test_datagram_bound_stops_a_flood(monkeypatch, capsys):
+    junk = b"\x00" * 12
+    network = FakeNetwork(lambda p, n: [(0.0001, junk)] * 700 if n == 1 else [])
+    install(monkeypatch, network)
+    _, document = run_json(capsys)
+    assert document["malformed_responses"] == discovery.MAX_DATAGRAMS
+    assert len(network.queue) == 700 - discovery.MAX_DATAGRAMS  # the rest was never read
+
+
+@pytest.mark.parametrize(("strings", "ok"), [(discovery.MAX_TXT_STRINGS, True), (65, False)])
+def test_txt_string_count_is_bounded(strings, ok):
+    items = [b"k%d=v" % index for index in range(strings)]
+    packet = response([ptr("wled-a1b2c3")], [txt("wled-a1b2c3", *items)])
+    if ok:
+        discovery.parse_response(packet)
+    else:
+        with pytest.raises(discovery.MalformedPacket, match="too many TXT strings"):
+            discovery.parse_response(packet)
+
+
+def test_lower_timeout_bound_is_accepted_and_just_below_is_not(monkeypatch, capsys):
+    network = install(monkeypatch, FakeNetwork())
+    run(capsys, "--timeout", "0.5")
+    assert network.now == pytest.approx(100.5)
+    network = install(monkeypatch, FakeNetwork())
+    code, _, _ = run(capsys, "--timeout", "0.49")
+    assert code == 2 and network.sent == []
+
+
+def test_known_addresses_with_a_follow_up_send_nothing_to_candidates(monkeypatch, capsys):
+    host = mdns("wled-a1b2c3")
+    # SRV and A are known, the TXT record is missing: the follow-up asks for TXT only.
+    first = response([ptr("wled-a1b2c3")], [srv("wled-a1b2c3", host), a(host, "192.0.2.21")])
+
+    def responder(packet: bytes, number: int) -> list[tuple[float, bytes]]:
+        if number == 1:
+            return [(0.05, first)]
+        assert [qtype for _, qtype, _ in questions(packet)] == [TYPE_TXT]
+        return [(0.05, response([txt("wled-a1b2c3", b"mac=00005e005301")]))]
+
+    network = install(monkeypatch, FakeNetwork(responder))
+    code, document = run_json(capsys)
+    assert code == 0 and document["follow_up_sent"] is True
+    assert document["candidates"][0]["mac"] == "00005e005301"
+    assert [address for _, address in network.sent] == [(MDNS_GROUP, MDNS_PORT)] * 2
+    assert_only_multicast(network)
+
+
+@pytest.mark.parametrize("address", ["0.1.2.3", "240.0.0.1", "250.1.1.1"])
+def test_this_network_and_reserved_ranges_are_not_suggested(monkeypatch, capsys, address):
+    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", address))))
+    code, document = run_json(capsys)
+    assert code == 1 and document["candidates"][0]["suggested_base_url"] is None
+
+
+def test_leading_dashes_in_a_name_cannot_become_an_option(monkeypatch, capsys):
+    owner = label_name([b"--x-y", b"_wled", b"_tcp", b"local"])
+    packet = response(
+        [record(name(SERVICE), TYPE_PTR, owner, rclass=1)],
+        [
+            record(owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + name(mdns("wled-d"))),
+            record(owner, TYPE_TXT, b""),
+            record(name(mdns("wled-d")), TYPE_A, bytes([192, 0, 2, 41])),
+        ],
+    )
+    install(monkeypatch, FakeNetwork(answer_first(packet)))
+    _, document = run_json(capsys)
+    (candidate,) = document["candidates"]
+    assert candidate["suggested_device_name"] == "x-y"
+    assert '--device-name "x-y"' in candidate["add_device_command"]
+    assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_device_id"])

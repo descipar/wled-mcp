@@ -252,6 +252,11 @@ class Collector:
     datagrams: int = 0
     malformed: int = 0
     truncated: bool = False
+    dropped_sources: int = 0
+
+    @property
+    def received(self) -> int:
+        return self.datagrams + self.dropped_sources
 
     def feed(self, packet: bytes) -> None:
         self.datagrams += 1
@@ -306,12 +311,16 @@ class Collector:
         return questions
 
 
+_THIS_NETWORK = ipaddress.IPv4Network("0.0.0.0/8")
+_RESERVED = ipaddress.IPv4Network("240.0.0.0/4")  # includes 255.255.255.255
+
+
 def _usable_address(address: ipaddress.IPv4Address) -> bool:
     return not (
-        address.is_unspecified
+        address in _THIS_NETWORK
+        or address in _RESERVED
         or address.is_multicast
         or address.is_loopback
-        or address == ipaddress.IPv4Address("255.255.255.255")
     )
 
 
@@ -333,8 +342,12 @@ def follow_up_query(questions: list[tuple[Name, int]]) -> bytes | None:
 
 
 def safe_text(value: str, limit: int = MAX_TEXT * 4) -> str:
-    """Printable text only: control, format and separator characters become ``?``."""
-    cleaned = "".join(c if c.isprintable() else "?" for c in value)
+    """ASCII printable text only; every other character (control, format, separator,
+    non-ASCII, the replacement character of invalid UTF-8) becomes ``?``.
+
+    One rule for text and JSON output: it can be written to any stdout encoding.
+    """
+    cleaned = "".join(c if c.isascii() and c.isprintable() else "?" for c in value)
     return cleaned[:limit]
 
 
@@ -468,7 +481,8 @@ def suggest_name(instance: str) -> str:
     carry characters that a POSIX shell, PowerShell or cmd.exe would interpret.
     """
     name = " ".join(_UNSAFE_NAME.sub(" ", instance).split())[:MAX_TEXT]
-    return name or "WLED"
+    # A leading dash would be read as an option by the add-device command.
+    return name.lstrip("- ") or "WLED"
 
 
 def annotate(candidates: list[Candidate], hosts: set[str], ids: set[str]) -> None:
@@ -516,23 +530,45 @@ class Outcome:
     multicast_unavailable: bool
 
 
+def _from_mdns_port(source: Any) -> bool:
+    """RFC 6762 section 6: a response comes from IPv4 port 5353.
+
+    Only the address family and port are checked. Whether the sender is on-link cannot be
+    verified from user space here, so a response from any IPv4 address with source port
+    5353 is accepted; answers are unauthenticated.
+    """
+    if not isinstance(source, tuple) or len(source) != 2:
+        return False
+    host, port = source
+    if port != MDNS_PORT or not isinstance(host, str):
+        return False
+    try:
+        ipaddress.IPv4Address(host)
+    except ValueError:
+        return False
+    return True
+
+
 def _listen(
     sock: DatagramSocket, until: float, clock: Callable[[], float], collector: Collector
 ) -> None:
     errors = 0
-    while collector.datagrams < MAX_DATAGRAMS:
+    while collector.received < MAX_DATAGRAMS:
         remaining = until - clock()
         if remaining <= 0:
             return
         sock.settimeout(remaining)
         try:
-            packet, _ = sock.recvfrom(RECEIVE_BUFFER)
+            packet, source = sock.recvfrom(RECEIVE_BUFFER)
         except TimeoutError:
             return
         except OSError:  # for example a datagram larger than the buffer on Windows
             errors += 1
             if errors >= MAX_RECEIVE_ERRORS:
                 return
+            continue
+        if not _from_mdns_port(source):
+            collector.dropped_sources += 1
             continue
         collector.feed(packet)
 
@@ -637,6 +673,7 @@ def run_discover(
         "candidate_count": len(outcome.candidates),
         "truncated": outcome.collector.truncated,
         "malformed_responses": outcome.collector.malformed,
+        "dropped_datagrams": outcome.collector.dropped_sources,
         "candidates": [candidate.as_json() for candidate in outcome.candidates],
         "problems": problems,
     }
