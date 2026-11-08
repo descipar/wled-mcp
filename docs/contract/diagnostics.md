@@ -147,4 +147,4 @@ Semantics:
 Additive within the stage-1 contract ([versioning.md](versioning.md#schema-evolution)): a
 new tool, one optional output field and no change to any existing tool's input or `data`.
 `wled_list_devices` is unchanged. No migration note applies; a client written against
-0.1.0 sees an extra optional field and an extra tool.
+the first release sees an extra optional field and an extra tool.
