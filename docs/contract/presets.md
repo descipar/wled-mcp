@@ -269,7 +269,8 @@ palette catalogs when entries reference them; nothing is written.
 - Guard against addresses stored in preset text: an export is refused
   (`VALIDATION_ERROR`, naming only the source IDs) when a string of a selected object
   contains the device's configured host, its reported IP or MAC (both spellings) or the
-  Wi-Fi BSSID.
+  Wi-Fi BSSID. This scan covers only this device's host, IP, MAC and BSSID, also for
+  entries exported with `include_unwritable`; the export warning says so.
 
 ## Import (`wled_import_presets`)
 
@@ -306,12 +307,16 @@ Planning rules:
   - `effect_map`/`palette_map` (source ID to target ID) accept a mapping explicitly;
     the mapped ID is written into the entry's `fx`/`pal`.
   - An ID the bundle does not name must be mapped explicitly.
+  - Custom palettes (IDs at or above the length of the built-in `/json/pal` catalog)
+    cannot be imported or mapped: they are not in the catalog the check reads.
 - **Playlists.**
   - Members and a persistent `end` are rewritten through the destinations of the
     bundle's state entries, or through `id_map` to an existing state preset on the
     target; any other reference blocks the playlist.
   - The rewritten object must pass the playlist checks of
-    [Restore](#restore-wled_restore_preset).
+    [Restore](#restore-wled_restore_preset). Like restore, an imported playlist keeps
+    the stored per-entry transition range 0-65535 tenths; values above 655 wrap in the
+    firmware at playback (authoring refuses them).
   - Saving starts a playlist, and the playlist route is refused while one runs. So a
     bundle may hold at most one playlist per import, and the playlist is refused while
     the device reports a running playlist.

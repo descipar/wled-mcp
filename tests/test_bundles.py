@@ -150,6 +150,7 @@ async def test_include_unwritable_exports_every_type_for_inspection(tmp_path):
     desk = BundleDevice({"3": {"win": "T=2", "n": "Command"}, "6": [1, 2]})
     outcome = await export(tmp_path, desk, include_unwritable=True)
     presets = outcome.data["bundle"]["presets"]
+    assert any("only this device's host, IP, MAC and BSSID" in w for w in outcome.warnings)
     assert [(p["source_id"], p["type"], p["name"]) for p in presets] == [
         (3, "api-command", "Command"),
         (6, "unknown", None),
@@ -645,3 +646,118 @@ async def test_logs_carry_no_bundle_content_names_or_addresses(tmp_path, caplog,
     emitted = " ".join(r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING)
     for secret in SECRETS:
         assert secret not in emitted
+
+
+# ================================================================== review round 1
+
+
+def test_parser_rejects_a_duplicate_key_in_an_otherwise_valid_bundle():
+    # Without the duplicate the text is a valid bundle, so only duplicate detection fails it.
+    valid = text_of(load_fixture())
+    parse_bundle(valid)
+    text = valid.replace('"bri": 128', '"bri": 128, "bri": 5', 1)
+    with pytest.raises(ClientFailure) as raised:
+        parse_bundle(text)
+    assert raised.value.error.code == "VALIDATION_ERROR"
+    assert "duplicate" in raised.value.error.message
+
+
+@pytest.mark.anyio
+async def test_import_snapshots_survive_each_others_retention_pruning(tmp_path):
+    bundle = bundle_with(*[item(i, state_preset(f"P{i}")) for i in (1, 2, 3)])
+    desk = BundleDevice({str(i): state_preset(f"Old {i}") for i in (1, 2, 3)})
+    async with open_resources(tmp_path, fleet_of(desk)) as resources:
+        resources.backups.retain_per_device = 1
+        outcome = await call(
+            resources,
+            "wled_import_presets",
+            bundle=bundle,
+            id_map={"1": 1, "2": 2, "3": 3},
+            overwrite_ids=[1, 2, 3],
+        )
+    assert outcome.ok and len(outcome.data["backup_ids"]) == 3
+    files = snapshot_files(tmp_path)
+    assert all(f"{backup_id}.json" in files for backup_id in outcome.data["backup_ids"])
+
+
+@pytest.mark.anyio
+async def test_playlist_member_turned_into_a_playlist_before_its_write_is_a_conflict(tmp_path):
+    bundle = bundle_with(item(1, state_preset("A")), item(2, stored_playlist([1, 7], name="L")))
+    desk = BundleDevice({"20": state_preset("Seven")})
+
+    def change(_body: dict[str, Any]) -> None:
+        if len(desk.posts) == 1:
+            desk.store["20"] = stored_playlist([1])
+
+    desk.on_post = change
+    outcome, fleet = await import_(tmp_path, desk, bundle, id_map={"7": 20})
+    assert fleet.post_count() == 1 and outcome.error.code == "PRESET_CONFLICT"
+    assert [e["status"] for e in outcome.data["entries"]] == ["verified", "not_attempted"]
+
+
+@pytest.mark.anyio
+async def test_playlist_started_before_the_playlist_write_is_a_conflict(tmp_path):
+    bundle = bundle_with(item(1, state_preset("A")), item(2, stored_playlist([1], name="L")))
+    desk = BundleDevice({"9": state_preset("M"), "8": stored_playlist([9])})
+
+    def start(_body: dict[str, Any]) -> None:
+        if len(desk.posts) == 1:
+            desk.state.update(pl=8)
+
+    desk.on_post = start
+    outcome, fleet = await import_(tmp_path, desk, bundle)
+    assert fleet.post_count() == 1 and outcome.error.code == "PRESET_CONFLICT"
+    assert "Playlist 8 is running" in outcome.data["entries"][1]["reason"]
+
+
+@pytest.mark.anyio
+async def test_lowest_free_allocation_skips_id_map_destinations(tmp_path):
+    bundle = bundle_with(item(5, state_preset("Unmapped")), item(6, state_preset("Mapped")))
+    outcome, fleet = await import_(tmp_path, BundleDevice(), bundle, id_map={"6": 1}, dry_run=True)
+    assert outcome.ok and fleet.post_count() == 0
+    rows = [
+        (e["source_id"], e["destination_id"], e["allocated"])
+        for e in outcome.data["plan"]["entries"]
+    ]
+    assert rows == [(5, 2, True), (6, 1, False)]
+
+
+@pytest.mark.anyio
+async def test_playlist_rewritten_onto_its_own_destination_is_blocked(tmp_path):
+    bundle = bundle_with(item(5, stored_playlist([7], name="Self")))
+    desk = BundleDevice({"20": state_preset("Target")})
+    outcome, fleet = await import_(
+        tmp_path, desk, bundle, id_map={"5": 20, "7": 20}, overwrite_ids=[20]
+    )
+    assert outcome.error.code == "UNSUPPORTED_CAPABILITY" and fleet.post_count() == 0
+    assert "its own destination" in json.dumps(outcome.data["plan"]["entries"][0]["blocking"])
+
+
+@pytest.mark.anyio
+async def test_malformed_target_store_blocks_the_import(tmp_path):
+    desk = BundleDevice({"abc": state_preset("Odd")})
+    outcome, fleet = await import_(tmp_path, desk, bundle_with(item(1, state_preset("A"))))
+    assert outcome.error.code == "INVALID_RESPONSE" and fleet.post_count() == 0
+
+
+@pytest.mark.anyio
+async def test_explicit_catalog_map_outside_the_target_catalog_is_blocked(tmp_path):
+    bundle = bundle_with(item(1, state_preset("Fiery", fx=4, pal=3)))
+    for arguments, fragment in (
+        ({"effect_map": {"4": 99}}, "maps effect 4 to 99, outside the target catalog (0-4)"),
+        ({"palette_map": {"3": 4}}, "maps palette 3 to 4, outside the target catalog (0-3)"),
+    ):
+        outcome, fleet = await import_(tmp_path, BundleDevice(), bundle, **arguments)
+        assert outcome.error.code == "VALIDATION_ERROR" and fleet.post_count() == 0
+        assert fragment in json.dumps(outcome.data["plan"]["entries"][0]["blocking"])
+
+
+@pytest.mark.parametrize(("stop", "blocked"), [(30, False), (31, True)])
+@pytest.mark.anyio
+async def test_segment_stop_boundary_at_the_target_led_count(tmp_path, stop, blocked):
+    bundle = bundle_with(item(1, state_preset("Edge", stop=stop)))
+    outcome, fleet = await import_(tmp_path, BundleDevice(led_count=30), bundle, dry_run=True)
+    assert fleet.post_count() == 0
+    assert outcome.ok is not blocked
+    if blocked:
+        assert "stop 31 exceeds the target LED count 30" in json.dumps(outcome.data["plan"])

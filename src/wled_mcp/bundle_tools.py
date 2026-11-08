@@ -344,7 +344,9 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
         if any(entry.type not in WRITABLE_TYPES for entry in selected):
             warnings.append(
                 "The bundle contains api-command or unknown entries for inspection; an import "
-                "of this bundle is refused until they are removed."
+                "of this bundle is refused until they are removed. They are carried verbatim; "
+                "the address check covers only this device's host, IP, MAC and BSSID, so "
+                "review them before sharing."
             )
         return selected, excluded
 
