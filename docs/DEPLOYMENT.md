@@ -131,6 +131,9 @@ sha256sum -c SHA256SUMS
 cat RELEASE
 ```
 
+Publishing the package to PyPI is a separate, CI-built path:
+[PUBLISHING.md](PUBLISHING.md).
+
 The checksums are stored next to the artifacts, so they detect later changes of the
 files, not a replaced directory: compare the wheel and constraints values with those
 printed by `stage_release.py`. Record the source commit, wheel and

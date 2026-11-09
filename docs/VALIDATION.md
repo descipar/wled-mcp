@@ -1291,5 +1291,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
 - [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
   the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
   upgrade compatibility) (#21, #70).
+- [validation/issue-22.md](validation/issue-22.md): PyPI publish workflow, release guard and
+  local build, metadata and smoke checks of the built files (#22, local evidence; nothing
+  published).
 - [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
   bundles, restore and a playlist on the test controller (#134).
