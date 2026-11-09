@@ -42,6 +42,7 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_get_state", READ, destructive=False),
     ExpectedTool("wled_get_effects", READ, destructive=False),
     ExpectedTool("wled_get_palettes", READ, destructive=False),
+    ExpectedTool("wled_search_effects", READ, destructive=False),
     ExpectedTool("wled_set_state", CONTROL, destructive=False),
     ExpectedTool("wled_patch_segments", CONTROL, destructive=False),
     ExpectedTool("wled_replace_layout", CONTROL, destructive=True),

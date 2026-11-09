@@ -211,6 +211,20 @@ The multicast exchange itself (an IPv4 one-shot query from an ephemeral port, RF
 section 5.1, and the responder libraries' answers to it) was not observed on hardware;
 the tests use a fake socket. No firmware code was copied.
 
+## Issue-31 effect catalog source pin
+
+Read 2026-11-09 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`
+(GitHub contents API) for `src/wled_mcp/catalog_data/effect_properties.json`
+([contract/effect-search.md](contract/effect-search.md)): effect IDs from the `FX_MODE_*`
+definitions in [FX.h](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.h),
+exact names, metadata strings (colour and palette fields) and effect functions from the
+`_data_FX_MODE_*` strings and `mode_*` functions in
+[FX.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.cpp)
+(for example `blink()` for Blink and Strobe). Property values are the project's own
+statements; no firmware code was copied. The effect behavior was read, not executed on a
+device; subjective properties are curated judgement or taken from the recorded live check
+([live-check-2026-11-08](validation/live-check-2026-11-08.md)).
+
 ## Licensing
 
 No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.

@@ -21,6 +21,8 @@ service; #9 adds the five persistent-preset tools (see
 definitions, a read-only plan and the apply, the only device-write path of scenes, which is not
 atomic and not synchronized across devices (see
 [contract/groups-scenes.md](contract/groups-scenes.md)).
+#31 adds the read-only `wled_search_effects`: a search of one device's effects by curated
+properties (see [contract/effect-search.md](contract/effect-search.md)).
 `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -69,6 +71,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_state` | read-only | Normalized current state, segments and essential capabilities |
 | `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
 | `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |
+| `wled_search_effects` | read-only | Effects of one device matching curated properties, with exact device IDs and an explanation per result |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -101,6 +104,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
 | `wled_get_effects` | `device_id`, `refresh=false` | Original IDs/names, optional metadata, freshness | Must |
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
+| `wled_search_effects` | `device_id`, optional `motion`, `flashing`, `colors_min`, `colors_max`, `uses_palette`, `strip_length`, `min_visibility`, `max_palette_saturation_need`, `strict=true`, `min_confidence`, `limit` | Curated property search intersected with the device's effect list; read-only | Stage 3 (S3-EFFECT-01, S3-EFFECT-02); implemented in #31 ([contract/effect-search.md](contract/effect-search.md)) |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -871,6 +875,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   the tested set and how users install it (#22).
 - [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
+- [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the
+  curated property catalog, matching rules and how to update it (#31).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
   and sharing (#17).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,

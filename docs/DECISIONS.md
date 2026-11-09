@@ -830,6 +830,9 @@ Stage 2 (recorded 2026-11-07):
   #21, live run as #25 evidence.
 - [ISSUE-21-DEC-002](decisions/issue-21.md) (coordinator): technical defaults TD-21-1 to
   TD-21-10 for #21 and #70 (version source, non-release ids, matrix, policy).
+- [ISSUE-31-DEC-001](decisions/issue-31.md) (coordinator, technical proposal): technical
+  defaults TD-31-1 to TD-31-12 for effect search, two properties `visibility` and
+  `palette_saturation_need`, catalog not applied below the firmware floor.
 - [ISSUE-94-DEC-001 and -002](decisions/issue-94.md) (human; coordinator): `unplanned`
   coverage status; coverage-list technical defaults.
 - [ISSUE-98-DEC-001](decisions/issue-98.md) (coordinator): every tool-adding PR adds its

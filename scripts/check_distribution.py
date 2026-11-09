@@ -40,6 +40,7 @@ VERSION_PLACEHOLDER = "REPLACE_WITH_VERSION"  # release directory name in the hu
 # A published release version: no local label, no development release (as
 # deploy/stage_release.py; docs/contract/versioning.md).
 RELEASE_VERSION = re.compile(r"\d+\.\d+\.\d+(?:rc\d+)?")
+EFFECT_DATA = "src/wled_mcp/catalog_data/effect_properties.json"  # packaged effect catalog (#31)
 MAIN_REF = "refs/remotes/origin/main"  # releases come from `main` commits (DEC-023 item 1)
 
 
@@ -214,6 +215,8 @@ def check_sdist(sdist: Path, version: str) -> None:
             raise SystemExit(f"{sdist.name} has no PKG-INFO")
         pkg_info = stream.read().decode("utf-8")
     problems = sdist_member_problems(members, version)
+    if f"wled_mcp-{version}/{EFFECT_DATA}" not in members:
+        problems.append(f"{EFFECT_DATA} (effect catalog data) is missing")
     if metadata_version(pkg_info) != version:
         problems.append(f"PKG-INFO Version is not {version}")
     if problems:
@@ -491,6 +494,7 @@ def main(argv: list[str] | None = None) -> None:
     dist_info = f"wled_mcp-{VERSION}.dist-info"
     with zipfile.ZipFile(wheel) as archive:
         assert "wled_mcp/cli.py" in archive.namelist()
+        assert "wled_mcp/catalog_data/effect_properties.json" in archive.namelist()
         assert not any(name.startswith("tests/") for name in archive.namelist())
         metadata = archive.read(f"{dist_info}/METADATA").decode()
         if problems := requires_dist_problems(metadata, project_dependencies(root)):

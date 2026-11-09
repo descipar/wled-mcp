@@ -1,0 +1,491 @@
+{
+  "schema_version": 1,
+  "data_version": "2026-11-09",
+  "property_notes": "Curated by hand from the WLED firmware source; see docs/contract/effect-search.md. Subjective properties are recommendations, never verified. A property that is absent is unknown. flashing is a comfort property and not a photosensitivity guarantee.",
+  "firmware": {
+    "reviewed": [
+      "16.0.1"
+    ],
+    "source": "WLED tag v16.0.1, commit 29b389df1c1aaec6ff53aea742d17063b985906c, wled00/FX.h (IDs) and wled00/FX.cpp (names, metadata strings, effect functions)"
+  },
+  "effects": [
+    {
+      "id": 0,
+      "name": "Solid",
+      "properties": {
+        "colors": {
+          "value": 1,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_static fills with SEGCOLOR(0); no metadata string"
+        },
+        "uses_palette": {
+          "value": false,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_static reads no palette; no metadata string"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_static is constant"
+        },
+        "motion": {
+          "value": "static",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "short",
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "visibility": {
+          "value": "high",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Blink",
+      "properties": {
+        "colors": {
+          "value": 2,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BLINK = \"Blink@!,Duty cycle;!,!;!;01\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BLINK = \"Blink@!,Duty cycle;!,!;!;01\" (palette field)"
+        },
+        "flashing": {
+          "value": "frequent",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: blink() alternates colour 1 and 2 with a cycle of (255 - speed) * 20 ms plus two frames, down to about 20 Hz at maximum speed"
+        },
+        "motion": {
+          "value": "lively",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Breathe",
+      "properties": {
+        "colors": {
+          "value": 2,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BREATH = \"Breathe@!;!,!;!;01\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BREATH = \"Breathe@!;!,!;!;01\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_breath modulates smoothly (sine); effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "calm",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "short",
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 8,
+      "name": "Colorloop",
+      "properties": {
+        "colors": {
+          "value": 0,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_RAINBOW = \"Colorloop@!,Saturation;;!;01\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_RAINBOW = \"Colorloop@!,Saturation;;!;01\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_rainbow cycles the hue smoothly; effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "calm",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "short",
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 9,
+      "name": "Rainbow",
+      "properties": {
+        "colors": {
+          "value": 0,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_RAINBOW_CYCLE = \"Rainbow@!,Size;;!\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_RAINBOW_CYCLE = \"Rainbow@!,Size;;!\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_rainbow_cycle shifts a hue gradient smoothly; effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "moderate",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 12,
+      "name": "Fade",
+      "properties": {
+        "colors": {
+          "value": 2,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_FADE = \"Fade@!;!,!;!;01\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_FADE = \"Fade@!;!,!;!;01\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_fade blends with a triangle wave of at most about 1.6 s per cycle; effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "calm",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "short",
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 17,
+      "name": "Twinkle",
+      "properties": {
+        "colors": {
+          "value": 2,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_TWINKLE = \"Twinkle@!,!;!,!;!;;m12=0\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_TWINKLE = \"Twinkle@!,!;!,!;!;;m12=0\" (palette field)"
+        },
+        "motion": {
+          "value": "moderate",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 23,
+      "name": "Strobe",
+      "properties": {
+        "colors": {
+          "value": 2,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_STROBE = \"Strobe@!;!,!;!;01\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_STROBE = \"Strobe@!;!,!;!;01\" (palette field)"
+        },
+        "flashing": {
+          "value": "frequent",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: blink() with strobe=true: one-frame flashes, down to about 20 Hz at maximum speed"
+        },
+        "motion": {
+          "value": "lively",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 67,
+      "name": "Colorwaves",
+      "properties": {
+        "colors": {
+          "value": 1,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_COLORWAVES = \"Colorwaves@!,Hue;!;!;;pal=26\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_COLORWAVES = \"Colorwaves@!,Hue;!;!;;pal=26\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_colorwaves_pride_base blends pixels smoothly; effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "moderate",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        }
+      }
+    },
+    {
+      "id": 72,
+      "name": "Noise 3",
+      "properties": {
+        "colors": {
+          "value": 1,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_NOISE16_3 = \"Noise 3@!;!;!;;pal=35\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_NOISE16_3 = \"Noise 3@!;!;!;;pal=35\" (palette field)"
+        },
+        "motion": {
+          "value": "calm",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "visibility": {
+          "value": "low",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        },
+        "palette_saturation_need": {
+          "value": "high",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        }
+      }
+    },
+    {
+      "id": 108,
+      "name": "Sine",
+      "properties": {
+        "colors": {
+          "value": 0,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_SINEWAVE = \"Sine@!,Scale;;!\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_SINEWAVE = \"Sine@!,Scale;;!\" (palette field)"
+        },
+        "motion": {
+          "value": "moderate",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "visibility": {
+          "value": "low",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        },
+        "palette_saturation_need": {
+          "value": "high",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        }
+      }
+    },
+    {
+      "id": 115,
+      "name": "Blends",
+      "properties": {
+        "colors": {
+          "value": 0,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BLENDS = \"Blends@Shift speed,Blend speed;;!\" (colour slots field)"
+        },
+        "uses_palette": {
+          "value": true,
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: _data_FX_MODE_BLENDS = \"Blends@Shift speed,Blend speed;;!\" (palette field)"
+        },
+        "flashing": {
+          "value": "none",
+          "confidence": "verified",
+          "basis": "source_review",
+          "evidence": "WLED v16.0.1 (29b389df1c1aaec6ff53aea742d17063b985906c) wled00/FX.cpp: mode_blends blends colours gradually (blend speed at most 128/255 per frame); effect function has no abrupt full-strip on/off alternation at any speed"
+        },
+        "motion": {
+          "value": "calm",
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "strip_length": {
+          "value": [
+            "medium",
+            "long"
+          ],
+          "confidence": "recommended",
+          "basis": "author_judgement",
+          "evidence": "Curated judgement of the catalog author; not measured on a device."
+        },
+        "visibility": {
+          "value": "low",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        },
+        "palette_saturation_need": {
+          "value": "high",
+          "confidence": "recommended",
+          "basis": "observed_run",
+          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+        }
+      }
+    }
+  ]
+}

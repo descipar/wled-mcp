@@ -292,6 +292,7 @@ READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_get_state": {"device_id": "desk"},
     "wled_get_effects": {"device_id": "desk"},
     "wled_get_palettes": {"device_id": "desk"},
+    "wled_search_effects": {"device_id": "desk", "flashing": ["none"]},
     "wled_list_presets": {"device_id": "desk"},
     "wled_get_preset": {"device_id": "desk", "preset_id": 1},
     "wled_list_snapshots": {"device_id": "desk"},
