@@ -10,7 +10,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Authority: agent technical default under the owner's instruction to run #130 through the
   workflow; the owner may overrule.
 - Source: owner chat message in the main coordinator session on 2026-11-09 (no permalink),
-  "ja, starte #130 über den workflow", given after the cause analysis below was presented.
+  "ja, starte #130 über den workflow". The owner did not choose between the options; the choice below is an agent technical default.
 - Scope: issue #130 only: the served output schema of the result envelope and of its error
   object, and the documentation of the update behaviour.
 - Decision: (1) the served `outputSchema` of every tool sets `additionalProperties: true` on
