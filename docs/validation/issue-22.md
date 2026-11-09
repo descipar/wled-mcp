@@ -157,7 +157,7 @@ root has no `wled_mcp` package, so the source tree is not imported.
 | Run | Result |
 | --- | --- |
 | Highest, full suite | 2867 passed, 6 skipped (5 GNU-shell tests on macOS, the opt-in Docker check) |
-| Lowest, full suite | 2867 passed, 6 skipped, 2 deselected: the `[trio]` variants of the two tests in `tests/test_tools_list_cache.py`. That file defines no `anyio_backend` fixture; the pytest plugin of anyio 4.10.0 then parametrizes every backend including trio, which is not installed, while 4.16.0 uses only installed backends. Test-harness coupling: the server never runs on trio. Their asyncio variants passed. |
+| Lowest, full suite | 2867 passed, 6 skipped, nothing deselected. `tests/test_tools_list_cache.py` now pins the `anyio_backend` fixture to asyncio like the other async test files; without it the pytest plugin of anyio 4.10.0 also parametrized a trio variant (trio is not installed), which anyio 4.16.0 does not. |
 | Wheel smoke, both environments (the `check_distribution.py` helpers run with the environment's Python against its `wled-mcp` console script) | `--version`, setup commands, stdio handshake with `tools/list`, read-only profile, HTTP loopback start, authenticated `tools/list`, clean stop and restart: PASS |
 
 ### Exact deployment paths

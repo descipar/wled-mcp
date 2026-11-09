@@ -148,6 +148,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Propagated to roles / packet references: requirements, implementer and reviewer via the
   coordinator handoff.
 - Revalidation needed / next action: owner may change the ranges or the uvicorn cap form.
+- Owner update 2026-11-09 (main coordinator session, chat, no permalink): "mach es doch
+  sinnvoller und gehe nicht alle versionen so tief runter, da kann man doch mal abwägen"
+  (English: "do it more sensibly and do not go down so deep for all versions, one can
+  weigh things up"). The ranges rest on one lower-bound run and one newest/locked run, with
+  no intermediate versions; the review is light (owner).
 
 ## ISSUE-22-DEC-005 — README fit for the PyPI project page
 
