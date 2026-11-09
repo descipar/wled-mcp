@@ -27,6 +27,7 @@ Destructive tool descriptions state the discarded or replaced state and recommen
 no execution or confirmation mechanism: authorization remains with the MCP host,
 and existing profiles, validation and write semantics still apply.
 
-Actual MCPHub forwarding is recorded separately in
+The local stdio client check and the not-observed status of MCPHub forwarding
+([ISSUE-147-DEC-001](../decisions/issue-147.md)) are recorded in
 [validation/issue-147.md](../validation/issue-147.md); transport tests do not prove
 that a particular host forwards the guidance.
