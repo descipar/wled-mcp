@@ -745,6 +745,8 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
                 "through the same mapping and written first. One POST per entry, verified by "
                 "/presets.json polling, never replayed; it stops at the first unverified entry "
                 "and reports each entry. dry_run performs bounded reads only."
+                " Overwriting replaces the destination’s previous stored entry after a snapshot."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=ImportPresetsRequest,
             execute=import_presets,

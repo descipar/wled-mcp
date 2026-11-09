@@ -133,45 +133,74 @@ SegmentId = Annotated[int, Field(strict=True, ge=0, le=MAX_SEGMENT_ID)]
 
 class ListGroupsRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    group_id: Identifier | None = None
+    group_id: Identifier | None = Field(default=None, description="Stored group ID.")
 
 
 class GroupMember(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    device: Identifier
+    device: Identifier = Field(description="Configured device ID belonging to this group.")
     segments: list[SegmentId] | None = Field(
-        default=None, min_length=1, max_length=MAX_MEMBER_SEGMENTS
+        default=None,
+        min_length=1,
+        max_length=MAX_MEMBER_SEGMENTS,
+        description=(
+            "Explicit segment IDs designated for group-target segment changes; omitted means "
+            "none are designated."
+        ),
     )
 
 
 class SaveGroupRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    group_id: Identifier
-    name: str = Field(min_length=1, max_length=MAX_NAME)
-    members: list[GroupMember] = Field(min_length=1, max_length=MAX_MEMBERS)
-    overwrite: bool = False
-    dry_run: bool = False
+    group_id: Identifier = Field(description="Stored group ID.")
+    name: str = Field(min_length=1, max_length=MAX_NAME, description="Human-readable group name.")
+    members: list[GroupMember] = Field(
+        min_length=1,
+        max_length=MAX_MEMBERS,
+        description="Configured device members with optional explicit segment IDs.",
+    )
+    overwrite: bool = Field(
+        default=False,
+        description="Explicitly replace an existing stored definition; defaults to false.",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 class DeleteGroupRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    group_id: Identifier
-    dry_run: bool = False
+    group_id: Identifier = Field(description="Stored group ID.")
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 class ListScenesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    scene_id: Identifier | None = None
-    shareable: bool = False
-    include_targets: bool = False
+    scene_id: Identifier | None = Field(default=None, description="Stored scene ID.")
+    shareable: bool = Field(
+        default=False,
+        description="Export a portable scene with target references replaced by placeholders.",
+    )
+    include_targets: bool = Field(
+        default=False, description="Keep actual target references in the shareable export."
+    )
 
 
 class TargetRef(BaseModel):
     """What a placeholder stands for: exactly one of a configured device or a stored group."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    device: Identifier | None = None
-    group: Identifier | None = None
+    device: Identifier | None = Field(
+        default=None,
+        description="Configured device ID; exactly one of device or group is required.",
+    )
+    group: Identifier | None = Field(
+        default=None, description="Stored group ID; exactly one of device or group is required."
+    )
 
     @model_validator(mode="after")
     def exactly_one(self) -> TargetRef:
@@ -184,28 +213,73 @@ class SaveSceneRequest(BaseModel):
     """A scene document as JSON text (exact duplicate-key detection) or as an object."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    scene: str | dict[str, JsonValue]
-    target_map: dict[Identifier, TargetRef] | None = Field(default=None, max_length=16)
-    overwrite: bool = False
-    dry_run: bool = False
+    scene: str | dict[str, JsonValue] = Field(
+        description=(
+            "Version 1 wled-mcp.scene document, as an object or JSON text. targets name a "
+            "device/group and master fields and/or segments with ids plus supported mutable "
+            "fields. Effect/palette names resolve per device during planning."
+        ),
+        examples=[
+            {
+                "format": "wled-mcp.scene",
+                "format_version": 1,
+                "id": "evening",
+                "name": "Evening",
+                "targets": [
+                    {
+                        "device": "desk",
+                        "segments": [
+                            {"ids": [0], "colors": [[255, 96, 16]], "effect_name": "Solid"}
+                        ],
+                    }
+                ],
+            }
+        ],
+    )
+    target_map: dict[Identifier, TargetRef] | None = Field(
+        default=None,
+        max_length=16,
+        description=(
+            "Map portable target placeholders to exactly one configured device or stored group."
+        ),
+    )
+    overwrite: bool = Field(
+        default=False,
+        description="Explicitly replace an existing stored definition; defaults to false.",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 class DeleteSceneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    scene_id: Identifier
-    dry_run: bool = False
+    scene_id: Identifier = Field(description="Stored scene ID.")
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 class PlanSceneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    scene_id: Identifier
-    mode: Literal["strict", "best_effort"] = "strict"
+    scene_id: Identifier = Field(description="Stored scene ID.")
+    mode: Literal["strict", "best_effort"] = Field(
+        default="strict",
+        description=(
+            "strict blocks all targets if any preflight fails; best_effort skips failing targets."
+        ),
+    )
 
 
 class ApplySceneRequest(PlanSceneRequest):
     """The plan's arguments plus ``dry_run``, which returns exactly the plan."""
 
-    dry_run: bool = False
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 # ------------------------------------------------------------------------------ outcomes
@@ -1239,6 +1313,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "directory; replacing an existing group needs overwrite=true and returns the "
                 "previous document. Members must be configured devices. No device is "
                 "contacted. dry_run validates and reports without writing."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SaveGroupRequest,
             execute=save_group,
@@ -1251,6 +1326,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "Delete one stored group file and return its document. Scenes that name the "
                 "group fail their plan until it is stored again. No device is contacted. "
                 "dry_run reports without deleting."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=DeleteGroupRequest,
             execute=delete_group,
@@ -1284,6 +1360,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "portable. A shared document with placeholders needs target_map. Stored as a "
                 "local file; replacing needs overwrite=true. No device is contacted and no "
                 "lighting changes. dry_run validates without writing."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SaveSceneRequest,
             execute=save_scene,
@@ -1295,6 +1372,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
             description=(
                 "Delete one stored scene file and return its document. No device is contacted "
                 "and lighting is unchanged. dry_run reports without deleting."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=DeleteSceneRequest,
             execute=delete_scene,

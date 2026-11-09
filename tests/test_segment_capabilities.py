@@ -1153,11 +1153,13 @@ def test_new_input_fields_are_additive_and_identical_in_both_tools():
     for name in names:
         assert layout_props[name] == patch_props[name], name
     for schema in (layout, patch_schema):
-        assert schema["properties"]["allow_overlap"] == {
+        overlap = schema["properties"]["allow_overlap"]
+        assert {key: overlap[key] for key in ("default", "title", "type")} == {
             "default": False,
             "title": "Allow Overlap",
             "type": "boolean",
         }
+        assert "overlapping" in overlap["description"]
         assert "allow_overlap" not in schema.get("required", [])
     assert not set(names) & set(layout["$defs"]["LayoutSegment"].get("required", []))
     assert not set(names) & set(patch_schema["$defs"]["SegmentPatch"].get("required", []))

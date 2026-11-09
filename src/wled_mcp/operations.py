@@ -529,6 +529,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
                 "is read back; an "
                 "uncertain or mismatching step stops the sequence without replay. dry_run "
                 "performs bounded reads only and returns the ordered plan."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=ReplaceLayoutRequest,
             execute=replace_layout,
@@ -1145,6 +1146,8 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
                 "are not verified. Outcome is decided by bounded /presets.json polling; an "
                 "uncertain outcome is never replayed. No supplied-state input exists. "
                 "dry_run performs bounded reads only."
+                " Overwriting replaces the destination’s previous stored entry after a snapshot."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SavePresetRequest,
             execute=save_preset,
@@ -1159,6 +1162,7 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
                 "warning names them. Outcome is decided by bounded /presets.json polling "
                 "for absence; an uncertain outcome is never replayed. dry_run performs "
                 "bounded reads only."
+                " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=DeletePresetRequest,
             execute=delete_preset,

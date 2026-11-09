@@ -876,6 +876,8 @@ mock/protocol tests and actual firmware compatibility evidence.
 
 ## Stage 2 and later files
 
+- [contract/agent-guidance.md](contract/agent-guidance.md): initialization instructions,
+  static workflow prompt and served field descriptions (#147).
 - [contract/cli.md](contract/cli.md): `wled-mcp config` and `doctor` commands, exit
   codes, doctor categories and the sanitized export (#16).
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED

@@ -1296,3 +1296,5 @@ All Must requirements need evidence. Mock implementation can be merged while har
   published).
 - [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
   bundles, restore and a playlist on the test controller (#134).
+- [validation/issue-147.md](validation/issue-147.md): agent instructions, static prompt
+  and nested schema guidance over stdio and HTTP (#147; MCPHub check pending).
