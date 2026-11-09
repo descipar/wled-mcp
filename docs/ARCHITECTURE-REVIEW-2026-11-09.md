@@ -327,3 +327,90 @@ requirements demonstrate a concrete need.
 
 Only this report is changed by the review. Recommendations have not been implemented,
 and issue bodies, milestones, acceptance checkboxes and publication state are unchanged.
+
+## Second-opinion evaluation
+
+Added after an independent evaluation of this review against the code at commit
+`0bdf3efbb6d6eaf5c98313915279fa5b857b9219` (DEC-028 and DEC-029 as the yardstick). The
+review above is unchanged. The evaluation found the facts accurate and the overall
+assessment right; it rates several recommendations as repeating acceptance criteria that
+open issues already have, or as building abstractions before an issue needs them. Nothing
+below is an owner decision or authorization to implement; no issue, milestone or issue
+body was changed.
+
+### Verdict per finding
+
+| Finding | Verdict | Disposition |
+| --- | --- | --- |
+| AR-01 signal lifecycle | Confirmed; worth doing only as a prerequisite of #28 | Note on #28 |
+| AR-02 logic inside tool modules | Partly confirmed, overstated | Drop; rename the shared private helpers when a later pull request touches them |
+| AR-03 live versus curated effect metadata | Confirmed, already covered by #148 and #149 | None |
+| AR-04 observation evidence | Confirmed; a shared observation structure is premature | Notes on #150 and #30 |
+| AR-05 loosely described nested JSON | Confirmed, partly covered (#147, #29); output drift is untracked | Note on #147; optional new issue B |
+| AR-06 import planning budget | Confirmed, fully covered by #117 | None |
+| AR-07 snapshot deletion | Confirmed; wording correction | Note on #138 |
+| AR-08 stale architecture guide and roadmap row | Mostly confirmed | New issue A |
+
+### Points that need correction or qualification
+
+- **AR-01.** Confirmed with a concrete gap: a delayed restore runs outside a tool call, so
+  its access class is unknown and `require_write` treats it as `manage`
+  (`resources.py:196-203`). An unrestricted profile would allow it and any restriction would
+  refuse it. The requirements packet of #28 should state the access class of the delayed
+  restore, release the device lock while waiting and reacquire it before compare and
+  restore. One signal per device, rejecting overlap and no replay after a restart are good
+  defaults. Persisting operation metadata for recovery is not worth it now; declaring "no
+  recovery" is simpler and #28 already allows it. The signal manager should stay a small
+  object inside the serving lifecycle, not a scheduler.
+- **AR-02.** The review says #149 needs an extracted name resolver. It does not:
+  `catalogs.resolve_name` (`catalogs.py:203`) is already public and shared, and #149
+  already says to use the existing resolver. The private scene helper takes a scene target
+  and would not fit the segment tools unchanged. Moving two dataclasses out of `resources`
+  is cosmetic. The cross-module private imports in `zone_tools.py` are real but harmless at
+  runtime.
+- **AR-04.** The decoder point is true (`/json/live` is an object; there is no endpoint
+  entry and non-list endpoints must be string arrays, `client.py:217-222`) and belongs in
+  #150, where the first mocked test will show it. Do not store observed light values in
+  `ServiceMonitor`; it holds operational counters. #30 describes extending doctor and
+  service diagnostics, which is in tension with that; its requirements packet should
+  settle where observations live.
+- **AR-05.** Strict output schemas everywhere would be over-engineering. A small retained
+  result check for a few core tools is cheap and matters before public listings.
+- **AR-07.** The class of a snapshot-deletion tool is `manage` with a destructive
+  annotation (`access.py:20-25`, `preset_tools.py:473`); there is no fourth class. It
+  should take the per-device operation lock.
+- **AR-08.** The "restore execution is deferred" claim is not confirmed
+  (`ARCHITECTURE.md:107` calls restore explicit). The roadmap Backlog row lists the closed
+  #152 and omits #154.
+
+### Proposed new issues (drafts for the owner to decide)
+
+- **A. Refresh the architecture guide and roadmap to the current baseline** (Backlog, S).
+  Replace the proposal-era status register with the current components and lifecycle; point
+  Python support, license and validation claims to their canonical documents; remove stale
+  "pending" statements from `DEVELOPMENT.md`; fix the roadmap Backlog row. Documentation
+  only; light review. Related: #23, #152, #154.
+- **B. Detect drift in the nested result fields of core tools** (Backlog, S-M; retarget to
+  M6 if wanted before #24). Retain one representative successful result each for
+  `wled_patch_segments`, `wled_replace_layout`, a scene apply and a zone apply, and test
+  that every retained field is still present with a compatible type. No per-tool output
+  schemas. Related: #21, #130, #24.
+
+### Notes proposed for existing issues
+
+- **#28:** access class of the delayed restore, lock release while waiting, the defaults
+  above.
+- **#150:** own endpoint entry and decoder for the object-shaped `/json/live` response.
+- **#30:** decide whether observations live in doctor/monitor or on a separate read path;
+  keep `ServiceMonitor` operational.
+- **#147:** extend field descriptions to the free-form `segments` of the zone tools
+  (`zone_tools.py:89`).
+- **#138:** class `manage` with a destructive annotation; take the per-device operation
+  lock.
+
+### Order
+
+A in parallel with M1; M1 (#147 with the zone note, #148, #149); M2 (#150, then #30); M3
+(#29, deciding SVG delivery in its packet); M4 (#28, whose packet carries the AR-01 points
+before any code); M5 (#128); B before #24, then M6; Backlog (#117, #138, #154). No finding
+must come before #28 except its own packet notes.
