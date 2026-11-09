@@ -245,6 +245,8 @@ CONTROL_TOOLS = frozenset(
         "wled_activate_preset",
         # A scene has no device_id: the per-device ceiling is checked per expanded device.
         "wled_apply_scene",
+        # A zone has no device_id either: its parts are checked per device, like a scene.
+        "wled_apply_zone",
     }
 )
 MANAGE_TOOLS = frozenset(
@@ -300,8 +302,10 @@ READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_list_groups": {},
     "wled_list_scenes": {},
     "wled_plan_scene": {"scene_id": "evening"},
+    "wled_list_zones": {},
+    "wled_plan_zone": {"zone": "shelf-left"},
 }
-NEEDS_A_STORED_SCENE = {"wled_plan_scene"}  # refused without one, still a read
+NEEDS_A_STORED_SCENE = {"wled_plan_scene", "wled_plan_zone"}  # refused without one, still a read
 CONTROL_CALLS: dict[str, dict[str, Any]] = {
     "wled_set_state": {"device_id": "desk", "on": False},
     "wled_patch_segments": {"device_id": "desk", "segments": [{"id": 0, "brightness": 40}]},
@@ -312,6 +316,7 @@ CONTROL_CALLS: dict[str, dict[str, Any]] = {
     "wled_activate_preset": {"device_id": "desk", "preset_id": 1},
     # Refused without a stored scene (the scene tests apply one); it never writes then.
     "wled_apply_scene": {"scene_id": "evening"},
+    "wled_apply_zone": {"zone": "shelf-left", "segments": [{"brightness": 40}]},
 }
 
 
@@ -420,7 +425,7 @@ def test_build_operations_stays_unfiltered_under_a_restricted_policy(tmp_path):
 
 # A control tool without a device_id: the per-device ceiling is checked per expanded device
 # (preflight and write engine), covered by tests/test_scene_apply.py, not by the G2 filter.
-DEVICELESS_CONTROL_TOOLS = frozenset({"wled_apply_scene"})
+DEVICELESS_CONTROL_TOOLS = frozenset({"wled_apply_scene", "wled_apply_zone"})
 WRITE_CALLS: dict[str, dict[str, Any]] = {
     **{k: v for k, v in CONTROL_CALLS.items() if k not in DEVICELESS_CONTROL_TOOLS},
     "wled_save_preset": {"device_id": "desk", "name": "Mine"},

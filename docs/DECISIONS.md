@@ -862,6 +862,10 @@ Stage 2 (recorded 2026-11-07):
 - [ISSUE-31-DEC-001](decisions/issue-31.md) (coordinator, technical proposal): technical
   defaults TD-31-1 to TD-31-12 for effect search, two properties `visibility` and
   `palette_saturation_need`, catalog not applied below the firmware floor.
+- [ISSUE-27-DEC-001](decisions/issue-27.md) (coordinator, technical proposal): technical
+  defaults TD-27-1 to TD-27-16 for named zones (reviewed local files, three tools,
+  existing-segments-only policy, no layout change); scene/group zone targets and a zone save
+  tool deferred.
 - [ISSUE-94-DEC-001 and -002](decisions/issue-94.md) (human; coordinator): `unplanned`
   coverage status; coverage-list technical defaults.
 - [ISSUE-98-DEC-001](decisions/issue-98.md) (coordinator): every tool-adding PR adds its

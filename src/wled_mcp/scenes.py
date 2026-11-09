@@ -14,8 +14,8 @@ an inventory host token (TD-17-12).
 
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Collection, Mapping, Sequence
+from dataclasses import dataclass, field
 from typing import Final, Literal
 from urllib.parse import urlsplit
 
@@ -31,6 +31,7 @@ from wled_mcp.groups import (
     check_name,
     check_segment_ids,
 )
+from wled_mcp.models import ErrorCode
 from wled_mcp.patches import SegmentPatch, SetStateRequest
 
 SCENE_FORMAT: Final = "wled-mcp.scene"
@@ -117,14 +118,48 @@ class ResolvedSegments:
 
 
 @dataclass(frozen=True)
+class LiveBinding:
+    """What a target's ``bind`` decided from the fresh device read (issue #27)."""
+
+    segments: tuple[ResolvedSegments, ...]
+    data: Mapping[str, JsonValue]
+
+
+class BindingFailure(ClientFailure):
+    """A refusal of ``bind`` that carries a structured, content-free ``problem`` mapping."""
+
+    def __init__(
+        self,
+        code: ErrorCode,
+        message: str,
+        problem: Mapping[str, JsonValue],
+        *,
+        reconciliation: str | None = None,
+    ) -> None:
+        super().__init__(code, message, reconciliation=reconciliation)
+        self.problem = dict(problem)
+
+
+_View = Mapping[str, JsonValue]
+# fresh view, capabilities, raw info, raw state -> segments to patch and report data
+Binder = Callable[[_View, _View, _View, _View], LiveBinding]
+
+
+@dataclass(frozen=True)
 class ExpandedTarget:
-    """One device after expansion, with the exact targets it receives."""
+    """One device after expansion, with the exact targets it receives.
+
+    ``bind`` is ``None`` for scenes. A zone sets it: it runs after the fresh read, under the
+    device lock, in the plan and again in the write step, and decides the segment IDs from
+    the live layout (and may refuse by raising ``BindingFailure`` before anything is sent).
+    """
 
     device_id: str
-    origin: str  # "device" or "group:<id>/member:<n>"
+    origin: str  # "device", "group:<id>/member:<n>" or "zone:<id>/part:<n>"
     target_index: int  # 1-based position of the scene target
     master: Mapping[str, JsonValue] | None
     segments: tuple[ResolvedSegments, ...]
+    bind: Binder | None = field(default=None, compare=False, repr=False)
 
 
 # --------------------------------------------------------------------------- parsing

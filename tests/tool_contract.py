@@ -65,6 +65,9 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_delete_scene", MANAGE, destructive=True),
     ExpectedTool("wled_plan_scene", READ, destructive=False),
     ExpectedTool("wled_apply_scene", CONTROL, destructive=False),
+    ExpectedTool("wled_list_zones", READ, destructive=False),
+    ExpectedTool("wled_plan_zone", READ, destructive=False),
+    ExpectedTool("wled_apply_zone", CONTROL, destructive=False),
 )
 
 # Cumulative profiles (ISSUE-20-DEC-001); expectation data only, enforcement is #20.

@@ -235,6 +235,13 @@ counted.
 - `wled_search_effects`: searches a project-curated property catalog (shipped data, #31)
   intersected with the device's effect list; WLED has no such API, so it is not a WLED
   feature row (W-CAT-01 and W-CAT-02 stay as they are).
+- `wled_list_zones`: lists the server's own named physical zones (reviewed local files in
+  the data directory, #27); no device is contacted and no WLED feature is involved.
+- `wled_plan_zone`: reads state of the zone's devices to resolve a zone onto existing
+  segments (a project concept, not a WLED API); it sends no write and adds no feature row.
+- `wled_apply_zone`: writes segment fields to the segments a zone resolves to, through the
+  same verified path as `wled_patch_segments` (W-SEG rows stay as they are); it never
+  changes geometry or master state.
 - `wled_list_snapshots`: lists the server's own preset snapshots in the data directory;
   no WLED feature is involved.
 - `wled_list_groups`: lists the server's own device groups (local files in the data
