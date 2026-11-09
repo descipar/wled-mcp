@@ -75,6 +75,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
 | DEC-026 | Project / deployment | Stage a release directory on the machine that will run it, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another. Applies to every host. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-026](#dec-026--stage-releases-on-the-target-machine) |
 | DEC-027 | Project / stages | Re-stage the open work by value per effort: stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2 features; stage 3 is worked in the order #31, #30, #28, #27, #29; stage 4 (#128) stays after stage 3; a new stage 5 "public distribution and backlog" takes #22 to #25 and #117. The stage-2 Launch requirements those issues own are not met and not dropped. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-027](#dec-027--re-stage-the-open-work-by-value-per-effort) |
+| DEC-028 | Project / workflow | Pragmatic delivery: good enough instead of 100%. Scope, evidence and review depth are bounded up front, evidence is one or two runs instead of matrices, optional polish and nits go to the next PR, small follow-ups are folded into the open PR. Safety gates are unchanged. | Confirmed owner decision, main session, 2026-11-09; see [DEC-028](#dec-028--pragmatic-delivery) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -750,6 +751,34 @@ can explicitly amend them.
 - Supersedes: nothing; refines DEC-023 item 3 and the stage assignment of #22 to #25 and #117.
 - Affected: docs/STAGE-2.md, docs/STAGE-3.md, docs/STAGE-5.md, docs/PROJECT.md, issues #15,
   #22 to #25, #117, #26, #133 and the new hardware-check issue.
+
+### DEC-028 — Pragmatic delivery
+
+- Status: active project workflow decision.
+- Authority/source: owner instructions in the main session on 2026-11-09 (no permalink). While
+  a dependency-range change was being prepared the owner said "mach es doch sinnvoller und gehe
+  nicht alle versionen so tief runter, da kann man doch mal abwägen" (English: "do it more
+  sensibly and do not go that deep into all versions, you can weigh it up"), then "für mich
+  haben sich die agenten da schon wieder verzettelt. ich will eine pragmatische heransgehensweise
+  und keine immer 100% lösung" (English: "to me the agents got lost in details again. I want a
+  pragmatic approach and not always a 100% solution") and "das gehört allgemein in das projekt"
+  (English: "this belongs in the project in general").
+- Owner decision (the wording of the items is the main session's, from that instruction):
+  1. Aim for good enough, not for completeness. Fix scope, evidence and review depth before
+     starting and say so in the packet; weigh effort against risk and state the weighing in one
+     or two lines.
+  2. Evidence is one or two runs that show the point (for example the lower bound and the
+     current set of a dependency range), not matrices or exhaustive combinations. Where the
+     evidence is thin, choose the conservative limit and say so.
+  3. Review depth follows DEC-022 (light unless the change writes to devices or files, changes
+     safety, protocol or security behavior or data formats; DEC-028 adds: or cannot be undone). No extra review
+     rounds, no tests beyond what the change needs and no optional polishing; nits go to the
+     next PR.
+  4. A small follow-up that belongs to the same release path is folded into the open PR instead
+     of a new PR, when it does not make the review harder.
+- Not changed: hardware authorization, the owner's approval for publication, tagging and
+  releases, the human merge decision and the other rules of DEC-022, DEC-024 and DEC-023.
+- Applicability: all issues and all agents of this repository until the owner changes it.
 
 ## Issue-specific decisions (pointers)
 

@@ -202,6 +202,9 @@ owner, at most two implementation tracks run in isolated worktrees with one
 coordinator per issue, branches are kept current by merging `main` (no force-push),
 and "Starte Stage 2 parallel" starts or resumes the plan (see
 [coordinator.md](../agents/coordinator.md)).
+[DEC-028](DECISIONS.md#dec-028--pragmatic-delivery) asks for good enough instead of 100%: scope, evidence
+and review depth are fixed up front, evidence is one or two runs instead of matrices, optional polish
+and nits go to the next PR, and small follow-ups are folded into the open PR; the safety gates stay.
 [DEC-022](DECISIONS.md#dec-022--proportionate-review-and-standing-merge-approval)
 keeps review proportionate: nits go to the next PR instead of a new round, a sync
 without own code changes keeps the PASS after the coordinator's diff check, and
