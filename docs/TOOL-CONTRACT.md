@@ -23,6 +23,9 @@ atomic and not synchronized across devices (see
 [contract/groups-scenes.md](contract/groups-scenes.md)).
 #31 adds the read-only `wled_search_effects`: a search of one device's effects by curated
 properties (see [contract/effect-search.md](contract/effect-search.md)).
+#27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
+`wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
+the geometry (see [contract/zones.md](contract/zones.md)).
 `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -72,6 +75,9 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
 | `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |
 | `wled_search_effects` | read-only | Effects of one device matching curated properties, with exact device IDs and an explanation per result |
+| `wled_list_zones` | read-only | Stored named zones with warnings; one zone's document by ID or name |
+| `wled_plan_zone` | read-only | Preview of a zone: exact device, segment IDs and LED ranges, or the refusal; optional segment-field plan |
+| `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone; no geometry, no master state |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -105,6 +111,9 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_effects` | `device_id`, `refresh=false` | Original IDs/names, optional metadata, freshness | Must |
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
 | `wled_search_effects` | `device_id`, optional `motion`, `flashing`, `colors_min`, `colors_max`, `uses_palette`, `strip_length`, `min_visibility`, `max_palette_saturation_need`, `strict=true`, `min_confidence`, `limit` | Curated property search intersected with the device's effect list; read-only | Stage 3 (S3-EFFECT-01, S3-EFFECT-02); implemented in #31 ([contract/effect-search.md](contract/effect-search.md)) |
+| `wled_list_zones` | optional `zone` (ID or name) | Zone summaries and cross-zone warnings, or one zone's stored document; local files only | Stage 3 (S3-ZONE-01); implemented in #27 ([contract/zones.md](contract/zones.md)) |
+| `wled_plan_zone` | `zone`, optional `segments` (one object of segment fields), `mode=strict` | Read-only resolution onto existing segments, per-device refusals, optional real segment plan | Stage 3 (S3-ZONE-01, S3-ZONE-02); #27 |
+| `wled_apply_zone` | `zone`, `segments` (one object of segment fields), `mode=strict`, `dry_run` | Verified write of those fields to the zone's segments only; `dry_run` equals the plan | Stage 3 (S3-ZONE-02); #27 |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -877,6 +886,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
 - [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the
   curated property catalog, matching rules and how to update it (#31).
+- [contract/zones.md](contract/zones.md): named physical lighting zones, the zone document,
+  the resolution rule and the existing-segments policy (#27).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
   and sharing (#17).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,

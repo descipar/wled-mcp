@@ -19,11 +19,12 @@ are never logged.
 
 from __future__ import annotations
 
+import dataclasses
 import logging
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Annotated, Any, Final, Literal
+from typing import Annotated, Any, Final, Literal, Protocol
 
 import anyio
 from mcp.types import ToolAnnotations
@@ -63,6 +64,7 @@ from wled_mcp.scenes import (
     MAX_DOCUMENT_BYTES as MAX_SCENE_BYTES,
 )
 from wled_mcp.scenes import (
+    BindingFailure,
     ExpandedTarget,
     Scene,
     TargetMapping,
@@ -110,6 +112,17 @@ PLAN_NOTES: Final = (
     "A scene is not atomic and not synchronized: each device is planned and written "
     "independently and nothing is rolled back across devices.",
 )
+
+
+class Labeled(Protocol):
+    """What the aggregate outcomes name: a scene, or a zone (issue #27)."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def name(self) -> str: ...
+
 
 Identifier = Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")]
 SegmentId = Annotated[int, Field(strict=True, ge=0, le=MAX_SEGMENT_ID)]
@@ -262,6 +275,8 @@ class DevicePlan:
     segments: dict[str, JsonValue] | None = None
     resolved: list[JsonValue] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Extra entry data from a target's ``bind`` (a zone's resolution or its problem).
+    extra: dict[str, JsonValue] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -280,6 +295,7 @@ class DevicePlan:
             "resolved": self.resolved,
             "warnings": list(self.warnings),
         }
+        item.update(self.extra)
         if self.candidates is not None:
             item["candidates"] = self.candidates
             item["candidate_total"] = self.candidate_total
@@ -370,8 +386,13 @@ async def plan_device(
             ) = await _read_state_and_info(context)
             plan.reachable = True
             plan.warnings.extend(read_warnings)
+            bound = target
+            if target.bind is not None:
+                binding = target.bind(state_view, capabilities, raw_info, raw_state)
+                bound = dataclasses.replace(target, segments=binding.segments)
+                plan.extra.update(binding.data)
             patches = await _resolve_segment_patches(
-                resources, context, target, plan.resolved, plan.warnings
+                resources, context, bound, plan.resolved, plan.warnings
             )
         if target.master is not None:
             master_request = SetStateRequest.model_validate(
@@ -402,6 +423,8 @@ async def plan_device(
         plan.candidate_total = failure.total
     except ClientFailure as failure:
         plan.error = failure.error
+        if isinstance(failure, BindingFailure):
+            plan.extra["problem"] = dict(failure.problem)
         if failure.error.code in {"UNREACHABLE", "TIMEOUT"}:
             plan.reachable = False
     except Exception as error:  # a planner bug must not hide the other devices
@@ -425,8 +448,19 @@ def _prefixed(plan: DevicePlan) -> DomainError:
     )
 
 
+def _noun(text: str, label: str) -> str:
+    return text.replace("A scene", f"A {label}")
+
+
 def plan_outcome(
-    name: str, scene: Scene, mode: str, plans: Sequence[DevicePlan], *, dry_run: bool = True
+    name: str,
+    scene: Labeled,
+    mode: str,
+    plans: Sequence[DevicePlan],
+    *,
+    dry_run: bool = True,
+    label: str = "scene",
+    extra: Mapping[str, JsonValue] | None = None,
 ) -> Outcome:
     """Aggregate a plan. ``ok`` means the scene would write something under ``mode``.
 
@@ -437,8 +471,9 @@ def plan_outcome(
     passing = [plan for plan in plans if plan.ok]
     blocked = bool(failing) if mode == "strict" else not passing
     would_write = [] if blocked else [plan.target.device_id for plan in passing]
+    notes = [_noun(note, label) for note in PLAN_NOTES]
     data: dict[str, JsonValue] = {
-        "scene": {"id": scene.id, "name": scene.name},
+        label: {"id": scene.id, "name": scene.name},
         "mode": mode,
         "max_concurrency": MAX_CONCURRENCY,
         "device_count": len(plans),
@@ -450,9 +485,10 @@ def plan_outcome(
         "would_write": list(would_write),
         "skipped": [plan.target.device_id for plan in failing] if not blocked else [],
         "targets": [plan.entry() for plan in plans],
-        "notes": list(PLAN_NOTES),
+        "notes": [*notes],
+        **(extra or {}),
     }
-    warnings = [PLAN_NOTES[0]]
+    warnings = [notes[0]]
     if blocked:
         return Outcome(
             ok=False,
@@ -621,8 +657,16 @@ async def _write_segments(resources: Resources, target: ExpandedTarget, name: st
             context
         )
         warnings.extend(read_warnings)
+        bound = target
+        if target.bind is not None:
+            try:
+                binding = target.bind(state_view, capabilities, raw_info, raw_state)
+            except BindingFailure as failure:
+                boxed["problem"] = dict(failure.problem)
+                raise
+            bound = dataclasses.replace(target, segments=binding.segments)
         try:
-            patches = await _resolve_segment_patches(resources, context, target, resolved, warnings)
+            patches = await _resolve_segment_patches(resources, context, bound, resolved, warnings)
         except AmbiguousName as failure:
             boxed["candidates"], boxed["total"] = failure.candidates, failure.total
             raise
@@ -644,6 +688,8 @@ async def _write_segments(resources: Resources, target: ExpandedTarget, name: st
         extra: dict[str, JsonValue] = {"resolved": resolved, "warnings": list(warnings)}
         if "candidates" in boxed:
             extra["candidates"], extra["candidate_total"] = boxed["candidates"], boxed["total"]
+        if "problem" in boxed:
+            extra["problem"] = boxed["problem"]
         return _step_data(boxed.get("plan"), extra)
 
     return _report("segments", outcome, build)
@@ -737,6 +783,7 @@ def _preflight_entry(plan: DevicePlan, reason: str) -> dict[str, JsonValue]:
         "steps": [],
         "warnings": list(plan.warnings),
     }
+    item.update(plan.extra)  # a zone's resolution or problem; empty for scenes
     if plan.candidates is not None:
         item["candidates"] = plan.candidates
         item["candidate_total"] = plan.candidate_total
@@ -745,10 +792,13 @@ def _preflight_entry(plan: DevicePlan, reason: str) -> dict[str, JsonValue]:
 
 def apply_outcome(
     name: str,
-    scene: Scene,
+    scene: Labeled,
     mode: str,
     plans: Sequence[DevicePlan],
     results: Sequence[DeviceApply],
+    *,
+    label: str = "scene",
+    extra: Mapping[str, JsonValue] | None = None,
 ) -> Outcome:
     """Aggregate an apply onto the shared envelope; ``data.devices`` is authoritative.
 
@@ -791,16 +841,18 @@ def apply_outcome(
             str(verification), "not_attempted"
         )
         counts[key] += 1
+    notes = [_noun(note, label) for note in APPLY_NOTES]
     data: dict[str, JsonValue] = {
-        "scene": {"id": scene.id, "name": scene.name},
+        label: {"id": scene.id, "name": scene.name},
         "mode": mode,
         "max_concurrency": MAX_CONCURRENCY,
         "device_count": len(plans),
         "summary": {"devices": len(plans), **counts},
         "devices": [*entries],
-        "notes": list(APPLY_NOTES),
+        "notes": [*notes],
+        **(extra or {}),
     }
-    warnings = [APPLY_NOTES[0]]
+    warnings = [notes[0]]
 
     def failed(application: Application, verification: Verification, error: DomainError) -> Outcome:
         return Outcome(

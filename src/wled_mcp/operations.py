@@ -60,6 +60,7 @@ from wled_mcp.resources import OperationContext, PolledWrite, Resources, Sequenc
 from wled_mcp.scene_tools import build_scene_operations
 from wled_mcp.server import Operation
 from wled_mcp.status_tool import build_status_operation
+from wled_mcp.zone_tools import build_zone_operations
 
 
 class ListDevicesRequest(BaseModel):
@@ -1274,4 +1275,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *_build_preset_operations(resources),
         *build_preset_workflow_operations(resources),
         *build_scene_operations(resources),
+        *build_zone_operations(resources),
     )
