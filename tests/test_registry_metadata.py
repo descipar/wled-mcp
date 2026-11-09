@@ -558,7 +558,9 @@ def test_status_table_has_one_row_per_route_with_a_vocabulary_state():
     assert official != "visible" or "search API" in line
     assert states["MCPM / MCPHub local catalog"][0] == "not planned"
     assert states["Hosted mcphub.app directory"][0] == "not planned"
-    assert states["MCPHub fresh-install test"][0] == "not run"
+    install, install_line = states["MCPHub fresh-install test"]
+    assert install == "not run"  # never "install-tested" or "visible": no hub-side start observed
+    assert "ISSUE-24-DEC-005" in install_line and "waived" in install_line
 
 
 def test_dropped_routes_cite_a_decision_that_the_decision_files_record():

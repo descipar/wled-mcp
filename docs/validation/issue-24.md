@@ -171,3 +171,29 @@ This shows that the argument composition, including the positional `--isolated`,
 working command for a generic composer. It is partial evidence only, not the install test: no
 host-side handling, no MCPHub registry tab and no hub were involved. The hub registry route of
 the owner's hub answers 401 without a token, so the hub-side test needs the owner's admin login.
+
+### MCPHub Registry tab, observed install dialog (2026-11-10)
+
+Observed by the owner in their MCPHub (admin only) and supplied as a screenshot of the Install
+dialog (Registry tab, detail view of the card, Packages, Install); not re-run by an agent. The
+dialog was prefilled with the name `io.github.descipar-wled-mcp`, type STDIO, command `uvx` and,
+one argument per field, `wled-mcp@0.2.0`, `----transport`, `stdio`, `----config`,
+`{config_path}`, `----data-dir`, `{data_dir}`.
+
+- This MCPHub prepends `--` to argument names that already start with `--` (the registry schema
+  and `server.json` use the full flag), leaves the `{config_path}` and `{data_dir}` variables
+  unresolved and drops the runtime arguments (`--isolated`, `--python 3.13`).
+- The coordinator read the MCPHub source (`frontend/src/components/RegistryServerDetail.tsx`,
+  `getArgs()`, main branch, 2026-11-10): it builds `--${arg.name}` and uses `arg.value`
+  literally, which matches the dialog. Whether the owner's running build equals that source
+  revision was not checked.
+- `server.json` conforms to the registry schema and was not changed. The README now tells users
+  to edit the dialog ([README](../../README.md#installing-from-the-mcphub-registry-tab)).
+
+Result for #24 item 6 (fresh install from generated configuration): a documented finding. The
+configuration this MCPHub generates from the entry is not runnable without a manual edit. The
+hand-corrected entry was **not** started inside MCPHub: the owner decided on 2026-11-10 that this
+is not wanted ([ISSUE-24-DEC-005](../decisions/issue-24.md), waiver). Item 6 is closed by that
+waiver, not by an observation; no install was observed in a hub, the install-test state stays
+"not run" and the composed command was verified only outside the hub (launch check above). The AC wording of S2-MARKET-03
+("metadata-generated uvx configuration") is therefore not met for this hub build; nothing here claims it is.

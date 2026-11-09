@@ -103,6 +103,21 @@ checksum-verified wheel, more devices, the
 [quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md); updates, rollback and removal are in
 [docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md).
 
+### Installing from the MCPHub Registry tab
+
+The MCPHub build observed for this project (the Install dialog of a Registry card, under
+Packages, for administrators) does not produce a runnable entry from the registry listing: it
+prefixes argument names that already start with `--` with another `--`, leaves `{config_path}`
+and `{data_dir}` unresolved and omits the runtime arguments. Other hosts may handle the listing
+differently, and this is a note about that build, not a claim that anything was fixed upstream.
+Before saving, edit the dialog: command `uvx`; arguments, one per field, `--isolated`,
+`--python`, `3.13`, `wled-mcp@<version>` (the listed version), `--transport`, `stdio`, `--config`,
+`<absolute path of your devices.toml inside the hub container>`, `--data-dir` and
+`<writable directory inside the hub container>`. Container paths, the uv environment variables
+and a complete hub entry are in
+[docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal).
+The corrected entry has not been started inside MCPHub yet.
+
 ## Safety model
 
 - **Validate first.** A complete request is checked against the current device state before
