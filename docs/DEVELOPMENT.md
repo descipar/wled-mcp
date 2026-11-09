@@ -233,3 +233,4 @@ license metadata. This does not license this repository or complete a distributi
 license review. No upstream WLED server code was copied. T18–T21 and the device tools
 are covered by mock/loopback tests; deployment artifacts are prepared, while actual
 deployment, resource measurements and hardware evidence remain pending.
+
