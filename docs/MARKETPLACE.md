@@ -78,7 +78,7 @@ state needs its own evidence.
 | Official MCP Registry | visible | [`server.json`](../server.json) published with `mcp-publisher`; the registry search API returns one active, latest entry `io.github.descipar/wled-mcp` for the released version, no `remotes` ([record](validation/issue-24.md#release-and-registry-publication-2026-11-09)); an MCPHub registry tab was not observed | none for the entry; a new release needs its own owner-instructed publish ([PUBLISHING.md](PUBLISHING.md#registry-listing-after-the-pypi-release)) |
 | MCPM / MCPHub local catalog | not planned | [`listings/mcpm-wled-mcp.json`](listings/mcpm-wled-mcp.json), an unsubmitted draft that passed the MCPM schema; dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
 | Hosted mcphub.app directory | not planned | [`listings/mcphub-app-submission.md`](listings/mcphub-app-submission.md), an unsubmitted draft; form fields unverified (sign-in required); dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
-| MCPHub fresh-install test (S2-MARKET-03) | not run | none yet; the package and the entry now exist | being run separately against a hub; not claimed here; issue #24 stays open for it |
+| MCPHub fresh-install test (S2-MARKET-03) | not run | partial evidence only: the command composed from `server.json` was run locally with a stdio client and started the published package ([record](validation/issue-24.md#launch-check-of-the-composed-command-2026-11-10)); no hub involved | the hub-side test is run separately against a hub and is not claimed here; issue #24 stays open for it |
 
 ## Where the drafts live
 

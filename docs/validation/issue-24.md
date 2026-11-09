@@ -144,7 +144,30 @@ Status per route afterwards: official registry **accepted** and **visible** in t
 search API; MCPM and hosted directory not planned (ISSUE-24-DEC-003); fresh-install test **not
 run**.
 
-Not observed: that an MCPHub registry tab shows the entry, and that the arguments of
-`server.json` (in particular the positional `--isolated`) produce a working launch configuration
-in a hub. The fresh-install test (#24 item 6) is run separately and is not claimed here; #24
-stays open for it.
+Not observed: that an MCPHub registry tab shows the entry, and how MCPHub (or any other host)
+itself turns the registry entry into a launch configuration. The composed command was verified
+locally with a stdio client (next subsection); host-side handling was not. The hub-side
+fresh-install test (#24 item 6) is run separately and is not claimed here; #24 stays open for it.
+
+### Launch check of the composed command (2026-11-10)
+
+Reported by the coordinator, Windows, local, with a real stdio MCP client from the project's
+locked `mcp` SDK (the script lives in a session scratchpad, not in the repository). The command
+was composed exactly from `packages[0]` of `server.json`, in the order runtime arguments,
+package specification, package arguments:
+
+```text
+uvx --isolated --python 3.13 wled-mcp==0.2.0 --transport stdio --config <copy of examples/devices.example.toml> --data-dir <existing empty directory>
+```
+
+- It started the published package; `initialize` returned the server `wled-mcp 0.2.0`.
+- `tools/list` returned 31 tools.
+- `wled_list_devices` returned `ok: true` with the two synthetic devices (`probe_status`
+  "untested"; no network contact, no device).
+- Two earlier attempts failed only because the local uv index cache did not yet know the new
+  version; `uv cache clean wled-mcp` fixed it (the cache note above).
+
+This shows that the argument composition, including the positional `--isolated`, produces a
+working command for a generic composer. It is partial evidence only, not the install test: no
+host-side handling, no MCPHub registry tab and no hub were involved. The hub registry route of
+the owner's hub answers 401 without a token, so the hub-side test needs the owner's admin login.
