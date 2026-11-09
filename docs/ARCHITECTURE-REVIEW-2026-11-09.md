@@ -414,3 +414,79 @@ A in parallel with M1; M1 (#147 with the zone note, #148, #149); M2 (#150, then 
 (#29, deciding SVG delivery in its packet); M4 (#28, whose packet carries the AR-01 points
 before any code); M5 (#128); B before #24, then M6; Backlog (#117, #138, #154). No finding
 must come before #28 except its own packet notes.
+
+## Assessment of the second opinion
+
+Evaluated against the unchanged runtime baseline `0bdf3ef` and the second-opinion
+addition in `c731054`. The practical direction is sound: keep the architecture, handle
+most findings inside their existing issues and avoid a preliminary refactoring project.
+The dispositions below qualify both earlier sections; neither section is an owner
+decision. No issue or milestone is changed.
+
+| Finding | Assessment and resulting recommendation |
+| --- | --- |
+| AR-01 | Agree on the lifecycle prerequisite and a small process-owned manager. Correct the unconditional claim that delayed work loses its access context; task creation determines inheritance. Define it explicitly in #28. |
+| AR-02 | Accept that #149 requires no new name-resolution algorithm or mandatory extraction. Downgrade the module-boundary concern to P3; retain it as maintenance guidance when concrete reuse becomes awkward. Renaming helpers alone does not change their dependency direction. |
+| AR-03 | Agree: the existing issues already cover this work. Use the public `catalogs.resolve_name`; no additional issue or prerequisite. |
+| AR-04 | Agree that `ServiceMonitor` should remain operational. A shared observation type is optional when #150/#30 need it, with no prebuilt store or polling subsystem. The issue does not require moving lighting state into the monitor. |
+| AR-05 | Agree on selective nested-result checks and zone-field guidance. Keep output compatibility work bounded; the proposed issue B remains optional and is not a listing prerequisite. |
+| AR-06 | Agree: #117 already owns the budget mismatch. No duplicate issue. |
+| AR-07 | Agree: `manage` plus a destructive annotation, coordinated with the per-device lock and active-source protection. This clarifies #138 rather than adding a new permission class. |
+| AR-08 | Keep the documentation finding, including the stale restore wording. The second opinion checked line 107 but missed the conflicting statement at line 105. Prefer the next related docs change/#23 over automatically creating another issue. |
+
+### Corrections supported by source and a bounded check
+
+**Delayed tasks do not necessarily lose the tool class.** `access.py:91-95` explicitly
+states that tasks started inside a call inherit its context. A local AnyIO check started
+one task outside and one inside `CURRENT_TOOL_CLASS=control`, then reset the parent
+context before releasing both tasks. With the `control` profile, the inside task still
+observed `control` and passed `Resources.require_write`; the outside task observed `None`
+and received `ACCESS_DENIED`. No client or device was contacted.
+
+Thus the second opinion's AR-01 failure mode is possible for a manager running without
+the initiating context, not inevitable for every delayed restore. With `None`, the guard
+requires `manage`; refusal depends on the target's effective ceiling, not an unrelated
+restriction elsewhere in the inventory. Explicit lifecycle/access semantics remain
+necessary. No restart recovery is a reasonable initial proposal permitted by #28, but it
+must disclose that a signal may remain applied after a crash; it cannot promise a durable
+interrupted status without retaining enough metadata.
+
+**The restore documentation is stale.** `ARCHITECTURE.md:105` says: “Single-entry
+restoration execution remains Should until a safe storage-only path is verified”.
+Line 107's statement that restore is explicit does not invalidate that finding. Actual
+restore execution exists, and ISSUE-18-DEC-001 accepts its live effect rather than
+requiring a storage-only route. The documentation repair should cover both statements.
+
+**The resolver already exists.** My earlier wording about extracting name resolution
+was too strong. `catalogs.resolve_name` is already shared; the private scene helper also
+loads catalogs, expands scene targets and builds reporting data. #149 can call the public
+resolver directly and share a smaller wrapper only if duplication warrants it. Moving
+plan dataclasses has similarly low immediate value and should not gate feature work.
+
+**Lighting observations need no competing diagnostics stack.** #30 explicitly keeps
+transport/host health in #16/#20. Pure lighting analysis and request-local observations
+can reuse existing readers and normalization and feed existing diagnostic surfaces.
+There is no requirement conflict that demands a new persistent observation store.
+
+### Action and sequencing
+
+Use the proposed notes in the existing packets for #28, #150, #30 and #138. Zone guidance
+fits alongside #147 if its packet includes that small extension. Keep SVG delivery in
+#29's packet. These are implementation notes, not newly discovered product requirements.
+
+Proposed issue A is useful work, but a small docs repair can be folded into the next
+related documentation change under DEC-028. Proposed issue B addresses a real gap; if
+picked, compare actual current tool results against stable documented paths/types, allow
+additive fields and variable collection contents, and include a negative control proving
+that removing a promised field fails. Do not compare dynamic values or freeze every
+incidental fixture key. Four successful snapshots alone do not protect uncertain/partial
+outcome semantics; retain existing behavioral tests for those cases.
+
+Continue DEC-029's milestone order. Neither A nor B automatically becomes a release or
+listing gate, and B should not silently move ahead of #24 merely because the second
+opinion's proposed order places it there. No broad refactor, new infrastructure or extra
+full-suite run is needed for this documentation assessment.
+
+Validation for this addition: source/issue cross-checks, one context-inheritance check,
+document whitespace and private-identifier rules. The earlier full-suite result belongs
+to the original runtime baseline and is not presented as a new test run.
