@@ -77,6 +77,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-027 | Project / stages | Re-stage the open work by value per effort: stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2 features; stage 3 is worked in the order #31, #30, #28, #27, #29; stage 4 (#128) stays after stage 3; a new stage 5 "public distribution and backlog" takes #22 to #25 and #117. The stage-2 Launch requirements those issues own are not met and not dropped. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-027](#dec-027--re-stage-the-open-work-by-value-per-effort) |
 | DEC-028 | Project / workflow | Pragmatic delivery: good enough instead of 100%. Scope, evidence and review depth are bounded up front, evidence is one or two runs instead of matrices, optional polish and nits go to the next PR, small follow-ups are folded into the open PR. Safety gates are unchanged. | Confirmed owner decision, main session, 2026-11-09; see [DEC-028](#dec-028--pragmatic-delivery) |
 | DEC-029 | Project / roadmap | Replace numbered stages by GitHub milestones for open and new work: every open or new issue has exactly one milestone (Backlog counts), no `Stage N:` prefix and no `stage:N` label for new issues; closed history and requirement IDs keep their stages. Supersedes DEC-010 for open and new work, amends DEC-002. Records the new scope (#147 to #151), the order and a bounded standing merge approval for milestones M1 and M2. | Confirmed owner decision, main session, 2026-11-09; see [DEC-029](#dec-029--milestones-instead-of-stages) and [issue #152](https://github.com/descipar/wled-mcp/issues/152) |
+| DEC-030 | Project / roadmap | Closing a milestone includes at least a minor release and a README update. Applies from M1, whose scope also includes #24; M1 stays open until that release is done. Tag, GitHub release, PyPI/registry publication and submissions still need the owner's explicit instruction. | Confirmed owner answers, main session, 2026-11-09; see [DEC-030](#dec-030--milestone-closure-includes-a-minor-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -808,6 +809,31 @@ can explicitly amend them.
 - Affected: docs/ROADMAP.md, AGENTS.md, agents/coordinator.md, agents/requirements.md,
   docs/AGENT-WORKFLOW.md, scripts/check_coverage.py (rule C5), docs/STAGE-3.md and docs/STAGE-5.md
   work-order sections.
+
+### DEC-030 — Milestone closure includes a minor release
+
+- Status: active project decision.
+- Authority/source: owner answers in the main session on 2026-11-09 (no permalink). The owner
+  suggested that closing a milestone should always come with at least a minor release and an
+  adapted README, confirmed it for M1 ("ja 1", to the option "yes, from M1"), and asked that #24
+  (registry metadata) be part of M1 and that the release wait until its work is finished. The
+  scope of "release" was asked but not yet answered.
+- Owner decision (the wording of the items is the main session's, from those answers):
+  1. A milestone is closed only after at least one minor release (or a higher one) that contains
+     its merged work, and after the README has been adapted to the milestone's user-visible
+     features.
+  2. The rule applies from M1. M1 was closed once before its release and is re-opened until the
+     release is done. #24 moved from M6 to M1; M1 waits for the #24 work (PR #168).
+  3. Documentation-only or maintenance milestones follow the same rule unless the owner waives it
+     for that milestone.
+- Not changed: DEC-023 and the publication gates. Version bump, changelog and README are
+  repository changes; a tag, a GitHub release, a PyPI or registry upload, hub deployment and any
+  external submission each need the owner's explicit instruction. A merge under the standing
+  approval (DEC-029 item 4) does not authorize them.
+- Open: how far the release goes for M1 (repository version/changelog only, plus tag and GitHub
+  release, or also PyPI/hub) is to be answered by the owner when the release is prepared.
+- Affected: docs/ROADMAP.md (M1 row, closing rule), docs/AGENT-WORKFLOW.md,
+  [#168](https://github.com/descipar/wled-mcp/pull/168) (version of the prepared release).
 
 ## Issue-specific decisions (pointers)
 
