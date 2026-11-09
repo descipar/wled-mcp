@@ -51,8 +51,7 @@ Every write was checked by the service's readback; none failed and none was retr
    state became red although the device stayed off; no preset became active.
 4. Playlist: `wled_save_playlist` into slot 6 (one entry, preset 5, one second, repeat 1), dry run
    then real: applied and verified; stored with the entry list, duration, transition, repeat and
-   end values requested. Because the stored state had power off, the device stayed off and no
-   playlist became active.
+   end values requested. The device stayed off and no playlist became active.
 5. Bundle: `wled_export_presets` of slot 5 (one entry, 528 bytes, importable), then
    `wled_import_presets` with the id map 5 to 7, dry run then real: applied and verified (state
    route, no backup needed).
