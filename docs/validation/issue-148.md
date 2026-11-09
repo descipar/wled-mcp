@@ -41,5 +41,5 @@ Limits: one controller, one firmware, read-only; no write, no preset or segment 
 comparison against the device UI beyond the catalog size. The two partial-parse effects are
 accepted behavior of the lenient parser; whether their fxdata forms need dedicated handling is
 left to a later fixture update, not a blocker. This is the live fxdata check of the M1 exit
-criterion; the #147 MCPHub forwarding observation remains pending until the hub runs a build that
-contains #147.
+criterion; the #147 criterion is met separately by a local stdio client check
+([ISSUE-147-DEC-001](../decisions/issue-147.md)); MCPHub forwarding was not observed.
