@@ -1068,6 +1068,11 @@ Stage 2 (recorded 2026-11-07):
   request; no tag, release, upload, `mcp-publisher` use, submission or hardware contact is
   authorized. ISSUE-24-DEC-002 (coordinator, technical proposal): the file shapes, tests and
   documentation defaults.
+- [ISSUE-24-DEC-003](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
+  the server is to be findable through the official MCP Registry after M1 closes; the MCPM
+  contribution and the hosted mcphub.app submission are dropped for now (drafts remain
+  unsubmitted); tag, GitHub release, PyPI upload and registry publication each need the owner's
+  explicit instruction.
 
 ## Still unresolved
 

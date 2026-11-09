@@ -1,7 +1,7 @@
 # Marketplace and public distribution plan
 
-Research date: 2026-11-04, observations of schemas and tools updated 2026-11-09. Status: metadata and drafts prepared
-locally; nothing is submitted, listed or published. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
+Research date: 2026-11-04, observations of schemas and tools updated 2026-11-09. Status: registry metadata prepared and
+validated locally, drafts for two other routes kept unsubmitted; nothing is submitted, listed or published. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
 
 ## What users will install
 
@@ -67,13 +67,17 @@ Prefer clear descriptions over a long undifferentiated tool dump. Read-only setu
 
 ## Status per route
 
-Vocabulary as above. A row states only what was done; the next state needs its own evidence.
+Vocabulary as above, plus **not planned** for a route the owner dropped for now
+([ISSUE-24-DEC-003](decisions/issue-24.md)) and **not run** for a check that has not been
+attempted. The goal is that the server is findable in the MCPHub registry, which is the
+official MCP Registry, after milestone M1 closes. A row states only what was done; the next
+state needs its own evidence.
 
 | Route | State | What exists | Next step (owner instruction needed) |
 | --- | --- | --- | --- |
 | Official MCP Registry | validated locally | [`server.json`](../server.json) (PyPI package, stdio via uvx, no `remotes`), README marker, wheel check; schema-validated offline, publisher checks not run | after the release with the marker is on PyPI: [Registry listing after the PyPI release](PUBLISHING.md#registry-listing-after-the-pypi-release) |
-| MCPM / MCPHub local catalog | validated locally | [`listings/mcpm-wled-mcp.json`](listings/mcpm-wled-mcp.json), schema-validated; not submitted | a contribution to the MCPM repository (external submission) |
-| Hosted mcphub.app directory | draft | [`listings/mcphub-app-submission.md`](listings/mcphub-app-submission.md); form fields unverified (sign-in required) | sign-in, compare with the form, submit |
+| MCPM / MCPHub local catalog | not planned | [`listings/mcpm-wled-mcp.json`](listings/mcpm-wled-mcp.json), an unsubmitted draft that passed the MCPM schema; dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
+| Hosted mcphub.app directory | not planned | [`listings/mcphub-app-submission.md`](listings/mcphub-app-submission.md), an unsubmitted draft; form fields unverified (sign-in required); dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
 | MCPHub fresh-install test (S2-MARKET-03) | not run | none | needs the published package; issue #24 stays open for it |
 
 ## Where the drafts live
@@ -81,7 +85,8 @@ Vocabulary as above. A row states only what was done; the next state needs its o
 - `server.json` (repository root): the registry metadata. It contains the version twice; both
   must equal `project.version` (`tests/test_registry_metadata.py`, and the literal is allowed
   there in `tests/test_version_source.py`).
-- `docs/listings/`: drafts that are not read by any tool and that carry no version literal.
+- `docs/listings/`: drafts for the two routes that are not planned; they are not read by any
+  tool, carry no version literal and are not kept current for a submission.
 
 ## HTTP is self-hosted
 

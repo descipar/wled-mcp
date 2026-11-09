@@ -2,7 +2,7 @@
 
 An unofficial [MCP](https://modelcontextprotocol.io/) server that lets an AI agent read
 and control [WLED](https://kno.wled.ge/) LED controllers by name: power, brightness,
-segments, effects, palettes, presets, groups and scenes. It talks to each controller's
+segments, effects, palettes, presets, groups, scenes and zones. It talks to each controller's
 JSON API on your network, validates every change before sending it and reads it back
 afterwards. It runs as a subprocess of your MCP host (stdio) or as a separate HTTP
 service. It is not affiliated with, endorsed by or supported by the WLED project or
@@ -25,13 +25,29 @@ Hardware acceptance is partial: one controller on WLED 16.0.1. No support is pro
 - Normalized state, capabilities and each device's own effect and palette catalogs.
 - Typed changes: master power and brightness, a patch of selected segments, or a
   replacement of the complete layout. Advanced segment fields (CCT, 2D) are written only
-  where the device reports them.
+  where the device reports them. Segment tools accept the device's own effect and palette
+  names (`effect_name`, `palette_name`) in place of IDs; a name is resolved against that
+  device's catalog before any write and an ambiguous or unknown name is refused with
+  candidates ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/segment-names.md)).
+- Effect discovery: `wled_get_effects` parses the firmware's effect metadata and filters by
+  name, 2D and audio reactivity ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/effect-metadata.md)).
+  `wled_search_effects` finds a device's effects by curated properties such as motion,
+  flashing, colour slots and palette use; the catalog is small and an effect it does not
+  list is not searchable ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/effect-search.md)).
+- Named zones: a reviewed zone file maps a physical region to configured devices and LED
+  ranges; `wled_plan_zone` previews the exact segments without a write and `wled_apply_zone`
+  changes segment fields only inside the zone, otherwise it refuses before any write
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/zones.md)).
+- Agent guidance: the server serves safe-lighting instructions at initialization, a prompt
+  `change_lighting_safely` and precise field descriptions, identically over stdio and HTTP.
+  A client has to pass them on to its agent; forwarding by MCPHub was not observed
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/agent-guidance.md)).
 - Persistent presets with snapshots, restore, portable bundles and playlists; named
   device groups and multi-device scenes with a dry-run plan.
 - Server-enforced profiles (`read-only`, `control`, `full`) and, for the HTTP service, a
   bearer credential with Host and Origin allowlists.
 
-Every tool, with its read-only, write or destructive hint, is listed in the
+All 31 tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->
@@ -136,7 +152,9 @@ reads, power, brightness and effect changes on that controller
 exercised a one-device group and scene, preset store, export, import and restore, and a
 playlist, with the controller restored afterwards
 ([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
-onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run.
+onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run. Of the newest features, only a read-only run
+covered the effect metadata and one effect search; zones, name resolution in segment writes
+and the served guidance have mocked or local-client tests only.
 Other limits:
 
 - No tool deletes a snapshot on request; snapshots are only removed by retention pruning
