@@ -817,7 +817,7 @@ can explicitly amend them.
   suggested that closing a milestone should always come with at least a minor release and an
   adapted README, confirmed it for M1 with "ja 1" (English: "yes, 1") to the option "yes, from M1", and asked that #24
   (registry metadata) be part of M1 and that the release wait until its work is finished. The
-  scope of "release" was asked but not yet answered.
+  scope of "release" was then answered (item 5).
 - Owner decision (the wording of the items is the main session's, from those answers):
   1. A milestone is closed only after at least one minor release (or a higher one) that contains
      its merged work, and after the README has been adapted to the milestone's user-visible
@@ -830,17 +830,20 @@ can explicitly amend them.
      2026-11-09 with the version prepared as patch release 0.1.3 (ISSUE-24-DEC-001), before this
      rule was recorded. A patch release does not satisfy item 1: the M1 release needs a minor
      version (for example 0.2.0), prepared in a follow-up change with the README adaptation.
-     Nothing has been tagged, released, uploaded or submitted.
+     Nothing had been tagged, released, uploaded or submitted at that point.
+  5. Release scope for M1 (owner answer in the main session on 2026-11-09, option "full path as
+     M1 criterion"): the minor release 0.2.0 is tagged, published as a GitHub release, uploaded
+     to PyPI and published in the official MCP Registry. It was carried out under per-step owner
+     instructions recorded in ISSUE-24-DEC-003 to ISSUE-24-DEC-005 (tag and release v0.2.0, PyPI
+     upload, registry publication; the hub-side install test was waived, not observed). The
+     scope applies to M1 only; later milestones need their own answer.
 - Not changed: DEC-023 and the publication gates. Version bump, changelog and README are
   repository changes; a tag, a GitHub release, a PyPI or registry upload, hub deployment and any
   external submission each need the owner's explicit instruction. A merge under the standing
   approval (DEC-029 item 4) does not authorize them.
-- Open: how far the release goes for M1 (repository version/changelog only, plus tag and GitHub
-  release, or also PyPI/hub) is to be answered by the owner when the release is prepared.
-  Answered for M1 on 2026-11-09 (coordinator's recording of the owner's chat answers, the owner
-  confirming each publication step in the #24 session): the goal is a PyPI release and an entry
-  in the official MCP Registry, per ISSUE-24-DEC-003 and the per-step instructions of
-  ISSUE-24-DEC-004; each step needed its own instruction.
+- Publication gates stay: each step (tag, GitHub release, PyPI upload, registry publish) is run
+  only on the owner's explicit instruction at that point (DEC-023); a merge under the standing
+  approval authorizes none of them. No hub deployment is part of the M1 closing criterion.
 - Amends: DEC-029 (assignment of #24 to M6 instead of M1, and the closing of milestones).
 - Affected: docs/ROADMAP.md (M1 row, closing rule), docs/AGENT-WORKFLOW.md, pyproject.toml,
   CHANGELOG.md, server.json and README.md (version and features of the M1 release).
