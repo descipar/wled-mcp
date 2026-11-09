@@ -129,3 +129,30 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Revalidation needed / next action: the 0.2.0 release chain in
   [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release), step by step on
   the owner's instruction.
+
+## ISSUE-24-DEC-004 — Per-step publication instructions for the M1 release
+
+- ID: ISSUE-24-DEC-004
+- Recorded date: 2026-11-09
+- Status: executed (each instruction was used once; nothing remains authorized).
+- Authority: human decision (owner chat instructions in the main coordinator session; recorded by
+  the coordinator).
+- Source: owner chat messages in the main session on 2026-11-09 (no permalinks): separate
+  instructions for the tag and GitHub release, for approving the `pypi` environment of the
+  publish run, for signing in with `mcp-publisher login github` (run by the owner) and for
+  `mcp-publisher publish`.
+- Scope: issue #24 and the M1 minor release only, under ISSUE-24-DEC-003 and DEC-030.
+- Decision: each of these steps was authorized once, when instructed: tag and GitHub release of
+  the M1 release, approval of the `pypi` environment for that publish run, the publisher login,
+  and the registry publish of `server.json`.
+- Applicability / conditions / expiry: bounded to that release and registry entry; consumed by
+  execution. It is not standing permission: a later release, tag, upload or registry publish needs
+  its own instruction (DEC-023, DEC-030).
+- Rationale supplied: none beyond the instructions.
+- Affected requirement IDs, files, issues and tests: S2-MARKET-01; docs/PUBLISHING.md,
+  docs/MARKETPLACE.md, README.md, docs/validation/issue-24.md; issue #24.
+- Supersedes / superseded by: completes the DEC-030 open question for M1 together with
+  ISSUE-24-DEC-003; supersedes nothing.
+- Propagated to roles / packet references: via the coordinator handoff.
+- Revalidation needed / next action: none for these steps. The fresh-install test (S2-MARKET-03)
+  is separate and not recorded here.

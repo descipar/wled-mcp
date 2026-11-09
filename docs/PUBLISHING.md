@@ -6,8 +6,8 @@ once, and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-00
 [decisions/issue-22.md](decisions/issue-22.md). Evidence:
 [validation/issue-22.md](validation/issue-22.md).
 
-Status: the workflow is prepared, nothing is published. Merging the workflow does not
-publish anything. Registering the publisher, changing the environment, creating a tag or
+Status: the workflow has published releases (see "First release" and the registry section
+below). Merging a change to the workflow does not publish anything. Registering the publisher, changing the environment, creating a tag or
 release and approving an upload each need the owner's explicit instruction at that time
 ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)).
 
@@ -210,9 +210,12 @@ Registry, after milestone M1 closes ([ISSUE-24-DEC-003](decisions/issue-24.md); 
 hosted-directory routes are not planned). The workflow above does not touch the registry, and no
 registry automation (for example GitHub OIDC in a workflow) is wired.
 
-**Release chain for the milestone release (version in `pyproject.toml`, `<version>` below).**
-Each step needs the owner's explicit instruction at that time; completing or merging one step
-never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release),
+**Release chain for a milestone release (version in `pyproject.toml`, `<version>` below).**
+Done for the milestone M1 release on 2026-11-09, step by step on the owner's
+instructions ([ISSUE-24-DEC-004](decisions/issue-24.md); facts and checksums in
+[validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)).
+For every later release each step needs the owner's explicit instruction at that time;
+completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release),
 [DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
 
 1. After the release pull request is merged: create the tag `v<version>` on that `main` commit
@@ -231,6 +234,15 @@ never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-r
 6. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
    and record the result. Whether a published entry can be corrected under the same version
    was not checked; read the registry's rules before relying on it.
+
+**`mcp-publisher` on Windows (recipe used for the M1 release).** Download the release asset
+`mcp-publisher_windows_amd64.tar.gz` and `registry_<publisher version>_checksums.txt` of the
+pinned publisher release (1.8.8 for the M1 release), compute `Get-FileHash -Algorithm SHA256` of the
+archive, compare it with the line of the checksums file, then extract it. Run the executable
+from a directory outside the repository checkout. `uvx` may not know a version published a
+moment earlier because of its local index cache; add `--no-cache` to the first check
+(`uvx --no-cache --isolated --python 3.13 --from wled-mcp==<version> wled-mcp --version`).
+That was a local cache effect, not a package fault.
 
 ## What stays open
 
