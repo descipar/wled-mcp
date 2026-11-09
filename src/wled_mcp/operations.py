@@ -13,6 +13,7 @@ from wled_mcp.access import ToolClass
 from wled_mcp.backups import Firmware
 from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
+from wled_mcp.effect_search import SearchEffectsRequest, search, shipped_catalog
 from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
 from wled_mcp.models import Outcome
 from wled_mcp.patches import (
@@ -172,6 +173,37 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
         leading = [tier_warning] if tier_warning is not None else []
         return _read_success(name, device_id, data, [*leading, *warnings.result()])
 
+    def freshness_of(view: CatalogView) -> dict[str, JsonValue]:
+        entry = view.entry
+        return {
+            "source": view.source,
+            "fetched_at": entry.fetched_at.isoformat(),
+            "age_seconds": view.age_seconds,
+            "cache_ttl_seconds": resources.metadata_cache.ttl_seconds,
+            "firmware": {
+                "version": entry.identity.version,
+                "build_id": entry.identity.build_id,
+            },
+            "refreshed": view.refreshed,
+        }
+
+    async def search_effects(arguments: dict[str, Any]) -> Outcome:
+        name, device_id = "wled_search_effects", arguments["device_id"]
+        request = SearchEffectsRequest.model_validate(arguments)
+        try:
+            async with resources.operation(device_id) as context:
+                view = await load_catalog(
+                    context, resources.metadata_cache, "effects", request.refresh
+                )
+            device = device_data(device_id)
+        except ClientFailure as failure:
+            return _read_failure(resources, name, device_id, failure)
+        data, warnings = search(
+            shipped_catalog(), view.entry.names, view.entry.identity.version, request
+        )
+        data = {"device": device, **data, "freshness": freshness_of(view)}
+        return _read_success(name, device_id, data, warnings)
+
     def catalog_operation(kind: Kind) -> Callable[[dict[str, Any]], Awaitable[Outcome]]:
         name = "wled_get_effects" if kind == "effects" else "wled_get_palettes"
 
@@ -186,17 +218,7 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
             except ClientFailure as failure:
                 return _read_failure(resources, name, device_id, failure)
             entry = view.entry
-            freshness: dict[str, JsonValue] = {
-                "source": view.source,
-                "fetched_at": entry.fetched_at.isoformat(),
-                "age_seconds": view.age_seconds,
-                "cache_ttl_seconds": resources.metadata_cache.ttl_seconds,
-                "firmware": {
-                    "version": entry.identity.version,
-                    "build_id": entry.identity.build_id,
-                },
-                "refreshed": view.refreshed,
-            }
+            freshness = freshness_of(view)
             items = catalog_items(entry, kind)
             data: dict[str, JsonValue] = {
                 "device": device,
@@ -248,6 +270,21 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
             ),
             request_model=GetCatalogRequest,
             execute=catalog_operation("palettes"),
+            annotations=READ_ONLY,
+        ),
+        Operation(
+            name="wled_search_effects",
+            tool_class=ToolClass.READ,
+            description=(
+                "Search the effects of one device by curated properties (motion, flashing, "
+                "colour count, palette use, strip length, visibility, palette saturation "
+                "need). Returns the device's exact effect IDs and names with per-result "
+                "explanation; unknown properties never satisfy a strict filter. Subjective "
+                "properties are recommendations, flashing is not a safety guarantee. "
+                "Read-only; apply a result with an existing control tool."
+            ),
+            request_model=SearchEffectsRequest,
+            execute=search_effects,
             annotations=READ_ONLY,
         ),
     )

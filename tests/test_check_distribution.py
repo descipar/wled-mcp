@@ -120,6 +120,7 @@ def synthetic_sdist(directory: Path, version: str, pkg_version: str, extra: str 
     members = {
         f"wled_mcp-{version}/PKG-INFO": f"Metadata-Version: 2.4\nVersion: {pkg_version}\n",
         f"wled_mcp-{version}/src/wled_mcp/__init__.py": "",
+        f"wled_mcp-{version}/{script.EFFECT_DATA}": "{}",
     }
     if extra:
         members[f"wled_mcp-{version}/{extra}"] = "synthetic"
@@ -134,6 +135,17 @@ def synthetic_sdist(directory: Path, version: str, pkg_version: str, extra: str 
 
 def test_check_sdist_accepts_a_matching_archive(tmp_path):
     script.check_sdist(synthetic_sdist(tmp_path, "1.2.3", "1.2.3"), "1.2.3")
+
+
+def test_check_sdist_refuses_an_archive_without_the_effect_catalog(tmp_path):
+    path = synthetic_sdist(tmp_path, "1.2.3", "1.2.3")
+    with tarfile.open(path) as source:
+        kept = [(m, source.extractfile(m).read()) for m in source if "catalog_data/" not in m.name]
+    with tarfile.open(path, "w:gz") as archive:
+        for member, data in kept:
+            archive.addfile(member, io.BytesIO(data))
+    with pytest.raises(SystemExit, match="effect catalog data"):
+        script.check_sdist(path, "1.2.3")
 
 
 @pytest.mark.parametrize(
