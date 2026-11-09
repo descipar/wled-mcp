@@ -105,7 +105,8 @@ without an upload. The build job's checksums and artifact stay visible in the ru
 
 ## First release
 
-Each step needs the owner's instruction at that time.
+Each step needs the owner's instruction at that time. Done for 0.1.2 on 2026-11-09, see
+[validation/issue-22.md](validation/issue-22.md#first-upload-2026-11-09).
 
 1. The PR adding the workflow is merged into `main`.
 2. The release commit on `main` carries the version in `project.version`, the changelog

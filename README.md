@@ -9,9 +9,9 @@ service. It is not affiliated with, endorsed by or supported by the WLED project
 MCPHub.
 
 **Status:** early software with `0.x` versions that may break between releases
-([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases are distributed on PyPI as
-[`wled-mcp`](https://pypi.org/project/wled-mcp/); a release that is not listed there yet
-installs from its Git tag instead. The container image is not published to GHCR.
+([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases from 0.1.2 on are distributed on PyPI as
+[`wled-mcp`](https://pypi.org/project/wled-mcp/); an earlier release, or one that is not
+listed there yet, installs from its Git tag instead. The container image is not published to GHCR.
 Hardware acceptance is partial: one controller on WLED 16.0.1. No support is promised
 ([Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
