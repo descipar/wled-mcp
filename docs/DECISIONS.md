@@ -815,7 +815,7 @@ can explicitly amend them.
 - Status: active project decision.
 - Authority/source: owner answers in the main session on 2026-11-09 (no permalink). The owner
   suggested that closing a milestone should always come with at least a minor release and an
-  adapted README, confirmed it for M1 ("ja 1", English: "yes, 1", to the option "yes, from M1"), and asked that #24
+  adapted README, confirmed it for M1 with "ja 1" (English: "yes, 1") to the option "yes, from M1", and asked that #24
   (registry metadata) be part of M1 and that the release wait until its work is finished. The
   scope of "release" was asked but not yet answered.
 - Owner decision (the wording of the items is the main session's, from those answers):
@@ -824,13 +824,13 @@ can explicitly amend them.
      features.
   2. The rule applies from M1. M1 was closed once before its release and is re-opened until the
      release is done. #24 moved from M6 to M1.
+  3. Documentation-only or maintenance milestones follow the same rule unless the owner waives it
+     for that milestone.
   4. [PR #168](https://github.com/descipar/wled-mcp/pull/168) (#24) merged into main on
      2026-11-09 with the version prepared as patch release 0.1.3 (ISSUE-24-DEC-001), before this
      rule was recorded. A patch release does not satisfy item 1: the M1 release needs a minor
      version (for example 0.2.0), prepared in a follow-up change with the README adaptation.
      Nothing has been tagged, released, uploaded or submitted.
-  3. Documentation-only or maintenance milestones follow the same rule unless the owner waives it
-     for that milestone.
 - Not changed: DEC-023 and the publication gates. Version bump, changelog and README are
   repository changes; a tag, a GitHub release, a PyPI or registry upload, hub deployment and any
   external submission each need the owner's explicit instruction. A merge under the standing
