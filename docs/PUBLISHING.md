@@ -91,6 +91,9 @@ part of this packet.
   on a branch or on any other tag.
 - No `push`, `pull_request`, `pull_request_target`, `schedule` or `workflow_run` trigger.
 
+A GitHub release marked as pre-release also fires `release: published` and would publish
+`v<version>` to PyPI as that final version; a draft release does not trigger the workflow.
+
 GitHub runs the workflow file of the ref the run is for. A tag whose commit does not
 contain `publish.yml` therefore starts nothing and cannot be selected for a dispatch: a
 tag on a commit from before the merge of this workflow, such as an existing release tag,
@@ -135,8 +138,9 @@ Each step needs the owner's instruction at that time.
 
 ## Yank, delete and file names
 
-- PyPI never accepts a file name a second time, even after the file or the release was
-  deleted. A broken release is fixed with a new version, not a re-upload.
+- PyPI never accepts different content under an existing file name, and never accepts
+  the name of a deleted file again. A broken release is fixed with a new version, not a
+  re-upload.
 - Yanking (PEP 592) keeps the files: an exact `==<version>` pin still installs it, only
   unpinned resolution skips it. Prefer yanking.
 - Deleting a release is irreversible, breaks existing pins and frees nothing for reuse.
@@ -148,11 +152,17 @@ Treat a timed-out, cancelled or failed publish step as possibly applied. Before 
 anything again, check the project page or `https://pypi.org/pypi/wled-mcp/<version>/json`
 for the files of that version.
 
-- Nothing uploaded: re-run the failed publish job ("Re-run failed jobs"); it uses the same
-  tested artifact and checksums of that run. A new dispatch run builds again.
-- One of the two files uploaded: a re-run stops at the existing file, because the
-  workflow does not skip existing files. How to complete the version (or to release a new
-  one) is an owner decision; do not add `skip-existing` to force it.
+PyPI accepts an upload whose file name and content digests equal an existing file as a
+no-op; it refuses the same file name with different content ("File already exists") and
+never accepts the name of a deleted file again.
+
+- Nothing uploaded, one of the two files uploaded, or the result unclear: re-run only the
+  failed publish job of the original run ("Re-run failed jobs"). It uses the same tested
+  artifact and checksums; files already on PyPI are accepted again as a no-op and the
+  missing file is uploaded.
+- Do not start a new release or dispatch run for a version that already has files on
+  PyPI: it builds again, and a rebuilt file with different bytes is refused under the
+  existing name. Do not add `skip-existing` to force a run through.
 - Both uploaded: nothing to repeat; compare the checksums with the job summary.
 
 ## Attestations

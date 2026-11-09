@@ -74,7 +74,7 @@ fc107fa76cf3d0552a9d877f8f069bf1f2dfe4037ac9d7e8ab6eb2aa0746fbf2  wled_mcp-0.1.2
 ```
 
 The wheel built from the sdist is byte-identical to the wheel the no-option check builds
-directly from the tree. The sdist has 250 entries and no `.git` entry although this
+directly from the tree. The sdist holds every tracked file plus `PKG-INFO` and no `.git` entry although this
 checkout is a linked worktree with a `.git` file (the new sdist exclusion).
 `PKG-INFO` is Metadata-Version 2.4 with `License-Expression: Apache-2.0`, the seven
 classifiers and the `Changelog` URL. The checksums are local and differ from any future
