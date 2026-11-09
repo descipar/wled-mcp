@@ -298,7 +298,7 @@ of them restarts, recreates or removes the hub or its network.
   updating from them needs no refresh. Procedure: reload or refresh the hub entry; it cleared
   after about a minute once with the hub, other clients may cache longer; no server change is
   needed. This happens once: the schema served from
-  the #130 change on allows additional envelope and error properties, so later additive
+  the first release after 0.1.1 on (the #130 change, see the [CHANGELOG](../CHANGELOG.md)) allows additional envelope and error properties, so later additive
   fields do not recur. Fields inside `data` are not affected.
 - Rollback: set `image:` back to the previous tag (rebuild it from the retained release
   directory if it was removed) and run the same `up -d --no-deps wled-mcp`. Configuration

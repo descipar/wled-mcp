@@ -119,7 +119,7 @@ Unsupported or unrecognized firmware is served with a warning and never refused;
 
 Automated tests use mocks and synthetic loopback devices. Hardware acceptance covers the
 first feature set on one RGB controller, and a live check with an offline controller is
-still pending. A short live check of the second release over HTTP and stdio covered state
+still pending. A short live check of release 0.1.1 over HTTP and stdio covered state
 reads, power, brightness and effect changes on that controller
 ([record](docs/validation/live-check-2026-11-08.md)). A later run on the same controller
 exercised a one-device group and scene, preset store, export, import and restore, and a
@@ -141,10 +141,9 @@ Other limits:
   behind HTTP authentication or a credentialed proxy is not supported. Behavior with a
   settings PIN or OTA lock is untested; a test is planned
   ([#128](https://github.com/descipar/wled-mcp/issues/128)).
-- `tools/list` is CPU-heavy on small hosts.
 - No package on PyPI, no image on GHCR, no registry entry. A live update of a deployed HTTP
-  service was checked once, from an earlier build to the second release; a rollback has
-  not been checked.
+  service was checked once, from an earlier build to release 0.1.1; a rollback has not
+  been checked.
 
 The complete list and the evidence are in
 [docs/VALIDATION.md](docs/VALIDATION.md#known-limitations).

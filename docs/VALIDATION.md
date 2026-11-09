@@ -39,7 +39,7 @@ CI should run on supported Python versions and a Linux environment, with lint/ty
 
 ## Known limitations
 
-State of the evidence and the limits of the first source release (see also the
+State of the evidence and the limits of the source releases (see also the
 [README](../README.md#limitations) and the [compatibility matrix](contract/compatibility.md)).
 
 - Automated tests use mocked or synthetic loopback devices and run in CI without hardware.
@@ -81,7 +81,9 @@ State of the evidence and the limits of the first source release (see also the
   the same devices is not coordinated.
 - In stdio mode the MCP host may stop the subprocess without waiting for a running call; a
   write interrupted that way stays uncertain.
-- `tools/list` is CPU-heavy on small hosts ([#67](https://github.com/descipar/wled-mcp/issues/67)).
+- `tools/list` was CPU-heavy on small hosts (about 270 ms of CPU per call on the single-board
+  target with 27 tools); since release 0.1.2 the schemas are built once per server (about
+  23 ms per call, [#67](https://github.com/descipar/wled-mcp/issues/67), closed).
 - No package on PyPI, no container image on GHCR and no registry entry; the release is
   installed from Git. Automated tests check that the current server reads the retained
   data of earlier releases and rejects newer data versions without changing files; an older
