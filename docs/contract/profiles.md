@@ -163,10 +163,9 @@ non-breaking ([versioning.md](versioning.md#schema-evolution)).
 ## Upgrade and downgrade
 
 The two new keys are listed in the machine-readable migration notes of
-[versioning.md](versioning.md#migration-notes) with the provisional release `0.2.0`
-(#25 corrects the number if the first release containing #20 differs). A server older
-than that release rejects `[access]` and `max_class` at startup (exit 2) rather than
-ignoring a restriction silently; after a downgrade, use the configuration kept for that
+[versioning.md](versioning.md#migration-notes) with the release `0.1.0`, the first one
+that contains them. A build from before #20 (never released) rejects `[access]` and `max_class` at startup
+(exit 2) rather than ignoring a restriction silently; after a downgrade, use the configuration kept for that
 version. Upgrading needs no change: absent keys mean `full` and no caps. The `tools/list`
 of a `full` server only gained the `ACCESS_DENIED` enum value in the error schema; no tool
 changed.

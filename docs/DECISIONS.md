@@ -951,9 +951,9 @@ Stage 2 (recorded 2026-11-07):
   2026-11-09, issue #134 only): one hardware run of the stage-2 features on the test
   controller through the hub HTTP service, state restored at the end, playlist covered; the
   run is complete and recorded in [validation/issue-134.md](validation/issue-134.md).
-- [ISSUE-130-DEC-001](decisions/issue-130.md) (technical default under the owner's
-  instruction to run #130 through the workflow, 2026-11-09, issue #130 only; owner may
-  overrule): the served envelope and error output schema allow additional properties; the
+- [ISSUE-130-DEC-001](decisions/issue-130.md) (human, delegated owner chat authority,
+  confirmed 2026-11-09, issue #130 only; technical content proposed by the coordinator):
+  the served envelope and error output schema allow additional properties; the
   one-time stale-cache transition is documented.
 
 ## Still unresolved

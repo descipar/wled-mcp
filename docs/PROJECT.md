@@ -5,12 +5,17 @@ document index and the agent workflow. Users start with the [README](../README.m
 
 ## Status
 
-The current package version (`project.version` in `pyproject.toml`, the single
-version source per [versioning](contract/versioning.md)) carries the stage-1 scope
-below. All stage-1 work packages listed
-in delivery tracker [#1](https://github.com/descipar/wled-mcp/issues/1) are closed, and
-the tracker itself was closed as completed on 2026-11-06. Deferred items and remaining limits are tracked in the
-linked follow-up issues. Nothing has been published.
+The repository is public. Releases are Git tags with a GitHub release, installed from
+Git; nothing is published to PyPI or GHCR and there is no registry entry. The current
+package version (`project.version` in `pyproject.toml`, the single version source per
+[versioning](contract/versioning.md)) and the release history are in the
+[CHANGELOG](../CHANGELOG.md). The stage-1 scope below is complete: all work packages of
+delivery tracker [#1](https://github.com/descipar/wled-mcp/issues/1) are closed, and the
+tracker itself was closed as completed on 2026-11-06. Stage 2 (see [STAGE-2.md](STAGE-2.md))
+added the features of #16 to #21 and closes out with #67, #130, #131 and the hardware check
+#134 ([record](validation/issue-134.md)); the public-distribution work moved to
+[stage 5](STAGE-5.md). Deferred items and remaining limits are tracked in the linked
+follow-up issues.
 
 - **Package and transports.** An installable Python 3.13 package with the console
   command `wled-mcp`. stdio is the default transport; the authenticated stateless
@@ -22,8 +27,10 @@ linked follow-up issues. Nothing has been published.
   persistent-preset tools `wled_list_presets`, `wled_get_preset`,
   `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9) with a
   durable snapshot before overwrite/delete (#8). Stage-2 work of
-  [#18](https://github.com/descipar/wled-mcp/issues/18) adds snapshot listing, restore and
-  supplied-state save (mock-tested; playlist authoring and import/export pending).
+  [#18](https://github.com/descipar/wled-mcp/issues/18) adds snapshot listing, restore,
+  supplied-state save, playlist authoring and preset bundle export/import (hardware
+  evidence in [#134](validation/issue-134.md)); #17, #19 and #20 add groups and scenes,
+  advanced segment fields, tool profiles and the status tool.
   Listing is network-free by default; explicit probes and reads use bounded requests
   to configured devices; effect/palette catalogs have a firmware-aware cache.
 - **Deployment artifacts (#11).** HTTP image and Compose example, uvx/stdio hub entry,
@@ -53,11 +60,11 @@ linked follow-up issues. Nothing has been published.
   remain pending. No hardware compatibility is claimed beyond these checks.
 - **Findings and follow-ups.** The refused activation of presets saved by WLED 16
   ([#66](https://github.com/descipar/wled-mcp/issues/66)) is fixed and was re-checked on
-  that controller in run 2. `tools/list` is CPU-bound on small hosts
-  ([#67](https://github.com/descipar/wled-mcp/issues/67)). In stdio mode the hub does not
+  that controller in run 2. `tools/list` was CPU-bound on small hosts and builds its schemas once per server since
+  [#67](https://github.com/descipar/wled-mcp/issues/67) (closed). In stdio mode the hub does not
   drain in-flight calls when the entry is stopped (a documented stdio limitation,
-  ISSUE-12-DEC-006). Staging of non-release builds is not yet defined
-  ([#70](https://github.com/descipar/wled-mcp/issues/70)). One write in run 3 timed out
+  ISSUE-12-DEC-006). Non-release builds are identified and staged
+  ([#70](https://github.com/descipar/wled-mcp/issues/70), closed). One write in run 3 timed out
   before dispatch with an unknown cause.
 - **Scope decisions (#13).** ISSUE-13-DEC-001 keeps inventory changes to a documented
   restart (reload and a validate command in
