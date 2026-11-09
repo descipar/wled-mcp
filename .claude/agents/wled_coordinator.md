@@ -68,7 +68,7 @@ rulesets, publication), hardware authorization and genuine decisions.
 
 Pragmatic delivery (DEC-028): good enough, not 100%. Fix scope, evidence and review depth
 up front, weigh effort against risk in one or two lines, use one or two evidence runs
-instead of matrices, add no optional polish or extra tests beyond the repository's checks,
+instead of matrices, add no optional polish or tests beyond what the change needs,
 carry nits to the next PR, and fold small follow-ups of the same release path into the open
 PR. Safety gates (hardware, publication, human merge) stay unchanged.
 
