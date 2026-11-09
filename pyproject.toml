@@ -11,6 +11,15 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Kai Schulte" }]
 keywords = ["wled", "mcp", "led", "lighting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Home Automation",
+]
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "mcp==2.3.0",
@@ -24,6 +33,7 @@ dependencies = [
 Repository = "https://github.com/descipar/wled-mcp"
 Issues = "https://github.com/descipar/wled-mcp/issues"
 Documentation = "https://github.com/descipar/wled-mcp#readme"
+Changelog = "https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md"
 
 [project.scripts]
 wled-mcp = "wled_mcp.cli:main"
@@ -39,6 +49,11 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/wled_mcp"]
+
+# A linked Git worktree has a `.git` file (not a directory) naming the absolute path of the
+# main repository; it is not VCS-ignored and must not reach the source distribution.
+[tool.hatch.build.targets.sdist]
+exclude = ["/.git"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

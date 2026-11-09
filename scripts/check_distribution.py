@@ -2,15 +2,22 @@
 
 Dependency installation uses exact runtime constraints, never LAN devices.
 Run after `uv sync --frozen`; runtime export drift is checked separately.
+
+Without options the wheel is built into ``dist/`` and checked (CI). The publish workflow
+(docs/PUBLISHING.md) uses ``--release-ref`` as its guard before building and then
+``--wheel``/``--sdist`` to check the files it built, without building again.
 """
 
+import argparse
 import importlib.util
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
 import sys
+import tarfile
 import tempfile
 import threading
 import tomllib
@@ -28,6 +35,10 @@ from packaging.requirements import Requirement
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "tests" / "tool_contract.py"
 VERSION_PLACEHOLDER = "REPLACE_WITH_VERSION"  # release directory name in the hub example
+# A published release version: no local label, no development release (as
+# deploy/stage_release.py; docs/contract/versioning.md).
+RELEASE_VERSION = re.compile(r"\d+\.\d+\.\d+(?:rc\d+)?")
+MAIN_REF = "refs/remotes/origin/main"  # releases come from `main` commits (DEC-023 item 1)
 
 
 def project_version(root: Path = ROOT) -> str:
@@ -59,6 +70,143 @@ def expected_tool_names(path: Path = CONTRACT_PATH, profile: str = "full") -> li
 
 EXPECTED_TOOL_NAMES = expected_tool_names()
 READ_ONLY_TOOL_NAMES = expected_tool_names(profile="read-only")
+
+
+def release_names(version: str) -> tuple[str, str]:
+    """File names of the source distribution and the wheel of ``version``."""
+    return f"wled_mcp-{version}.tar.gz", f"wled_mcp-{version}-py3-none-any.whl"
+
+
+def release_ref_problems(ref_type: str, ref_name: str, version: str) -> list[str]:
+    """Why the workflow ref must not be built and published as ``version``."""
+    problems = []
+    if not RELEASE_VERSION.fullmatch(version):
+        problems.append(f"project.version {version!r} is not a release version")
+    if ref_type != "tag":
+        problems.append(f"the workflow ref type is {ref_type!r}, not 'tag'")
+    if ref_name != f"v{version}":
+        problems.append(f"ref {ref_name!r} is not the tag 'v{version}' of project.version")
+    return problems
+
+
+def git_commit(root: Path, revision: str) -> str | None:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def tag_commit_problems(root: Path, tag: str, expected: str | None) -> list[str]:
+    """The checked-out commit is the tag's commit and reachable from ``main``."""
+    head = git_commit(root, "HEAD")
+    tagged = git_commit(root, f"refs/tags/{tag}")
+    if head is None:
+        return ["no checked-out commit"]
+    problems = []
+    if tagged != head:
+        problems.append(f"tag {tag!r} does not point at the checked-out commit")
+    if expected is not None and expected != head:
+        problems.append("the checked-out commit is not the workflow commit")
+    if git_commit(root, MAIN_REF) is None:
+        return [*problems, f"{MAIN_REF} is missing; fetch the full history of main"]
+    reachable = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", head, MAIN_REF],
+        cwd=root,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    if reachable.returncode == 1:
+        problems.append("the tagged commit is not reachable from main")
+    elif reachable.returncode:
+        problems.append("git could not decide whether the tagged commit is on main")
+    return problems
+
+
+def release_directory_problems(names: list[str], version: str) -> list[str]:
+    """The upload directory holds exactly the sdist and the wheel of ``version``."""
+    expected = set(release_names(version))
+    present = set(names)
+    problems = [f"missing {name}" for name in sorted(expected - present)]
+    problems += [f"unexpected file {name}" for name in sorted(present - expected)]
+    return problems
+
+
+def metadata_version(text: str) -> str | None:
+    """The ``Version`` field of core metadata (header part only)."""
+    for line in text.split("\n\n", 1)[0].splitlines():
+        if line.startswith("Version: "):
+            return line.removeprefix("Version: ").strip()
+    return None
+
+
+def sdist_member_problems(members: list[str], version: str) -> list[str]:
+    """Paths that must not be in the published source distribution."""
+    top = f"wled_mcp-{version}"
+    problems = []
+    for member in members:
+        parts = PurePosixPath(member).parts
+        if not parts or parts[0] != top:
+            problems.append(f"{member}: outside {top}/")
+            continue
+        if ".git" in parts:
+            problems.append(f"{member}: Git data")
+        elif len(parts) > 1 and parts[1] in (".agent-runs", ".artifacts"):
+            problems.append(f"{member}: local run or build output")
+        elif any(part.startswith(".env") for part in parts):
+            problems.append(f"{member}: environment file")
+        elif parts[-1] == "devices.toml":
+            problems.append(f"{member}: device inventory")
+    return problems
+
+
+def check_sdist(sdist: Path, version: str) -> None:
+    if sdist.name != release_names(version)[0]:
+        raise SystemExit(f"{sdist.name} is not the source distribution of {version}")
+    with tarfile.open(sdist, "r:gz") as archive:
+        members = archive.getnames()
+        stream = archive.extractfile(f"wled_mcp-{version}/PKG-INFO")
+        if stream is None:
+            raise SystemExit(f"{sdist.name} has no PKG-INFO")
+        pkg_info = stream.read().decode("utf-8")
+    problems = sdist_member_problems(members, version)
+    if metadata_version(pkg_info) != version:
+        problems.append(f"PKG-INFO Version is not {version}")
+    if problems:
+        raise SystemExit(f"{sdist.name}: " + "; ".join(problems))
+
+
+def check_release_ref(root: Path, environ: dict[str, str]) -> None:
+    """Publish-workflow guard, run before anything is built (docs/PUBLISHING.md)."""
+    ref_name = environ.get("GITHUB_REF_NAME", "")
+    problems = release_ref_problems(environ.get("GITHUB_REF_TYPE", ""), ref_name, VERSION)
+    if not problems:
+        problems = tag_commit_problems(root, ref_name, environ.get("GITHUB_SHA") or None)
+    if problems:
+        raise SystemExit("Release guard: " + "; ".join(problems))
+    print(f"Release guard: PASS; tag {ref_name} is project.version on main")
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build or check and exercise the wheel.")
+    parser.add_argument(
+        "--release-ref",
+        action="store_true",
+        help="only check that the workflow tag is v<project.version> on main; build nothing",
+    )
+    parser.add_argument("--wheel", type=Path, help="check this built wheel instead of building")
+    parser.add_argument("--sdist", type=Path, help="also check this built source distribution")
+    args = parser.parse_args(argv)
+    if args.release_ref and (args.wheel or args.sdist):
+        parser.error("--release-ref checks the ref only")
+    if args.sdist and not args.wheel:
+        parser.error("--sdist needs --wheel")
+    return args
 
 
 def run(command: list[str], cwd: Path, env: dict[str, str]) -> str:
@@ -244,8 +392,12 @@ def hub_example_uvx(
     return str(entry["command"]), args, hub_env
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    options = parse_args(argv)
     root = ROOT
+    if options.release_ref:
+        check_release_ref(root, dict(os.environ))
+        return
     artifacts = root / ".artifacts"
     artifacts.mkdir(exist_ok=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith("WLED_MCP_")}
@@ -270,12 +422,33 @@ def main() -> None:
         "print(json.dumps({n:m.version(n) for n in names})); "
         "import wled_mcp; print(wled_mcp.__file__)"
     )
-    run(
-        ["uv", "build", "--offline", "--wheel", "--no-build-isolation", "--python", sys.executable],
-        root,
-        env,
-    )
-    wheel = root / "dist" / f"wled_mcp-{VERSION}-py3-none-any.whl"
+    if options.wheel is None:
+        run(
+            [
+                "uv",
+                "build",
+                "--offline",
+                "--wheel",
+                "--no-build-isolation",
+                "--python",
+                sys.executable,
+            ],
+            root,
+            env,
+        )
+        wheel = root / "dist" / release_names(VERSION)[1]
+    else:  # an already built release file: checked as it is, never rebuilt
+        wheel = options.wheel.resolve()
+        if wheel.name != release_names(VERSION)[1]:
+            raise SystemExit(f"{wheel.name} is not the wheel of {VERSION}")
+    if options.sdist is not None:
+        sdist = options.sdist.resolve()
+        check_sdist(sdist, VERSION)
+        if sdist.parent != wheel.parent:
+            raise SystemExit("--sdist and --wheel must be in the upload directory")
+        names = sorted(path.name for path in wheel.parent.iterdir())
+        if problems := release_directory_problems(names, VERSION):
+            raise SystemExit(f"{wheel.parent.name}/: " + "; ".join(problems))
     dist_info = f"wled_mcp-{VERSION}.dist-info"
     with zipfile.ZipFile(wheel) as archive:
         assert "wled_mcp/cli.py" in archive.namelist()
@@ -285,6 +458,7 @@ def main() -> None:
         assert "License-Expression: Apache-2.0" in metadata
         assert "Author: Kai Schulte" in metadata
         assert f"Version: {VERSION}\n" in metadata
+        assert metadata_version(metadata) == VERSION
         assert "Summary: Unofficial " in metadata
         assert "not affiliated with the WLED project" in metadata
         assert f"{dist_info}/licenses/LICENSE" in archive.namelist()
@@ -345,8 +519,9 @@ def main() -> None:
         anyio.run(handshake, command, hub_args, outside, hub_env)
         leftovers = sorted(path.name for path in hub_data.iterdir())
         assert leftovers == ["config"], f"stdio hub example left data files: {leftovers}"
+    checked = "Source distribution/wheel" if options.sdist is not None else "Wheel"
     print(
-        "Wheel/clean install/setup commands/stdio/read-only profile/HTTP restart/uvx/"
+        f"{checked}/clean install/setup commands/stdio/read-only profile/HTTP restart/uvx/"
         "stdio hub example: PASS; "
         f"{len(expected)} exact runtime versions verified"
     )
