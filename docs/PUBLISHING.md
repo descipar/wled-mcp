@@ -172,18 +172,39 @@ never accepts the name of a deleted file again.
 ## Attestations
 
 With Trusted Publishing, `pypa/gh-action-pypi-publish` creates PEP 740 attestations for the
-uploaded files by default. They are not claimed here as the SBOM, provenance or
-attestation work of S2-DIST-03; that stays open.
+uploaded files by default. They are the provenance for the PyPI files; a separate SBOM
+file is not produced (see the inventory below).
 
-## What stays open in #22
+## Dependency and licence inventory, vulnerability review
 
-- The first actual publication and its proof that a clean user can run a pinned
-  distribution without GitHub credentials (acceptance item 1); it needs the owner's release
-  instruction.
-- The multi-architecture OCI image pipeline (S2-DIST-02).
-- SBOM, provenance or documented equivalents, dependency/license inventory and the
-  vulnerability review (S2-DIST-03).
-- The name and ownership check at release time.
+Checked on 2026-11-09 for the `requirements-runtime.txt` set of the first release (28 packages
+installed on Python 3.13 on macOS; markers for other platforms can add packages such as
+the emscripten transport). Licences come from each package's installed metadata. Users
+resolve the declared ranges, so their set can differ; this is the tested set, not a promise.
+
+| Licence | Packages |
+| --- | --- |
+| MIT / MIT-0 | annotated-types, anyio, attrs, cffi, h11, jsonschema, jsonschema-specifications, mcp, mcp-types, pydantic, pydantic_core, pyjwt, referencing, rpds-py, truststore, typing-inspection |
+| BSD-3-Clause | click, httpcore2, httpx2, idna, pycparser, sse-starlette, starlette, uvicorn |
+| Apache-2.0 | opentelemetry-api, python-multipart |
+| Apache-2.0 OR BSD-3-Clause | cryptography |
+| PSF-2.0 | typing_extensions |
+
+All are permissive and compatible with this project's Apache-2.0 licence; none is copyleft.
+Repeat the check with a release (`uvx pip-audit -r requirements-runtime.txt --no-deps
+--disable-pip` for vulnerabilities; licences from the installed metadata) and record
+material changes in the release notes.
+
+`pip-audit` over the same file reported no known vulnerabilities on 2026-11-09. The result
+describes that date and the known-vulnerability database at the time; a later advisory is
+handled through the process in [SECURITY.md](../SECURITY.md).
+
+## What stays open
+
+The container image pipeline, image SBOM/provenance, image name check and OCI pinning
+documentation moved to [#156](https://github.com/descipar/wled-mcp/issues/156)
+(ISSUE-22-DEC-006). A separate SBOM file for the PyPI package is not produced; the inventory
+above and the PEP 740 attestations from the publish action are the documented equivalents.
 
 ## Checking the workflow locally
 
