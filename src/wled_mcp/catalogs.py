@@ -19,6 +19,7 @@ import anyio
 from pydantic import JsonValue
 
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
+from wled_mcp.effect_metadata import parse_fxdata
 from wled_mcp.readmodels import Collector, InfoIdentity, as_dict, opt_int, read_identity
 
 if TYPE_CHECKING:
@@ -196,15 +197,38 @@ async def load_catalog(
     return CatalogView(entry, "device", 0.0, refresh, entry.warnings)
 
 
-def catalog_items(entry: CatalogEntry, kind: Kind) -> list[JsonValue]:
+def catalog_items(
+    entry: CatalogEntry,
+    kind: Kind,
+    *,
+    query: str | None = None,
+    two_d: bool | None = None,
+    audio_reactive: bool | None = None,
+) -> list[JsonValue]:
     items: list[JsonValue] = []
     for index, name in enumerate(entry.names):
         item: dict[str, JsonValue] = {"id": index, "name": name}
         if kind == "effects":
             if name == PLACEHOLDER_NAME:
-                item["placeholder"] = True
+                continue
+            if query is not None and query.casefold() not in name.casefold():
+                continue
+            flags: dict[str, JsonValue] = {}
             if entry.fxdata is not None:
-                item["metadata"] = {"fxdata": entry.fxdata[index]}
+                parsed, warnings = parse_fxdata(entry.fxdata[index])
+                item["metadata"] = {
+                    "fxdata": entry.fxdata[index],
+                    "parsed": parsed,
+                    "warnings": [warning for warning in warnings],
+                }
+                raw_flags = parsed["flags"]
+                assert isinstance(raw_flags, dict)
+                flags = raw_flags
+            if any(
+                wanted is not None and flags.get(key) is not wanted
+                for key, wanted in (("two_d", two_d), ("audio_reactive", audio_reactive))
+            ):
+                continue
         items.append(item)
     return items
 

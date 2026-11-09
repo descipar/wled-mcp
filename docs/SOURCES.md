@@ -228,3 +228,16 @@ device; subjective properties are curated judgement or taken from the recorded l
 ## Licensing
 
 No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.
+
+## Issue-148 effect metadata evidence
+
+The lenient fxdata parser uses the existing WLED v16.0.1 pin
+`29b389df1c1aaec6ff53aea742d17063b985906c`:
+[index.js controls/colors/palette parsing](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/data/index.js#L1612-L1739),
+[dimension/audio flags](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/data/index.js#L947-L967)
+and [effect defaults](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX_fcn.cpp#L599-L617),
+checked 2026-11-09. Six short interoperability fixture values cite declaration lines
+in [FX.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.cpp);
+no firmware implementation is copied. Empty metadata and missing flags remain unknown
+instead of inheriting the UI's display fallback. This source evidence is not a
+controller probe or proof of effect behavior.

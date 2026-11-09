@@ -23,20 +23,20 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 47 %** (41.5 of 89 features). **Planned-scope coverage: 58 %** (41.5 of 71 features, excluded rows removed).
+**WLED coverage: 47 %** (42 of 89 features). **Planned-scope coverage: 59 %** (42 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Master state (STATE) | 13 | 3 | 2 | 0 | 8 | 0 | 31 % | 31 % |
 | Segments (SEG) | 25 | 22 | 0 | 0 | 0 | 3 | 100 % | 88 % |
-| Effects and palettes (CAT) | 6 | 2 | 1 | 0 | 2 | 1 | 50 % | 42 % |
+| Effects and palettes (CAT) | 6 | 3 | 0 | 0 | 2 | 1 | 60 % | 50 % |
 | Presets and playlists (PRESET) | 13 | 8 | 1 | 0 | 3 | 1 | 71 % | 65 % |
 | Information and diagnostics (INFO) | 9 | 4 | 1 | 0 | 4 | 0 | 50 % | 50 % |
 | Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 89 | 39 | 5 | 0 | 27 | 18 | 58 % | 47 % |
+| **All** | 89 | 40 | 4 | 0 | 27 | 18 | 59 % | 47 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -126,7 +126,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-SEG-12 | Segment name | `n` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Up to 32 UTF-8 bytes. |
 | W-SEG-13 | White channel (RGBW) | `col` fourth channel | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Existing ranges by their reported capability; new or moved RGBW and white-only ranges under the uniform-capability rule. |
 | W-SEG-14 | Correlated color temperature | `cct` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | 0-255 only where the range reports the CCT bit; no Kelvin input (ISSUE-19-DEC-002). |
-| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | Settable where the readback carries the key; ranges only, no `fxdata` parsing. |
+| W-SEG-15 | Effect custom sliders and options | `c1`-`c3`, `o1`-`o3` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state`, `wled_apply_scene` | - | Settable where the readback carries the key; labels and defaults are parsed by `wled_get_effects` (#148). |
 | W-SEG-16 | Sound simulation | `si` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-3, where the readback carries the key. |
 | W-SEG-17 | Segment LED set | `set` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-3, where the readback carries the key. |
 | W-SEG-18 | Freeze | `frz` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Master power-on unfreezes every segment; the plan warns. |
@@ -143,7 +143,7 @@ owning issue for planned rows and the decision for excluded rows.
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | W-CAT-01 | Effect list | `/json/eff` | supported | `wled_get_effects` | - | Cached per firmware. |
-| W-CAT-02 | Effect metadata | `/json/fxdata` | partial | `wled_get_effects` | - | Raw string per effect, not parsed. |
+| W-CAT-02 | Effect metadata | `/json/fxdata` | supported | `wled_get_effects` | - | Raw and leniently parsed labels, palette selector, flags and defaults; ID-preserving filters. Live probe pending (#148). |
 | W-CAT-03 | Palette list | `/json/pal` | supported | `wled_get_palettes` | - | Built-in and gradient palettes; WLED does not list custom palettes there. |
 | W-CAT-04 | Palette color data | `/json/palx` | unplanned | - | - | - |
 | W-CAT-05 | Custom palette upload | `/upload` (`palette<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to palette files by ISSUE-94-DEC-001. |

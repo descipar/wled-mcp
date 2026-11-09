@@ -1298,5 +1298,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
   bundles, restore and a playlist on the test controller (#134).
 - [validation/issue-147.md](validation/issue-147.md): agent instructions, static prompt
   and nested schema guidance over stdio and HTTP (#147; MCPHub check pending).
+- [validation/issue-148.md](validation/issue-148.md): parsed effect metadata, conservative
+  filters and pinned-source fixtures (#148; read-only hardware probe pending).
 - [validation/issue-149.md](validation/issue-149.md): effect and palette names in segment
   tools, whole-request no-write failures and resolved-ID readback (#149, mocks/loopback).

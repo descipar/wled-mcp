@@ -87,6 +87,19 @@ class GetCatalogRequest(BaseModel):
     refresh: bool = False
 
 
+class GetEffectsRequest(GetCatalogRequest):
+    query: str | None = Field(
+        default=None, max_length=128, description="Case-folded substring of the device effect name."
+    )
+    two_d: bool | None = Field(
+        default=None, description="Match only explicit known 2D metadata; unknown never matches."
+    )
+    audio_reactive: bool | None = Field(
+        default=None,
+        description="Match explicit known audio metadata; unknown never matches either boolean.",
+    )
+
+
 READ_ONLY = ToolAnnotations(
     read_only_hint=True,
     destructive_hint=False,
@@ -228,7 +241,21 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
                 return _read_failure(resources, name, device_id, failure)
             entry = view.entry
             freshness = freshness_of(view)
-            items = catalog_items(entry, kind)
+            items = catalog_items(
+                entry,
+                kind,
+                query=arguments.get("query"),
+                two_d=arguments.get("two_d"),
+                audio_reactive=arguments.get("audio_reactive"),
+            )
+            warnings = list(view.warnings)
+            for item in items:
+                if isinstance(item, dict):
+                    metadata = item.get("metadata")
+                    if isinstance(metadata, dict) and metadata.get("warnings"):
+                        warnings.append(
+                            f"Effect metadata for ID {item['id']} was partially parsed."
+                        )
             data: dict[str, JsonValue] = {
                 "device": device,
                 kind: items,
@@ -240,7 +267,7 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
                     "status": "available" if entry.fxdata is not None else "unavailable",
                     "reason": entry.metadata_reason,
                 }
-            return _read_success(name, device_id, data, list(view.warnings))
+            return _read_success(name, device_id, data, warnings)
 
         return execute
 
@@ -261,11 +288,13 @@ def _build_read_operations(resources: Resources) -> tuple[Operation, ...]:
             name="wled_get_effects",
             tool_class=ToolClass.READ,
             description=(
-                "Read the effect catalog with original device IDs and names, optional raw "
-                "fxdata metadata and freshness. Cached per device for a configured time; "
+                "Read the effect catalog with original device IDs and names, raw and parsed "
+                "fxdata metadata and freshness. Excludes placeholders; query is a case-folded "
+                "name substring, two_d and audio_reactive require known metadata. "
+                "Cached per device for a configured time; "
                 "refresh=true bypasses the cache. Read-only."
             ),
-            request_model=GetCatalogRequest,
+            request_model=GetEffectsRequest,
             execute=catalog_operation("effects"),
             annotations=READ_ONLY,
         ),
