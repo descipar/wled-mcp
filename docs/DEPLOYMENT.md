@@ -288,10 +288,18 @@ of them restarts, recreates or removes the hub or its network.
   `compose.yaml`, then
   `docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps wled-mcp`. Repeat
   `ps`, `logs` and the authenticated `ping`; the hub reconnects without replaying writes.
-  Right after an update from an earlier build the hub may reject a response that carries
-  new fields, because it still validates against the tool list it cached from the old
-  server (observed once, gone after about a minute; the cause is not confirmed, see
-  [#130](https://github.com/descipar/wled-mcp/issues/130)). Retry, or reload the hub entry.
+  Right after an update from a build from before the `correlation_id` of #119 (see
+  [#130](https://github.com/descipar/wled-mcp/issues/130)) the hub rejects every response with
+  "data must NOT have additional properties". Cause, confirmed for that path from the retained
+  tool-list fixture, which is generated from such a build: that schema forbids unknown
+  envelope properties and the server since #119 adds `correlation_id`; the hub still validates
+  against the tool list it cached. Pre-#119 schemas also lack the later error codes
+  (`STORAGE_FAILED`, `ACCESS_DENIED`). The tagged releases already serve `correlation_id`, so
+  updating from them needs no refresh. Procedure: reload or refresh the hub entry; it cleared
+  after about a minute once with the hub, other clients may cache longer; no server change is
+  needed. This happens once: the schema served from
+  the #130 change on allows additional envelope and error properties, so later additive
+  fields do not recur. Fields inside `data` are not affected.
 - Rollback: set `image:` back to the previous tag (rebuild it from the retained release
   directory if it was removed) and run the same `up -d --no-deps wled-mcp`. Configuration
   is never migrated in place; snapshot local data before any future schema change.

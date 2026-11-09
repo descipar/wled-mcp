@@ -742,6 +742,9 @@ Domain envelopes always contain `schema_version=1`, boolean `ok`, stable
 `correlation_id` (16 hex characters, generated per call by the server, the same value as in
 the call's log line; [diagnostics](contract/diagnostics.md#correlation-id)); a document that
 was not served omits it.
+Every tool serves the same output schema; it allows additional properties on the envelope and on
+the error object, so clients must ignore unknown fields and a later additive field does not
+invalidate a cached schema ([versioning](contract/versioning.md#contract-evolution), #130).
 Errors contain `code`, safe `message`, `read_retryable`, `write_retryable=false`,
 and `reconciliation`. [Examples](../examples/contracts/README.md) include valid
 plans, conflicts and uncertain writes with observable postconditions.

@@ -34,7 +34,14 @@ ErrorCode = Literal[
 
 
 class DomainError(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        frozen=True,
+        # Internal validation stays strict, but the served output schema tolerates unknown
+        # fields so a client that cached it keeps accepting later additive fields (#130).
+        json_schema_extra={"additionalProperties": True},
+    )
     code: ErrorCode
     message: str
     read_retryable: bool = False
@@ -43,7 +50,14 @@ class DomainError(BaseModel):
 
 
 class Outcome(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        frozen=True,
+        # Internal validation stays strict, but the served output schema tolerates unknown
+        # fields so a client that cached it keeps accepting later additive fields (#130).
+        json_schema_extra={"additionalProperties": True},
+    )
     schema_version: Literal[1] = 1
     ok: bool
     operation: str = Field(min_length=1)

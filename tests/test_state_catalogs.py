@@ -789,7 +789,7 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                     assert tool.annotations.destructive_hint is (tool.name in destructive)
                     assert tool.annotations.idempotent_hint is False
                     assert tool.annotations.open_world_hint is False
-                assert tool.output_schema["additionalProperties"] is False
+                assert tool.output_schema["additionalProperties"] is True  # tolerant output, #130
             schema = {t.name: t.input_schema for t in listed}
             assert schema["wled_get_effects"]["properties"]["refresh"]["type"] == "boolean"
             assert set(schema["wled_get_state"]["required"]) == {"device_id"}

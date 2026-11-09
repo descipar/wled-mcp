@@ -212,7 +212,10 @@ def schema_breaks(old: Any, new: Any, pointer: str, *, inbound: bool) -> Iterato
             if b < a:
                 yield f"{here}: tightened {a} -> {b}"
         elif key == "additionalProperties" and isinstance(a, bool) and isinstance(b, bool):
-            if a != b and (inbound and not b or not inbound and b):
+            # An output schema that starts to allow unknown properties is the additive
+            # direction (#130, versioning.md "Contract evolution"); only an input that
+            # stops accepting them is a break.
+            if a != b and inbound and not b:
                 yield f"{here}: {a} became {b}"
         else:
             yield from schema_breaks(a, b, here, inbound=inbound)
@@ -633,3 +636,72 @@ def test_get_state_envelope_only_adds_to_the_retained_one(release, tmp_path):
     assert (missing, changed) == ([], [])
     added = set(dict(leaves(current_envelope))) - set(dict(leaves(retained)))
     assert added >= {"/data/diagnostics/firmware_support/tier"}
+
+
+# ================================================================ additive output (#130)
+
+
+def served_envelope(tmp_path: Path) -> dict[str, Any]:
+    """A real served result envelope (``wled_list_devices`` on the synthetic inventory)."""
+
+    async def call() -> dict[str, Any]:
+        async with Resources(synthetic_config(tmp_path)) as resources:
+            async with Client(create_server(build_operations(resources))) as client:
+                result = await client.call_tool("wled_list_devices", {})
+        assert not result.is_error
+        return dict(result.structured_content)
+
+    return anyio.run(call)
+
+
+def test_every_served_output_schema_tolerates_unknown_envelope_and_error_fields(served):
+    for tool in served:
+        schema = normalized(tool)["outputSchema"]
+        assert schema["additionalProperties"] is True, tool["name"]
+        assert schema["properties"]["error"]["anyOf"][0]["additionalProperties"] is True, tool[
+            "name"
+        ]
+        # Loosening must not weaken what the envelope guarantees.
+        assert {"ok", "operation", "device_id", "application", "verification"} <= set(
+            schema["required"]
+        )
+
+
+def test_current_envelope_accepts_future_additive_fields(served, tmp_path):
+    import jsonschema  # a dependency of mcp; not skipped, so a missing one fails loudly
+
+    envelope = served_envelope(tmp_path)
+    assert "correlation_id" in envelope
+    future = copy.deepcopy(envelope) | {"future_top_level_field": 1}
+    future["error"] = {
+        "code": "CONFIG_ERROR",
+        "message": "m",
+        "read_retryable": False,
+        "write_retryable": False,
+        "reconciliation": "r",
+        "future_error_field": ["x"],
+    }
+    for tool in served:
+        jsonschema.validate(envelope, tool["outputSchema"])
+        jsonschema.validate(future, tool["outputSchema"])
+
+
+def test_schema_cached_from_the_first_release_rejects_current_envelope(tmp_path):
+    """The documented one-time transition (#130), not a behaviour to keep.
+
+    The retained fixture is generated from a build before #119 (the tagged releases already
+    serve ``correlation_id``). A client that cached such an ``outputSchema``
+    (``additionalProperties: false``, no ``correlation_id``) rejects every envelope that
+    carries the later top-level field until it refreshes ``tools/list``.
+    Schemas served from the #130 change on tolerate additive fields (test above), so this
+    cannot recur for them.
+    """
+    import jsonschema  # a dependency of mcp; not skipped, so a missing one fails loudly
+
+    envelope = served_envelope(tmp_path)
+    for release in RETAINED:
+        for tool in retained_tools(release):
+            with pytest.raises(jsonschema.ValidationError, match="Additional properties"):
+                jsonschema.validate(envelope, tool["outputSchema"])
+            without = {k: v for k, v in envelope.items() if k != "correlation_id"}
+            jsonschema.validate(without, tool["outputSchema"])
