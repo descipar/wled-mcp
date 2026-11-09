@@ -9,8 +9,10 @@ repositories and synthetic archives only; nothing is built or installed here.
 from __future__ import annotations
 
 import io
+import json
 import subprocess
 import tarfile
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -385,3 +387,95 @@ def test_requires_dist_of_the_project_is_read_from_pyproject():
 )
 def test_requires_dist_check_rejects_drift_and_exact_pins(requires, expected):
     assert script.requires_dist_problems(synthetic_metadata(*requires), DECLARED) == expected
+
+
+# ------------------------------- #24: the wheel carries the registry ownership marker
+
+MARKER = "mcp-name: io.github.descipar/wled-mcp"
+
+
+def test_registry_name_is_read_from_server_json():
+    # The README marker is tied to the same name in tests/test_registry_metadata.py.
+    assert script.registry_name() == "io.github.descipar/wled-mcp"
+
+
+def test_marker_in_the_description_passes():
+    metadata = synthetic_metadata() + f"\n<!-- {MARKER} -->\n"
+    assert script.registry_marker_problems(metadata, "io.github.descipar/wled-mcp") == []
+
+
+@pytest.mark.parametrize(
+    ("description", "expected"),
+    [
+        ("A README without the marker.", ["lacks the registry ownership marker"]),
+        (
+            "<!-- mcp-name: io.github.someone/other -->",
+            ["lacks the registry ownership marker", "names another registry entry"],
+        ),
+        (
+            f"<!-- {MARKER} -->\n<!-- mcp-name: io.github.someone/other -->",
+            ["names another registry entry"],
+        ),
+        ("<!-- mcp-name: io.github.descipar/wled-mcp-fork -->", ["names another registry entry"]),
+    ],
+    ids=["missing", "other-name-only", "second-other-name", "longer-name"],
+)
+def test_marker_problems_are_reported(description, expected):
+    metadata = synthetic_metadata() + "\n" + description + "\n"
+    problems = script.registry_marker_problems(metadata, "io.github.descipar/wled-mcp")
+    for part in expected:
+        assert any(part in problem for problem in problems), problems
+
+
+def marker_wheel(tmp_path: Path, description: str) -> Path:
+    """A synthetic wheel that satisfies every earlier ``main`` check except the marker."""
+    version = script.VERSION
+    dist_info = f"wled_mcp-{version}.dist-info"
+    headers = ["Metadata-Version: 2.4", "Name: wled-mcp", f"Version: {version}"]
+    headers += [
+        "Summary: Unofficial MCP server; not affiliated with the WLED project",
+        "License-Expression: Apache-2.0",
+        "Author: Kai Schulte",
+    ]
+    headers += [f"Requires-Dist: {text}" for text in script.project_dependencies()]
+    wheel = tmp_path / script.release_names(version)[1]
+    with zipfile.ZipFile(wheel, "w") as archive:
+        archive.writestr("wled_mcp/cli.py", "")
+        archive.writestr("wled_mcp/catalog_data/effect_properties.json", "{}")
+        archive.writestr(f"{dist_info}/METADATA", "\n".join(headers) + "\n\n" + description)
+        archive.writestr(f"{dist_info}/licenses/LICENSE", "")
+        archive.writestr(f"{dist_info}/licenses/NOTICE", "")
+    return wheel
+
+
+def test_a_wheel_without_the_marker_fails_before_any_install(monkeypatch, tmp_path):
+    wheel = marker_wheel(tmp_path, "A README without the marker.\n")
+    monkeypatch.setattr(script, "run", lambda *a: pytest.fail(f"unexpected command {a[0]}"))
+    with pytest.raises(SystemExit, match="lacks the registry ownership marker"):
+        script.main(["--wheel", str(wheel)])
+
+
+def test_a_wheel_naming_another_registry_entry_fails(monkeypatch, tmp_path):
+    wheel = marker_wheel(tmp_path, "<!-- mcp-name: io.github.someone/other -->\n")
+    monkeypatch.setattr(script, "run", lambda *a: pytest.fail(f"unexpected command {a[0]}"))
+    with pytest.raises(SystemExit, match="lacks the registry ownership marker"):
+        script.main(["--wheel", str(wheel)])
+
+
+def test_a_wheel_with_the_marker_passes_the_metadata_check(monkeypatch, tmp_path):
+    wheel = marker_wheel(tmp_path, f"<!-- {MARKER} -->\n")
+    commands: list[list[str]] = []
+
+    def command(argv: list[str], cwd: Path, env: dict[str, str]) -> str:
+        commands.append(argv)
+        raise Stop
+
+    monkeypatch.setattr(script, "run", command)
+    with pytest.raises(Stop):  # reached the first install step: the metadata check passed
+        script.main(["--wheel", str(wheel)])
+    assert commands[0][:2] == ["uv", "venv"]
+
+
+def test_registry_name_follows_a_changed_server_json(tmp_path):
+    (tmp_path / "server.json").write_text(json.dumps({"name": "io.github.x/y"}), "utf-8")
+    assert script.registry_name(tmp_path) == "io.github.x/y"

@@ -199,6 +199,30 @@ material changes in the release notes.
 describes that date and the known-vulnerability database at the time; a later advisory is
 handled through the process in [SECURITY.md](../SECURITY.md).
 
+## Registry listing after the PyPI release
+
+Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README marker
+`mcp-name: io.github.descipar/wled-mcp` (inside the package description, which
+`scripts/check_distribution.py` requires) and the root [`server.json`](../server.json)
+(see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/issue-24.md](validation/issue-24.md)).
+The workflow above does not touch the registry, and no registry automation (for example GitHub
+OIDC in a workflow) is wired. Every step below is an owner action that needs the owner's
+instruction at that time, and a release of a version does not authorize it:
+
+1. Check that PyPI serves the marker for the released version: the `info.description` of
+   `https://pypi.org/pypi/wled-mcp/<version>/json` contains `mcp-name: io.github.descipar/wled-mcp`,
+   and `server.json` carries `<version>` twice.
+2. Install `mcp-publisher` from a pinned release (re-check the current version; v1.8.8 was
+   observed on 2026-11-06) and verify the downloaded file against the checksum or signature
+   the release provides before running it.
+3. `mcp-publisher login github`, signed in as the account that owns the `descipar` namespace;
+   then `mcp-publisher publish` in the repository root. The `validate` subcommand was
+   observed to send the file to the registry service, so it is an external call, not a local
+   check.
+4. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
+   and record the result. Whether a published entry can be corrected under the same version
+   was not checked; read the registry's rules before relying on it.
+
 ## What stays open
 
 The container image pipeline, image SBOM/provenance, image name check and OCI pinning

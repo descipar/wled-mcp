@@ -1026,6 +1026,12 @@ Stage 2 (recorded 2026-11-07):
   confirmed 2026-11-09, issue #130 only; technical content proposed by the coordinator):
   the served envelope and error output schema allow additional properties; the
   one-time stale-cache transition is documented.
+- [ISSUE-24-DEC-001](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
+  prepare the registry namespace marker, a locally validated `server.json`, drafts of the MCPM
+  and hosted-directory entries and the release preparation of the next patch version in one pull
+  request; no tag, release, upload, `mcp-publisher` use, submission or hardware contact is
+  authorized. ISSUE-24-DEC-002 (coordinator, technical proposal): the file shapes, tests and
+  documentation defaults.
 
 ## Still unresolved
 
