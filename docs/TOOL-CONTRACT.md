@@ -108,7 +108,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_list_devices` | `probe=false` | Configured IDs/names; optional independent bounded reachability | Must |
 | `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile and per-device ceilings, last observed outcome per device, call counters; never contacts a device | Launch (S2-ACCESS-03); implemented in #20 ([contract/diagnostics.md](contract/diagnostics.md)) |
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
-| `wled_get_effects` | `device_id`, `refresh=false` | Original IDs/names, optional metadata, freshness | Must |
+| `wled_get_effects` | `device_id`, `refresh=false`, optional `query`, `two_d`, `audio_reactive` | Original IDs/names, optional metadata, freshness | Must |
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
 | `wled_search_effects` | `device_id`, optional `motion`, `flashing`, `colors_min`, `colors_max`, `uses_palette`, `strip_length`, `min_visibility`, `max_palette_saturation_need`, `strict=true`, `min_confidence`, `limit` | Curated property search intersected with the device's effect list; read-only | Stage 3 (S3-EFFECT-01, S3-EFFECT-02); implemented in #31 ([contract/effect-search.md](contract/effect-search.md)) |
 | `wled_list_zones` | optional `zone` (ID or name) | Zone summaries and cross-zone warnings, or one zone's stored document; local files only | Stage 3 (S3-ZONE-01); implemented in #27 ([contract/zones.md](contract/zones.md)) |
@@ -195,21 +195,25 @@ refusal ([compatibility](contract/compatibility.md#wled-firmware-tiers), #21).
   from `raw.info` and listed in `raw.redacted_info_keys`. Raw state is unchanged.
 
 **`wled_get_effects` / `wled_get_palettes(device_id, refresh=false)`** return `effects` or
-`palettes` as `[{id,name,[placeholder:true],[metadata:{fxdata}]}]` ordered by ID, `count`,
+`palettes` as `[{id,name,[metadata:{fxdata,parsed,warnings}]}]` ordered by ID, `count`,
 (effects only) `metadata{status: available|unavailable, reason}` and `freshness{source:
 device|cache, fetched_at, age_seconds, cache_ttl_seconds, firmware{version,build_id},
 refreshed}`. `refreshed` echoes that the call bypassed the cache by request.
 
-- ID is the array index of the device list; lists are never compacted and no count is
-  hardcoded. A difference from `fxcount`/`palcount` is a warning only. Effect slots the
-  firmware serializes as `"RSVD"` are returned with `placeholder=true`; they and
-  `RSVD` are never matched by the name resolver. `/json/pal` lists built-in/gradient
+- ID is the original array index of the device list; IDs are never renumbered and no
+  count is hardcoded. A difference from `fxcount`/`palcount` is a warning only. Effect
+  slots serialized as `"RSVD"` are excluded from listing and name resolution (#148). `/json/pal` lists built-in/gradient
   names, not custom palettes, so `palcount` may legitimately exceed the list.
 - Effect metadata is the raw `/json/fxdata` string per effect, attached by index only
-  when the list length equals the effect list; it is never a name source and is not
-  parsed. Any fxdata failure or length mismatch gives `ok=true`, intact names,
+  when the list length equals the effect list; it is never a name source. Lenient parsed
+  labels, palette selector, flags and defaults are additive (#148). Unknown/malformed
+  properties remain unknown with warnings. Any fxdata failure or length mismatch gives
+  `ok=true`, intact names,
   `metadata.status=unavailable`, a reason (error code or `length_mismatch`) and one
   warning. The optional read gets at most half of the remaining deadline.
+- `wled_get_effects` additionally accepts optional `query`, `two_d` and
+  `audio_reactive` filters; unknown metadata matches neither boolean. `count` is the
+  number returned. Details: [effect metadata](contract/effect-metadata.md).
 - Cache: key `(device_id, kind)`, effects plus fxdata one unit, TTL
   `http.catalog_cache_seconds` (0 disables storage). Every call performs one fresh
   `/json/info` read. A live entry with identical `(ver, vid)` is served as
@@ -886,6 +890,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   the tested set and how users install it (#22).
 - [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
+- [contract/effect-metadata.md](contract/effect-metadata.md): lenient fxdata parsing and
+  ID-preserving effect catalog filters (#148).
 - [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the
   curated property catalog, matching rules and how to update it (#31).
 - [contract/zones.md](contract/zones.md): named physical lighting zones, the zone document,

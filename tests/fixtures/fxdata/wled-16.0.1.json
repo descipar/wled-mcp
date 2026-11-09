@@ -1,0 +1,12 @@
+{
+  "source": "https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.cpp",
+  "note": "Small interoperability metadata examples from WLED v16.0.1; not controller captures. No firmware implementation copied.",
+  "entries": [
+    {"name": "Solid", "line": 139, "raw": ""},
+    {"name": "Blink", "line": 227, "raw": "!,Duty cycle;!,!;!;01"},
+    {"name": "Wipe", "line": 319, "raw": "!,!;!,!;!"},
+    {"name": "Palette", "line": 2126, "raw": "Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;ix=112,c1=0,o1=1,o2=0,o3=1"},
+    {"name": "Swirl", "line": 6755, "raw": "!,Sensitivity,Blur;,Bg Swirl;!;2v;ix=64,si=0"},
+    {"name": "GEQ", "line": 7595, "raw": "Fade speed,Ripple decay,# of bands,,Bin,Color bars;!,,Peaks;!;2f;c1=255,c2=64,pal=11,si=0,c3=0"}
+  ]
+}
