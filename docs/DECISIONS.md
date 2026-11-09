@@ -1030,6 +1030,12 @@ Stage 2 (recorded 2026-11-07):
   issue #147 and the M1 exit criterion only): the evidence for served instructions and
   prompts is one local stdio client check; MCPHub forwarding is no longer an acceptance
   condition and is recorded as not observed.
+- [ISSUE-24-DEC-001](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
+  prepare the registry namespace marker, a locally validated `server.json`, drafts of the MCPM
+  and hosted-directory entries and the release preparation of the next patch version in one pull
+  request; no tag, release, upload, `mcp-publisher` use, submission or hardware contact is
+  authorized. ISSUE-24-DEC-002 (coordinator, technical proposal): the file shapes, tests and
+  documentation defaults.
 
 ## Still unresolved
 

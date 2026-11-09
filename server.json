@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.descipar/wled-mcp",
+  "title": "WLED MCP (unofficial)",
+  "description": "Unofficial MCP server for WLED LED controllers; not affiliated with the WLED project",
+  "version": "0.1.3",
+  "repository": {
+    "url": "https://github.com/descipar/wled-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/descipar/wled-mcp#readme",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "wled-mcp",
+      "version": "0.1.3",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "--isolated"
+        },
+        {
+          "type": "named",
+          "name": "--python",
+          "value": "3.13"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--transport",
+          "value": "stdio"
+        },
+        {
+          "type": "named",
+          "name": "--config",
+          "value": "{config_path}",
+          "variables": {
+            "config_path": {
+              "description": "Absolute path of the device inventory (TOML file) that lists your own WLED controllers",
+              "isRequired": true,
+              "format": "filepath",
+              "isSecret": false
+            }
+          }
+        },
+        {
+          "type": "named",
+          "name": "--data-dir",
+          "value": "{data_dir}",
+          "variables": {
+            "data_dir": {
+              "description": "Absolute path of an existing, writable directory for the server's snapshots and stored data",
+              "isRequired": true,
+              "format": "filepath",
+              "isSecret": false
+            }
+          }
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

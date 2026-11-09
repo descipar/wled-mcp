@@ -1,6 +1,7 @@
 # Marketplace and public distribution plan
 
-Research date: 2026-11-04. Status: planning only. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
+Research date: 2026-11-04, observations of schemas and tools updated 2026-11-09. Status: metadata and drafts prepared
+locally; nothing is submitted, listed or published. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
 
 ## What users will install
 
@@ -35,11 +36,11 @@ The MCPM guide contains older CLI examples; validate the current schema/tools in
 - Repository: `descipar/wled-mcp`; its visibility is an owner release decision ([#23](https://github.com/descipar/wled-mcp/issues/23), [#25](https://github.com/descipar/wled-mcp/issues/25)).
 - Registry name: `io.github.descipar/wled-mcp` ([DEC-012](DECISIONS.md#dec-012--project-and-package-identity)); verify namespace ownership and current naming rules with the publisher tooling before preparing actual release metadata.
 - Listing texts and package summaries state "unofficial, not affiliated with the WLED project" and use no WLED logo or logo imitation (DEC-012).
-- PyPI distribution and OCI repository names: decide/check before release; repository name alone proves neither ownership nor availability. PyPI `wled-mcp` returned 404 during this research, which reserves nothing and does not establish a final name.
+- PyPI distribution `wled-mcp` is live since 0.1.2 (the ownership marker for the registry is added in the next release, see the [changelog](../CHANGELOG.md)); the OCI repository name is decided/checked with the container work ([#156](https://github.com/descipar/wled-mcp/issues/156)). A repository name alone proves neither ownership nor availability.
 - Console command can remain `wled-mcp` even if a distinct distribution name is needed; use uvx `--from` explicitly where names differ.
 - Build wheel/sdist and versioned amd64/arm64 OCI artifacts first, then test clean install. Use immutable version/digest references in release metadata, and document user-driven updates.
 
-The official registry currently supports public PyPI packages and verifies the matching MCP namespace marker in the package's rendered README/description. Prepare that marker only after identity is decided. It also supports other package types, but this Python project does not need npm merely to enter a catalog. Generate/validate metadata against the current schema with the publisher tooling during implementation.
+The official registry currently supports public PyPI packages and verifies the matching MCP namespace marker in the package's rendered README/description. It also supports other package types, but this Python project does not need npm merely to enter a catalog. Prepared with the first release after 0.1.2: the marker in the README and the root [`server.json`](../server.json), validated locally against the published schema (see below).
 
 For the official registry's `remotes` route the documented endpoint must actually be publicly accessible. Our private, per-user self-hosted HTTP deployment is not such a central remote. Prefer package metadata for discovery and document self-hosted HTTP separately. Revisit only if a real supported hosted product is commissioned.
 
@@ -48,6 +49,45 @@ For the official registry's `remotes` route the documented endpoint must actuall
 Prepare a short English summary, author/repository/license/support links, keywords such as WLED/LED/smart lighting, actual tested tools, supported transports and hardware/firmware limits. Show exact required config/data paths and how users supply controller addresses. Required secrets must be marked as secrets in supported catalog input metadata, with no real credentials or private defaults.
 
 Prefer clear descriptions over a long undifferentiated tool dump. Read-only setup must work before a user invokes lighting changes. Do not mark `is_official` true or use WLED affiliation language without real endorsement.
+
+## Observed schemas and tools (2026-11-09)
+
+- Official registry `server.json` schema: `2025-12-11`
+  (`https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`, JSON Schema
+  draft-07). `description` is limited to 100 characters. The publisher tool `mcp-publisher`
+  was observed at v1.8.8 on 2026-11-06 (release page); it is not installed or run in this repository.
+  Its `validate` command sends the file to an external service, so local validation uses the
+  published schema with a generic JSON Schema validator instead.
+- MCPM manifest schema (`mcp-registry/schema/server-schema.json` in the MCPM repository, JSON
+  Schema 2020-12): last changed 2025-07-08. Required fields: `name` (kebab-case),
+  `display_name`, `description`, `repository`, `license`, `installations`.
+- MCPHub's own `servers.json` uses the same manifest shape; the draft below is written to fit
+  both and has not been compared with a chosen MCPHub version.
+- Evidence and the exact commands: [validation/issue-24.md](validation/issue-24.md).
+
+## Status per route
+
+Vocabulary as above. A row states only what was done; the next state needs its own evidence.
+
+| Route | State | What exists | Next step (owner instruction needed) |
+| --- | --- | --- | --- |
+| Official MCP Registry | validated locally | [`server.json`](../server.json) (PyPI package, stdio via uvx, no `remotes`), README marker, wheel check; schema-validated offline, publisher checks not run | after the release with the marker is on PyPI: [Registry listing after the PyPI release](PUBLISHING.md#registry-listing-after-the-pypi-release) |
+| MCPM / MCPHub local catalog | validated locally | [`listings/mcpm-wled-mcp.json`](listings/mcpm-wled-mcp.json), schema-validated; not submitted | a contribution to the MCPM repository (external submission) |
+| Hosted mcphub.app directory | draft | [`listings/mcphub-app-submission.md`](listings/mcphub-app-submission.md); form fields unverified (sign-in required) | sign-in, compare with the form, submit |
+| MCPHub fresh-install test (S2-MARKET-03) | not run | none | needs the published package; issue #24 stays open for it |
+
+## Where the drafts live
+
+- `server.json` (repository root): the registry metadata. It contains the version twice; both
+  must equal `project.version` (`tests/test_registry_metadata.py`, and the literal is allowed
+  there in `tests/test_version_source.py`).
+- `docs/listings/`: drafts that are not read by any tool and that carry no version literal.
+
+## HTTP is self-hosted
+
+The registry entry has no `remotes`: a per-user HTTP deployment is not a public endpoint, and
+no private or placeholder URL is listed. The listings point to the self-hosted setup instead:
+[quickstart for the Streamable HTTP service](QUICKSTARTS.md#quickstart-streamable-http-service).
 
 ## Release and listing sequence
 
@@ -60,4 +100,4 @@ Prefer clear descriptions over a long undifferentiated tool dump. Read-only setu
 
 Status vocabulary: **draft**, **validated locally**, **submitted**, **accepted**, **visible**, **install-tested**. Evidence for one state does not imply the next, and an external rejection is not fixed by making a misleading metadata claim.
 
-No package, image, registry record, external issue/PR or hosted-directory submission was published by this planning task.
+No registry record, external issue/PR or hosted-directory submission was published or sent by this work; the PyPI package is the one published by the PyPI workflow ([PUBLISHING.md](PUBLISHING.md)).
