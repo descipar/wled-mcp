@@ -79,6 +79,7 @@ files = [
     "scripts/check_lock.py",
     "scripts/check_private_identifiers.py",
     "scripts/check_traceability.py",
+    "scripts/ci_scope.py",
     "scripts/hw_http_probe.py",
     "deploy/stage_release.py",
     "tests/tool_contract.py",

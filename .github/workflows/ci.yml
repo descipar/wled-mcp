@@ -31,18 +31,31 @@ jobs:
       UV_PYTHON_DOWNLOADS: never
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The pull-request merge commit and both parents, for the documentation-only gate.
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      # Documentation-only pull requests run the documentation-relevant steps (#159); any
+      # doubt, every other event and every other change runs the complete suite. The step
+      # always exits 0; a missing output also selects the complete suite.
+      - id: scope
+        name: Classify the change
+        run: python scripts/ci_scope.py >> "$GITHUB_OUTPUT"
       - uses: astral-sh/setup-uv@v6
         with:
           version: "0.11.14"
       - run: uv sync --locked
-      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
-      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/hw_http_probe.py
+      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+        if: steps.scope.outputs.docs_only != 'true'
       - run: uv run --frozen mypy
+        if: steps.scope.outputs.docs_only != 'true'
       - run: uv run --frozen python scripts/check_agent_setup.py
       - run: uv run --frozen python scripts/check_lock.py
+        if: steps.scope.outputs.docs_only != 'true'
       - name: Provide private denylist from secret
         env:
           PRIVATE_DENYLIST: ${{ secrets.WLED_MCP_PRIVATE_DENYLIST }}
@@ -57,7 +70,11 @@ jobs:
           echo "WLED_MCP_PRIVATE_DENYLIST=${denylist}" >> "${GITHUB_ENV}"
       - run: uv run --frozen python scripts/check_private_identifiers.py
       - run: uv run --frozen pytest
+        if: steps.scope.outputs.docs_only != 'true'
       - run: uv run --frozen python scripts/check_distribution.py
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen pytest $(python scripts/ci_scope.py tests)
+        if: steps.scope.outputs.docs_only == 'true'
       - run: git diff --exit-code
 
   container:

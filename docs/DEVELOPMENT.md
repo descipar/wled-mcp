@@ -2,7 +2,8 @@
 
 The package supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux amd64 and arm64 with Python 3.13 on native runners
-(`checks` job) and builds and smoke-tests the HTTP image on both architectures
+(`checks` job; documentation-only pull requests run a reduced set, see
+[Documentation-only pull requests](#documentation-only-pull-requests)) and builds and smoke-tests the HTTP image on both architectures
 (`container` job, for pull requests and `main`). Windows and macOS are experimental
 (DEC-020) and have no CI job; see [Platform notes](#platform-notes). Official MCP SDK
 2.3.0 owns protocol handling.
@@ -22,8 +23,8 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
-uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/hw_http_probe.py
+uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/ci_scope.py scripts/hw_http_probe.py
+uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/ci_scope.py scripts/hw_http_probe.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -31,6 +32,27 @@ uv run --frozen python scripts/check_private_identifiers.py
 uv run --frozen pytest
 uv run --frozen python scripts/check_distribution.py
 ```
+
+### Documentation-only pull requests
+
+For a pull request event, the `checks` job first runs `scripts/ci_scope.py`, which compares
+the merge commit with its first parent. When every changed path is a markdown file in the
+repository root or under `docs/` (no hidden path component, regular file mode), the job runs
+only the steps that can read documents: `uv sync --locked`, `scripts/check_agent_setup.py`,
+the private-identifier scan, the test files listed in `DOC_READER_TESTS` and
+`git diff --exit-code`. Ruff, mypy, `check_lock`, the full test run and `check_distribution`
+are skipped. Both required `checks` names still report.
+
+Everything else runs the complete job unchanged: pushes to `main`, any other event, any
+code, test, script, workflow, dependency or non-markdown change, mixed changes, an empty
+diff and any diff that cannot be determined (the script exits 0 and every full-suite step is
+conditioned on `docs_only != 'true'`). `tests/test_ci_scope.py` keeps the reduced set
+complete: a static scan fails when a file that names a repository document is neither in
+`DOC_READER_TESTS` nor in `DOC_READER_EXCLUSIONS` (with a reason). The scan is best effort;
+a reader without any document literal is not found, and the next run on `main` covers it.
+The `container` job is unchanged. Dry run on a local merge commit:
+`GITHUB_EVENT_NAME=pull_request python scripts/ci_scope.py`; reduced tests:
+`uv run --frozen pytest $(python scripts/ci_scope.py tests)`.
 
 POSIX shells: `export UV_CACHE_DIR="$PWD/.uv-cache"` and
 `export UV_PYTHON_DOWNLOADS=never`; remaining commands are identical. Dependency
