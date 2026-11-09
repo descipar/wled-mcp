@@ -156,3 +156,31 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Propagated to roles / packet references: via the coordinator handoff.
 - Revalidation needed / next action: none for these steps. The fresh-install test (S2-MARKET-03)
   is separate and not recorded here.
+
+## ISSUE-24-DEC-005 — Waive the hub-side start of an adapted registry entry
+
+- ID: ISSUE-24-DEC-005
+- Recorded date: 2026-11-10
+- Status: active for issue #24 only.
+- Authority: human decision (owner chat answer in the main coordinator session; recorded by the
+  coordinator).
+- Source: owner message in the main session on 2026-11-10 (no permalink): "nein, es reicht so
+  als installiert" (English: "no, it is enough as installed as it is"), answering whether the
+  corrected entry should be started once in the owner's hub to verify it.
+- Scope: item 6 of #24 (fresh install from generated configuration, S2-MARKET-03) only.
+- Decision: the owner waives the hub-side start of the manually adapted registry entry. The
+  registry listing, the observed install dialog with the documented manual adaptation (README
+  note, [validation/issue-24.md](../validation/issue-24.md#mcphub-registry-tab-observed-install-dialog-2026-11-10))
+  and the local launch check of the composed command are accepted as sufficient for item 6.
+- Applicability / conditions / expiry: item 6 is closed by this waiver, not by an observation.
+  It does not turn the install-test row into "install-tested": that row stays "not run" and
+  says "waived by the owner", the generated dialog was observed and the hub-side start was not.
+  It claims nothing about how other hosts handle the entry and is not permission for any
+  publication step.
+- Rationale supplied: the owner considered the existing evidence sufficient.
+- Affected requirement IDs, files, issues and tests: S2-MARKET-03; docs/MARKETPLACE.md,
+  docs/validation/issue-24.md, tests/test_registry_metadata.py; issue #24.
+- Supersedes / superseded by: none; closes the open install-test follow-up of ISSUE-24-DEC-004.
+- Propagated to roles / packet references: coordinator and `wled_completion` for #24.
+- Revalidation needed / next action: none; a later hub-side observation can be recorded without
+  changing this decision.

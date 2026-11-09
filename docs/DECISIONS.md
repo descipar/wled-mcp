@@ -1081,6 +1081,9 @@ Stage 2 (recorded 2026-11-07):
   the owner gave separate instructions for the tag and GitHub release of the M1 release, the
   `pypi` environment approval, `mcp-publisher login` and `mcp-publisher publish`; each was used
   once and authorizes nothing further (status executed).
+- [ISSUE-24-DEC-005](decisions/issue-24.md) (human, owner chat, 2026-11-10, issue #24 only): the
+  hub-side start of an adapted registry entry is waived; item 6 of #24 is closed by this waiver,
+  not by an observation, and the install-test row stays "not run".
 
 ## Still unresolved
 
