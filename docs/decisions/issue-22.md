@@ -65,6 +65,16 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   5. Documentation goes into a new file `docs/PUBLISHING.md` (DEC-021 placement: new
      documentation in new files), linked from `docs/DEPLOYMENT.md` and `docs/STAGE-5.md`;
      evidence goes into `docs/validation/issue-22.md`.
+  6. The build job also refuses a tag whose commit is not reachable from `main`
+     (DEC-023 item 1: releases come from `main` commits).
+  7. Package metadata other than the version may be completed for the package page:
+     classifiers (no `License ::` classifier, PEP 639), a `Changelog` URL and an sdist
+     exclusion of a worktree `.git` file. The exact runtime pins (#22 acceptance item 4)
+     and the README links and wording are not changed here; they are reported to the owner.
+- Observation (read-only, 2026-11-09, not a decision): PyPI and TestPyPI return 404 for
+  `wled-mcp` (nothing is reserved). A GitHub environment `pypi` already exists with one
+  required-reviewer rule and no deployment branch or tag policy; it was created outside
+  this packet. No tag for the current version exists yet.
 - Applicability / conditions / expiry: this packet only.
 - Rationale supplied: not applicable (proposal); reasons are given in `docs/PUBLISHING.md`.
 - Affected requirement IDs, files, issues and tests: as ISSUE-22-DEC-001.

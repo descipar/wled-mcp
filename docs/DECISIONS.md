@@ -758,8 +758,8 @@ Stage 5 (recorded 2026-11-09):
   issue #22 only): build `.github/workflows/publish.yml` with Trusted Publishing behind the
   GitHub environment `pypi`, implemented and reviewed on Opus; no upload, registration,
   environment, tag or release is authorized. ISSUE-22-DEC-002 (coordinator, technical
-  proposal): PyPI part only, release/dispatch triggers, tag-version guard, SHA-pinned
-  actions, `docs/PUBLISHING.md`.
+  proposal): PyPI part only, release/dispatch triggers, tag-version and `main`-reachability
+  guard, SHA-pinned actions, `docs/PUBLISHING.md`, package-page metadata.
 
 Stage 2 (recorded 2026-11-07):
 - [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart
