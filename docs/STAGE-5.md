@@ -2,13 +2,11 @@
 
 Planning baseline: 2026-11-08. Tracker: [#133](https://github.com/descipar/wled-mcp/issues/133).
 
-Stage 5 holds the work that makes the project easy to install and find for people who are not
-the maintainer, plus low-value backlog. It is worked on a trigger, not in sequence: the owner
-wants to be listed in a marketplace or registry, outside interest appears, or the stage-2
-features are verified on hardware and should be offered
-([DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort)). Nothing here
-publishes a package or image, submits a listing or changes repository settings; each of those
-needs the owner's explicit instruction ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)).
+Work order and grouping of these packages now follow the milestones in [ROADMAP.md](ROADMAP.md)
+([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)); the packages and requirement
+ownership below remain valid. Nothing here publishes a package or image, submits a listing or
+changes repository settings; each of those needs the owner's explicit instruction
+([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)).
 
 ## Work packages
 

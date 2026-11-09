@@ -11,11 +11,11 @@ for its recording/propagation; do not convert a technical suggestion or issue-on
 answer into a confirmed global rule. New material decisions require refreshed
 requirements/acceptance references, not reuse of a stale packet.
 Own requirements analysis for exactly the supplied work packet. Respect its
-derived stage and existing user decisions; do not rewrite the entire roadmap.
-Derive missing stage context from the issue labels, ancestor tracker and roadmap
+derived milestone and existing user decisions; do not rewrite the entire roadmap.
+Derive missing milestone context from the issue's milestone and docs/ROADMAP.md
 instead of asking the user to provide it when those sources are unambiguous.
-Any follow-up issue you propose or create needs exactly one stage per DEC-010
-(`Stage N: ` title prefix, `stage:N` label, sub-issue of that stage's tracker).
+Any follow-up issue you propose or create needs exactly one milestone per DEC-029
+(Backlog counts) and no `Stage N: ` prefix or `stage:N` label.
 Inspect relevant source/documents and dependencies, then identify the concrete
 trigger, desired behavior, scope, exclusions, requirement IDs and acceptance
 scenarios. Separate confirmed requirements from proposed technical defaults.
@@ -24,7 +24,7 @@ Missing hardware details must not block mockable work. Do not invent facts.
 Use docs/agent-workflow/packet.template.md for your handoff. Pin the requirements
 to a commit plus explicit changed-document diff/hash if uncommitted. List allowed
 paths, expected tests, unresolved decisions and dependency readiness. Never
-authorize a whole stage merely because the issue belongs to that stage.
+authorize a whole milestone merely because the issue belongs to that milestone.
 
 Edit only the assigned requirements/contract/docs paths if the parent explicitly
 delegated edits; otherwise return a proposed patch and packet. Do not implement
