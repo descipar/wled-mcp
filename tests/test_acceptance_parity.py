@@ -51,6 +51,24 @@ def write_inventory(directory: Path, fake: LoopbackWLED) -> Path:
 
 # name -> (tool, arguments, fake POST mode, expected POSTs, expect zero device requests)
 CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
+    "segment_names_preview": (
+        "wled_patch_segments",
+        {
+            "device_id": DESK,
+            "segments": [{"id": 2, "effect_name": "wipe", "palette_name": "Party"}],
+            "dry_run": True,
+        },
+        "apply",
+        0,
+        False,
+    ),
+    "segment_name_unknown": (
+        "wled_replace_layout",
+        {"device_id": DESK, "segments": [{"id": 0, "start": 0, "stop": 10, "effect_name": "wi"}]},
+        "apply",
+        0,
+        False,
+    ),
     "read_success": ("wled_get_state", {"device_id": DESK}, "apply", 0, False),
     "write_verified": ("wled_set_state", {"device_id": DESK, "on": False}, "apply", 1, False),
     "schema_wrong_type": (
@@ -99,6 +117,8 @@ CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
 }
 
 EXPECTED_CODE = {
+    "segment_names_preview": None,
+    "segment_name_unknown": "VALIDATION_ERROR",
     "read_success": None,
     "write_verified": None,
     "schema_wrong_type": "VALIDATION_ERROR",
@@ -460,3 +480,12 @@ async def test_stdio_hub_example_arguments_complete_a_handshake(tmp_path):
             result = await client.call_tool("wled_list_devices", {})
     assert not result.is_error and result.structured_content["data"] == {"devices": []}
     assert sorted(path.name for path in tmp_path.iterdir()) == ["devices.toml"]
+
+
+def test_segment_name_results_show_resolved_ids_and_diagnostic_suggestions(outcomes):
+    for transport in ("stdio", "http"):
+        preview = outcomes[transport]["segment_names_preview"]["structured"]
+        planned = preview["data"]["plan"]["resolved_segments"][0]
+        assert planned["effect_id"] == 3 and planned["palette_id"] == 2
+        unknown = outcomes[transport]["segment_name_unknown"]["structured"]
+        assert unknown["data"]["candidates"] == [{"id": 3, "name": "Wipe"}]

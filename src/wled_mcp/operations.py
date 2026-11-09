@@ -11,7 +11,15 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 from wled_mcp import __version__, compat
 from wled_mcp.access import ToolClass
 from wled_mcp.backups import Firmware
-from wled_mcp.catalogs import CatalogView, Kind, catalog_items, load_catalog
+from wled_mcp.catalogs import (
+    AmbiguousName,
+    CatalogView,
+    Kind,
+    UnknownName,
+    catalog_items,
+    load_catalog,
+    resolve_name,
+)
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.effect_search import SearchEffectsRequest, search, shipped_catalog
 from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
@@ -379,6 +387,7 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
         name = "wled_patch_segments"
         request = PatchSegmentsRequest.model_validate(arguments)
         device_id = request.device_id
+        name_failure: dict[str, JsonValue] = {}
         try:
             resources.resolve(device_id)
         except ClientFailure as failure:
@@ -394,11 +403,16 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
                         raw_state,
                         warnings,
                     ) = await _read_state_and_info(context)
-                plan = build_segment_patch_plan(
-                    request, state_view, capabilities, raw_info, raw_state
-                )
+                    resolved = await _resolve_segment_names(
+                        resources, context, request, name_failure
+                    )
+                    plan = build_segment_patch_plan(
+                        resolved, state_view, capabilities, raw_info, raw_state
+                    )
             except ClientFailure as failure:
-                return _translate_pre_dispatch(name, device_id, failure)
+                return _with_name_failure(
+                    _translate_pre_dispatch(name, device_id, failure), name_failure
+                )
             return _dry_run_outcome(
                 name,
                 device_id,
@@ -416,8 +430,9 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
             state_view, capabilities, raw_info, raw_state, _warnings = await _read_state_and_info(
                 context
             )
+            resolved = await _resolve_segment_names(resources, context, request, name_failure)
             plan_box["plan"] = build_segment_patch_plan(
-                request, state_view, capabilities, raw_info, raw_state
+                resolved, state_view, capabilities, raw_info, raw_state
             )
             return plan_box["plan"].payload
 
@@ -426,12 +441,15 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
             return plan is not None and matches_segments(plan.expectations, state)
 
         outcome = await resources.write_verified(device_id, name, prepare, matches)
-        return _enrich_segments_outcome(outcome, plan_box.get("plan"))
+        return _with_name_failure(
+            _enrich_segments_outcome(outcome, plan_box.get("plan")), name_failure
+        )
 
     async def replace_layout(arguments: dict[str, Any]) -> Outcome:
         name = "wled_replace_layout"
         request = ReplaceLayoutRequest.model_validate(arguments)
         device_id = request.device_id
+        name_failure: dict[str, JsonValue] = {}
         try:
             resources.resolve(device_id)
         except ClientFailure as failure:
@@ -447,9 +465,16 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
                         raw_state,
                         warnings,
                     ) = await _read_state_and_info(context)
-                plan = build_layout_plan(request, state_view, capabilities, raw_info, raw_state)
+                    resolved = await _resolve_segment_names(
+                        resources, context, request, name_failure
+                    )
+                    plan = build_layout_plan(
+                        resolved, state_view, capabilities, raw_info, raw_state
+                    )
             except ClientFailure as failure:
-                return _translate_pre_dispatch(name, device_id, failure)
+                return _with_name_failure(
+                    _translate_pre_dispatch(name, device_id, failure), name_failure
+                )
             return _dry_run_outcome(
                 name,
                 device_id,
@@ -464,13 +489,16 @@ def _build_write_operations(resources: Resources) -> tuple[Operation, ...]:
             state_view, capabilities, raw_info, raw_state, warnings = await _read_state_and_info(
                 context
             )
+            resolved = await _resolve_segment_names(resources, context, request, name_failure)
             plan_box["plan"] = build_layout_plan(
-                request, state_view, capabilities, raw_info, raw_state
+                resolved, state_view, capabilities, raw_info, raw_state
             )
             read_warnings.extend(warnings)
             return plan_box["plan"].sequence
 
-        outcome = await resources.write_sequence_verified(device_id, name, prepare)
+        outcome = _with_name_failure(
+            await resources.write_sequence_verified(device_id, name, prepare), name_failure
+        )
         planned = plan_box.get("plan")
         if planned is None or (not outcome.ok and outcome.application == "not_attempted"):
             return outcome
@@ -1165,6 +1193,44 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
             annotations=DESTRUCTIVE,
         ),
     )
+
+
+async def _resolve_segment_names[T: (PatchSegmentsRequest, ReplaceLayoutRequest)](
+    resources: Resources,
+    context: OperationContext,
+    request: T,
+    failure_data: dict[str, JsonValue],
+) -> T:
+    """Translate the complete request under its device lock before pure planning."""
+    views: dict[Kind, CatalogView] = {}
+    segments = []
+    try:
+        for segment in request.segments:
+            updates: dict[str, Any] = {}
+            for field, kind in (("effect", "effects"), ("palette", "palettes")):
+                query = getattr(segment, f"{field}_name")
+                if query is None:
+                    continue
+                catalog_kind: Kind = "effects" if kind == "effects" else "palettes"
+                if catalog_kind not in views:
+                    views[catalog_kind] = await load_catalog(
+                        context, resources.metadata_cache, catalog_kind
+                    )
+                updates[f"{field}_id"] = resolve_name(
+                    views[catalog_kind].entry, catalog_kind, query
+                )
+                updates[f"{field}_name"] = None
+            segments.append(segment.model_copy(update=updates))
+    except (AmbiguousName, UnknownName) as failure:
+        failure_data.update(candidates=failure.candidates, candidate_total=failure.total)
+        raise
+    return request.model_copy(update={"segments": segments})
+
+
+def _with_name_failure(outcome: Outcome, data: dict[str, JsonValue]) -> Outcome:
+    if data and outcome.application == "not_attempted":
+        return outcome.model_copy(update={"data": {**outcome.data, **data}})
+    return outcome
 
 
 def _translate_pre_dispatch(name: str, device_id: str, failure: ClientFailure) -> Outcome:
