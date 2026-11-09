@@ -23,7 +23,7 @@ published package and was not run.
 | AC-24-05 HTTP | `remotes` is absent (mutation with a `remotes` entry reported); `docs/MARKETPLACE.md` has the section "HTTP is self-hosted" with the quickstart link, and the hosted copy carries the same link; every URL in the three listing files must be on `github.com`, `pypi.org` or the schema host. |
 | AC-24-06 MCPM draft | `mcpm_problems`: required fields, kebab-case name, no `is_official`, no tools array, repository and licence equal to pyproject, unofficial wording, uvx command and arguments ending in `--transport stdio`, no pinned version and no current version literal, paths only through the `WLED_MCP_CONFIG` and `WLED_MCP_DATA_DIR` `${...}` references with required arguments and `/path/to/` examples, no http installation; 18 mutated copies are each reported. Live-schema run below. |
 | AC-24-07 hosted copy | `hosted_problems`: status draft, unofficial and not affiliated wording, no image reference, impersonal, form fields stated as unverified, no endorsement claim, `<version>` placeholder, no literal version, allowed link hosts only; 9 mutations reported. |
-| AC-24-08 status table | `status_rows`: one row per route in `MARKETPLACE.md`, each state in the vocabulary (or "not run") and none later than "validated locally". Rows: official registry and MCPM manifest validated locally, hosted copy draft, MCPHub fresh-install test not run. |
+| AC-24-08 status table (historical: superseded, see [Release and registry publication](#release-and-registry-publication-2026-11-09)) | `status_rows`: one row per route in `MARKETPLACE.md`, each state in the vocabulary (or "not run") and none later than "validated locally". Rows: official registry and MCPM manifest validated locally, hosted copy draft, MCPHub fresh-install test not run. |
 | AC-24-09 release preparation | Version bumped, `uv.lock` refreshed (only the project entry changed), CHANGELOG section written from `git log v0.1.2..HEAD`. Runs below. |
 | AC-24-10 no external effect | The statement at the top of this file. |
 
@@ -108,3 +108,66 @@ official MCP Registry; the MCPM and hosted-directory drafts stay unsubmitted.
   and the limitation sentence for features without a hardware run. The README still says there
   is no registry entry.
 - Nothing was tagged, released, uploaded or submitted; `mcp-publisher` was not used.
+
+## Release and registry publication 2026-11-09
+
+Recorded from the coordinator's verification in the owner's #24 session; each publication step
+was instructed separately by the owner ([ISSUE-24-DEC-004](../decisions/issue-24.md)). This
+record is a copy of what was reported, not a re-run.
+
+- **Tag and release:** the tag `v0.2.0` and a GitHub release were created at commit
+  `b27180930febcee7985dce35282a05d8be0dc137` (main, CI green).
+- **PyPI upload:** `publish.yml` run 42715819076 succeeded after the owner approved the `pypi`
+  environment. PyPI serves the 0.2.0 files with SHA-256
+  `383cc49fb73f28bca2ffe2a4c1e2afa85f0d8ed0cc815a2c7dacdac47ec617e8` (wheel) and
+  `67128a688faa27b10d717c336fa3ffd9c496d8b63f97213144b6d90c12550508` (sdist), identical to the
+  job's `SHA256SUMS`.
+- **Marker:** `https://pypi.org/pypi/wled-mcp/0.2.0/json`, `info.description`, contains
+  `mcp-name: io.github.descipar/wled-mcp`.
+- **Install check:** `uvx --no-cache --isolated --python 3.13 --from wled-mcp==0.2.0 wled-mcp
+  --version` printed `wled-mcp 0.2.0`. A first attempt failed only because the local uv index
+  cache did not yet know 0.2.0 (a local cache note, not a package fault).
+- **Registry publish:** `mcp-publisher` 1.8.8 (asset `mcp-publisher_windows_amd64.tar.gz`,
+  SHA-256 `20417546bc6798acee317570c0d4041840069e081baa562dc9414c651eb274fa`, equal to the line
+  of `registry_1.8.8_checksums.txt`) after the owner ran `mcp-publisher login github`.
+  `mcp-publisher publish` printed "Successfully published io.github.descipar/wled-mcp version
+  0.2.0"; the `server.json` used was identical to the one on main. The publisher's own
+  validation and acceptance therefore ran as part of that call; this repository did not run
+  `mcp-publisher validate`.
+- **Readback:** `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
+  returns exactly one entry: name `io.github.descipar/wled-mcp`, version 0.2.0, package
+  pypi/wled-mcp/0.2.0, no `remotes`, description "Unofficial MCP server for WLED LED controllers;
+  not affiliated with the WLED project", status active, `isLatest` true, `publishedAt`
+  2026-11-09T22:58:41Z.
+
+Status per route afterwards: official registry **accepted** and **visible** in the registry's own
+search API; MCPM and hosted directory not planned (ISSUE-24-DEC-003); fresh-install test **not
+run**.
+
+Not observed: that an MCPHub registry tab shows the entry, and how MCPHub (or any other host)
+itself turns the registry entry into a launch configuration. The composed command was verified
+locally with a stdio client (next subsection); host-side handling was not. The hub-side
+fresh-install test (#24 item 6) is run separately and is not claimed here; #24 stays open for it.
+
+### Launch check of the composed command (2026-11-10)
+
+Reported by the coordinator, Windows, local, with a real stdio MCP client from the project's
+locked `mcp` SDK (the script lives in a session scratchpad, not in the repository). The command
+was composed exactly from `packages[0]` of `server.json`, in the order runtime arguments,
+package specification, package arguments:
+
+```text
+uvx --isolated --python 3.13 wled-mcp==0.2.0 --transport stdio --config <copy of examples/devices.example.toml> --data-dir <existing empty directory>
+```
+
+- It started the published package; `initialize` returned the server `wled-mcp 0.2.0`.
+- `tools/list` returned 31 tools.
+- `wled_list_devices` returned `ok: true` with the two synthetic devices (`probe_status`
+  "untested"; no network contact, no device).
+- Two earlier attempts failed only because the local uv index cache did not yet know the new
+  version; `uv cache clean wled-mcp` fixed it (the cache note above).
+
+This shows that the argument composition, including the positional `--isolated`, produces a
+working command for a generic composer. It is partial evidence only, not the install test: no
+host-side handling, no MCPHub registry tab and no hub were involved. The hub registry route of
+the owner's hub answers 401 without a token, so the hub-side test needs the owner's admin login.

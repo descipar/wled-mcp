@@ -837,6 +837,10 @@ can explicitly amend them.
   approval (DEC-029 item 4) does not authorize them.
 - Open: how far the release goes for M1 (repository version/changelog only, plus tag and GitHub
   release, or also PyPI/hub) is to be answered by the owner when the release is prepared.
+  Answered for M1 on 2026-11-09 (coordinator's recording of the owner's chat answers, the owner
+  confirming each publication step in the #24 session): the goal is a PyPI release and an entry
+  in the official MCP Registry, per ISSUE-24-DEC-003 and the per-step instructions of
+  ISSUE-24-DEC-004; each step needed its own instruction.
 - Amends: DEC-029 (assignment of #24 to M6 instead of M1, and the closing of milestones).
 - Affected: docs/ROADMAP.md (M1 row, closing rule), docs/AGENT-WORKFLOW.md, pyproject.toml,
   CHANGELOG.md, server.json and README.md (version and features of the M1 release).
@@ -1073,6 +1077,10 @@ Stage 2 (recorded 2026-11-07):
   contribution and the hosted mcphub.app submission are dropped for now (drafts remain
   unsubmitted); tag, GitHub release, PyPI upload and registry publication each need the owner's
   explicit instruction.
+- [ISSUE-24-DEC-004](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
+  the owner gave separate instructions for the tag and GitHub release of the M1 release, the
+  `pypi` environment approval, `mcp-publisher login` and `mcp-publisher publish`; each was used
+  once and authorizes nothing further (status executed).
 
 ## Still unresolved
 

@@ -13,7 +13,10 @@ MCPHub.
 **Status:** early software with `0.x` versions that may break between releases
 ([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases are distributed on PyPI as
 [`wled-mcp`](https://pypi.org/project/wled-mcp/) (the first two releases are Git tags only);
-a release that is not listed there installs from its Git tag instead. The container image is not published to GHCR.
+a release that is not listed there installs from its Git tag instead. The server is listed in the
+official [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.descipar/wled-mcp`
+(unofficial, not affiliated with the WLED project); whether a particular MCP host or hub shows that
+entry was not checked. The container image is not published to GHCR.
 Hardware acceptance is partial: one controller on WLED 16.0.1. No support is promised
 ([Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
@@ -170,7 +173,7 @@ Other limits:
   behind HTTP authentication or a credentialed proxy is not supported. Behavior with a
   settings PIN or OTA lock is untested; a test is planned
   ([#128](https://github.com/descipar/wled-mcp/issues/128)).
-- No image on GHCR, no registry entry. A live update of a deployed HTTP
+- No image on GHCR. A live update of a deployed HTTP
   service was checked once, from an earlier build to release 0.1.1; a rollback has not
   been checked.
 

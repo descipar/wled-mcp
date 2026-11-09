@@ -1,7 +1,7 @@
 # Marketplace and public distribution plan
 
-Research date: 2026-11-04, observations of schemas and tools updated 2026-11-09. Status: registry metadata prepared and
-validated locally, drafts for two other routes kept unsubmitted; nothing is submitted, listed or published. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
+Research date: 2026-11-04, observations of schemas and tools updated 2026-11-09. Status: published to the official
+MCP Registry on 2026-11-09 (visible in its search API; MCPHub tab and install not observed), drafts for two other routes kept unsubmitted. Owning issue [#24](https://github.com/descipar/wled-mcp/issues/24); stage-2 tracker [#15](https://github.com/descipar/wled-mcp/issues/15). Recheck submission rules and actual installed hub behavior at release.
 
 ## What users will install
 
@@ -75,10 +75,10 @@ state needs its own evidence.
 
 | Route | State | What exists | Next step (owner instruction needed) |
 | --- | --- | --- | --- |
-| Official MCP Registry | validated locally | [`server.json`](../server.json) (PyPI package, stdio via uvx, no `remotes`), README marker, wheel check; schema-validated offline, publisher checks not run | after the release with the marker is on PyPI: [Registry listing after the PyPI release](PUBLISHING.md#registry-listing-after-the-pypi-release) |
+| Official MCP Registry | visible | [`server.json`](../server.json) published with `mcp-publisher`; the registry search API returns one active, latest entry `io.github.descipar/wled-mcp` for the released version, no `remotes` ([record](validation/issue-24.md#release-and-registry-publication-2026-11-09)); an MCPHub registry tab was not observed | none for the entry; a new release needs its own owner-instructed publish ([PUBLISHING.md](PUBLISHING.md#registry-listing-after-the-pypi-release)) |
 | MCPM / MCPHub local catalog | not planned | [`listings/mcpm-wled-mcp.json`](listings/mcpm-wled-mcp.json), an unsubmitted draft that passed the MCPM schema; dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
 | Hosted mcphub.app directory | not planned | [`listings/mcphub-app-submission.md`](listings/mcphub-app-submission.md), an unsubmitted draft; form fields unverified (sign-in required); dropped for now by ISSUE-24-DEC-003 | none; the owner may reinstate the route |
-| MCPHub fresh-install test (S2-MARKET-03) | not run | none | needs the published package; issue #24 stays open for it |
+| MCPHub fresh-install test (S2-MARKET-03) | not run | partial evidence only: the command composed from `server.json` was run locally with a stdio client and started the published package ([record](validation/issue-24.md#launch-check-of-the-composed-command-2026-11-10)); no hub involved | the hub-side test is run separately against a hub and is not claimed here; issue #24 stays open for it |
 
 ## Where the drafts live
 
@@ -103,6 +103,6 @@ no private or placeholder URL is listed. The listings point to the self-hosted s
 5. Publish the authorized artifacts, authenticate the namespace and publish registry metadata; make authorized external submissions through their actual supported routes. Do not send external maintainer messages without an instruction covering that submission.
 6. Verify real install from the published package/image. Query and inspect each selected discovery route, record version and installation behavior, and keep review/propagation delays explicit.
 
-Status vocabulary: **draft**, **validated locally**, **submitted**, **accepted**, **visible**, **install-tested**. Evidence for one state does not imply the next, and an external rejection is not fixed by making a misleading metadata claim.
+Status vocabulary: **draft**, **validated locally**, **submitted**, **accepted**, **visible**, **install-tested**. Evidence for one state does not imply the next, and an external rejection is not fixed by making a misleading metadata claim. The states are per route. For the official MCP Registry, **accepted** means the publish command succeeded and **visible** means the registry's own search API returns the entry; neither says that an MCPHub registry tab shows it or that an install works.
 
-No registry record, external issue/PR or hosted-directory submission was published or sent by this work; the PyPI package is the one published by the PyPI workflow ([PUBLISHING.md](PUBLISHING.md)).
+The official registry entry was published on 2026-11-09 on the owner's step-by-step instructions ([validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)); no MCPM or hosted-directory submission and no external issue or PR was sent.

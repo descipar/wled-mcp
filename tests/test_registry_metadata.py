@@ -549,20 +549,19 @@ def test_status_table_has_one_row_per_route_with_a_vocabulary_state():
         assert state in (*STATES, "not run", "not planned"), (route, state)
         if state == "not planned":  # a dropped route cites the owner decision (ISSUE-24-DEC-003)
             assert "ISSUE-24-DEC-003" in line, route
-    # Nothing was submitted or published: no route may claim a later state than local
-    # validation until real evidence exists (this test is updated with that evidence).
-    assert {state for _, state, _ in rows} <= {
-        "draft",
-        "validated locally",
-        "not planned",
-        "not run",
-    }
-    states = dict((route.split(" (")[0], state) for route, state, _ in rows)
-    assert states["Official MCP Registry"] == "validated locally"
-    assert states["MCPHub fresh-install test"] == "not run"
+    # Only the official registry was published (ISSUE-24-DEC-004). It may be accepted or
+    # visible; "visible" must say that it rests on the registry's own search API. Every other
+    # route stays below any submitted state until real evidence exists (update with it).
+    states = {route.split(" (")[0]: (state, line) for route, state, line in rows}
+    official, line = states["Official MCP Registry"]
+    assert official in ("accepted", "visible")
+    assert official != "visible" or "search API" in line
+    assert states["MCPM / MCPHub local catalog"][0] == "not planned"
+    assert states["Hosted mcphub.app directory"][0] == "not planned"
+    assert states["MCPHub fresh-install test"][0] == "not run"
 
 
-def test_status_table_cites_the_decision_and_the_decision_file_records_it():
+def test_dropped_routes_cite_a_decision_that_the_decision_files_record():
     decision = (ROOT / "docs/decisions/issue-24.md").read_text("utf-8")
     assert "## ISSUE-24-DEC-003" in decision
     assert "ISSUE-24-DEC-003" in (ROOT / "docs/DECISIONS.md").read_text("utf-8")
