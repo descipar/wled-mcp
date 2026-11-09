@@ -47,15 +47,15 @@ jobs:
         with:
           version: "0.11.14"
       - run: uv sync --locked
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen mypy
+      - run: uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen mypy
+        if: steps.scope.outputs.docs_only != 'true'
       - run: uv run --frozen python scripts/check_agent_setup.py
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen python scripts/check_lock.py
+      - run: uv run --frozen python scripts/check_lock.py
+        if: steps.scope.outputs.docs_only != 'true'
       - name: Provide private denylist from secret
         env:
           PRIVATE_DENYLIST: ${{ secrets.WLED_MCP_PRIVATE_DENYLIST }}
@@ -69,12 +69,12 @@ jobs:
           printf '%s\n' "${PRIVATE_DENYLIST}" > "${denylist}"
           echo "WLED_MCP_PRIVATE_DENYLIST=${denylist}" >> "${GITHUB_ENV}"
       - run: uv run --frozen python scripts/check_private_identifiers.py
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen pytest
-      - if: steps.scope.outputs.docs_only != 'true'
-        run: uv run --frozen python scripts/check_distribution.py
-      - if: steps.scope.outputs.docs_only == 'true'
-        run: uv run --frozen pytest $(python scripts/ci_scope.py tests)
+      - run: uv run --frozen pytest
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen python scripts/check_distribution.py
+        if: steps.scope.outputs.docs_only != 'true'
+      - run: uv run --frozen pytest $(python scripts/ci_scope.py tests)
+        if: steps.scope.outputs.docs_only == 'true'
       - run: git diff --exit-code
 
   container:
