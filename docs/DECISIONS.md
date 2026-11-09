@@ -1026,6 +1026,10 @@ Stage 2 (recorded 2026-11-07):
   confirmed 2026-11-09, issue #130 only; technical content proposed by the coordinator):
   the served envelope and error output schema allow additional properties; the
   one-time stale-cache transition is documented.
+- [ISSUE-147-DEC-001](decisions/issue-147.md) (human, owner chat authority, 2026-11-09,
+  issue #147 and the M1 exit criterion only): the evidence for served instructions and
+  prompts is one local stdio client check; MCPHub forwarding is no longer an acceptance
+  condition and is recorded as not observed.
 - [ISSUE-24-DEC-001](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
   prepare the registry namespace marker, a locally validated `server.json`, drafts of the MCPM
   and hosted-directory entries and the release preparation of the next patch version in one pull
