@@ -34,7 +34,7 @@ configuration. The device ran WLED 16.0.1 (build 2606300).
 | --- | --- |
 | `wled_list_devices(probe=true)` | `reachable` |
 | `wled_get_state`, `wled_get_palettes` | succeeded, no errors |
-| `wled_get_effects` | 216 effects; effect metadata status `available`; 214 effects carry fxdata, two (IDs 122 and 179) produced a "partially parsed" warning and were still returned with their raw fxdata, so the lenient parser did not drop them |
+| `wled_get_effects` | 216 effects; effect metadata status `available`; 214 effects carry fxdata (all but IDs 0 and 62); two of these (IDs 122 and 179) produced a "partially parsed" warning and were still returned with their raw fxdata, so the lenient parser did not drop them |
 | `wled_search_effects` (calm, no flashing, palette-using, limit 5) | succeeded; results carry exact device IDs and names with per-property confidence and basis (first result: Breathe) |
 
 Limits: one controller, one firmware, read-only; no write, no preset or segment change, and no
