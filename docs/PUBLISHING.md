@@ -118,6 +118,8 @@ Each step needs the owner's instruction at that time. Done for the first PyPI re
 4. Create the tag `v<version>` on that `main` commit (for example `git tag -a v1.2.3
    <commit>` and push it) and publish a GitHub release for it, or create both in the
    release form with the target `main` at that commit.
+   Title the release only `v<version>`, without a description after it (owner rule,
+   2026-11-09); the notes carry the content.
 5. Wait for the build job. Compare the job summary (tag, commit, SHA-256 of both files)
    with the intended release, then approve or reject the `pypi` deployment.
 6. After the upload, compare the file names and SHA-256 on the PyPI project page with the
