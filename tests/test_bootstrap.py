@@ -173,7 +173,7 @@ def test_fixture_schema_results_and_errors():
             async with Client(params, mode="legacy", read_timeout_seconds=5) as client:
                 tool = (await client.list_tools()).tools[0]
                 assert tool.name == "fixture"
-                assert tool.output_schema["additionalProperties"] is False
+                assert tool.output_schema["additionalProperties"] is True  # tolerant output, #130
                 assert set(tool.input_schema["required"]) == {"outcome", "value"}
                 for state in ["success", "invalid", "uncertain"]:
                     result = await client.call_tool("fixture", {"outcome": state, "value": 0})
