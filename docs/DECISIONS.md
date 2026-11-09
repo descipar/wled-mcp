@@ -759,7 +759,13 @@ Stage 5 (recorded 2026-11-09):
   GitHub environment `pypi`, implemented and reviewed on Opus; no upload, registration,
   environment, tag or release is authorized. ISSUE-22-DEC-002 (coordinator, technical
   proposal): PyPI part only, release/dispatch triggers, tag-version and `main`-reachability
-  guard, SHA-pinned actions, `docs/PUBLISHING.md`, package-page metadata.
+  guard, SHA-pinned actions, `docs/PUBLISHING.md`, package-page metadata. Owner update
+  2026-11-09: #141 merged, items 2 and 4 confirmed, no TestPyPI rehearsal.
+- [ISSUE-22-DEC-003 and -005](decisions/issue-22.md) (human, owner chat, 2026-11-09, issue
+  #22 only): loosen the exact runtime pins; make README.md fit for the PyPI project page in
+  the same pull request. ISSUE-22-DEC-004 (coordinator, technical proposal): the declared
+  ranges, `anyio` declared, floors confirmed by a lowest-direct run,
+  `docs/contract/dependencies.md`.
 
 Stage 2 (recorded 2026-11-07):
 - [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart

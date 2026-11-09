@@ -30,6 +30,19 @@ this release adds the changes below and the first hardware evidence for several 
 - Documentation: README and limitations updated with the hardware evidence below and the
   device-authentication limit; releases are staged on the machine that runs them
   ([DEC-026](docs/DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
+- The package metadata declares version ranges with a lower and an upper bound instead of
+  the exact pins `mcp==2.3.0`, `starlette==1.10.0` and `uvicorn==0.54.0`, and declares
+  `anyio`, which the server imports directly
+  ([#22](https://github.com/descipar/wled-mcp/issues/22),
+  [dependency policy](docs/contract/dependencies.md)). The change is install-compatible:
+  every environment that satisfied the earlier exact pins satisfies the new ranges. The
+  staged release directory, the container image and the stdio hub example still install
+  the exact tested set through `requirements-runtime.txt`; a package user gets that set
+  by adding the release's constraints. The lowest and the highest combination of the
+  ranges passed the test suite.
+- The README is usable as the PyPI project page: all links are absolute, and the
+  installation path uses the PyPI package, with the Git tag as the alternative for a
+  release that is not listed there.
 
 ### Tested and not tested
 
@@ -47,8 +60,10 @@ this release adds the changes below and the first hardware evidence for several 
 
 ### Known limitations
 
-Unchanged from 0.1.0, except that `tools/list` is no longer CPU-heavy. Still: no package on
-PyPI, no image on GHCR and no registry entry; saving a playlist starts it and a preset cannot
+Unchanged from 0.1.0, except that `tools/list` is no longer CPU-heavy. Still: no image on
+GHCR and no registry entry, and PyPI distribution starts with this release at the earliest
+(the Git tag remains the installation route for a release not listed on PyPI); saving a
+playlist starts it and a preset cannot
 be stored without changing the live output; one writer per controller (locks are per process);
 no inventory reload; no tool deletes a snapshot.
 
