@@ -631,7 +631,7 @@ wheels = [
 
 [[package]]
 name = "wled-mcp"
-version = "0.2.0"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "httpx2" },

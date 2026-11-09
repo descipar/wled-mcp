@@ -5,10 +5,10 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## 0.2.0 - stage-2 close-out
+## 0.1.2 - stage-2 close-out
 
-Closes stage 2. The version number is a proposal from the pre-1.0 policy
-([versioning](docs/contract/versioning.md), DEC-020); the owner may change it. The stage-2
+Closes stage 2. A patch release: it contains no breaking change (the owner chose 0.1.2
+over 0.2.0; [versioning](docs/contract/versioning.md), DEC-020). The stage-2
 features #16 to #21 (setup and `doctor` commands, groups and scenes, preset restore, bundles
 and playlists, advanced segments, tool profiles and the status tool, firmware tiers and the
 compatibility policy) and #70 (non-release build identity) are already part of 0.1.0 and 0.1.1;
@@ -61,7 +61,7 @@ hub did after an update from such a build) rejects every envelope with "data mus
 additional properties" until it refreshes `tools/list`: reload the hub entry once. About a
 minute was observed once with the hub; other clients may cache longer. Clients that cached
 the schema of 0.1.0 or 0.1.1 would reject a future additive field the same way once;
-schemas served from 0.2.0 on tolerate additive fields.
+schemas served from 0.1.2 on tolerate additive fields.
 
 ## 0.1.1 - documentation release
 

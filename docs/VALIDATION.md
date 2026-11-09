@@ -82,7 +82,7 @@ State of the evidence and the limits of the source releases (see also the
 - In stdio mode the MCP host may stop the subprocess without waiting for a running call; a
   write interrupted that way stays uncertain.
 - `tools/list` was CPU-heavy on small hosts (about 270 ms of CPU per call on the single-board
-  target with 27 tools); since release 0.2.0 the schemas are built once per server (about
+  target with 27 tools); since release 0.1.2 the schemas are built once per server (about
   23 ms per call, [#67](https://github.com/descipar/wled-mcp/issues/67), closed).
 - No package on PyPI, no container image on GHCR and no registry entry; the release is
   installed from Git. Automated tests check that the current server reads the retained
