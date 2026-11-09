@@ -30,12 +30,16 @@ follow the build-identity sections below. The support matrix is in
   change with each release).
 - `tests/test_version_source.py` fails when a tracked file other than the allowlisted
   ones contains the current version as a literal. Allowlisted: `pyproject.toml`, its
-  generated `uv.lock` entry, retained fixtures of earlier releases
+  generated `uv.lock` entry, the registry metadata `server.json` (it names the version twice, as
+  `version` and as the PyPI package `version`; `tests/test_version_source.py` compares both with
+  `project.version`), retained fixtures of earlier releases
   (`tests/fixtures/compat/`), the release history `CHANGELOG.md`, and historical records
   that quote the version they were run or decided against (`docs/VALIDATION.md`,
   `docs/validation/`, `docs/DECISIONS.md`, `docs/decisions/`).
-- A version change therefore edits `pyproject.toml` (and refreshes `uv.lock`) only.
-  Version bumps belong to the release work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
+- A version change therefore edits `pyproject.toml` (and refreshes `uv.lock`) and the two
+  versions in `server.json`.
+  Version bumps belong to the release work ([#25](https://github.com/descipar/wled-mcp/issues/25)
+  or a release-preparation pull request the owner authorized, as ISSUE-24-DEC-001 did).
 
 ## Release versions and their mapping
 

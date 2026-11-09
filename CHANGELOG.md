@@ -5,6 +5,70 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## 0.1.3 - zones, effect search, agent guidance and the registry marker
+
+A patch release: the changes are additive and no tool or field was removed or renamed
+([versioning](docs/contract/versioning.md), DEC-020). The served tool list grows from
+27 to 31 tools.
+
+### Added
+
+- Named physical lighting zones ([#27](https://github.com/descipar/wled-mcp/issues/27),
+  [contract](docs/contract/zones.md)): `wled_list_zones` and `wled_plan_zone` (read) and
+  `wled_apply_zone` (control). A reviewed zone file maps a name to configured devices and
+  explicit LED ranges; a zone applies only onto existing active segments that lie inside it and
+  tile it exactly, otherwise the call is refused before any write. No geometry or master state
+  is written; zone targets inside scenes and groups are not part of this release.
+- Effect search ([#31](https://github.com/descipar/wled-mcp/issues/31),
+  [contract](docs/contract/effect-search.md)): the read-only `wled_search_effects` finds the
+  effects of one configured device by curated properties (motion, flashing, colour slots,
+  palette use, strip length, visibility) and returns the device's own IDs and names. The
+  catalog is deliberately small; an effect it does not list is not searchable.
+- Agent guidance ([#147](https://github.com/descipar/wled-mcp/issues/147),
+  [contract](docs/contract/agent-guidance.md)): the server serves the same safe-lighting
+  `instructions` over stdio and HTTP, the prompt `change_lighting_safely`, and precise
+  descriptions for segment, layout, scene and zone inputs and for destructive tools. Whether a
+  client forwards them to its agent is up to the client. A local stdio client check is recorded
+  ([ISSUE-147-DEC-001](docs/decisions/issue-147.md)); whether MCPHub forwards them was not
+  observed.
+- Effect metadata ([#148](https://github.com/descipar/wled-mcp/issues/148),
+  [contract](docs/contract/effect-metadata.md)): `wled_get_effects` parses the firmware's
+  effect metadata leniently and accepts the optional filters `query`, `two_d` and `audio_reactive`. Original effect IDs are kept.
+- Effect and palette names in segment tools ([#149](https://github.com/descipar/wled-mcp/issues/149),
+  [contract](docs/contract/segment-names.md)): `wled_patch_segments` and `wled_replace_layout`
+  accept `effect_name` and `palette_name` as alternatives to `effect_id` and `palette_id`.
+  Names resolve against the selected device's own catalog before any write (exact, then
+  case-folded match); an ambiguous or unknown name is refused with bounded candidates, and
+  supplying both a name and its ID is a validation error.
+- The README carries the ownership marker the official MCP Registry checks on the PyPI
+  description, and the repository holds the registry metadata `server.json`
+  ([#24](https://github.com/descipar/wled-mcp/issues/24)). Nothing is listed in the registry
+  yet; that needs the owner's separate action after this release is on PyPI.
+
+### Changed
+
+- `wled_get_effects` no longer returns the reserved placeholder effects (`RSVD`), also without
+  filters; effect IDs are not renumbered and `count` is the number of returned effects
+  ([#148](https://github.com/descipar/wled-mcp/issues/148)).
+- Documentation-only pull requests run a reduced CI check set; every other change still runs
+  the complete suite ([#159](https://github.com/descipar/wled-mcp/issues/159)).
+- Documentation: roadmap by milestones ([DEC-029](docs/DECISIONS.md#dec-029--milestones-instead-of-stages)),
+  the first PyPI upload record, the dependency and licence inventory with a vulnerability review
+  for the PyPI release, an architecture review after the zones merge, and the records of the
+  read-only effect-metadata probe and the local stdio check of the guidance.
+
+### Tested and not tested
+
+- The new tools and the guidance have mocked and loopback tests. A single read-only run on the
+  one test controller (WLED 16.0.1, over stdio, no write) covered `wled_get_effects` with the
+  effect metadata and one `wled_search_effects` call ([#148 record](docs/validation/issue-148.md));
+  two of the 216 effects were only partially parsed and are still returned. No hardware run
+  covers zones, the segment-name resolution or any write path of the new features. The guidance
+  was checked with a local stdio client; MCPHub forwarding of it was not observed. Hardware acceptance of the stage-2
+  features is unchanged (see 0.1.2).
+- The registry metadata was validated locally against the published schema only; the
+  registry's own publisher checks were not run.
+
 ## 0.1.2 - stage-2 close-out
 
 Closes stage 2. A patch release: it contains no breaking change (the owner chose 0.1.2

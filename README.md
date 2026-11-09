@@ -8,6 +8,8 @@ afterwards. It runs as a subprocess of your MCP host (stdio) or as a separate HT
 service. It is not affiliated with, endorsed by or supported by the WLED project or
 MCPHub.
 
+<!-- mcp-name: io.github.descipar/wled-mcp -->
+
 **Status:** early software with `0.x` versions that may break between releases
 ([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases are distributed on PyPI as
 [`wled-mcp`](https://pypi.org/project/wled-mcp/) (the first two releases are Git tags only);

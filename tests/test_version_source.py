@@ -11,6 +11,7 @@ synthetic wheel builder, plus one real offline build of the checked-out commit.
 from __future__ import annotations
 
 import importlib.metadata
+import json
 import os
 import re
 import shutil
@@ -82,6 +83,7 @@ def test_main_carries_a_release_version_and_its_identical_image_tag(tmp_path):
 LITERAL_ALLOWLIST = (
     "pyproject.toml",
     "uv.lock",
+    "server.json",
     "CHANGELOG.md",
     "docs/VALIDATION.md",
     "docs/validation/",
@@ -89,6 +91,46 @@ LITERAL_ALLOWLIST = (
     "docs/decisions/",
     "tests/fixtures/compat/",
 )
+
+
+def registry_version_problems(document: dict, version: str) -> list[str]:
+    """``server.json`` (#24) names the version twice; both must be ``project.version``."""
+    found = {"version": document.get("version")}
+    for number, package in enumerate(document.get("packages", [])):
+        found[f"packages[{number}].version"] = package.get("version")
+    if len(found) != 2:
+        return [f"expected exactly one package entry, found {len(found) - 1}"]
+    return [
+        f"{key} is {value!r}, not {version!r}" for key, value in found.items() if value != version
+    ]
+
+
+def test_registry_metadata_carries_the_canonical_version_twice():
+    document = json.loads((ROOT / "server.json").read_text("utf-8"))
+    assert registry_version_problems(document, canonical_version()) == []
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (lambda d: d.update(version="1.2.4"), ["version is '1.2.4', not '1.2.3'"]),
+        (
+            lambda d: d["packages"][0].update(version="1.2.4"),
+            ["packages[0].version is '1.2.4', not '1.2.3'"],
+        ),
+        (lambda d: d["packages"][0].pop("version"), ["packages[0].version is None, not '1.2.3'"]),
+        (lambda d: d["packages"].append(dict(d["packages"][0])), ["expected exactly one package"]),
+    ],
+    ids=["server-version", "package-version", "package-version-removed", "second-package"],
+)
+def test_registry_version_guard_detects_a_stale_copy(mutate, expected):
+    document = {"version": "1.2.3", "packages": [{"version": "1.2.3"}]}
+    assert registry_version_problems(document, "1.2.3") == []
+    mutate(document)
+    problems = registry_version_problems(document, "1.2.3")
+    assert [
+        problem[: len(want)] for problem, want in zip(problems, expected, strict=True)
+    ] == expected
 
 
 def literal_pattern(version: str) -> re.Pattern[str]:

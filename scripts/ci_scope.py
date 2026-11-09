@@ -21,6 +21,7 @@ DOC_READER_TESTS: tuple[str, ...] = (
     "tests/test_diagnostics.py",
     "tests/test_private_identifiers.py",
     "tests/test_readme.py",
+    "tests/test_registry_metadata.py",
     "tests/test_traceability.py",
     "tests/test_upgrade_compat.py",
     "tests/test_version_source.py",

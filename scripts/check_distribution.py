@@ -154,6 +154,28 @@ def project_dependencies(root: Path = ROOT) -> list[str]:
         return [str(item) for item in tomllib.load(stream)["project"]["dependencies"]]
 
 
+def registry_name(root: Path = ROOT) -> str:
+    """The MCP registry name of ``server.json`` (#24): the ownership marker names exactly it."""
+    document = json.loads((root / "server.json").read_text("utf-8"))
+    return str(document["name"])
+
+
+def registry_marker_problems(metadata: str, name: str) -> list[str]:
+    """The package description carries ``mcp-name: <name>``, which the registry verifies."""
+    marker = f"mcp-name: {name}"
+    # `\S+` takes the whole token on purpose: a longer name that merely starts with the
+    # expected one is reported, not accepted as a prefix match (the registry's own rule for
+    # the marker boundary was not checked).
+    found = re.findall(r"mcp-name:\s*(\S+)", metadata)
+    problems = []
+    if marker not in metadata:
+        problems.append(f"METADATA lacks the registry ownership marker {marker!r}")
+    problems += [
+        f"METADATA names another registry entry {other!r}" for other in found if other != name
+    ]
+    return problems
+
+
 def requirement_key(text: str) -> tuple[str, frozenset[str], frozenset[str], str]:
     """A requirement independent of specifier order and name spelling (``mcp<3,>=2.3.0``)."""
     requirement = Requirement(text)
@@ -498,6 +520,8 @@ def main(argv: list[str] | None = None) -> None:
         assert not any(name.startswith("tests/") for name in archive.namelist())
         metadata = archive.read(f"{dist_info}/METADATA").decode()
         if problems := requires_dist_problems(metadata, project_dependencies(root)):
+            raise SystemExit(f"{wheel.name}: " + "; ".join(problems))
+        if problems := registry_marker_problems(metadata, registry_name(root)):
             raise SystemExit(f"{wheel.name}: " + "; ".join(problems))
         assert "License-Expression: Apache-2.0" in metadata
         assert "Author: Kai Schulte" in metadata

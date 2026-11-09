@@ -14,7 +14,7 @@ changes repository settings; each of those needs the owner's explicit instructio
 | --- | --- | --- |
 | [#22](https://github.com/descipar/wled-mcp/issues/22) | S2-DIST-01 to 03 | PyPI and multi-architecture image pipeline; the PyPI publish workflow is prepared ([PUBLISHING.md](PUBLISHING.md), ISSUE-22-DEC-001), publishing stays with the owner; image, SBOM/provenance and vulnerability review open |
 | [#23](https://github.com/descipar/wled-mcp/issues/23) | remaining S2-PUBLIC-02 and S2-PUBLIC-03 | tool reference, recipes, troubleshooting, templates, release policy |
-| [#24](https://github.com/descipar/wled-mcp/issues/24) | S2-MARKET-01 to 03 | MCPHub and MCP Registry listings; needs a published package or image |
+| [#24](https://github.com/descipar/wled-mcp/issues/24) | S2-MARKET-01 to 03 | MCPHub and MCP Registry listings; the package prerequisite is met (PyPI, live since 0.1.2); metadata and drafts are prepared, nothing is listed or submitted ([MARKETPLACE.md](MARKETPLACE.md#status-per-route)) |
 | [#25](https://github.com/descipar/wled-mcp/issues/25) | S2-LAUNCH-01 and 02, H07, the live part of S2-COMPAT-03 | simulator and launch report; the live rollback after the first release that changes code |
 | [#117](https://github.com/descipar/wled-mcp/issues/117) | none | backlog: bound the bundle import planning phase |
 

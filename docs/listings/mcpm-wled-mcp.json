@@ -1,0 +1,51 @@
+{
+  "name": "wled-mcp",
+  "display_name": "WLED MCP (unofficial)",
+  "description": "Unofficial MCP server for WLED LED controllers over stdio or Streamable HTTP; not affiliated with the WLED project",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/descipar/wled-mcp"
+  },
+  "homepage": "https://github.com/descipar/wled-mcp#readme",
+  "author": {
+    "name": "descipar"
+  },
+  "license": "Apache-2.0",
+  "categories": ["System Tools"],
+  "tags": ["wled", "led", "lighting", "mcp"],
+  "arguments": {
+    "WLED_MCP_CONFIG": {
+      "description": "Absolute path of the device inventory (TOML file) that lists your own WLED controllers",
+      "required": true,
+      "example": "/path/to/wled-mcp/devices.toml"
+    },
+    "WLED_MCP_DATA_DIR": {
+      "description": "Absolute path of an existing, writable directory for the server's snapshots and stored data",
+      "required": true,
+      "example": "/path/to/wled-mcp"
+    }
+  },
+  "installations": {
+    "uvx": {
+      "type": "uvx",
+      "command": "uvx",
+      "args": [
+        "--isolated",
+        "--python",
+        "3.13",
+        "--from",
+        "wled-mcp",
+        "wled-mcp",
+        "--transport",
+        "stdio"
+      ],
+      "package": "wled-mcp",
+      "env": {
+        "WLED_MCP_CONFIG": "${WLED_MCP_CONFIG}",
+        "WLED_MCP_DATA_DIR": "${WLED_MCP_DATA_DIR}"
+      },
+      "description": "Run the PyPI package with uvx over stdio; the server reads its inventory and data directory from the two environment variables",
+      "recommended": true
+    }
+  }
+}
