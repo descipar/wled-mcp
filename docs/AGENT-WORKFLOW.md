@@ -78,7 +78,9 @@ evidence in the packet. Ask only for conflicting relevant metadata or genuinely
 unclear scope, not for an unambiguous milestone. Every open or new issue carries
 exactly one milestone, Backlog counting ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)),
 and no `Stage N: ` title prefix or `stage:N` label; workflow/tooling issues get a
-milestone like any other issue.
+milestone like any other issue. Closing a milestone requires at least a minor release
+and a README update ([DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release));
+tag, release publication and submissions stay owner-gated, so the coordinator prepares them and asks.
 
 Substitute the issue deliberately; these examples are not implementation
 authorization from merely reading this file. Already accepted scope decisions
