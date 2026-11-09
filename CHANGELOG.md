@@ -28,8 +28,9 @@ A patch release: the changes are additive and no tool or field was removed or re
   [contract](docs/contract/agent-guidance.md)): the server serves the same safe-lighting
   `instructions` over stdio and HTTP, the prompt `change_lighting_safely`, and precise
   descriptions for segment, layout, scene and zone inputs and for destructive tools. Whether a
-  client forwards them to its agent is up to the client; a check through MCPHub is still
-  pending.
+  client forwards them to its agent is up to the client. A local stdio client check is recorded
+  ([ISSUE-147-DEC-001](docs/decisions/issue-147.md)); whether MCPHub forwards them was not
+  observed.
 - Effect metadata ([#148](https://github.com/descipar/wled-mcp/issues/148),
   [contract](docs/contract/effect-metadata.md)): `wled_get_effects` parses the firmware's
   effect metadata leniently and accepts the optional filters `query`, `two_d` and `audio_reactive`. Original effect IDs are kept.
@@ -53,7 +54,8 @@ A patch release: the changes are additive and no tool or field was removed or re
   the complete suite ([#159](https://github.com/descipar/wled-mcp/issues/159)).
 - Documentation: roadmap by milestones ([DEC-029](docs/DECISIONS.md#dec-029--milestones-instead-of-stages)),
   the first PyPI upload record, the dependency and licence inventory with a vulnerability review
-  for the PyPI release, and an architecture review after the zones merge.
+  for the PyPI release, an architecture review after the zones merge, and the records of the
+  read-only effect-metadata probe and the local stdio check of the guidance.
 
 ### Tested and not tested
 
@@ -61,8 +63,8 @@ A patch release: the changes are additive and no tool or field was removed or re
   one test controller (WLED 16.0.1, over stdio, no write) covered `wled_get_effects` with the
   effect metadata and one `wled_search_effects` call ([#148 record](docs/validation/issue-148.md));
   two of the 216 effects were only partially parsed and are still returned. No hardware run
-  covers zones, the segment-name resolution or any write path of the new features, and the
-  MCPHub forwarding check of the guidance is pending. Hardware acceptance of the stage-2
+  covers zones, the segment-name resolution or any write path of the new features. The guidance
+  was checked with a local stdio client; MCPHub forwarding of it was not observed. Hardware acceptance of the stage-2
   features is unchanged (see 0.1.2).
 - The registry metadata was validated locally against the published schema only; the
   registry's own publisher checks were not run.

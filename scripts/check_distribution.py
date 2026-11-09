@@ -163,6 +163,9 @@ def registry_name(root: Path = ROOT) -> str:
 def registry_marker_problems(metadata: str, name: str) -> list[str]:
     """The package description carries ``mcp-name: <name>``, which the registry verifies."""
     marker = f"mcp-name: {name}"
+    # `\S+` takes the whole token on purpose: a longer name that merely starts with the
+    # expected one is reported, not accepted as a prefix match (the registry's own rule for
+    # the marker boundary was not checked).
     found = re.findall(r"mcp-name:\s*(\S+)", metadata)
     problems = []
     if marker not in metadata:

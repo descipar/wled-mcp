@@ -40,7 +40,7 @@ The MCPM guide contains older CLI examples; validate the current schema/tools in
 - Console command can remain `wled-mcp` even if a distinct distribution name is needed; use uvx `--from` explicitly where names differ.
 - Build wheel/sdist and versioned amd64/arm64 OCI artifacts first, then test clean install. Use immutable version/digest references in release metadata, and document user-driven updates.
 
-The official registry currently supports public PyPI packages and verifies the matching MCP namespace marker in the package's rendered README/description. Prepare that marker only after identity is decided. It also supports other package types, but this Python project does not need npm merely to enter a catalog. Prepared with the first release after 0.1.2: the marker in the README and the root [`server.json`](../server.json), validated locally against the published schema (see below).
+The official registry currently supports public PyPI packages and verifies the matching MCP namespace marker in the package's rendered README/description. It also supports other package types, but this Python project does not need npm merely to enter a catalog. Prepared with the first release after 0.1.2: the marker in the README and the root [`server.json`](../server.json), validated locally against the published schema (see below).
 
 For the official registry's `remotes` route the documented endpoint must actually be publicly accessible. Our private, per-user self-hosted HTTP deployment is not such a central remote. Prefer package metadata for discovery and document self-hosted HTTP separately. Revisit only if a real supported hosted product is commissioned.
 

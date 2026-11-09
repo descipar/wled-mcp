@@ -38,7 +38,8 @@ follow the build-identity sections below. The support matrix is in
   `docs/validation/`, `docs/DECISIONS.md`, `docs/decisions/`).
 - A version change therefore edits `pyproject.toml` (and refreshes `uv.lock`) and the two
   versions in `server.json`.
-  Version bumps belong to the release work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
+  Version bumps belong to the release work ([#25](https://github.com/descipar/wled-mcp/issues/25)
+  or a release-preparation pull request the owner authorized, as ISSUE-24-DEC-001 did).
 
 ## Release versions and their mapping
 
