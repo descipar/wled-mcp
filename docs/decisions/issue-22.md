@@ -181,3 +181,28 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Propagated to roles / packet references: requirements, implementer and reviewer via the
   coordinator handoff.
 - Revalidation needed / next action: none.
+
+- ID: ISSUE-22-DEC-006
+- Recorded date: 2026-11-09
+- Status: active for issue #22 only.
+- Authority: human decision (owner instruction relayed by the main session).
+- Source: owner instructions in the main coordinator session on 2026-11-09, chat, no permalink
+  and no verbatim quote recorded. The owner agreed to narrow #22 to the PyPI path and to move
+  the container work to a new backlog issue.
+- Scope: acceptance checklist and title of #22; new issue #156.
+- Decision: #22 covers the PyPI wheel/sdist release path only (S2-DIST-01 and the PyPI parts
+  of S2-DIST-03). Container selection, container smoke tests, multi-architecture images,
+  SBOM/provenance for images, image name checks and OCI pin/rollback documentation
+  (S2-DIST-02 and the OCI parts of S2-DIST-03) move to [#156](https://github.com/descipar/wled-mcp/issues/156)
+  in the Backlog. DEC-023 still applies: nothing is published without an owner instruction.
+- Applicability / conditions / expiry: no build, upload, registration or setting change is
+  authorized by this decision.
+- Rationale supplied: the container pipeline is deferred by DEC-023 and should not keep the
+  PyPI path open.
+- Affected requirement IDs, files, issues and tests: S2-DIST-01 to 03; `docs/ROADMAP.md`;
+  issues #22 and #156.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: coordinator and completion roles via the issue
+  bodies.
+- Revalidation needed / next action: reconcile #22 against the narrowed checklist; close it
+  once the inventory and vulnerability note exists.
