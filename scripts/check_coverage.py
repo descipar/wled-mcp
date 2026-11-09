@@ -44,6 +44,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO_ISSUES = "https://github.com/descipar/wled-mcp/issues/"
+# README.md is also the PyPI project page, where relative links do not resolve (#22).
+REPOSITORY_FILES = "https://github.com/descipar/wled-mcp/blob/main/"
 HEADER = ["ID", "Feature", "WLED key / route", "Status", "Delivered by", "Link", "Notes"]
 STATUSES = ("supported", "partial", "planned", "unplanned", "excluded")
 DELIVERING = ("supported", "partial")
@@ -237,7 +239,7 @@ def readme_block(rows: list[Row]) -> str:
     return (
         f"WLED feature coverage: {show_percent(overall.planned_scope)} of the planned scope, "
         f"{show_percent(overall.overall)} of WLED overall "
-        "([method and list](docs/WLED-COVERAGE.md))."
+        f"([method and list]({REPOSITORY_FILES}docs/WLED-COVERAGE.md))."
     )
 
 

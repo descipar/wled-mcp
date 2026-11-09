@@ -39,6 +39,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   coordinator handoff (local packet under `.agent-runs/`).
 - Revalidation needed / next action: owner merge decision on the PR; the owner-side setup
   steps before a first upload.
+- Update 2026-11-09: the owner merge decision is made. PR #141 was merged as `bf2359e`
+  (squash of `0021975`) on 2026-11-09 at the owner's instruction ("141 mergen, keine
+  testpypi probe, trigger design wie vorgchlagen" (English: "merge 141, no TestPyPI
+  rehearsal, trigger design as proposed"); typing error "vorgchlagen" kept), with `--admin`
+  (DEC-024). Remaining next action: the owner-side setup steps before a first upload.
 
 ## ISSUE-22-DEC-002 — Technical defaults for the PyPI workflow packet
 
@@ -82,3 +87,97 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Propagated to roles / packet references: requirements, implementer and reviewer via the
   coordinator handoff.
 - Revalidation needed / next action: owner may confirm or change items 2 and 4 at merge.
+- Update 2026-11-09: items 2 (triggers) and 4 (SHA pins only in `publish.yml`; `ci.yml`
+  keeps tag pins) are owner-confirmed by the message quoted in ISSUE-22-DEC-001's update,
+  which answered a question covering the trigger design and SHA pinning only in
+  `publish.yml` together. Items 1, 3 and 5 to 7 remain coordinator technical defaults. The
+  owner declined a TestPyPI rehearsal. Item 7's report to the owner is answered by
+  ISSUE-22-DEC-003 and ISSUE-22-DEC-005.
+
+## ISSUE-22-DEC-003 — Loosen the exact runtime pins
+
+- ID: ISSUE-22-DEC-003
+- Recorded date: 2026-11-09
+- Status: active for issue #22 only.
+- Authority: human decision (owner, main coordinator session).
+- Source: owner message in the main coordinator session on 2026-11-09, chat, no permalink:
+  "laufzeit pins lockern" (English: "loosen the runtime pins"). It answered whether to keep
+  or loosen the exact pins `mcp==2.3.0`, `starlette==1.10.0` and `uvicorn==0.54.0`.
+- Scope: #22 acceptance item 4 (S2-DIST-03, dependency declarations).
+- Decision: the published metadata declares ranges instead of exact pins. The staged
+  release, the container image and the stdio hub example keep installing the exact tested
+  set through `requirements-runtime.txt`.
+- Applicability / conditions / expiry: the concrete ranges are technical defaults
+  (ISSUE-22-DEC-004); the owner may overrule them. No release or upload is authorized.
+- Rationale supplied: none.
+- Affected requirement IDs, files, issues and tests: S2-DIST-03; `pyproject.toml`,
+  `docs/contract/dependencies.md`, `tests/test_dependency_ranges.py`,
+  `scripts/check_distribution.py`; issue #22.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: requirements, implementer and reviewer via the
+  coordinator handoff.
+- Revalidation needed / next action: none.
+
+## ISSUE-22-DEC-004 — Technical defaults for the dependency ranges
+
+- ID: ISSUE-22-DEC-004
+- Recorded date: 2026-11-09
+- Status: active for issue #22 only; technical proposal accepted by the coordinator under
+  ISSUE-22-DEC-003, not an owner decision. The owner may overrule any item.
+- Authority: technical proposal (requirements role, accepted by the coordinator).
+- Source: issue-22 coordinator session, 2026-11-09.
+- Scope: #22 acceptance item 4.
+- Decision:
+  1. Ranges: `mcp>=2.3.0,<3`, `pydantic>=2.12.0,<3` and `httpx2>=2.16,<3` (both unchanged),
+     `starlette>=1.0.0,<2`, `uvicorn>=0.31.1,<0.55`, and `anyio>=4.10,<5`, newly declared
+     because the package imports it directly. Upper bounds at the next breaking boundary of
+     each upstream versioning policy; uvicorn is capped at the next minor because it is
+     `0.x` and the server subclasses its internals (alternative not chosen: `<1`).
+  2. Floors are confirmed by a lowest-direct install of the wheel and the test suite; a
+     failing floor is raised to the lowest passing release and recorded here, without a new
+     owner question. The run confirmed all floors (validation record).
+  3. Placement: `docs/contract/dependencies.md`; evidence in `docs/validation/issue-22.md`;
+     the CHANGELOG entry goes into the 0.1.2 section, because the change is
+     install-compatible and ships with the `v0.1.2` tag.
+- Applicability / conditions / expiry: this packet; widening an upper bound later needs a
+  highest-resolution test run.
+- Rationale supplied: not applicable (proposal); reasons are in
+  `docs/contract/dependencies.md`.
+- Affected requirement IDs, files, issues and tests: as ISSUE-22-DEC-003.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: requirements, implementer and reviewer via the
+  coordinator handoff.
+- Revalidation needed / next action: owner may change the ranges or the uvicorn cap form.
+- Owner update 2026-11-09 (main coordinator session, chat, no permalink): "mach es doch
+  sinnvoller und gehe nicht alle versionen so tief runter, da kann man doch mal abwägen"
+  (English: "do it more sensibly and do not go down so deep for all versions, one can
+  weigh things up"). The ranges rest on one lower-bound run and one newest/locked run, with
+  no intermediate versions; the review is light (owner).
+
+## ISSUE-22-DEC-005 — README fit for the PyPI project page
+
+- ID: ISSUE-22-DEC-005
+- Recorded date: 2026-11-09
+- Status: active for issue #22 only.
+- Authority: human decision (owner instruction relayed by the main session).
+- Source: owner instruction relayed by the main coordinator session on 2026-11-09, chat, no
+  permalink. No verbatim quote was relayed; this is the main session's paraphrase: the owner
+  wants fewer separate pull requests to finish the release path, so the pull request of
+  ISSUE-22-DEC-003 also makes README.md correct for the PyPI project page.
+- Scope: README.md for the PyPI project page of 0.1.2 (S2-DIST-01), in the same pull
+  request as ISSUE-22-DEC-003.
+- Decision: no false "not published to PyPI" statement and no dated "published" claim
+  (wording true before and after an upload); the PyPI route first once published, the Git
+  route kept; every relative link made absolute to
+  `https://github.com/descipar/wled-mcp/blob/main/...`; a test fails on a relative link.
+  No other README edits.
+- Applicability / conditions / expiry: no tag, release, upload, registration or setting
+  change is authorized by this decision; tagging after this pull request is the main
+  session's action under its own owner authorization.
+- Rationale supplied: fewer separate pull requests on the release path.
+- Affected requirement IDs, files, issues and tests: S2-DIST-01; `README.md`,
+  `scripts/check_coverage.py`, `tests/test_readme.py`, `tests/test_coverage.py`; issue #22.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: requirements, implementer and reviewer via the
+  coordinator handoff.
+- Revalidation needed / next action: none.

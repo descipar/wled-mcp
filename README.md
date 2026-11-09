@@ -9,9 +9,11 @@ service. It is not affiliated with, endorsed by or supported by the WLED project
 MCPHub.
 
 **Status:** early software with `0.x` versions that may break between releases
-([CHANGELOG.md](CHANGELOG.md)). It is installed from Git and not published to PyPI or
-GHCR. Hardware acceptance is partial: one controller on WLED 16.0.1. No support is
-promised ([Support](#support)).
+([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases are distributed on PyPI as
+[`wled-mcp`](https://pypi.org/project/wled-mcp/); a release that is not listed there yet
+installs from its Git tag instead. The container image is not published to GHCR.
+Hardware acceptance is partial: one controller on WLED 16.0.1. No support is promised
+([Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
 ## What it does
 
@@ -28,50 +30,57 @@ promised ([Support](#support)).
   bearer credential with Host and Origin allowlists.
 
 Every tool, with its read-only, write or destructive hint, is listed in the
-[tool contract](docs/TOOL-CONTRACT.md#tools-at-a-glance).
+[tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->
-WLED feature coverage: 58 % of the planned scope, 47 % of WLED overall ([method and list](docs/WLED-COVERAGE.md)).
+WLED feature coverage: 58 % of the planned scope, 47 % of WLED overall ([method and list](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
 ## Try it
 
 You need [uv](https://docs.astral.sh/uv/), an MCP host that can start a stdio server and
 a WLED controller reachable over HTTP; the optional HTTP service also needs Docker with
-Docker Compose. Replace `v<version>` with the tag of the
-[latest release](https://github.com/descipar/wled-mcp/releases/latest); without a tag,
-`uvx` takes the current `main`, which can change at any time. The commands are for a POSIX
-shell; Windows is experimental ([docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)).
+Docker Compose. Replace `<version>` with the version of the
+[latest release](https://github.com/descipar/wled-mcp/releases/latest) (its tag is
+`v<version>`). The commands install that release from
+[PyPI](https://pypi.org/project/wled-mcp/). If the version is not listed there yet, use the
+Git route instead: replace `wled-mcp==<version>` with
+`git+https://github.com/descipar/wled-mcp@v<version>`, which builds the package from the tag
+on your machine; without a tag, `uvx` takes the current `main`, which can change at any
+time. The commands are for a POSIX shell; Windows is experimental
+([docs/DEVELOPMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEVELOPMENT.md)).
 
 1. Check the installation (no device, no configuration):
 
    ```text
-   uvx --isolated --python 3.13 --from git+https://github.com/descipar/wled-mcp@v<version> wled-mcp --version
+   uvx --isolated --python 3.13 --from wled-mcp==<version> wled-mcp --version
    ```
 
 2. Create a data directory and an inventory with one controller (contacts nothing):
 
    ```text
    mkdir -p "$HOME/wled-mcp"
-   uvx --isolated --python 3.13 --from git+https://github.com/descipar/wled-mcp@v<version> wled-mcp config init --config "$HOME/wled-mcp/devices.toml" --device-id desk --device-name "Desk strip" --base-url http://<controller-address>
+   uvx --isolated --python 3.13 --from wled-mcp==<version> wled-mcp config init --config "$HOME/wled-mcp/devices.toml" --device-id desk --device-name "Desk strip" --base-url http://<controller-address>
    ```
 
 3. Register the server in your MCP host with the command `uvx` and these arguments, each
    one separate, using absolute paths:
 
    ```text
-   --isolated --python 3.13 --from git+https://github.com/descipar/wled-mcp@v<version> wled-mcp --transport stdio --config <absolute path>/wled-mcp/devices.toml --data-dir <absolute path>/wled-mcp
+   --isolated --python 3.13 --from wled-mcp==<version> wled-mcp --transport stdio --config <absolute path>/wled-mcp/devices.toml --data-dir <absolute path>/wled-mcp
    ```
 
    Ask the agent to list your WLED devices (`wled_list_devices`). Every write tool accepts
    `dry_run=true` to preview a change without touching the lights.
 
-This route builds the package from the tag on your machine, needs network access to GitHub
-and PyPI, and resolves the dependencies that `pyproject.toml` does not pin when it first
-runs. For pinned runtime constraints, a checksum-verified wheel, more devices, the
-[inventory format](docs/QUICKSTARTS.md#inventory) and the HTTP service, follow the
-[quickstarts](docs/QUICKSTARTS.md); updates, rollback and removal are in
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Both routes need network access (the Git route to GitHub as well as PyPI). The dependencies
+are resolved within the ranges the package declares when `uvx` first creates the tool
+environment, so they can be newer than the set the release was tested with; for that tested
+set add the release constraints ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)). For a
+checksum-verified wheel, more devices, the
+[inventory format](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md#inventory) and the HTTP service, follow the
+[quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md); updates, rollback and removal are in
+[docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md).
 
 ## Safety model
 
@@ -96,8 +105,8 @@ runs. For pinned runtime constraints, a checksum-verified wheel, more devices, t
 ## Compatibility
 
 What the checks cover; the evidence for each row and the firmware tiers are in
-[docs/contract/compatibility.md](docs/contract/compatibility.md). This is not a
-support commitment (see [Support](#support)).
+[docs/contract/compatibility.md](https://github.com/descipar/wled-mcp/blob/main/docs/contract/compatibility.md). This is not a
+support commitment (see [Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
 | Area | Status |
 | --- | --- |
@@ -121,10 +130,10 @@ Automated tests use mocks and synthetic loopback devices. Hardware acceptance co
 first feature set on one RGB controller, and a live check with an offline controller is
 still pending. A short live check of release 0.1.1 over HTTP and stdio covered state
 reads, power, brightness and effect changes on that controller
-([record](docs/validation/live-check-2026-11-08.md)). A later run on the same controller
+([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/live-check-2026-11-08.md)). A later run on the same controller
 exercised a one-device group and scene, preset store, export, import and restore, and a
 playlist, with the controller restored afterwards
-([record](docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
+([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
 onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run.
 Other limits:
 
@@ -141,52 +150,52 @@ Other limits:
   behind HTTP authentication or a credentialed proxy is not supported. Behavior with a
   settings PIN or OTA lock is untested; a test is planned
   ([#128](https://github.com/descipar/wled-mcp/issues/128)).
-- No package on PyPI, no image on GHCR, no registry entry. A live update of a deployed HTTP
+- No image on GHCR, no registry entry. A live update of a deployed HTTP
   service was checked once, from an earlier build to release 0.1.1; a rollback has not
   been checked.
 
 The complete list and the evidence are in
-[docs/VALIDATION.md](docs/VALIDATION.md#known-limitations).
+[docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
 ## Documentation
 
 | Document | Contents |
 | --- | --- |
-| [Quickstarts](docs/QUICKSTARTS.md) | Release directory, stdio and HTTP setup, inventory format |
-| [Deployment](docs/DEPLOYMENT.md) | Both transports in detail: staging, verification, update, rollback, removal |
-| [Tool contract](docs/TOOL-CONTRACT.md) | Tools, parameters, results, errors and mutation semantics |
-| [WLED feature coverage](docs/WLED-COVERAGE.md) | WLED features with support status, owning issue or decision, and coverage figures |
-| [Inventory and client](docs/INVENTORY-CLIENT.md) | Inventory schema, limits and HTTP client behavior |
-| [Development](docs/DEVELOPMENT.md) | Local checks, build and launch, including PowerShell |
-| [Validation](docs/VALIDATION.md) | Automated checks, opt-in hardware checks, recorded evidence, known limitations |
-| [Architecture](docs/ARCHITECTURE.md) | Components, runtime and design decisions |
-| [Contract examples](examples/contracts/README.md) | Synthetic request, result and snapshot examples |
+| [Quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md) | Release directory, stdio and HTTP setup, inventory format |
+| [Deployment](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md) | Both transports in detail: staging, verification, update, rollback, removal |
+| [Tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md) | Tools, parameters, results, errors and mutation semantics |
+| [WLED feature coverage](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md) | WLED features with support status, owning issue or decision, and coverage figures |
+| [Inventory and client](https://github.com/descipar/wled-mcp/blob/main/docs/INVENTORY-CLIENT.md) | Inventory schema, limits and HTTP client behavior |
+| [Development](https://github.com/descipar/wled-mcp/blob/main/docs/DEVELOPMENT.md) | Local checks, build and launch, including PowerShell |
+| [Validation](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md) | Automated checks, opt-in hardware checks, recorded evidence, known limitations |
+| [Architecture](https://github.com/descipar/wled-mcp/blob/main/docs/ARCHITECTURE.md) | Components, runtime and design decisions |
+| [Contract examples](https://github.com/descipar/wled-mcp/blob/main/examples/contracts/README.md) | Synthetic request, result and snapshot examples |
 
 ## Support
 
 There is no support commitment. Questions and problems go to
 [GitHub issues](https://github.com/descipar/wled-mcp/issues), which are answered best
 effort, without any commitment to respond or fix. There is no security support; see
-[SECURITY.md](SECURITY.md).
+[SECURITY.md](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md).
 
 ## Project and contributing
 
 Project status, roadmap and the maintainer document index are in
-[docs/PROJECT.md](docs/PROJECT.md). How to report problems and propose changes is in
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[docs/PROJECT.md](https://github.com/descipar/wled-mcp/blob/main/docs/PROJECT.md). How to report problems and propose changes is in
+[CONTRIBUTING.md](https://github.com/descipar/wled-mcp/blob/main/CONTRIBUTING.md).
 
 ### How this project is developed
 
 The maintainer develops this project with coding agents that follow a documented
-workflow: [AGENTS.md](AGENTS.md) holds the project rules,
-[docs/AGENT-WORKFLOW.md](docs/AGENT-WORKFLOW.md) describes the requirements,
+workflow: [AGENTS.md](https://github.com/descipar/wled-mcp/blob/main/AGENTS.md) holds the project rules,
+[docs/AGENT-WORKFLOW.md](https://github.com/descipar/wled-mcp/blob/main/docs/AGENT-WORKFLOW.md) describes the requirements,
 implementation, review and completion roles, and the `agents/` directory holds the
 role definitions. Human contributions do not need this workflow. Design decisions and
-their rationale are recorded in [docs/DECISIONS.md](docs/DECISIONS.md) and, per issue, in
-[docs/decisions/](docs/decisions/README.md).
+their rationale are recorded in [docs/DECISIONS.md](https://github.com/descipar/wled-mcp/blob/main/docs/DECISIONS.md) and, per issue, in
+[docs/decisions/](https://github.com/descipar/wled-mcp/blob/main/docs/decisions/README.md).
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE). Redistributions, including modified
-versions, must retain the copyright and attribution notice in [NOTICE](NOTICE).
-The project is provided as is, without security support; see [SECURITY.md](SECURITY.md).
+Licensed under the [Apache License 2.0](https://github.com/descipar/wled-mcp/blob/main/LICENSE). Redistributions, including modified
+versions, must retain the copyright and attribution notice in [NOTICE](https://github.com/descipar/wled-mcp/blob/main/NOTICE).
+The project is provided as is, without security support; see [SECURITY.md](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md).

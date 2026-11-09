@@ -317,3 +317,59 @@ def test_contradictory_options_are_refused(argv, capsys):
 def test_no_option_keeps_the_building_check():
     options = script.parse_args([])
     assert not options.release_ref and options.wheel is None and options.sdist is None
+
+
+# ------------------------------------------- AC-22R-03: Requires-Dist equals the declaration
+
+DECLARED = ["mcp>=2.3.0,<3", "pydantic>=2.12.0,<3", "anyio>=4.10,<5"]
+
+
+def synthetic_metadata(*requires: str) -> str:
+    lines = ["Metadata-Version: 2.4", "Name: wled-mcp", "Version: 1.2.3"]
+    lines += [f"Requires-Dist: {text}" for text in requires]
+    # A body line that looks like a header must not count (it is the README).
+    return "\n".join(lines) + "\n\nRequires-Dist: not-a-header==1\n"
+
+
+def test_requires_dist_matching_the_declaration_passes_in_any_specifier_order():
+    # Hatchling writes `mcp<3,>=2.3.0`; the comparison is on parsed requirements.
+    metadata = synthetic_metadata("anyio<5,>=4.10", "MCP<3,>=2.3.0", "pydantic<3,>=2.12.0")
+    assert script.requires_dist_problems(metadata, DECLARED) == []
+
+
+def test_requires_dist_of_the_project_is_read_from_pyproject():
+    names = [text.split(">", 1)[0].split("<", 1)[0] for text in script.project_dependencies()]
+    assert "anyio" in names and "mcp" in names
+
+
+@pytest.mark.parametrize(
+    ("requires", "expected"),
+    [
+        (
+            ("mcp<3,>=2.3.0", "pydantic<3,>=2.12.0"),
+            ["Requires-Dist lacks 'anyio>=4.10,<5'"],
+        ),
+        (
+            ("mcp<3,>=2.3.0", "pydantic<3,>=2.12.0", "anyio<5,>=4.10", "uvicorn==0.54.0"),
+            [
+                "Requires-Dist 'uvicorn==0.54.0' is an exact pin",
+                "Requires-Dist has undeclared 'uvicorn==0.54.0'",
+            ],
+        ),
+        (
+            ("mcp==2.3.0", "pydantic<3,>=2.12.0", "anyio<5,>=4.10"),
+            [
+                "Requires-Dist 'mcp==2.3.0' is an exact pin",
+                "Requires-Dist lacks 'mcp>=2.3.0,<3'",
+                "Requires-Dist has undeclared 'mcp==2.3.0'",
+            ],
+        ),
+        (
+            ("mcp<4,>=2.3.0", "pydantic<3,>=2.12.0", "anyio<5,>=4.10"),
+            ["Requires-Dist lacks 'mcp>=2.3.0,<3'", "Requires-Dist has undeclared 'mcp<4,>=2.3.0'"],
+        ),
+    ],
+    ids=["missing-entry", "extra-exact-pin", "exact-pin-instead-of-range", "other-range"],
+)
+def test_requires_dist_check_rejects_drift_and_exact_pins(requires, expected):
+    assert script.requires_dist_problems(synthetic_metadata(*requires), DECLARED) == expected

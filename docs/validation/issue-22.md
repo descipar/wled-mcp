@@ -94,3 +94,95 @@ while building; on this host that needed the system CA bundle (`SSL_CERT_FILE`).
 - Not covered here and still open in #22: OCI images, SBOM/provenance, vulnerability
   review, the exact runtime pins in the published metadata, README links and wording on
   PyPI, the name check at release time and the first actual publication.
+
+The "still open" list above is the state as of PR #141. The runtime pins and the README
+items are done by the section below.
+
+## Runtime dependency ranges
+
+Evidence for #22 acceptance item 4 (acceptance criteria AC-22R-01 to AC-22R-14 and
+AC-22R-README-01 to -08 of the issue-22 runtime-dependency packet); decisions
+ISSUE-22-DEC-003 to ISSUE-22-DEC-005 ([decision log](../decisions/issue-22.md)); contract
+[dependencies.md](../contract/dependencies.md). Branch `stage5/22-runtime-dependency-ranges`
+(base `main` `bf2359e27a89eb1db35a8f9d3f395cd25ebacc04`), macOS arm64, Python 3.13.2,
+local uv 0.11.7, 2026-11-09. Nothing was published, tagged or released; no workflow ran; no
+LAN device, hub or hardware was contacted. Resolution and installs reached PyPI only.
+
+### Declaration, lock and export
+
+| Check | Result |
+| --- | --- |
+| `uv lock` | only the project's own metadata changed in `uv.lock`: `anyio` added to its dependencies and the `requires-dist` specifiers; no package version, source or hash changed |
+| `uv export --locked --no-dev --no-emit-project --no-hashes --no-header --output-file requirements-runtime.txt` | one added `#   wled-mcp` comment under `anyio`; no version changed |
+| `uv sync --locked`, `check_lock.py` | pass / PASS |
+| Built wheel `Requires-Dist` | `anyio<5,>=4.10`, `httpx2<3,>=2.16`, `mcp<3,>=2.3.0`, `pydantic<3,>=2.12.0`, `starlette<2,>=1.0.0`, `uvicorn<0.55,>=0.31.1` |
+| `tests/test_dependency_ranges.py` | bounded ranges, every third-party import declared (the tree without `anyio` declared and a planted `uvicorn` import are reported), lock and export inside the ranges (a `uvicorn==0.55.0` export and a missing lock entry are reported), no duplicate |
+| `tests/test_check_distribution.py` | `requires_dist_problems` passes hatchling's specifier order and reports a missing entry, an exact pin and another range |
+
+### Lowest and highest combinations
+
+The wheel was built with `uv build --offline --wheel --no-build-isolation`, then installed
+into two new virtual environments under the ignored run directory, outside the checkout:
+
+- Lowest: `uv pip compile pyproject.toml --resolution lowest-direct --python-version 3.13`,
+  `uv pip install -r` of that result, then the wheel with `--no-deps`. (Installing the wheel
+  itself with `--resolution lowest-direct` lowers only the wheel, a direct requirement of
+  the install command, and resolves its dependencies to the newest versions.)
+- Highest: `uv pip install <wheel>` with the default (highest) resolution and no
+  constraints, the route of a package user without constraints. `uv pip compile
+  --resolution highest` gives the same set.
+- Test tools: the locked dev group (`uv export --locked --only-group dev`) installed with
+  the environment's own runtime freeze as constraints, so no runtime version changed;
+  `uv pip check` passes in both.
+
+| Distribution | Lowest | Highest | Lock |
+| --- | --- | --- | --- |
+| mcp (mcp-types) | 2.3.0 (2.3.0) | 2.3.0 (2.3.0) | 2.3.0 |
+| pydantic (pydantic-core) | 2.12.0 (2.41.1) | 2.14.3 (2.50.4) | 2.14.2 (2.50.2) |
+| httpx2 | 2.16.0 | 2.16.0 | 2.16.0 |
+| starlette | 1.0.0 | 1.10.0 | 1.10.0 |
+| uvicorn | 0.31.1 | 0.54.0 | 0.54.0 |
+| anyio | 4.10.0 (with sniffio 1.3.1) | 4.16.0 | 4.16.0 |
+| sse-starlette | 3.7.0 | 3.7.0 | 3.6.0 |
+
+The highest set already differs from the lock (pydantic, sse-starlette): the lock is the
+tested set, not what an unconstrained install gets. Each floor equals the declared lower
+bound, so no floor had to be raised.
+
+The full suite ran with the environment's own `python -m pytest` from the checkout root,
+with the environment's `bin` first on `PATH`. `wled_mcp`, `mcp` and the other dependencies
+were imported from the environment's `site-packages` (checked with `__file__`); the checkout
+root has no `wled_mcp` package, so the source tree is not imported.
+
+| Run | Result |
+| --- | --- |
+| Highest, full suite | 2867 passed, 6 skipped (5 GNU-shell tests on macOS, the opt-in Docker check) |
+| Lowest, full suite | 2867 passed, 6 skipped, nothing deselected. `tests/test_tools_list_cache.py` now pins the `anyio_backend` fixture to asyncio like the other async test files; without it the pytest plugin of anyio 4.10.0 also parametrized a trio variant (trio is not installed), which anyio 4.16.0 does not. |
+| Wheel smoke, both environments (the `check_distribution.py` helpers run with the environment's Python against its `wled-mcp` console script) | `--version`, setup commands, stdio handshake with `tools/list`, read-only profile, HTTP loopback start, authenticated `tools/list`, clean stop and restart: PASS |
+
+### Exact deployment paths
+
+`deploy/stage_release.py`, `deploy/http/Dockerfile`, its `.dockerignore`,
+`examples/mcphub.example.json` and the constraints use in `check_distribution.py` are
+unchanged; `tests/test_deployment_artifacts.py` passes. The opt-in Docker check
+(`WLED_MCP_DOCKER_CHECKS=1`, `docker compose config` of the example) passed; no image was
+built or pushed.
+
+### Locked environment
+
+| Command | Result |
+| --- | --- |
+| `uv run --frozen ruff check` / `ruff format --check` on the `ci.yml` path list | all checks passed; 109 files formatted |
+| `uv run --frozen mypy` | no issues in 45 source files |
+| `uv run --frozen pytest` | 2867 passed, 6 skipped (5 GNU-shell tests on macOS, the opt-in Docker check) |
+| `uv run --frozen python scripts/check_distribution.py` | PASS, 29 exact runtime versions verified (unchanged count) |
+| `check_coverage.py`, `check_private_identifiers.py`, `check_traceability.py`, `check_agent_setup.py` | pass |
+
+### Limits
+
+- Only the lowest and the highest combination were run; combinations in between rely on
+  the upstream versioning policies.
+- One host (macOS arm64); CI covers the locked set on Linux. The floor runs are not part of
+  CI, so the floor claim can decay unless a lowest-direct CI job is added later.
+- The README's PyPI route is unproven until a first upload; before it, the Git route
+  applies.

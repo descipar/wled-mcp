@@ -98,7 +98,10 @@ def test_coverage_links_and_anchors_resolve():
 
 def test_readme_links_the_list_inside_the_generated_line():
     assert "docs/WLED-COVERAGE.md" in checker.block(README)
-    assert "(docs/WLED-COVERAGE.md)" in README.split("## Documentation", 1)[1]
+    assert (
+        "(https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)"
+        in (README.split("## Documentation", 1)[1])
+    )
 
 
 def test_loading_the_context_resolves_no_name_and_connects_nowhere(monkeypatch):

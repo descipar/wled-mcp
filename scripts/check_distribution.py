@@ -1,6 +1,7 @@
 """Build, install and exercise the wheel and uvx outside the source checkout.
 
-Dependency installation uses exact runtime constraints, never LAN devices.
+Dependency installation uses exact runtime constraints, never LAN devices. The wheel's
+``Requires-Dist`` must equal the declared ranges of ``pyproject.toml`` (no exact pins).
 Run after `uv sync --frozen`; runtime export drift is checked separately.
 
 Without options the wheel is built into ``dist/`` and checked (CI). The publish workflow
@@ -31,6 +32,7 @@ from mcp.client import Client
 from mcp.client.stdio import StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_PATH = ROOT / "tests" / "tool_contract.py"
@@ -143,6 +145,43 @@ def metadata_version(text: str) -> str | None:
         if line.startswith("Version: "):
             return line.removeprefix("Version: ").strip()
     return None
+
+
+def project_dependencies(root: Path = ROOT) -> list[str]:
+    """``project.dependencies`` of ``pyproject.toml``: the declared runtime ranges."""
+    with (root / "pyproject.toml").open("rb") as stream:
+        return [str(item) for item in tomllib.load(stream)["project"]["dependencies"]]
+
+
+def requirement_key(text: str) -> tuple[str, frozenset[str], frozenset[str], str]:
+    """A requirement independent of specifier order and name spelling (``mcp<3,>=2.3.0``)."""
+    requirement = Requirement(text)
+    return (
+        canonicalize_name(requirement.name),
+        frozenset(requirement.extras),
+        frozenset(str(item) for item in requirement.specifier),
+        str(requirement.marker or ""),
+    )
+
+
+def requires_dist_problems(metadata: str, declared: list[str]) -> list[str]:
+    """The wheel's ``Requires-Dist`` equals ``declared`` and holds no exact pin (#22 item 4)."""
+    found = [
+        line.removeprefix("Requires-Dist: ").strip()
+        for line in metadata.split("\n\n", 1)[0].splitlines()
+        if line.startswith("Requires-Dist: ")
+    ]
+    problems = []
+    for text in found:
+        if any(item.operator in ("==", "===") for item in Requirement(text).specifier):
+            problems.append(f"Requires-Dist {text!r} is an exact pin")
+    shipped = {requirement_key(text): text for text in found}
+    wanted = {requirement_key(text): text for text in declared}
+    problems += sorted(f"Requires-Dist lacks {wanted[k]!r}" for k in wanted.keys() - shipped)
+    problems += sorted(
+        f"Requires-Dist has undeclared {shipped[k]!r}" for k in shipped.keys() - wanted
+    )
+    return problems
 
 
 def sdist_member_problems(members: list[str], version: str) -> list[str]:
@@ -454,7 +493,8 @@ def main(argv: list[str] | None = None) -> None:
         assert "wled_mcp/cli.py" in archive.namelist()
         assert not any(name.startswith("tests/") for name in archive.namelist())
         metadata = archive.read(f"{dist_info}/METADATA").decode()
-        assert "Requires-Dist: mcp==2.3.0" in metadata
+        if problems := requires_dist_problems(metadata, project_dependencies(root)):
+            raise SystemExit(f"{wheel.name}: " + "; ".join(problems))
         assert "License-Expression: Apache-2.0" in metadata
         assert "Author: Kai Schulte" in metadata
         assert f"Version: {VERSION}\n" in metadata
