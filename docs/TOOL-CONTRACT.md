@@ -222,10 +222,11 @@ refreshed}`. `refreshed` echoes that the call bypassed the cache by request.
   success; a failed refresh or info failure returns that error (no stale fallback, an
   expired entry is never served) and leaves the previous entry in place. Cached warnings
   repeat for the entry's lifetime.
-- Internal name resolution (for later setters; no public parameter in #5): a unique
-  exact case-sensitive match, else a unique case-folded trimmed match; several matches
-  give `AMBIGUOUS_NAME` with at most ten `{id,name}` candidates (a later setter envelope is
-  intended to carry them in `data.candidates`); no match gives `VALIDATION_ERROR`; no fuzzy match.
+- Shared name resolution: a unique exact case-sensitive match, else a unique
+  case-folded trimmed match. Segment tools expose names in #149: several matches give
+  `AMBIGUOUS_NAME` with at most ten `{id,name}` entries in `data.candidates`; no match
+  gives `VALIDATION_ERROR` with up to ten substring suggestions. Suggestions are never
+  applied automatically. See [contract/segment-names.md](contract/segment-names.md).
 
 ## Power, brightness and transition
 
@@ -293,10 +294,10 @@ No physical timing precision is promised.
 ## Segments: schema and omissions
 
 Core fields: `id`, `start`, `stop`, `on`, `brightness`, `colors`, `effect_id`,
-`palette_id`, `speed`, `intensity`. The segment tools accept numeric `effect_id` and
-`palette_id` only. Catalog names (`effect_name`, `palette_name`) exist only in scenes,
-where they resolve per device and an ambiguous name returns candidates (see
-[contract/groups-scenes.md](contract/groups-scenes.md)). Brightness/speed/
+`palette_id`, `effect_name`, `palette_name`, `speed`, `intensity`. Segment tools accept
+an effect or palette name instead of its corresponding ID, resolving per device before
+planning or writing. See [contract/segment-names.md](contract/segment-names.md) and
+[contract/groups-scenes.md](contract/groups-scenes.md). Brightness/speed/
 intensity are integers 0â€“255; effects/palettes must exist in target catalogs.
 Should fields: `grouping`, `spacing`, `offset`, `reverse`, `mirror`, `selected`,
 `name`. If exposed, offset is 0 <= offset < resulting physical range length (no
@@ -902,6 +903,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   snapshot listing, playlist authoring and preset bundles (#18).
 - [contract/profiles.md](contract/profiles.md): tool classes, access profiles,
   per-device maximum class, guard layers and `ACCESS_DENIED` (#20).
+- [contract/segment-names.md](contract/segment-names.md): catalog names in segment patch
+  and layout replacement tools (#149).
 - [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,
   CCT and 2D layouts (#19).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping,

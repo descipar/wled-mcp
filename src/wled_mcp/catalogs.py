@@ -101,6 +101,15 @@ class AmbiguousName(ClientFailure):
         self.total = total
 
 
+class UnknownName(ClientFailure):
+    """No match; substring suggestions are diagnostic only, never automatically applied."""
+
+    def __init__(self, kind: Kind, candidates: list[JsonValue], total: int) -> None:
+        super().__init__("VALIDATION_ERROR", f"No {kind[:-1]} matches the requested name.")
+        self.candidates = candidates
+        self.total = total
+
+
 def _count_warning(kind: Kind, listed: int, info: dict[str, JsonValue]) -> str | None:
     key = "fxcount" if kind == "effects" else "palcount"
     reported = opt_int(info, key, "", Collector())
@@ -225,7 +234,7 @@ def catalog_items(
 
 
 def resolve_name(entry: CatalogEntry, kind: Kind, query: str) -> int:
-    """Internal resolver for later setters: exact, then unique case-folded trimmed match.
+    """Shared catalog resolver: exact, then unique case-folded trimmed match.
 
     Placeholders are never matched; there is no fuzzy matching. Raises AmbiguousName with
     bounded candidates or VALIDATION_ERROR when nothing matches.
@@ -247,4 +256,7 @@ def resolve_name(entry: CatalogEntry, kind: Kind, query: str) -> int:
             raise AmbiguousName(
                 [{"id": i, "name": n} for i, n in matches[:MAX_CANDIDATES]], len(matches)
             )
-    raise ClientFailure("VALIDATION_ERROR", f"No {kind[:-1]} matches the requested name.")
+    suggestions = [c for c in candidates if query.strip().casefold() in c[1].casefold()]
+    raise UnknownName(
+        kind, [{"id": i, "name": n} for i, n in suggestions[:MAX_CANDIDATES]], len(suggestions)
+    )

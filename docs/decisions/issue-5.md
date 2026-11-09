@@ -56,6 +56,11 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
   `AMBIGUOUS_NAME` with bounded candidates; no fuzzy auto-resolve. No new public
   parameter; end-to-end use belongs to #6.
 - Affected: C5-04.
+- Public-setter deferral closed out by #149: `wled_patch_segments` and
+  `wled_replace_layout` accept names using this resolver before planning. Unknown names
+  return bounded diagnostic suggestions without applying them. The exact/case-folded
+  matching rule and historical #5 acceptance remain unchanged; see
+  [segment names](../contract/segment-names.md).
 
 ## ISSUE-5-DEC-006 — Raw info redaction
 

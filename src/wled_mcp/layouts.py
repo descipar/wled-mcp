@@ -24,8 +24,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from wled_mcp.capabilities import DeviceCapabilities, derive_capabilities
 from wled_mcp.client import ClientFailure
@@ -103,6 +104,22 @@ class LayoutSegment(BaseModel):
         default=None,
         ge=0,
         description="Palette ID from this device’s palette catalog; IDs are device-specific.",
+    )
+    effect_name: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Device effect catalog name; exact then case-folded match. "
+            "Mutually exclusive with effect_id."
+        ),
+    )
+    palette_name: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Device palette catalog name; exact then case-folded match. "
+            "Mutually exclusive with palette_id."
+        ),
     )
     speed: int | None = Field(
         default=None,
@@ -220,6 +237,17 @@ class LayoutSegment(BaseModel):
     transpose: bool | None = Field(
         default=None, description="Transpose X and Y on a proven matrix."
     )
+
+    @model_validator(mode="after")
+    def catalog_names(self) -> Self:
+        for kind in ("effect", "palette"):
+            name = getattr(self, f"{kind}_name")
+            if name is not None:
+                if not name.strip():
+                    raise ValueError(f"{kind}_name must not be blank.")
+                if getattr(self, f"{kind}_id") is not None:
+                    raise ValueError(f"Pass either {kind}_id or {kind}_name, not both.")
+        return self
 
 
 class ReplaceLayoutRequest(BaseModel):
@@ -471,6 +499,8 @@ def build_layout_plan(
     raw_state: dict[str, JsonValue],
 ) -> LayoutPlan:
     segments = request.segments
+    if any(s.effect_name is not None or s.palette_name is not None for s in segments):
+        raise _fail("Catalog names must be resolved before planning.")
     ids = [seg.id for seg in segments]
     if len(set(ids)) != len(ids):
         raise _fail("Segment IDs must be unique within the desired layout.")
