@@ -15,8 +15,13 @@ from mcp.server.stdio import stdio_server
 from mcp.types import (
     CallToolRequestParams,
     CallToolResult,
+    GetPromptRequestParams,
+    GetPromptResult,
+    ListPromptsResult,
     ListToolsResult,
     PaginatedRequestParams,
+    Prompt,
+    PromptMessage,
     TextContent,
     Tool,
     ToolAnnotations,
@@ -33,6 +38,7 @@ from wled_mcp.diagnostics import (
     log_call,
     new_correlation_id,
 )
+from wled_mcp.guidance import INSTRUCTIONS, PROMPT_DESCRIPTION, PROMPT_NAME, PROMPT_TEXT
 from wled_mcp.models import DomainError, Outcome
 
 
@@ -228,9 +234,29 @@ def create_server(
         finish(operation, operation.name, outcome.ok, outcome=outcome)
         return to_tool_result(outcome, correlation_id)
 
+    async def list_prompts(
+        ctx: ServerRequestContext[None], params: PaginatedRequestParams | None
+    ) -> ListPromptsResult:
+        return ListPromptsResult(
+            prompts=[Prompt(name=PROMPT_NAME, description=PROMPT_DESCRIPTION, arguments=[])]
+        )
+
+    async def get_prompt(
+        ctx: ServerRequestContext[None], params: GetPromptRequestParams
+    ) -> GetPromptResult:
+        if params.name != PROMPT_NAME or params.arguments:
+            raise MCPError(code=-32602, message="Unknown prompt or unexpected arguments")
+        return GetPromptResult(
+            description=PROMPT_DESCRIPTION,
+            messages=[PromptMessage(role="user", content=TextContent(text=PROMPT_TEXT))],
+        )
+
     return Server(
         "wled-mcp",
         version=__version__,
+        instructions=INSTRUCTIONS,
+        on_list_prompts=list_prompts,
+        on_get_prompt=get_prompt,
         on_list_tools=list_tools,
         on_call_tool=call_tool,
         get_tool_input_schema=lambda name: input_schema(name) if name in registry else None,

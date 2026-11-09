@@ -79,24 +79,61 @@ ZoneRef = Annotated[str, Field(min_length=1, max_length=128)]
 
 class ListZonesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    zone: ZoneRef | None = None
+    zone: ZoneRef | None = Field(
+        default=None,
+        description="Stored zone ID or unique name; resolves only to configured physical targets.",
+    )
 
 
 class PlanZoneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    zone: ZoneRef
+    zone: ZoneRef = Field(
+        description="Stored zone ID or unique name; resolves only to configured physical targets."
+    )
     # One object of segment fields (the scene entry allowlist, no ids, no geometry): every
     # segment inside the zone receives the same fields. Optional for a preview.
-    segments: list[dict[str, JsonValue]] | None = Field(default=None, min_length=1, max_length=1)
-    mode: Literal["strict", "best_effort"] = "strict"
+    segments: list[dict[str, JsonValue]] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1,
+        description=(
+            "Optional one-element list of mutable segment fields, applied to every resolved "
+            "zone segment; no ids, ranges or master fields. Omit for a topology-only preview."
+        ),
+        examples=[[{"colors": [[255, 96, 16]], "effect_name": "Solid"}]],
+    )
+    mode: Literal["strict", "best_effort"] = Field(
+        default="strict",
+        description=(
+            "strict blocks all targets if any preflight fails; best_effort skips failing targets."
+        ),
+    )
 
 
 class ApplyZoneRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    zone: ZoneRef
-    segments: list[dict[str, JsonValue]] = Field(min_length=1, max_length=1)
-    mode: Literal["strict", "best_effort"] = "strict"
-    dry_run: bool = False
+    zone: ZoneRef = Field(
+        description="Stored zone ID or unique name; resolves only to configured physical targets."
+    )
+    segments: list[dict[str, JsonValue]] = Field(
+        min_length=1,
+        max_length=1,
+        description=(
+            "Exactly one mutable-fields object, applied to all resolved zone segments. No ids, "
+            "ranges or master fields; the zone mapping selects targets."
+        ),
+        examples=[[{"colors": [[255, 96, 16]], "effect_name": "Solid"}]],
+    )
+    mode: Literal["strict", "best_effort"] = Field(
+        default="strict",
+        description=(
+            "strict blocks all targets if any preflight fails; best_effort skips failing targets."
+        ),
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 # -------------------------------------------------------------------------------- pieces
