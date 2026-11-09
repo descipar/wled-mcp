@@ -87,7 +87,9 @@ uv export --locked --no-dev --no-emit-project --no-hashes --no-header --output-f
 The lock checker rejects drift. uvx does **not** consume `uv.lock`; runtime
 constraints pin its versions. Constraints do not enforce artifact hashes or
 authenticate the wheel; preserve a trusted wheel for private distribution.
-The lockfile separately retains dependency artifact hashes.
+The lockfile separately retains dependency artifact hashes. The package itself declares
+version ranges, not these exact versions; the ranges, their bounds and how a package user
+gets the tested set are in [contract/dependencies.md](contract/dependencies.md).
 
 ## Adding a tool
 

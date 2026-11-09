@@ -130,9 +130,10 @@ Each step needs the owner's instruction at that time.
 - For the dependency versions the release was tested with, add the constraints of that
   release: `uvx --constraints
   https://raw.githubusercontent.com/descipar/wled-mcp/v<version>/requirements-runtime.txt
-  --from wled-mcp==<version> wled-mcp`. Without constraints, the dependencies that
-  `pyproject.toml` does not pin exactly are resolved when the tool environment is first
-  created; the development lock does not freeze them for PyPI users.
+  --from wled-mcp==<version> wled-mcp`. Without constraints, the dependencies are
+  resolved within the ranges `pyproject.toml` declares when the tool environment is first
+  created; the development lock does not freeze them for PyPI users
+  ([dependency policy](contract/dependencies.md)).
 - Update: change the pinned version. Rollback: pin the previous version again (it must
   not have been deleted; a yanked version still installs with its exact pin).
 
@@ -179,8 +180,6 @@ attestation work of S2-DIST-03; that stays open.
 - The multi-architecture OCI image pipeline (S2-DIST-02).
 - SBOM, provenance or documented equivalents, dependency/license inventory and the
   vulnerability review (S2-DIST-03).
-- The exact runtime pins (`mcp`, `starlette`, `uvicorn`) in the published metadata
-  (acceptance item 4) and the README links and wording for PyPI, reported to the owner.
 - The name and ownership check at release time.
 
 ## Checking the workflow locally

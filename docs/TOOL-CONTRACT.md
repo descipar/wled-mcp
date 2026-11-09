@@ -867,6 +867,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   codes, doctor categories and the sanitized export (#16).
 - [contract/compatibility.md](contract/compatibility.md): support matrix and WLED
   firmware tiers (#21).
+- [contract/dependencies.md](contract/dependencies.md): declared runtime dependency ranges,
+  the tested set and how users install it (#22).
 - [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
