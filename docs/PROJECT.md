@@ -5,8 +5,9 @@ document index and the agent workflow. Users start with the [README](../README.m
 
 ## Status
 
-The repository is public. Releases are Git tags with a GitHub release, installed from
-Git; nothing is published to PyPI or GHCR and there is no registry entry. The current
+The repository is public. Releases are Git tags with a GitHub release. Releases after 0.1.1 are also published on
+PyPI as `wled-mcp` ([PUBLISHING.md](PUBLISHING.md)); 0.1.0 and 0.1.1 install from their Git tag.
+Nothing is published to GHCR and there is no registry entry. The current
 package version (`project.version` in `pyproject.toml`, the single version source per
 [versioning](contract/versioning.md)) and the release history are in the
 [CHANGELOG](../CHANGELOG.md). The stage-1 scope below is complete: all work packages of

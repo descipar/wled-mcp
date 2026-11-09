@@ -105,7 +105,8 @@ without an upload. The build job's checksums and artifact stay visible in the ru
 
 ## First release
 
-Each step needs the owner's instruction at that time.
+Each step needs the owner's instruction at that time. Done for the first PyPI release on 2026-11-09, see
+[validation/issue-22.md](validation/issue-22.md#first-upload-2026-11-09).
 
 1. The PR adding the workflow is merged into `main`.
 2. The release commit on `main` carries the version in `project.version`, the changelog
@@ -117,6 +118,8 @@ Each step needs the owner's instruction at that time.
 4. Create the tag `v<version>` on that `main` commit (for example `git tag -a v1.2.3
    <commit>` and push it) and publish a GitHub release for it, or create both in the
    release form with the target `main` at that commit.
+   Title the release only `v<version>`, without a description after it (owner rule,
+   2026-11-09); the notes carry the content.
 5. Wait for the build job. Compare the job summary (tag, commit, SHA-256 of both files)
    with the intended release, then approve or reject the `pypi` deployment.
 6. After the upload, compare the file names and SHA-256 on the PyPI project page with the

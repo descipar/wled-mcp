@@ -186,3 +186,25 @@ built or pushed.
   CI, so the floor claim can decay unless a lowest-direct CI job is added later.
 - The README's PyPI route is unproven until a first upload; before it, the Git route
   applies.
+
+## First upload (2026-11-09)
+
+After the workflow was merged (PR #141) and the compatible dependency ranges and the PyPI
+README (PR #143), the owner instructed the tag and release of 0.1.2 and approved the `pypi`
+environment deployment in the GitHub UI (chat instructions, no permalink).
+
+- Release `v0.1.2` on `main` commit `91736b4` (CI green on that commit). The `release:
+  published` run built and smoke-tested the distribution (job success), then waited at the
+  `pypi` environment for the owner's approval; after the approval the publish job succeeded.
+- PyPI lists `wled-mcp` 0.1.2 with `wled_mcp-0.1.2-py3-none-any.whl` (sha256
+  `3177df4bd68f1e4362f16b6519b72c2748847bbd58713cc2e8e41e02d5940c3e`) and `wled_mcp-0.1.2.tar.gz`
+  (sha256 `0db94687f9de49b56dd50ce97fe415b7d892cae3785b16e24c27acee7cce4ce4`), as shown by the
+  PyPI JSON API. The metadata names the project unofficial and not affiliated, Apache-2.0, and the
+  declared dependency ranges.
+- Clean install check: `uvx wled-mcp==0.1.2 --version` in an empty directory without cache
+  installed from PyPI and printed `wled-mcp 0.1.2`.
+- Not done: the digests were not compared with the build job summary line by line (step 6
+  of the procedure compares file names and digests; only the file names and the install
+  were checked); no TestPyPI rehearsal (owner declined); the container image, SBOM and
+  provenance parts of #22 are still open. Earlier statements in this file that nothing was
+  published describe the state at the time of PR #141.
