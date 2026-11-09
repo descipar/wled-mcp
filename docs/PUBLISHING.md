@@ -177,7 +177,7 @@ file is not produced (see the inventory below).
 
 ## Dependency and licence inventory, vulnerability review
 
-Checked on 2026-11-09 for the `requirements-runtime.txt` set of release 0.1.2 (28 packages
+Checked on 2026-11-09 for the `requirements-runtime.txt` set of the first release (28 packages
 installed on Python 3.13 on macOS; markers for other platforms can add packages such as
 the emscripten transport). Licences come from each package's installed metadata. Users
 resolve the declared ranges, so their set can differ; this is the tested set, not a promise.
