@@ -35,7 +35,7 @@ before asking a question that may already have been answered.
   scope/candidate/conditions. A log entry is evidence, not standing permission for
   future operations or a substitute for the current human merge decision, unless
   an active owner decision explicitly grants a bounded standing approval with its
-  conditions and expiry (currently DEC-022 item 4 for stage-2 merges).
+  conditions and expiry (currently DEC-022 item 4 for stage-2 merges and DEC-029 item 4 for milestones M1 and M2).
 - Keep names, private hosts, credentials and raw transcripts out of committed
   entries. If a sensitive detail is necessary at runtime, store only a neutral
   reference to its local/protected source; do not copy it into the log.
@@ -50,7 +50,7 @@ and handed off/committed through the current branch and PR workflow.
 | ID | Scope | Decision | Authority / record |
 | --- | --- | --- | --- |
 | DEC-001 | Workflow | A short issue implementation request starts the defined workflow by default. The user need not repeat roles, paths, testing or review steps. | Confirmed human instruction, project workflow discussion, 2026-11-04; implemented in [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
-| DEC-002 | Workflow | Derive stage from issue labels, ancestor tracker and roadmap; stage is not a mandatory user input. Ask only for relevant conflict or genuinely unclear scope. Amended by DEC-010: every issue must carry a stage. | Confirmed human correction, project workflow discussion, 2026-11-04; [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
+| DEC-002 | Workflow | Derive stage from issue labels, ancestor tracker and roadmap; stage is not a mandatory user input. Ask only for relevant conflict or genuinely unclear scope. Amended by DEC-010: every issue must carry a stage. Amended by DEC-029: open and new work uses milestones. | Confirmed human correction, project workflow discussion, 2026-11-04; [PR #32](https://github.com/descipar/wled-mcp/pull/32) |
 | DEC-003 | Project / transport scope | Support both Streamable HTTP and client-managed stdio via uvx, sharing the WLED tool/domain contract. | Confirmed human scope instruction, transport discussion, 2026-11-04; [requirements](REQUIREMENTS.md), [issue #14](https://github.com/descipar/wled-mcp/issues/14) |
 | DEC-004 | Stage 3 | Named zones, temporary signals, static previews, lighting explanations and effect-property search belong to stage 3 and do not block stage-2 publication. | Confirmed human stage assignment, roadmap discussion, 2026-11-04; [stage-3 roadmap](STAGE-3.md), [tracker #26](https://github.com/descipar/wled-mcp/issues/26) |
 | DEC-005 | Project documentation / issues | Use neutral roles and synthetic examples. Exclude personal names, private hostnames and installation-specific personal context unless explicitly requested. | Existing governing [AGENTS.md](../AGENTS.md) rule, recorded 2026-11-04 |
@@ -58,7 +58,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-007 | Workflow / role maintenance | Maintain shared agent definitions usable with Claude Code and Codex. | Confirmed human instruction, shared-agent discussion, 2026-11-04; [issue #37](https://github.com/descipar/wled-mcp/issues/37) |
 | DEC-008 | Workflow / Claude Code only | In Claude Code, the coordinator launches the independent reviewer (`wled_reviewer`) explicitly with the Opus model. Codex is unaffected. | Confirmed human instruction, issue-48 workflow session, 2026-11-05; see [DEC-008](#dec-008--reviewer-on-opus-in-claude-code) |
 | DEC-009 | Project / public readiness | Keep the repository public-ready: neutral, installation-independent content, a user-facing README and copyable synthetic example deployment files referenced from the README. This does not change visibility, choose a license, publish anything or rewrite history. | Confirmed owner direction, coordinator session, 2026-11-06; see [DEC-009](#dec-009--public-ready-repository-baseline) and [issue #62](https://github.com/descipar/wled-mcp/issues/62) |
-| DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
+| DEC-010 | Project / issue tracking | Every issue belongs to exactly one stage, visible as a `Stage N: ` title prefix plus one `stage:N` label. Issues #34 and #37 belong to stage 1. Further conventions are coordinator-derived (see section). Superseded by DEC-029 for open and new work; closed history unchanged. | Confirmed owner instruction, coordinator session, 2026-11-06; see [DEC-010](#dec-010--stage-in-every-issue-title) |
 | DEC-011 | Project / outbound license | License the project under Apache-2.0 with a NOTICE file naming the author; redistributions must keep the attribution. Does not change visibility or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-011](#dec-011--apache-20-license-with-notice-attribution) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-012 | Project / identity | Keep the name `wled-mcp`: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`; always marked unofficial and unaffiliated, no WLED logo. Does not reserve names or publish anything. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-012](#dec-012--project-and-package-identity) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
 | DEC-013 | Project / contact and security | Public contact is GitHub issues only, with no published e-mail address. No security support: the project is provided as is, at the user's own risk, without a private reporting channel or response commitment; `SECURITY.md` states this. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-013](#dec-013--general-contact-and-no-security-support) and [issue #23](https://github.com/descipar/wled-mcp/issues/23) |
@@ -76,6 +76,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-026 | Project / deployment | Stage a release directory on the machine that will run it, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another. Applies to every host. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-026](#dec-026--stage-releases-on-the-target-machine) |
 | DEC-027 | Project / stages | Re-stage the open work by value per effort: stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2 features; stage 3 is worked in the order #31, #30, #28, #27, #29; stage 4 (#128) stays after stage 3; a new stage 5 "public distribution and backlog" takes #22 to #25 and #117. The stage-2 Launch requirements those issues own are not met and not dropped. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-027](#dec-027--re-stage-the-open-work-by-value-per-effort) |
 | DEC-028 | Project / workflow | Pragmatic delivery: good enough instead of 100%. Scope, evidence and review depth are bounded up front, evidence is one or two runs instead of matrices, optional polish and nits go to the next PR, small follow-ups are folded into the open PR. Safety gates are unchanged. | Confirmed owner decision, main session, 2026-11-09; see [DEC-028](#dec-028--pragmatic-delivery) |
+| DEC-029 | Project / roadmap | Replace numbered stages by GitHub milestones for open and new work: every open or new issue has exactly one milestone (Backlog counts), no `Stage N:` prefix and no `stage:N` label for new issues; closed history and requirement IDs keep their stages. Supersedes DEC-010 for open and new work, amends DEC-002. Records the new scope (#147 to #151), the order and a bounded standing merge approval for milestones M1 and M2. | Confirmed owner decision, main session, 2026-11-09; see [DEC-029](#dec-029--milestones-instead-of-stages) and [issue #152](https://github.com/descipar/wled-mcp/issues/152) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -779,6 +780,34 @@ can explicitly amend them.
 - Not changed: hardware authorization, the owner's approval for publication, tagging and
   releases, the human merge decision and the other rules of DEC-022, DEC-024 and DEC-023.
 - Applicability: all issues and all agents of this repository until the owner changes it.
+
+### DEC-029 — Milestones instead of stages
+
+- Status: active project decision.
+- Authority/source: owner answers in the main session on 2026-11-09 (no permalink), given to
+  four questions on the roadmap model, the new scope, the order and merge approval.
+- Owner decision (the wording of the items is the main session's, from those answers):
+  1. Hybrid milestone model: open and new work is organised by GitHub milestones M1 to M6
+     plus Backlog, defined in [ROADMAP.md](ROADMAP.md). Every open or new issue has exactly one
+     milestone (Backlog counts). New issues get no `Stage N: ` title prefix and no `stage:N`
+     label. Closed issues, requirement IDs and the stage documents keep their stage history.
+  2. New scope: #147 to #151 (agent guidance, effect metadata parsing, effect and palette names
+     in segment tools, live colour snapshot, MCPB bundle). Timers (W-CFG-04) stay excluded.
+  3. Order: M1 (#147, #148, #149), M2 (#150, #30), M3 (#29, #27), M4 (#28), M5 (#128),
+     M6 distribution (#22 to #25, #151), then Backlog (#138, #117, #152).
+  4. Standing merge approval under DEC-022 item 4 for milestones M1 and M2 only: a PR with a
+     current-head PASS and green CI may be merged without a per-PR question, and the approval
+     is revalidated with the owner after three issues. Issues that write to devices (#149, #27,
+     #28) keep per-PR approval. Other milestones need the owner's merge decision.
+  5. The stage trackers #26, #127 and #133 are closed as superseded; the acceptance line of
+     #133 is carried by the M6 description.
+- Not changed: DEC-021 and DEC-022 otherwise, hardware authorization, publication approvals
+  (DEC-023) and the human merge decision outside item 4.
+- Supersedes: DEC-010 for open and new work (the history of closed issues is unchanged); amends
+  DEC-002 (context is derived from milestone, labels and roadmap).
+- Affected: docs/ROADMAP.md, AGENTS.md, agents/coordinator.md, agents/requirements.md,
+  docs/AGENT-WORKFLOW.md, scripts/check_coverage.py (rule C5), docs/STAGE-3.md and docs/STAGE-5.md
+  work-order sections.
 
 ## Issue-specific decisions (pointers)
 

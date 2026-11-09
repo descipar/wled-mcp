@@ -4,9 +4,9 @@ Planning baseline: 2026-11-04. Tracker: [#26](https://github.com/descipar/wled-m
 
 The five additional ideas are assigned to stage 3 by the user's scope decision. Stage 1 (#1) remains the working server; stage 2 (#15) remains public-release readiness and its existing product roadmap. Stage-3 features are not prerequisites for a first public release. This assignment creates requirements/issues only; no feature is implemented or tested yet.
 
-## Work order ([DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort))
+## Work order
 
-The issues are worked by value per effort, not by number: [#31](https://github.com/descipar/wled-mcp/issues/31) (kept small), [#30](https://github.com/descipar/wled-mcp/issues/30), [#28](https://github.com/descipar/wled-mcp/issues/28), [#27](https://github.com/descipar/wled-mcp/issues/27), [#29](https://github.com/descipar/wled-mcp/issues/29).
+Superseded by milestones ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)): the order and grouping of these issues are in [ROADMAP.md](ROADMAP.md). The earlier order of [DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort) is kept as history. This document keeps the requirement tables.
 
 ## Requirements and owning issues
 

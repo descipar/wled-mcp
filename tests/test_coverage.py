@@ -358,6 +358,14 @@ def test_roadmap_issues_come_from_the_stage_maps():
     assert not {1, 15, 26} & CONTEXT.roadmap_issues  # trackers are not owners
 
 
+def test_roadmap_table_issues_count_and_stage_maps_still_work():
+    assert {147, 150, 28, 138} <= CONTEXT.roadmap_issues
+    base = "https://github.com/descipar/wled-mcp/issues/"
+    roadmap = f"| M | g | e | [#7]({base}7), [#8]({base}8) |\nnot a table [#9]({base}9)\n"
+    found = checker.roadmap_issues(f"| [#1]({base}1) | x |\n", "", roadmap)
+    assert found == {1, 7, 8}
+
+
 def test_planned_row_with_a_reference_fails_c4():
     # Status and link are set explicitly: W-SEG-14 itself is supported since #19.
     row = {

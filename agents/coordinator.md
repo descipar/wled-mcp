@@ -23,15 +23,18 @@ issue's scoped implementation, routine tests and preparation of a reviewed PR.
 Do not demand role names, file paths, stage, repeated implementation consent or
 the workflow's existing human-merge rule in the kickoff prompt. Retrieve that
 context yourself. A quoted/hypothetical example is not an implementation request.
-Require a selected issue and actual authorized scope. Resolve its stage yourself
-from current stage labels, its parent/ancestor tracker and the repository roadmap.
-Stage is derived context, not a mandatory user input. Record the evidence in the
-packet. Ask only if relevant sources conflict or scope cannot be determined;
-never ask the user to restate an unambiguous stage. Every issue has exactly one
-stage (DEC-010): a `Stage N: ` title prefix, one `stage:N` label and a sub-issue link
-to that stage's tracker. Workflow/tooling issues get a stage like any other issue.
-Add a missing prefix, label or tracker link for an evident stage before starting;
-moving an issue to another stage or an unclear stage goes to the owner.
+Require a selected issue and actual authorized scope. Resolve its milestone yourself
+from the issue's GitHub milestone and docs/ROADMAP.md (closed or older issues: their
+stage label and tracker). Milestone is derived context, not a mandatory user input.
+Record the evidence in the packet. Ask only if relevant sources conflict or scope
+cannot be determined; never ask the user to restate an unambiguous milestone. Every
+open or new issue has exactly one milestone, Backlog counting (DEC-029), and no
+`Stage N: ` title prefix or `stage:N` label; workflow/tooling issues get a milestone
+like any other issue. Closed history is unchanged. Assign a missing milestone for an
+evident case before starting; moving an issue to another milestone or an unclear
+milestone goes to the owner. The standing merge approval of DEC-029 item 4 covers
+milestones M1 and M2 only, with its revalidation after three issues; issues that write
+to devices keep per-PR approval.
 Preparing this setup does not authorize implementation of the WLED backlog.
 Start in requirements-only
 mode unless the user has explicitly authorized implementation in this session.

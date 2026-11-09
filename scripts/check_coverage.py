@@ -366,14 +366,20 @@ def update_texts(coverage: str, readme: str) -> tuple[str, str]:
 # --- Repository facts ----------------------------------------------------------------
 
 
-def roadmap_issues(stage2: str, stage3: str) -> frozenset[int]:
-    """Issues in the stage-2 issue map (first cell) and any stage-3 table, minus trackers."""
+def roadmap_issues(stage2: str, stage3: str, roadmap: str = "") -> frozenset[int]:
+    """Issues in the stage-2 issue map (first cell), any stage-3 table and the roadmap table.
+
+    Trackers named as ``Tracker: [#n]`` are removed.
+    """
     numbers: set[int] = set()
     for line in stage2.splitlines():
         if line.startswith("| [#"):
             first = cells(line)[0]
             numbers.update(int(number) for number in ISSUE_LINK.findall(first))
     for line in stage3.splitlines():
+        if line.startswith("|"):
+            numbers.update(int(number) for number in ISSUE_LINK.findall(line))
+    for line in roadmap.splitlines():
         if line.startswith("|"):
             numbers.update(int(number) for number in ISSUE_LINK.findall(line))
     trackers = re.findall(r"Tracker: \[#(\d+)\]", stage2 + "\n" + stage3)
@@ -479,6 +485,7 @@ def load_context(root: Path) -> Context:
         roadmap_issues=roadmap_issues(
             (docs / "STAGE-2.md").read_text(encoding="utf-8"),
             (docs / "STAGE-3.md").read_text(encoding="utf-8"),
+            (docs / "ROADMAP.md").read_text(encoding="utf-8"),
         ),
         decisions=decision_entries(docs),
         sources=(docs / "SOURCES.md").read_text(encoding="utf-8"),

@@ -71,12 +71,14 @@ For a requirements-only run, narrow the request explicitly:
 Prepare only the requirements for issue #2 using the defined workflow.
 ```
 
-Only the issue identifier is needed; the coordinator derives stage context from
-current labels, parent/ancestor trackers and the repository roadmap. Record that
+Only the issue identifier is needed; the coordinator derives milestone context from
+the issue's milestone and the repository roadmap ([ROADMAP.md](ROADMAP.md)); older
+closed issues keep their stage label and tracker. Record that
 evidence in the packet. Ask only for conflicting relevant metadata or genuinely
-unclear scope, not for an unambiguous stage. Every issue carries exactly one stage
-(DEC-010): a `Stage N: ` title prefix, one `stage:N` label and a sub-issue link to the
-stage tracker; workflow/tooling issues get a stage like any other issue.
+unclear scope, not for an unambiguous milestone. Every open or new issue carries
+exactly one milestone, Backlog counting ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)),
+and no `Stage N: ` title prefix or `stage:N` label; workflow/tooling issues get a
+milestone like any other issue.
 
 Substitute the issue deliberately; these examples are not implementation
 authorization from merely reading this file. Already accepted scope decisions
@@ -116,7 +118,7 @@ flowchart TD
 ```
 
 1. Read current issue/comments, dependencies, docs and repository changes; derive
-   stage context from labels/ancestor tracker/roadmap rather than user input.
+   milestone context from the issue milestone/roadmap rather than user input.
 2. Requirements agent creates a bounded packet. It identifies behavior decisions,
    not arbitrary additional approval gates. Reuse the maintainer's accepted scope.
 3. Implementer owns one branch/checkout and adds meaningful tests with changes.
