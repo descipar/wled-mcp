@@ -66,11 +66,31 @@ class SetStateRequest(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    device_id: str = Field(min_length=1, max_length=64)
-    on: bool | None = None
-    brightness: int | None = Field(default=None, ge=0, le=255)
-    transition_ms: int | None = Field(default=None, ge=0, le=65500)
-    dry_run: bool = False
+    device_id: str = Field(
+        min_length=1,
+        max_length=64,
+        description="Configured device ID; never a URL or discovered host.",
+    )
+    on: bool | None = Field(default=None, description="Master power; omit to preserve it.")
+    brightness: int | None = Field(
+        default=None,
+        ge=0,
+        le=255,
+        description="Master brightness, 0–255; zero requires explicit on=false when currently on.",
+    )
+    transition_ms: int | None = Field(
+        default=None,
+        ge=0,
+        le=65500,
+        description=(
+            "One-call transition in milliseconds, rounded to 100 ms; does not change persistent"
+            " transition."
+        ),
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 class SegmentPatch(BaseModel):
@@ -82,42 +102,161 @@ class SegmentPatch(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    id: int = Field(ge=0)
-    start: int | None = Field(default=None, ge=0)
-    stop: int | None = Field(default=None, ge=1)
-    on: bool | None = None
-    brightness: int | None = Field(default=None, ge=0, le=255)
-    colors: list[list[int]] | None = None
-    effect_id: int | None = Field(default=None, ge=0)
-    palette_id: int | None = Field(default=None, ge=0)
-    speed: int | None = Field(default=None, ge=0, le=255)
-    intensity: int | None = Field(default=None, ge=0, le=255)
-    grouping: int | None = Field(default=None, ge=1, le=GROUPING_MAX)
-    spacing: int | None = Field(default=None, ge=0, le=SPACING_MAX)
-    offset: int | None = Field(default=None, ge=0)
-    reverse: bool | None = None
-    mirror: bool | None = None
-    selected: bool | None = None
+    id: int = Field(
+        ge=0,
+        description="Existing segment ID to patch; for layout replacement, an explicit desired ID.",
+    )
+    start: int | None = Field(
+        default=None,
+        ge=0,
+        description="Inclusive start LED index, or X column on a matrix; supply with stop.",
+    )
+    stop: int | None = Field(
+        default=None,
+        ge=1,
+        description="Exclusive end LED index, or X column on a matrix; supply with start.",
+    )
+    on: bool | None = Field(
+        default=None, description="Segment power. Omit to preserve the existing value."
+    )
+    brightness: int | None = Field(
+        default=None,
+        ge=0,
+        le=255,
+        description="Segment brightness from 0 to 255; power is validated together with on.",
+    )
+    colors: list[list[int]] | None = Field(
+        default=None,
+        description=(
+            "Up to three RGB or RGBW color slots, each channel 0–255; capability must match."
+        ),
+    )
+    effect_id: int | None = Field(
+        default=None,
+        ge=0,
+        description="Effect ID from this device’s effect catalog; IDs are device-specific.",
+    )
+    palette_id: int | None = Field(
+        default=None,
+        ge=0,
+        description="Palette ID from this device’s palette catalog; IDs are device-specific.",
+    )
+    speed: int | None = Field(
+        default=None,
+        ge=0,
+        le=255,
+        description="Effect speed slider, 0–255; its meaning depends on the selected effect.",
+    )
+    intensity: int | None = Field(
+        default=None,
+        ge=0,
+        le=255,
+        description="Effect intensity slider, 0–255; its meaning depends on the selected effect.",
+    )
+    grouping: int | None = Field(
+        default=None,
+        ge=1,
+        le=GROUPING_MAX,
+        description="Number of adjacent LEDs treated as one pixel.",
+    )
+    spacing: int | None = Field(
+        default=None, ge=0, le=SPACING_MAX, description="Number of unlit LEDs between pixel groups."
+    )
+    offset: int | None = Field(
+        default=None, ge=0, description="Segment pixel offset, validated against the segment range."
+    )
+    reverse: bool | None = Field(
+        default=None, description="Reverse the segment’s X or strip direction."
+    )
+    mirror: bool | None = Field(
+        default=None, description="Mirror the segment along its X or strip axis."
+    )
+    selected: bool | None = Field(
+        default=None, description="Set the segment’s WLED selection flag."
+    )
     # Coarse character bound; the 32 UTF-8 byte limit is checked by the planner.
-    name: str | None = Field(default=None, max_length=32)
+    name: str | None = Field(
+        default=None,
+        max_length=32,
+        description="Segment label, at most 32 UTF-8 bytes; omit to preserve an existing label.",
+    )
     # Issue #19 (ISSUE-19-DEC-003 TD-19-2); additive, all optional.
-    cct: int | None = Field(default=None, ge=0, le=CCT_MAX)
-    custom1: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
-    custom2: int | None = Field(default=None, ge=0, le=CUSTOM_MAX)
-    custom3: int | None = Field(default=None, ge=0, le=CUSTOM3_MAX)
-    check1: bool | None = None
-    check2: bool | None = None
-    check3: bool | None = None
-    sound_simulation: int | None = Field(default=None, ge=0, le=SOUND_SIMULATION_MAX)
-    segment_set: int | None = Field(default=None, ge=0, le=SEGMENT_SET_MAX)
-    map_1d_2d: int | None = Field(default=None, ge=0, le=MAP_1D_2D_MAX)
-    freeze: bool | None = None
-    blend_mode: int | None = Field(default=None, ge=0, le=BLEND_MODE_MAX)
-    start_y: int | None = Field(default=None, ge=0)
-    stop_y: int | None = Field(default=None, ge=1)
-    reverse_y: bool | None = None
-    mirror_y: bool | None = None
-    transpose: bool | None = None
+    cct: int | None = Field(
+        default=None,
+        ge=0,
+        le=CCT_MAX,
+        description="Color temperature, 0–255, only for a segment with proven CCT capability.",
+    )
+    custom1: int | None = Field(
+        default=None,
+        ge=0,
+        le=CUSTOM_MAX,
+        description="First effect-specific custom slider, 0–255; requires field evidence.",
+    )
+    custom2: int | None = Field(
+        default=None,
+        ge=0,
+        le=CUSTOM_MAX,
+        description="Second effect-specific custom slider, 0–255; requires field evidence.",
+    )
+    custom3: int | None = Field(
+        default=None,
+        ge=0,
+        le=CUSTOM3_MAX,
+        description="Third effect-specific custom slider, 0–31; requires field evidence.",
+    )
+    check1: bool | None = Field(
+        default=None, description="First effect-specific checkbox; requires field evidence."
+    )
+    check2: bool | None = Field(
+        default=None, description="Second effect-specific checkbox; requires field evidence."
+    )
+    check3: bool | None = Field(
+        default=None, description="Third effect-specific checkbox; requires field evidence."
+    )
+    sound_simulation: int | None = Field(
+        default=None,
+        ge=0,
+        le=SOUND_SIMULATION_MAX,
+        description="WLED sound simulation mode, only where reported by the device.",
+    )
+    segment_set: int | None = Field(
+        default=None,
+        ge=0,
+        le=SEGMENT_SET_MAX,
+        description="WLED segment set value, only where reported by the device.",
+    )
+    map_1d_2d: int | None = Field(
+        default=None,
+        ge=0,
+        le=MAP_1D_2D_MAX,
+        description="WLED 1D-to-2D mapping mode, only where reported by the device.",
+    )
+    freeze: bool | None = Field(
+        default=None,
+        description="Freeze or unfreeze the segment; master power-on can unfreeze segments.",
+    )
+    blend_mode: int | None = Field(
+        default=None,
+        ge=0,
+        le=BLEND_MODE_MAX,
+        description="WLED blend mode, only where reported by the device.",
+    )
+    start_y: int | None = Field(
+        default=None, ge=0, description="Inclusive Y row on a proven matrix; supply with stop_y."
+    )
+    stop_y: int | None = Field(
+        default=None,
+        ge=1,
+        description="Exclusive end Y row on a proven matrix; supply with start_y.",
+    )
+    reverse_y: bool | None = Field(
+        default=None, description="Reverse the Y direction on a proven matrix."
+    )
+    mirror_y: bool | None = Field(default=None, description="Mirror the Y axis on a proven matrix.")
+    transpose: bool | None = Field(
+        default=None, description="Transpose X and Y on a proven matrix."
+    )
 
 
 class PatchSegmentsRequest(BaseModel):
@@ -128,10 +267,27 @@ class PatchSegmentsRequest(BaseModel):
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
-    device_id: str = Field(min_length=1, max_length=64)
-    segments: list[SegmentPatch] = Field(min_length=1, max_length=64)
-    allow_overlap: bool = False
-    dry_run: bool = False
+    device_id: str = Field(
+        min_length=1,
+        max_length=64,
+        description="Configured device ID; never a URL or discovered host.",
+    )
+    segments: list[SegmentPatch] = Field(
+        min_length=1,
+        max_length=64,
+        description=(
+            "Patches for existing active segment IDs only; omitted segments and fields are "
+            "preserved."
+        ),
+    )
+    allow_overlap: bool = Field(
+        default=False,
+        description="Explicitly permit overlapping resulting segments; defaults to false.",
+    )
+    dry_run: bool = Field(
+        default=False,
+        description="Validate and return the plan without changing devices or stored definitions.",
+    )
 
 
 # ---------------------------------------------------------------------------- outputs
