@@ -939,6 +939,10 @@ Stage 2 (recorded 2026-11-07):
 - [ISSUE-1-DEC-001](decisions/issue-1.md) (human, 2026-11-06, stage-1 close-out): the
   OPS-04 diagnostics on main count as delivered for stage 1, the remainder is deferred to
   #16; housekeeping issue #44 belongs to stage 2.
+- [ISSUE-134-DEC-001](decisions/issue-134.md) (human, delegated owner chat authority,
+  2026-11-09, issue #134 only): one hardware run of the stage-2 features on the test
+  controller through the hub HTTP service, state restored at the end, playlist covered; the
+  run is complete and recorded in [validation/issue-134.md](validation/issue-134.md).
 
 ## Still unresolved
 

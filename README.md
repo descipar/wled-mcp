@@ -121,9 +121,15 @@ Automated tests use mocks and synthetic loopback devices. Hardware acceptance co
 first feature set on one RGB controller, and a live check with an offline controller is
 still pending. A short live check of the second release over HTTP and stdio covered state
 reads, power, brightness and effect changes on that controller
-([record](docs/validation/live-check-2026-11-08.md)). Groups, scenes, preset bundles, playlists, snapshot restore, advanced
-segment fields, profiles and `discover` have no hardware run yet. Other limits:
+([record](docs/validation/live-check-2026-11-08.md)). A later run on the same controller
+exercised a one-device group and scene, preset store, export, import and restore, and a
+playlist, with the controller restored afterwards
+([record](docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
+onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run.
+Other limits:
 
+- No tool deletes a snapshot on request; snapshots are only removed by retention pruning
+  (20 per controller by default).
 - Storing, restoring or importing a preset without changing the live output is not
   possible on WLED 16, and saving a playlist starts it.
 - One writer per controller: locks are per process, so a second process or service against

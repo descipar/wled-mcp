@@ -50,9 +50,15 @@ State of the evidence and the limits of the first source release (see also the
   other controllers or firmware versions is claimed. A short live check of the second
   release over HTTP and stdio on that controller is recorded in
   [validation/live-check-2026-11-08.md](validation/live-check-2026-11-08.md).
-- Groups, scenes, preset bundles, playlist authoring, snapshot restore, advanced segment
-  fields, tool profiles and `discover` have mock and loopback evidence only; no hardware
-  run covers them yet.
+- A hardware run of the stage-2 features on the test controller (WLED 16.0.1, one RGB
+  segment, HTTP service on the hub) covered a one-device group and scene (plan, apply, readback,
+  delete), preset store, export, import and restore with snapshots on unused slots, and one
+  single-entry playlist; every write was verified and the controller's state, segment and
+  preset list were restored ([validation/issue-134.md](validation/issue-134.md)). Four snapshots
+  of that run remain in the service data directory (no snapshot-delete tool). Not run on
+  hardware: multi-device scenes, tool profiles, `discover`, restore onto an occupied slot
+  (`overwrite=true`), playlist import and restoring a playlist preset. Advanced segment fields
+  (CCT, RGBW, 2D) have mock and loopback evidence only.
 - Storing, restoring or importing a preset without changing the live output is not possible
   on WLED 16, and saving a playlist starts it. Imports do not rescale LED ranges or convert
   matrix layouts, and import one playlist per call
@@ -1283,3 +1289,5 @@ All Must requirements need evidence. Mock implementation can be merged while har
 - [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
   the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
   upgrade compatibility) (#21, #70).
+- [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
+  bundles, restore and a playlist on the test controller (#134).
