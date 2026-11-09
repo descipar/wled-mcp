@@ -42,6 +42,12 @@ EXAMPLES = (
     "examples/devices.example.toml",
 )
 LINK = re.compile(r"\]\(([^)\s]+)\)")
+# README.md is also the PyPI project page, where relative links do not resolve (#22,
+# ISSUE-22-DEC-005): it links repository files by these absolute URLs.
+REPOSITORY = "https://github.com/descipar/wled-mcp/"
+REPOSITORY_PREFIXES = (REPOSITORY + "blob/main/", REPOSITORY + "tree/main/")
+REFERENCE_DEFINITION = re.compile(r"^ {0,3}\[[^\]]+\]:\s*(\S+)", re.M)
+HTML_TARGET = re.compile(r"""\b(?:href|src)\s*=\s*["']?([^"'\s>]+)""", re.I)
 
 
 def slug(heading: str) -> str:
@@ -55,19 +61,61 @@ def anchors(path: Path) -> set[str]:
     return {slug(match) for match in re.findall(r"^#{1,6} (.+)$", text, flags=re.M)}
 
 
+def repository_path(target: str) -> str | None:
+    """The checkout path of an absolute link to a file or directory on ``main``, else None."""
+    for prefix in REPOSITORY_PREFIXES:
+        if target.startswith(prefix):
+            return target.removeprefix(prefix)
+    return None
+
+
+def link_targets(text: str) -> set[str]:
+    """Link targets without anchor; absolute repository links as checkout paths."""
+    targets = set()
+    for target in LINK.findall(text):
+        target = target.split("#", 1)[0]
+        targets.add(repository_path(target) or target)
+    return targets
+
+
 def link_problems(path: Path, text: str) -> list[str]:
-    """Local links in ``text`` (read as ``path``) whose file or heading anchor is missing."""
+    """Local links in ``text`` (read as ``path``) whose file or heading anchor is missing.
+
+    Absolute links to files or directories on ``main`` of this repository are checked
+    against the checkout, like relative links.
+    """
     problems = []
     for target in LINK.findall(text):
-        if "://" in target or target.startswith("mailto:"):
+        in_repository = repository_path(target)
+        if in_repository is None and ("://" in target or target.startswith("mailto:")):
             continue
-        local, _, anchor = target.partition("#")
-        resolved = (path.parent / local).resolve() if local else path
+        local, _, anchor = (in_repository if in_repository is not None else target).partition("#")
+        if in_repository is not None:
+            resolved = (ROOT / local).resolve() if local else ROOT
+        else:
+            resolved = (path.parent / local).resolve() if local else path
         if not resolved.exists():
             problems.append(f"{path.name}: missing {target}")
         elif anchor and resolved.suffix == ".md" and anchor not in anchors(resolved):
             problems.append(f"{path.name}: missing anchor {target}")
     return problems
+
+
+def relative_link_problems(text: str) -> list[str]:
+    """Links that do not resolve on the PyPI project page: anything but https and mailto.
+
+    Covers inline links and images, reference definitions and HTML ``href``/``src``.
+    """
+    targets = [
+        *LINK.findall(text),
+        *REFERENCE_DEFINITION.findall(text),
+        *HTML_TARGET.findall(text),
+    ]
+    return [
+        f"not an https or mailto link: {target}"
+        for target in targets
+        if not target.startswith(("https://", "mailto:"))
+    ]
 
 
 def hint_class(operation) -> str:
@@ -136,7 +184,7 @@ def readme_problems(text: str) -> list[str]:
     """What the README must state so that a new user can follow it (R62-2, R62-3)."""
     problems = []
     flat = " ".join(text.split())
-    targets = {target.split("#", 1)[0] for target in LINK.findall(text)}
+    targets = link_targets(text)
     for target in ("docs/QUICKSTARTS.md", "docs/TOOL-CONTRACT.md", "docs/DEPLOYMENT.md"):
         if target not in targets:
             problems.append(f"README does not link {target}")
@@ -144,7 +192,7 @@ def readme_problems(text: str) -> list[str]:
         problems.append("README try-it path lacks 'wled-mcp config init'")
     if not re.search(r"not affiliated with[^.]*WLED project[^.]*MCPHub", flat):
         problems.append("README lacks the non-affiliation statement")
-    if "Apache License 2.0" not in flat or "(NOTICE)" not in flat:
+    if "Apache License 2.0" not in flat or "NOTICE" not in link_targets(text):
         problems.append("README does not state the Apache-2.0 license and NOTICE file")
     for section in (
         "## Try it",
@@ -174,7 +222,7 @@ def orientation_problems(text: str) -> list[str]:
     """What an outside reader learns before the repository is public (#90, DEC-016)."""
     problems = []
     flat = " ".join(text.split())
-    targets = {target.split("#", 1)[0] for target in LINK.findall(text)}
+    targets = link_targets(text)
     for target in (
         "CONTRIBUTING.md",
         "SECURITY.md",
@@ -187,8 +235,9 @@ def orientation_problems(text: str) -> list[str]:
             problems.append(f"README does not link {target}")
     for term in (
         "early software",
-        "installed from Git",
-        "not published to PyPI or GHCR",
+        "distributed on PyPI",
+        "installs from its Git tag",
+        "not published to GHCR",
         "There is no support commitment",
         "best effort",
         "There is no security support",
@@ -250,12 +299,71 @@ def test_local_links_and_anchors_resolve(path):
 
 def test_link_check_rejects_missing_files_and_anchors():
     text = README.read_text("utf-8")
-    broken = text.replace("(docs/QUICKSTARTS.md#inventory)", "(docs/QUICKSTART.md)", 1)
-    assert "README.md: missing docs/QUICKSTART.md" in link_problems(README, broken)
-    broken = text.replace("#inventory)", "#inventories)", 1)
-    assert "README.md: missing anchor docs/QUICKSTARTS.md#inventories" in link_problems(
+    quickstarts = f"({REPOSITORY}blob/main/docs/QUICKSTARTS.md#inventory)"
+    assert quickstarts in text
+    broken = text.replace(quickstarts, f"({REPOSITORY}blob/main/docs/QUICKSTART.md)", 1)
+    assert f"README.md: missing {REPOSITORY}blob/main/docs/QUICKSTART.md" in link_problems(
         README, broken
     )
+    broken = text.replace("#inventory)", "#inventories)", 1)
+    assert (
+        f"README.md: missing anchor {REPOSITORY}blob/main/docs/QUICKSTARTS.md#inventories"
+        in link_problems(README, broken)
+    )
+    # The same for the relative links of the other documents.
+    project = PROJECT.read_text("utf-8")
+    relative = re.search(r"\]\(((?!https?:|mailto:|#)[^)\s#]+\.md)\)", project)
+    assert relative, "docs/PROJECT.md has no relative Markdown link to mutate"
+    broken = project.replace(f"]({relative.group(1)})", "](MISSING.md)", 1)
+    assert "PROJECT.md: missing MISSING.md" in link_problems(PROJECT, broken)
+
+
+@pytest.mark.parametrize(
+    ("target", "expected"),
+    [
+        (f"{REPOSITORY}tree/main/docs/decisions", None),
+        (f"{REPOSITORY}tree/main/no-such-dir", "missing"),
+        (f"{REPOSITORY}blob/main/README.md#support", None),
+        (f"{REPOSITORY}blob/main/README.md#no-such-heading", "missing anchor"),
+        (f"{REPOSITORY}issues/22", None),
+        ("https://example.invalid/docs/QUICKSTART.md", None),
+    ],
+    ids=["dir", "missing-dir", "anchor", "missing-anchor", "issue", "external"],
+)
+def test_link_check_maps_repository_urls_to_the_checkout(target, expected):
+    problems = link_problems(README, f"Text [x]({target}).\n")
+    assert problems == ([] if expected is None else [f"README.md: {expected} {target}"])
+
+
+def test_readme_has_only_absolute_links():
+    # The PyPI project page renders README.md without the repository (AC-22R-README-07).
+    text = README.read_text("utf-8")
+    assert relative_link_problems(text) == []
+    assert len(LINK.findall(text)) > 30, "README links were not found"
+
+
+@pytest.mark.parametrize(
+    ("planted", "expected"),
+    [
+        (
+            "See [the guide](docs/QUICKSTARTS.md).",
+            "not an https or mailto link: docs/QUICKSTARTS.md",
+        ),
+        ("See [support](#support).", "not an https or mailto link: #support"),
+        ("![diagram](docs/diagram.png)", "not an https or mailto link: docs/diagram.png"),
+        ("[guide]: docs/QUICKSTARTS.md", "not an https or mailto link: docs/QUICKSTARTS.md"),
+        ('<img src="docs/diagram.png" alt="x">', "not an https or mailto link: docs/diagram.png"),
+        ('<a href="./SECURITY.md">x</a>', "not an https or mailto link: ./SECURITY.md"),
+        (
+            "[plain](http://example.invalid/)",
+            "not an https or mailto link: http://example.invalid/",
+        ),
+    ],
+    ids=["file", "fragment", "image", "reference", "html-img", "html-a", "plain-http"],
+)
+def test_relative_link_check_rejects_each_link_form(planted, expected):
+    text = README.read_text("utf-8") + "\n" + planted + "\n"
+    assert relative_link_problems(text) == [expected]
 
 
 @pytest.mark.parametrize(
@@ -348,9 +456,14 @@ def test_tool_table_check_rejects_drift(old, new):
             "README lacks section '## Support'",
         ),
         (
-            "not published to PyPI or\nGHCR",
-            "published to PyPI and\nGHCR",
-            "README orientation text lacks 'not published to PyPI or GHCR'",
+            "not published to GHCR",
+            "published to GHCR",
+            "README orientation text lacks 'not published to GHCR'",
+        ),
+        (
+            "installs from its Git tag",
+            "is not installable",
+            "README orientation text lacks 'installs from its Git tag'",
         ),
         (
             "There is no support commitment.",
@@ -363,12 +476,17 @@ def test_tool_table_check_rejects_drift(old, new):
             "README orientation text lacks 'Human contributions do not need this workflow'",
         ),
         (
-            "[CONTRIBUTING.md](CONTRIBUTING.md)",
+            f"[CONTRIBUTING.md]({REPOSITORY}blob/main/CONTRIBUTING.md)",
             "CONTRIBUTING.md",
             "README does not link CONTRIBUTING.md",
         ),
         (
-            "[docs/DECISIONS.md](docs/DECISIONS.md)",
+            f"[NOTICE]({REPOSITORY}blob/main/NOTICE)",
+            "NOTICE",
+            "README does not state the Apache-2.0 license and NOTICE file",
+        ),
+        (
+            f"[docs/DECISIONS.md]({REPOSITORY}blob/main/docs/DECISIONS.md)",
             "docs/DECISIONS.md",
             "README does not link docs/DECISIONS.md",
         ),
@@ -416,7 +534,7 @@ def support_table_problems(readme: str, compatibility: str) -> list[str]:
     problems = []
     if "## Compatibility\n" not in readme:
         return ["README lacks section '## Compatibility'"]
-    if "(docs/contract/compatibility.md)" not in readme:
+    if "docs/contract/compatibility.md" not in link_targets(readme):
         problems.append("README does not link docs/contract/compatibility.md")
     shown, matrix = readme_support_table(readme), compatibility_matrix(compatibility)
     if not matrix:
@@ -438,7 +556,10 @@ def test_readme_support_table_matches_the_compatibility_matrix():
     [
         ("| Windows | experimental |", "| Windows | supported |"),
         ("| macOS | experimental |\n", ""),
-        ("(docs/contract/compatibility.md)", "(docs/contract/versioning.md)"),
+        (
+            f"({REPOSITORY}blob/main/docs/contract/compatibility.md)",
+            f"({REPOSITORY}blob/main/docs/contract/versioning.md)",
+        ),
     ],
 )
 def test_support_table_check_rejects_drift(old, new):
