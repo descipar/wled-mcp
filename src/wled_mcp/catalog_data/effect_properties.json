@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "data_version": "2026-11-09",
+  "data_version": "2026-11-09.1",
   "property_notes": "Curated by hand from the WLED firmware source; see docs/contract/effect-search.md. Subjective properties are recommendations, never verified. A property that is absent is unknown. flashing is a comfort property and not a photosensitivity guarantee.",
   "firmware": {
     "reviewed": [
@@ -381,13 +381,13 @@
           "value": "low",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         }
       }
     },
@@ -425,14 +425,14 @@
         "visibility": {
           "value": "low",
           "confidence": "recommended",
-          "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "basis": "author_judgement",
+          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/live-check-2026-11-08.md) but the owner remark did not name it."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
-          "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "basis": "author_judgement",
+          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/live-check-2026-11-08.md) but the owner remark did not name it."
         }
       }
     },
@@ -477,13 +477,13 @@
           "value": "low",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "docs/validation/live-check-2026-11-08.md: owner remark that soft effects were barely visible with pale palettes at low brightness"
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         }
       }
     }

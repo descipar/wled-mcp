@@ -42,7 +42,7 @@ is **unknown**; it is never guessed from the name.
 | --- | --- | --- | --- |
 | `flashing` | `none`, `occasional`, `frequent` | verified | Worst case over speed/intensity: `frequent` for on/off alternation (strobe, blink), `none` when the effect function has no abrupt full-strip alternation at any setting. A comfort property, **not** a medical photosensitivity guarantee |
 | `colors` | integer 0 to 3 | verified | Colour slots in the colour field of the effect's metadata string (`_data_FX_MODE_*` in FX.cpp); for effects without one, the colours the effect function reads |
-| `uses_palette` | bool | verified | The metadata string offers a palette selection |
+| `uses_palette` | bool | verified | The metadata string offers a palette selection; for an effect without a metadata string (Solid), whether the effect function reads a palette |
 | `motion` | `static`, `calm`, `moderate`, `lively` | recommended | Subjective |
 | `strip_length` | non-empty subset of `short`, `medium`, `long` | recommended | Subjective |
 | `visibility` | `low`, `medium`, `high` | recommended | How well the effect reads at modest brightness; soft effects tend low. Curated judgement, not measured |
@@ -53,8 +53,10 @@ is **unknown**; it is never guessed from the name.
 loader rejects such an entry. `basis` is `source_review`, `observed_run` or
 `author_judgement`; a `verified` property needs `source_review` or `observed_run`. `evidence`
 is required text naming the source or record. Visibility and palette saturation need
-come from an owner remark in a recorded live check
-([live-check-2026-11-08](../validation/live-check-2026-11-08.md)) and stay `recommended`.
+of Noise 3 and Blends rest on an owner comment on #31 and a remark in a recorded live check
+([live-check-2026-11-08](../validation/live-check-2026-11-08.md)); Sine's are author
+judgement by analogy (it was in that run but not named), and Solid's visibility is author
+judgement. All of them stay `recommended`.
 
 ## Matching and explanation
 
@@ -138,6 +140,7 @@ promotion in `compat.py` and [compatibility.md](compatibility.md) is a separate 
 Change list:
 
 - `2026-11-09`: initial catalog of 12 effects for WLED 16.0.1.
+- `2026-11-09.1`: review fix; provenance of the Sine, Noise 3 and Blends visibility entries.
 
 ## Limits
 
