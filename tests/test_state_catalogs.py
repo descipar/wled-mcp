@@ -25,7 +25,6 @@ from tests.test_inventory_client import config, device
 from tests.test_version_source import canonical_version
 from tests.tool_contract import ToolClass, destructive_names, expected_names, names_of
 from wled_mcp.catalogs import (
-    PLACEHOLDER_NAME,
     AmbiguousName,
     CatalogEntry,
     catalog_items,
@@ -66,7 +65,7 @@ def tools(resources):
 
 async def call(resources, name, **arguments):
     arguments.setdefault("device_id", "desk")
-    model = GetStateRequest if name == "wled_get_state" else GetCatalogRequest
+    model = tools(resources)[name].request_model
     return await tools(resources)[name].execute(model.model_validate(arguments).model_dump())
 
 
@@ -471,11 +470,12 @@ async def test_effect_catalog_preserves_ids_gaps_placeholders_and_metadata(tmp_p
         result = await call(resources, "wled_get_effects")
     assert_read_envelope(result, "wled_get_effects")
     items = result.data["effects"]
-    assert [(i["id"], i["name"]) for i in items] == list(enumerate(names))
-    assert [i["id"] for i in items if i.get("placeholder")] == [1, 3]
-    assert all("placeholder" not in i for i in items if i["name"] != PLACEHOLDER_NAME)
-    assert items[5]["metadata"] == {"fxdata": "d5"}
-    assert result.data["count"] == 8 and result.warnings == []
+    assert [(i["id"], i["name"]) for i in items] == [
+        (i, name) for i, name in enumerate(names) if name != "RSVD"
+    ]
+    assert all("placeholder" not in i for i in items)
+    assert next(i for i in items if i["id"] == 5)["metadata"]["fxdata"] == "d5"
+    assert result.data["count"] == 6 and len(result.warnings) == 6
     assert result.data["metadata"] == {"status": "available", "reason": None}
     freshness = result.data["freshness"]
     assert freshness["source"] == "device" and freshness["age_seconds"] == 0.0
@@ -539,7 +539,9 @@ async def test_optional_fxdata_failure_keeps_names_and_succeeds(tmp_path, fxdata
     ) as resources:
         result = await call(resources, "wled_get_effects")
     assert_read_envelope(result, "wled_get_effects")
-    assert [i["name"] for i in result.data["effects"]] == EFFECTS
+    assert [i["name"] for i in result.data["effects"]] == [
+        name for name in EFFECTS if name != "RSVD"
+    ]
     assert all("metadata" not in item for item in result.data["effects"])
     assert result.data["metadata"] == {"status": "unavailable", "reason": reason}
     assert len(result.warnings) == 1 and SECRET not in result.model_dump_json()
@@ -575,7 +577,9 @@ async def test_hanging_fxdata_does_not_consume_the_whole_deadline(tmp_path):
         result = await call(resources, "wled_get_effects")
         elapsed = anyio.current_time() - started
     assert result.ok and result.data["metadata"] == {"status": "unavailable", "reason": "TIMEOUT"}
-    assert [i["name"] for i in result.data["effects"]] == EFFECTS
+    assert [i["name"] for i in result.data["effects"]] == [
+        name for name in EFFECTS if name != "RSVD"
+    ]
     assert elapsed < 0.4
 
 
@@ -757,9 +761,10 @@ def test_catalog_items_never_use_fxdata_for_names():
     entry = CatalogEntry(
         ("A",), ("x@y",), None, InfoIdentity("v", None), 0.0, entry_for([]).fetched_at, ()
     )
-    assert catalog_items(entry, "effects") == [
-        {"id": 0, "name": "A", "metadata": {"fxdata": "x@y"}}
-    ]
+    item = catalog_items(entry, "effects")[0]
+    assert item["id"] == 0 and item["name"] == "A"
+    assert item["metadata"]["fxdata"] == "x@y"
+    assert item["metadata"]["warnings"]
 
 
 # --------------------------------------------------------------------------- stdio
@@ -811,7 +816,9 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                 assert result.is_error == (not envelope["ok"])
                 outcomes[(name, args["device_id"])] = envelope
             assert outcomes[("wled_get_state", "desk")]["ok"]
-            assert outcomes[("wled_get_effects", "desk")]["data"]["count"] == len(EFFECTS)
+            assert outcomes[("wled_get_effects", "desk")]["data"]["count"] == len(
+                [name for name in EFFECTS if name != "RSVD"]
+            )
             assert outcomes[("wled_get_palettes", "desk")]["data"]["count"] == len(PALETTES)
             assert outcomes[("wled_get_state", "shelf")]["error"]["code"] == "INVALID_RESPONSE"
             assert outcomes[("wled_get_effects", "shelf")]["error"]["code"] == "INVALID_RESPONSE"
