@@ -17,15 +17,17 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   the envelope and on the error object, while the models keep `extra="forbid"` for internal
   validation, so later additive envelope or error fields do not break a client that cached
   this schema. (2) The contract documents that a client which cached a schema served before
-  this change (0.1.0, 0.1.1 and earlier non-release builds, all with
-  `additionalProperties: false`) rejects the top-level `correlation_id` (added after 0.1.0)
-  and any later additive field until it refreshes `tools/list`; reloading the hub entry
-  clears it (observed about a minute). Clients must ignore unknown fields.
+  this change (all with `additionalProperties: false`) rejects a later additive field until
+  it refreshes `tools/list`. The observed case is a build from before the `correlation_id`
+  of #119; the tagged releases already serve that field, so updating from them needs no
+  reload. Reloading the hub entry cleared it (about a minute observed once; other clients
+  may cache longer). Clients must ignore unknown fields.
 - Applicability / conditions / expiry: applies to the served envelope and error object only;
   fields inside `data` were never affected. Does not change any input schema, error-code
   set or required field.
-- Rationale supplied: the confirmed cause is the retained 0.1.0 `tools.json` listing the
-  envelope without `correlation_id` under `additionalProperties: false`. A looser output
+- Rationale supplied: the confirmed cause (for the pre-#119 build path) is the retained
+  first-release fixture, generated from a build before #119, listing the envelope without
+  `correlation_id` under `additionalProperties: false`. A looser output
   schema is a non-breaking, additive change.
 - Affected requirement IDs, files, issues and tests: #130; `src/wled_mcp/models.py`;
   `tests/test_upgrade_compat.py`; docs/contract/versioning.md; docs/TOOL-CONTRACT.md;

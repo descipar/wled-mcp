@@ -689,10 +689,12 @@ def test_current_envelope_accepts_future_additive_fields(served, tmp_path):
 def test_schema_cached_from_the_first_release_rejects_current_envelope(tmp_path):
     """The documented one-time transition (#130), not a behaviour to keep.
 
-    A client that cached a 0.1.0 ``outputSchema`` (``additionalProperties: false``, no
-    ``correlation_id``) rejects every envelope that carries the later top-level field until
-    it refreshes ``tools/list``. Schemas served from the #130 change on tolerate additive
-    fields (test above), so this cannot recur for them.
+    The retained fixture is generated from a build before #119 (the tagged releases already
+    serve ``correlation_id``). A client that cached such an ``outputSchema``
+    (``additionalProperties: false``, no ``correlation_id``) rejects every envelope that
+    carries the later top-level field until it refreshes ``tools/list``.
+    Schemas served from the #130 change on tolerate additive fields (test above), so this
+    cannot recur for them.
     """
     import jsonschema  # a dependency of mcp; not skipped, so a missing one fails loudly
 

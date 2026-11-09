@@ -129,10 +129,10 @@ meaning. While the major version is `0` (DEC-020):
   the served output schema allows additional properties on the envelope and on the error
   object (the models still validate strictly inside the server), so a new output field
   stays non-breaking even for a client that cached the schema. Limit: a client that cached
-  a schema served before that change (every release so far and earlier non-release builds, all
-  `additionalProperties: false`) rejects a newly added envelope field, such as
-  `correlation_id`, once after the upgrade until it refreshes `tools/list` (reload the
-  hub entry); this is a one-time transition. A new error-code or other enum value is
+  a schema served before that change (all `additionalProperties: false`) rejects a newly
+  added envelope field once after the upgrade until it refreshes `tools/list` (reload the
+  hub entry); this is a one-time transition. The observed case was a build from before the
+  `correlation_id` of #119; the tagged releases already serve it. A new error-code or other enum value is
   non-breaking for the contract but can fail a cached schema the same way, because enums
   stay closed.
 - Deprecation: where feasible, a field or tool to be removed stays for one minor

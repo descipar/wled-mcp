@@ -16,10 +16,13 @@ this file. Fixes are made for the latest release only. See
 
 ### Migration
 
-A client that cached the 0.1.0 or 0.1.1 schema (or an earlier non-release build) rejects the
-`correlation_id` that every served envelope carries since #119, with "data must NOT have
-additional properties", until it refreshes `tools/list`. Reload the hub entry once after the
-upgrade; it also clears by itself after about a minute. Later additive fields are tolerated.
+The tagged releases 0.1.0 and 0.1.1 already serve `correlation_id` (#119), so upgrading from
+them needs no refresh. A client that cached the schema of a build from before #119 (as the
+hub did after an update from such a build) rejects every envelope with "data must NOT have
+additional properties" until it refreshes `tools/list`: reload the hub entry once. About a
+minute was observed once with the hub; other clients may cache longer. Clients that cached
+the schema of any build before this change would reject a future additive field the same way
+once; schemas served from this change on tolerate additive fields.
 
 ## 0.1.1 - documentation release
 
