@@ -85,3 +85,26 @@ part of this change.
   the draft follows the manifest schema and its field descriptions only.
 - Only the Windows development machine ran these checks; the Linux CI run is the evidence for
   the full suite and the distribution check on the supported platform.
+
+## Follow-up: release 0.2.0 preparation (2026-11-09)
+
+The 0.1.3 preparation was merged but never tagged or published; [DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)
+requires a minor release for milestone M1, so the version became 0.2.0 in `pyproject.toml`,
+`uv.lock` (project entry only) and both versions of `server.json`, and the changelog section was
+rewritten. [ISSUE-24-DEC-003](../decisions/issue-24.md) narrows the listing routes to the
+official MCP Registry; the MCPM and hosted-directory drafts stay unsubmitted.
+
+- Live schema run repeated against freshly downloaded schemas: the official schema still has
+  SHA-256 `3fba09590c99f61735d234822279f4223fab9e300c0a81e81c91ab62a4114de0` and the MCPM schema
+  `db6a9e57a91c82a22c9ad6d57f65b8255dedb76e6dc24e9376501f821aa11b18`; `server.json` against the
+  2025-12-11 schema 0 errors (`Draft7Validator`, `jsonschema` 4.26.0), the MCPM draft 0 errors,
+  both negative controls rejected. The limits stated above apply unchanged (publisher checks not
+  run, `format` keywords not enforced).
+- The status table, `PUBLISHING.md` release chain and the changed status-vocabulary test are in
+  the same change. The test now accepts the state "not planned" only for a row that cites
+  ISSUE-24-DEC-003; the official registry row must stay "validated locally" and the install test
+  "not run".
+- README: the M1 features, tool count (27 to 31, from the tool contract and the registered tools)
+  and the limitation sentence for features without a hardware run. The README still says there
+  is no registry entry.
+- Nothing was tagged, released, uploaded or submitted; `mcp-publisher` was not used.

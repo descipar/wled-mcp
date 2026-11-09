@@ -205,21 +205,30 @@ Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README m
 `mcp-name: io.github.descipar/wled-mcp` (inside the package description, which
 `scripts/check_distribution.py` requires) and the root [`server.json`](../server.json)
 (see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/issue-24.md](validation/issue-24.md)).
-The workflow above does not touch the registry, and no registry automation (for example GitHub
-OIDC in a workflow) is wired. Every step below is an owner action that needs the owner's
-instruction at that time, and a release of a version does not authorize it:
+The goal is that the server is findable in the MCPHub registry, which is the official MCP
+Registry, after milestone M1 closes ([ISSUE-24-DEC-003](decisions/issue-24.md); the MCPM and
+hosted-directory routes are not planned). The workflow above does not touch the registry, and no
+registry automation (for example GitHub OIDC in a workflow) is wired.
 
-1. Check that PyPI serves the marker for the released version: the `info.description` of
+**Release chain for the milestone release (version in `pyproject.toml`, `<version>` below).**
+Each step needs the owner's explicit instruction at that time; completing or merging one step
+never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release),
+[DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
+
+1. After the release pull request is merged: create the tag `v<version>` on that `main` commit
+   and publish the GitHub release for it (see "First release" above).
+2. `publish.yml` builds, smoke-tests and, after the `pypi` environment review, uploads through
+   Trusted Publishing.
+3. Check that PyPI serves the marker: the `info.description` of
    `https://pypi.org/pypi/wled-mcp/<version>/json` contains `mcp-name: io.github.descipar/wled-mcp`,
    and `server.json` carries `<version>` twice.
-2. Install `mcp-publisher` from a pinned release (re-check the current version; v1.8.8 was
+4. Install `mcp-publisher` from a pinned release (re-check the current version; v1.8.8 was
    observed on 2026-11-06) and verify the downloaded file against the checksum or signature
    the release provides before running it.
-3. `mcp-publisher login github`, signed in as the account that owns the `descipar` namespace;
-   then `mcp-publisher publish` in the repository root. The `validate` subcommand was
-   observed to send the file to the registry service, so it is an external call, not a local
-   check.
-4. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
+5. Run `mcp-publisher login github` as the account that owns the `descipar` namespace, then
+   `mcp-publisher publish` in the repository root. The `validate` subcommand was observed to
+   send the file to the registry service, so it is an external call, not a local check.
+6. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
    and record the result. Whether a published entry can be corrected under the same version
    was not checked; read the registry's rules before relying on it.
 

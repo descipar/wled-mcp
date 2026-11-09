@@ -29,8 +29,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   because it sends the file to an external service.
 - Applicability / conditions / expiry: bounded to the listed work on this issue. It is not
   standing permission for publication or submission; each of those needs the owner's instruction
-  at that time (DEC-023). The merge of the pull request needs its own decision (DEC-022,
-  DEC-029: milestone M6 has no standing merge approval).
+  at that time (DEC-023). The merge of the pull request follows DEC-022 and DEC-029 item 4
+  (milestone M1, where #24 now sits per DEC-030: standing approval with a current-head PASS and
+  green CI, while it is valid); a merge under it authorizes no publication step (DEC-030).
 - Rationale supplied: none beyond the scope choice.
 - Affected requirement IDs, files, issues and tests: S2-MARKET-01, S2-MARKET-02 (drafts),
   S2-MARKET-03 (not run); README.md, server.json, docs/listings/, docs/MARKETPLACE.md,
@@ -40,6 +41,10 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   coordinator handoff (local packet under `.agent-runs/`).
 - Revalidation needed / next action: owner merge decision; the owner actions listed in
   [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release) after the release.
+- Update 2026-11-09: the pull request was merged. Item 4 (a patch release) is superseded in
+  part by DEC-030 item 4: the milestone release needs a minor version; the prepared patch
+  version was never tagged or published and was replaced by a minor version in a follow-up
+  change. Items 1 to 3 stand; item 3's drafts are narrowed by ISSUE-24-DEC-003.
 
 ## ISSUE-24-DEC-002 — Technical defaults for the registry packet
 
@@ -96,3 +101,31 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   named argument without a value is schema-valid but leaves clients free to prompt for a
   value); this is a deviation from "named flag" in the proposal and is reported to the
   coordinator.
+
+## ISSUE-24-DEC-003 — Official MCP Registry only; no MCPM or hosted-directory submission for now
+
+- ID: ISSUE-24-DEC-003
+- Recorded date: 2026-11-09
+- Status: active for issue #24 only.
+- Authority: human decision (owner instruction in the main coordinator session; chat is the
+  normal channel for owner authority).
+- Source: owner message in the main session on 2026-11-09 (no permalink): once milestone M1 is
+  closed, the server shall be findable in the MCPHub registry, which is the official MCP
+  Registry; the MCPM contribution and the hosted mcphub.app form are not wanted for now.
+- Scope: issue #24 (S2-MARKET-01 to 03), the listing routes only.
+- Decision: the goal is that the server is findable through the official MCP Registry after M1
+  closes. The MCPM / local-catalog contribution and the hosted mcphub.app submission are dropped
+  for now; their drafts stay in `docs/listings/` as unsubmitted drafts and are not maintained
+  for a submission. A tag, a GitHub release, a PyPI upload, `mcp-publisher login` and
+  `mcp-publisher publish` each need the owner's explicit instruction at that time.
+- Applicability / conditions / expiry: bounded to #24 and "for now"; the owner may reinstate
+  either route. It is not standing permission for any publication or submission (DEC-023,
+  DEC-030).
+- Rationale supplied: the MCPHub registry view is the official registry; no other reason given.
+- Affected requirement IDs, files, issues and tests: S2-MARKET-02 (not planned, drafts only);
+  docs/MARKETPLACE.md, docs/PUBLISHING.md, tests/test_registry_metadata.py (status vocabulary).
+- Supersedes / superseded by: narrows ISSUE-24-DEC-001 item 3; supersedes nothing else.
+- Propagated to roles / packet references: via the coordinator handoff.
+- Revalidation needed / next action: the 0.2.0 release chain in
+  [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release), step by step on
+  the owner's instruction.

@@ -526,27 +526,43 @@ def test_marketplace_states_that_http_is_self_hosted_and_links_the_quickstart():
 # ------------------------------------------------------------------ AC-24-08 status table
 
 
-def status_rows(text: str) -> list[tuple[str, str]]:
+def status_rows(text: str) -> list[tuple[str, str, str]]:
     section = text.split("## Status per route", 1)[1].split("\n## ", 1)[0]
     rows = []
     for line in section.splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
         if line.startswith("|") and len(cells) >= 2 and not set(cells[0]) <= {"-", " "}:
-            rows.append((cells[0], cells[1]))
+            rows.append((cells[0], cells[1], line))
     return rows[1:]  # header
 
 
 def test_status_table_has_one_row_per_route_with_a_vocabulary_state():
     rows = status_rows(MARKETPLACE.read_text("utf-8"))
-    routes = [route for route, _ in rows]
+    routes = [route for route, _, _ in rows]
     assert [r.split(" (")[0] for r in routes] == [
         "Official MCP Registry",
         "MCPM / MCPHub local catalog",
         "Hosted mcphub.app directory",
         "MCPHub fresh-install test",
     ]
-    for route, state in rows:
-        assert state in (*STATES, "not run"), (route, state)
+    for route, state, line in rows:
+        assert state in (*STATES, "not run", "not planned"), (route, state)
+        if state == "not planned":  # a dropped route cites the owner decision (ISSUE-24-DEC-003)
+            assert "ISSUE-24-DEC-003" in line, route
     # Nothing was submitted or published: no route may claim a later state than local
     # validation until real evidence exists (this test is updated with that evidence).
-    assert {state for _, state in rows} <= {"draft", "validated locally", "not run"}
+    assert {state for _, state, _ in rows} <= {
+        "draft",
+        "validated locally",
+        "not planned",
+        "not run",
+    }
+    states = dict((route.split(" (")[0], state) for route, state, _ in rows)
+    assert states["Official MCP Registry"] == "validated locally"
+    assert states["MCPHub fresh-install test"] == "not run"
+
+
+def test_status_table_cites_the_decision_and_the_decision_file_records_it():
+    decision = (ROOT / "docs/decisions/issue-24.md").read_text("utf-8")
+    assert "## ISSUE-24-DEC-003" in decision
+    assert "ISSUE-24-DEC-003" in (ROOT / "docs/DECISIONS.md").read_text("utf-8")

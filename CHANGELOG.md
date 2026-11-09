@@ -5,11 +5,13 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## 0.1.3 - zones, effect search, agent guidance and the registry marker
+## 0.2.0 - M1: agent guidance, effect metadata and search, names, zones and the registry marker
 
-A patch release: the changes are additive and no tool or field was removed or renamed
-([versioning](docs/contract/versioning.md), DEC-020). The served tool list grows from
-27 to 31 tools.
+The release that closes milestone M1 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).
+A minor release under the `0.x` policy ([versioning](docs/contract/versioning.md), DEC-020): the
+changes are additive and no tool or field was removed or renamed, so it carries no migration
+notes. The served tool list grows from 27 to 31 tools. An earlier preparation of this content as a
+patch release was never tagged or published.
 
 ### Added
 
@@ -41,7 +43,8 @@ A patch release: the changes are additive and no tool or field was removed or re
   case-folded match); an ambiguous or unknown name is refused with bounded candidates, and
   supplying both a name and its ID is a validation error.
 - The README carries the ownership marker the official MCP Registry checks on the PyPI
-  description, and the repository holds the registry metadata `server.json`
+  description, the repository holds the registry metadata `server.json`, and
+  `scripts/check_distribution.py` requires the marker in the built wheel
   ([#24](https://github.com/descipar/wled-mcp/issues/24)). Nothing is listed in the registry
   yet; that needs the owner's separate action after this release is on PyPI.
 
@@ -55,7 +58,9 @@ A patch release: the changes are additive and no tool or field was removed or re
 - Documentation: roadmap by milestones ([DEC-029](docs/DECISIONS.md#dec-029--milestones-instead-of-stages)),
   the first PyPI upload record, the dependency and licence inventory with a vulnerability review
   for the PyPI release, an architecture review after the zones merge, and the records of the
-  read-only effect-metadata probe and the local stdio check of the guidance.
+  read-only effect-metadata probe and the local stdio check of the guidance, and the rule
+  that closing a milestone includes a minor release and a README update
+  ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).
 
 ### Tested and not tested
 
