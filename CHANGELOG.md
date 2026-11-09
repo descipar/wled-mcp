@@ -5,24 +5,63 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## Unreleased
+## 0.2.0 - stage-2 close-out
+
+Closes stage 2. The version number is a proposal from the pre-1.0 policy
+([versioning](docs/contract/versioning.md), DEC-020); the owner may change it. The stage-2
+features #16 to #21 (setup and `doctor` commands, groups and scenes, preset restore, bundles
+and playlists, advanced segments, tool profiles and the status tool, firmware tiers and the
+compatibility policy) and #70 (non-release build identity) are already part of 0.1.0 and 0.1.1;
+this release adds the changes below and the first hardware evidence for several of them.
 
 ### Changed
 
+- `tools/list` builds the tool schemas once per server instead of on every request. The served
+  listing is unchanged. Measured on a single-board ARM host with the 27 tools: about 23 ms of
+  CPU per call instead of about 270 ms ([#67](https://github.com/descipar/wled-mcp/issues/67)).
 - The served output schema of every tool (the result envelope and its error object) now
   allows additional properties, so a later additive field no longer makes a client that
   cached the schema reject the response ([#130](https://github.com/descipar/wled-mcp/issues/130)).
   Required fields and the `data` object are unchanged.
+- Packaged text files (`LICENSE`, `NOTICE`, the Dockerfile, its ignore file and `*.txt`) are
+  checked out with LF line endings on every platform, so a wheel or staged release built from
+  a Windows checkout no longer differs from the Linux build
+  ([#131](https://github.com/descipar/wled-mcp/issues/131)).
+- Documentation: README and limitations updated with the hardware evidence below and the
+  device-authentication limit; releases are staged on the machine that runs them
+  ([DEC-026](docs/DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
+
+### Tested and not tested
+
+- Hardware ([#134](https://github.com/descipar/wled-mcp/issues/134),
+  [record](docs/validation/issue-134.md)): one run through the deployed HTTP service on the same
+  RGB controller (WLED 16.0.1, one segment) covered a one-device group and scene (plan, apply,
+  readback, delete), preset store, export, import and restore with snapshots, and a one-entry
+  playlist. Every write was verified and state, segment and preset list were restored; four
+  snapshots remain in the service data directory.
+- Still without a hardware run: multi-device scenes, tool profiles, `discover`, restore onto an
+  occupied slot, playlist import, restoring a playlist preset, CCT, RGBW and 2D, and the live
+  offline-controller check (H07). A live rollback has not been checked.
+- Automated tests and CI as for 0.1.0, plus new tests for the schema cache and the line-ending
+  rules. Platform and firmware support are unchanged.
+
+### Known limitations
+
+Unchanged from 0.1.0, except that `tools/list` is no longer CPU-heavy. Still: no package on
+PyPI, no image on GHCR and no registry entry; saving a playlist starts it and a preset cannot
+be stored without changing the live output; one writer per controller (locks are per process);
+no inventory reload; no tool deletes a snapshot.
 
 ### Migration
 
+None needed. No tool, input schema, error code, configuration key or file format changed.
 The tagged releases 0.1.0 and 0.1.1 already serve `correlation_id` (#119), so upgrading from
 them needs no refresh. A client that cached the schema of a build from before #119 (as the
 hub did after an update from such a build) rejects every envelope with "data must NOT have
 additional properties" until it refreshes `tools/list`: reload the hub entry once. About a
 minute was observed once with the hub; other clients may cache longer. Clients that cached
-the schema of any build before this change would reject a future additive field the same way
-once; schemas served from this change on tolerate additive fields.
+the schema of 0.1.0 or 0.1.1 would reject a future additive field the same way once;
+schemas served from 0.2.0 on tolerate additive fields.
 
 ## 0.1.1 - documentation release
 

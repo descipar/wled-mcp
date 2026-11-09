@@ -6,11 +6,17 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 
 - ID: ISSUE-130-DEC-001
 - Recorded date: 2026-11-09
-- Status: active for issue #130; proposed technical default, not an owner-confirmed decision.
-- Authority: agent technical default under the owner's instruction to run #130 through the
-  workflow; the owner may overrule.
-- Source: owner chat message in the main coordinator session on 2026-11-09 (no permalink),
-  "ja, starte #130 über den workflow". The owner did not choose between the options; the choice below is an agent technical default.
+- Status: active for issue #130; owner-confirmed on 2026-11-09 (the choice was first an agent
+  technical default).
+- Authority: human decision (delegated owner chat authority); the technical content was proposed
+  by the coordinator.
+- Source: owner chat messages in the main coordinator session on 2026-11-09 (no permalink).
+  First, "ja, starte #130 über den workflow" (English: "yes, start #130 through the workflow"),
+  which did not choose between the options. Later the owner was asked whether to merge PR #139
+  and whether the decision "both" (relax the served output schema for additive fields and
+  document the reload procedure) was acceptable, and answered "beides und dann stage 2
+  anschauen und abschließen" (English: "both, and then look at stage 2 and close it"),
+  typing errors kept.
 - Scope: issue #130 only: the served output schema of the result envelope and of its error
   object, and the documentation of the update behaviour.
 - Decision: (1) the served `outputSchema` of every tool sets `additionalProperties: true` on
@@ -34,5 +40,5 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
   docs/DEPLOYMENT.md; CHANGELOG.md.
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: coordinator handoff.
-- Revalidation needed / next action: owner may overrule; a live hub check after the next
+- Revalidation needed / next action: none for the decision; a live hub check after the next
   deployment is not part of this change.

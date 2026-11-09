@@ -132,7 +132,8 @@ meaning. While the major version is `0` (DEC-020):
   a schema served before that change (all `additionalProperties: false`) rejects a newly
   added envelope field once after the upgrade until it refreshes `tools/list` (reload the
   hub entry); this is a one-time transition. The observed case was a build from before the
-  `correlation_id` of #119; the tagged releases already serve it. A new error-code or other enum value is
+  `correlation_id` of #119; the tagged releases already serve it. The change is released
+  after 0.1.1 (see the [CHANGELOG](../../CHANGELOG.md)). A new error-code or other enum value is
   non-breaking for the contract but can fail a cached schema the same way, because enums
   stay closed.
 - Deprecation: where feasible, a field or tool to be removed stays for one minor
@@ -224,8 +225,8 @@ change is listed here as well, with the tool column `-` and a pointer into that 
 <!-- migration-notes:start -->
 | Release | Tool | JSON pointer | Change | Migration |
 | --- | --- | --- | --- | --- |
-| `0.2.0` | `-` | `/access` | Non-breaking addition: the optional `[access]` table (`profile`) of the inventory configuration (#20). Release number provisional until #25 assigns it. | None needed. A server older than the first release with #20 rejects the unknown key at startup (exit 2); after a downgrade, use the configuration kept for that version ([profiles](profiles.md#upgrade-and-downgrade)). |
-| `0.2.0` | `-` | `/devices/max_class` | Non-breaking addition: the optional per-device `max_class` of the inventory configuration (#20). Release number provisional until #25 assigns it. | None needed. Same downgrade behavior as `/access`. |
+| `0.1.0` | `-` | `/access` | Non-breaking addition: the optional `[access]` table (`profile`) of the inventory configuration (#20). First released in 0.1.0. | None needed. A build from before #20 (never released) rejects the unknown key at startup (exit 2); after a downgrade, use the configuration kept for that version ([profiles](profiles.md#upgrade-and-downgrade)). |
+| `0.1.0` | `-` | `/devices/max_class` | Non-breaking addition: the optional per-device `max_class` of the inventory configuration (#20). First released in 0.1.0. | None needed. Same downgrade behavior as `/access`. |
 <!-- migration-notes:end -->
 
 No breaking change has been released yet.
