@@ -69,6 +69,7 @@ CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
         0,
         False,
     ),
+    "live_snapshot": ("wled_get_live_snapshot", {"device_id": DESK}, "apply", 0, False),
     "read_success": ("wled_get_state", {"device_id": DESK}, "apply", 0, False),
     "write_verified": ("wled_set_state", {"device_id": DESK, "on": False}, "apply", 1, False),
     "schema_wrong_type": (
@@ -120,6 +121,7 @@ EXPECTED_CODE = {
     "segment_names_preview": None,
     "segment_name_unknown": "VALIDATION_ERROR",
     "read_success": None,
+    "live_snapshot": None,
     "write_verified": None,
     "schema_wrong_type": "VALIDATION_ERROR",
     "schema_extra_field": "VALIDATION_ERROR",
@@ -237,7 +239,12 @@ def mask_volatile(record: dict[str, Any]) -> dict[str, Any]:
     masked = comparable_record(record)
     for key in ("text", "structured"):
         envelope = masked.get(key)
-        freshness = (envelope or {}).get("data", {}).get("freshness") or {}
+        data = (envelope or {}).get("data", {})
+        for time_key in ("captured_at", "read_started_at"):
+            if time_key in data:
+                assert datetime.fromisoformat(data[time_key]).tzinfo is not None
+                data[time_key] = "<timestamp>"
+        freshness = data.get("freshness") or {}
         if "read_at" in freshness:
             assert datetime.fromisoformat(freshness["read_at"]).tzinfo is not None
             freshness["read_at"] = "<read_at>"

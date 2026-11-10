@@ -23,7 +23,7 @@ devices and versions are at most expected.
 ## Figures
 
 <!-- wled-coverage:start -->
-**WLED coverage: 47 %** (42 of 89 features). **Planned-scope coverage: 59 %** (42 of 71 features, excluded rows removed).
+**WLED coverage: 48 %** (42.5 of 89 features). **Planned-scope coverage: 60 %** (42.5 of 71 features, excluded rows removed).
 
 | Area | Features | Supported | Partial | Planned | Unplanned | Excluded | Planned scope | WLED overall |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -31,12 +31,12 @@ devices and versions are at most expected.
 | Segments (SEG) | 25 | 22 | 0 | 0 | 0 | 3 | 100 % | 88 % |
 | Effects and palettes (CAT) | 6 | 3 | 0 | 0 | 2 | 1 | 60 % | 50 % |
 | Presets and playlists (PRESET) | 13 | 8 | 1 | 0 | 3 | 1 | 71 % | 65 % |
-| Information and diagnostics (INFO) | 9 | 4 | 1 | 0 | 4 | 0 | 50 % | 50 % |
+| Information and diagnostics (INFO) | 9 | 4 | 2 | 0 | 3 | 0 | 56 % | 56 % |
 | Configuration (CFG) | 12 | 0 | 0 | 0 | 8 | 4 | 0 % | 0 % |
 | System and maintenance (SYS) | 5 | 0 | 0 | 0 | 0 | 5 | n/a | 0 % |
 | Realtime and streaming (RT) | 5 | 0 | 0 | 0 | 1 | 4 | 0 % | 0 % |
 | Usermods (UM) | 1 | 0 | 0 | 0 | 1 | 0 | 0 % | 0 % |
-| **All** | 89 | 40 | 4 | 0 | 27 | 18 | 59 % | 47 % |
+| **All** | 89 | 40 | 5 | 0 | 26 | 18 | 60 % | 48 % |
 <!-- wled-coverage:end -->
 
 Method:
@@ -175,7 +175,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-INFO-02 | LED count, segment limit and color capabilities | `/json/info` (`leds.count`, `leds.maxseg`, `leds.lc`, `leds.seglc`, `leds.matrix`; state `seg[].lc`) | supported | `wled_get_state` | - | - |
 | W-INFO-03 | Reachability | `/json/info` | supported | `wled_list_devices`, `cli: wled-mcp doctor` | - | Optional bounded probe. |
 | W-INFO-04 | Runtime diagnostics | `/json/info` (`uptime`, `freeheap`, `wifi`, `fs`) | partial | `wled_get_state` | - | Raw `info` only, not normalized; `mac`, `ip` and `wifi.bssid` are removed. |
-| W-INFO-05 | Live LED colors | `/json/live`, `/liveview`, WebSocket `lv` | unplanned | - | - | - |
+| W-INFO-05 | Live LED colors | `/json/live`, `/liveview`, WebSocket `lv` | partial | `wled_get_live_snapshot` | [#150](https://github.com/descipar/wled-mcp/issues/150) | Bounded sampled 1D JSON observation; matrices explicitly unmapped, no liveview/WebSocket stream or calibrated-color claim. |
 | W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |
 | W-INFO-07 | Wi-Fi network scan | `/json/net` | unplanned | - | - | - |
 | W-INFO-08 | Pin usage | `/json/pins` | unplanned | - | - | - |

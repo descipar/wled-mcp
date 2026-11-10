@@ -1304,3 +1304,6 @@ All Must requirements need evidence. Mock implementation can be merged while har
   filters and pinned-source fixtures (#148; read-only hardware probe pending).
 - [validation/issue-149.md](validation/issue-149.md): effect and palette names in segment
   tools, whole-request no-write failures and resolved-ID readback (#149, mocks/loopback).
+
+- [validation/issue-150.md](validation/issue-150.md): bounded live snapshot decoding,
+  mapping, transport/profile parity and selected-controller unavailable response (#150).

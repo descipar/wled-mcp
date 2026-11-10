@@ -103,6 +103,7 @@ def make_router() -> WriteRouter:
     router = WriteRouter()
     for host in HOSTS.values():
         router.device(host)
+        router.set(host, "/json/live", {"leds": ["000000"] * 90, "n": 1})
         router.set(host, "/presets.json", {"0": {}, "1": state_entry("Warm")})
     return router
 
@@ -292,6 +293,7 @@ READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_list_devices": {"probe": True},
     "wled_get_service_status": {},
     "wled_get_state": {"device_id": "desk"},
+    "wled_get_live_snapshot": {"device_id": "desk"},
     "wled_get_effects": {"device_id": "desk"},
     "wled_get_palettes": {"device_id": "desk"},
     "wled_search_effects": {"device_id": "desk", "flashing": ["none"]},
