@@ -850,6 +850,10 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-150-DEC-001](decisions/issue-150.md) (human, owner chat, 2026-11-10,
+  issue #150 verification only): bounded read-only checks on one explicitly selected
+  controller; no writes, discovery, deployment or authorization for other targets.
+
 Stage 5 (recorded 2026-11-09):
 - [ISSUE-22-DEC-001](decisions/issue-22.md) (human, owner chat instruction, 2026-11-09,
   issue #22 only): build `.github/workflows/publish.yml` with Trusted Publishing behind the

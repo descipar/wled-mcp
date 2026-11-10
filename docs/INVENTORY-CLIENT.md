@@ -111,3 +111,7 @@ Client failures now name the fixed resource label and numeric HTTP status in the
 message (never body, URL or exception text).
 HTTP authentication, Host/Origin handling and the stateless lifecycle are implemented
 by #14 (see [DEPLOYMENT.md](DEPLOYMENT.md)). Hardware is unverified.
+
+The fixed `/json/live` read uses a dedicated bounded RGB-sample object decoder;
+404/501 availability is reported explicitly by `wled_get_live_snapshot`
+([contract](contract/live-snapshot.md)). It does not enable arbitrary endpoints.

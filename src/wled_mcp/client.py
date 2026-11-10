@@ -2,6 +2,7 @@
 
 import json
 import math
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
@@ -22,6 +23,7 @@ class Endpoint(Enum):
     PALETTES = "/json/pal"
     FXDATA = "/json/fxdata"
     PRESETS = "/presets.json"
+    LIVE = "/json/live"
 
     @property
     def label(self) -> str:
@@ -38,9 +40,11 @@ class ClientFailure(Exception):
         message: str,
         *,
         retryable: bool = False,
+        http_status: int | None = None,
         reconciliation: str | None = None,
     ) -> None:
         super().__init__(message)
+        self.http_status = http_status
         self.error = DomainError(
             code=code,
             message=message,
@@ -195,6 +199,7 @@ class WLEDClient:
                             "INVALID_RESPONSE",
                             f"Device returned unexpected HTTP status {response.status_code} "
                             f"for {label}.",
+                            http_status=response.status_code,
                         )
                     media = (
                         response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
@@ -214,7 +219,9 @@ class WLEDClient:
                         content.extend(chunk)
                     value: object = json.loads(content.decode("utf-8"))
                     validate_json(value)
-                    if endpoint in {Endpoint.INFO, Endpoint.STATE, Endpoint.PRESETS}:
+                    if endpoint is Endpoint.LIVE:
+                        validate_live(value)
+                    elif endpoint in {Endpoint.INFO, Endpoint.STATE, Endpoint.PRESETS}:
                         if not isinstance(value, dict):
                             raise ValueError("Expected object")
                     elif not isinstance(value, list) or not all(
@@ -248,3 +255,25 @@ class WLEDClient:
             raise ClientFailure(
                 "INVALID_RESPONSE", f"Device returned invalid JSON data for {label}."
             ) from None
+
+
+def validate_live(value: object) -> None:
+    """Validate the fixed live response without treating it as a string catalog."""
+    if not isinstance(value, dict):
+        raise ValueError("Expected live object")
+    colors = value.get("leds")
+    if (
+        not isinstance(colors, list)
+        or len(colors) > 4096
+        or not all(
+            isinstance(color, str) and re.fullmatch(r"[0-9a-fA-F]{6}", color) for color in colors
+        )
+    ):
+        raise ValueError("Invalid live colors")
+    for key in ("n", "w", "h"):
+        if key == "n" or key in value:
+            number = value.get(key)
+            if type(number) is not int or not 1 <= number <= 1000000:
+                raise ValueError("Invalid live sampling geometry")
+    if ("w" in value) != ("h" in value):
+        raise ValueError("Incomplete live matrix geometry")

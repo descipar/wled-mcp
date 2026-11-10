@@ -58,6 +58,7 @@ class LoopbackWLED:
                     else:
                         routes = {
                             "/json/info": make_info(),
+                            "/json/live": {"leds": ["FF0000"] * 45, "n": 2},
                             "/json/eff": list(EFFECTS),
                             "/json/pal": list(PALETTES),
                             "/json/fxdata": list(FXDATA),

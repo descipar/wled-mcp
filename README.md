@@ -54,7 +54,7 @@ All 31 tools, each with its read-only, write or destructive hint, are listed in 
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->
-WLED feature coverage: 59 % of the planned scope, 47 % of WLED overall ([method and list](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)).
+WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method and list](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
 ## Try it
