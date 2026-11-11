@@ -853,6 +853,9 @@ can explicitly amend them.
 - [ISSUE-150-DEC-001](decisions/issue-150.md) (human, owner chat, 2026-11-10,
   issue #150 verification only): bounded read-only checks on one explicitly selected
   controller; no writes, discovery, deployment or authorization for other targets.
+- [ISSUE-30-DEC-001](decisions/issue-30.md) (human, owner chat, 2026-11-11, issue #30 /
+  M2 live run only): one bounded read-only run (at most two calls) on one explicitly selected
+  controller; no writes, discovery, deployment or authorization for other targets.
 
 Stage 5 (recorded 2026-11-09):
 - [ISSUE-22-DEC-001](decisions/issue-22.md) (human, owner chat instruction, 2026-11-09,
