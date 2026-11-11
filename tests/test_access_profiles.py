@@ -307,6 +307,7 @@ READ_CALLS: dict[str, dict[str, Any]] = {
     "wled_plan_scene": {"scene_id": "evening"},
     "wled_list_zones": {},
     "wled_plan_zone": {"zone": "shelf-left"},
+    "wled_preview_layout": {"device_id": "desk"},
 }
 NEEDS_A_STORED_SCENE = {"wled_plan_scene", "wled_plan_zone"}  # refused without one, still a read
 CONTROL_CALLS: dict[str, dict[str, Any]] = {

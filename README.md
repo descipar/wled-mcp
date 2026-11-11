@@ -41,6 +41,10 @@ Hardware acceptance is partial: one controller on WLED 16.0.1. No support is pro
   ranges; `wled_plan_zone` previews the exact segments without a write and `wled_apply_zone`
   changes segment fields only inside the zone, otherwise it refuses before any write
   ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/zones.md)).
+- Layout preview (read-only): `wled_preview_layout` returns a static, bounded SVG of a device's
+  observed segment layout or of a proposed layout checked by the layout planner, with ranges,
+  gaps, overlaps and approximate colours; 1D only, nothing is written and effects are not
+  simulated ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/layout-preview.md)).
 - Agent guidance: the server serves safe-lighting instructions at initialization, a prompt
   `change_lighting_safely` and precise field descriptions, identically over stdio and HTTP.
   A client has to pass them on to its agent; forwarding by MCPHub was not observed
@@ -57,7 +61,7 @@ Hardware acceptance is partial: one controller on WLED 16.0.1. No support is pro
 - Server-enforced profiles (`read-only`, `control`, `full`) and, for the HTTP service, a
   bearer credential with Host and Origin allowlists.
 
-All 33 tools, each with its read-only, write or destructive hint, are listed in the
+All 34 tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->

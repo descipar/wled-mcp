@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from wled_mcp.access import ToolClass
 from wled_mcp.client import ClientFailure, Endpoint
+from wled_mcp.layout_preview import intervals
 from wled_mcp.models import Outcome
 from wled_mcp.readmodels import Collector, as_dict, normalize_state
 from wled_mcp.resources import Resources
@@ -27,26 +28,6 @@ class LiveSnapshotRequest(BaseModel):
         le=MAX_RUNS,
         description="Global color-run budget across all segments, including overlaps.",
     )
-
-
-def intervals(ranges: list[tuple[int, int]]) -> tuple[list[JsonValue], list[JsonValue]]:
-    """Sweep bounded segment ranges; never allocate per physical LED."""
-    events: dict[int, int] = {}
-    for start, stop in ranges:
-        events[start] = events.get(start, 0) + 1
-        events[stop] = events.get(stop, 0) - 1
-    gaps: list[JsonValue] = []
-    overlaps: list[JsonValue] = []
-    count, previous = 0, 0
-    for point in sorted(events):
-        if point > previous:
-            if count == 0:
-                gaps.append({"start": previous, "stop": point})
-            elif count > 1:
-                overlaps.append({"start": previous, "stop": point})
-        count += events[point]
-        previous = point
-    return gaps, overlaps
 
 
 def map_snapshot(

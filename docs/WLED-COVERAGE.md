@@ -242,6 +242,9 @@ counted.
   the data directory, #27); no device is contacted and no WLED feature is involved.
 - `wled_plan_zone`: reads state of the zone's devices to resolve a zone onto existing
   segments (a project concept, not a WLED API); it sends no write and adds no feature row.
+- `wled_preview_layout`: draws an observed or planner-validated proposed 1D segment layout as
+  a static SVG (#29) from the state and info reads (and optionally `/json/live`); it sends no
+  write and is a project rendering, not a WLED API, so it adds no feature row.
 - `wled_apply_zone`: writes segment fields to the segments a zone resolves to, through the
   same verified path as `wled_patch_segments` (W-SEG rows stay as they are); it never
   changes geometry or master state.
