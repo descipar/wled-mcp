@@ -917,8 +917,11 @@ can explicitly amend them.
      issue.
 - Scope: development platform only. Not changed: DEC-020 item 4 (user-facing platform tiers:
   Linux supported, Windows and macOS experimental), the CI platform matrix (Linux is
-  authoritative) and the staging rule of DEC-026. Whether the user-facing Windows tier should
-  change is not decided here and needs its own owner answer.
+  authoritative) and the staging rule of DEC-026. On the follow-up question whether the
+  user-facing Windows tier should change, the owner answered in the same session on
+  2026-11-11: "windows für nutzer experimental" (English: "Windows stays experimental for
+  users"; the typo in the original was corrected). DEC-020 item 4 and the README support table
+  therefore stay as they are.
 - Not changed: DEC-023 and the publication gates.
 - Affected: issue #191, docs/DEVELOPMENT.md and the README support table only when a later
   change adopts this record.
