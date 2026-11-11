@@ -73,6 +73,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_service_status` | read-only | Local service facts: profile, per-device ceilings, last observed outcome per device, call counters; contacts no device |
 | `wled_get_state` | read-only | Normalized current state, segments and essential capabilities |
 | `wled_get_live_snapshot` | read-only | Bounded sampled LED colors per segment, explicit missing data and mapping limits |
+| `wled_explain_lighting` | read-only | Observed facts, candidate causes with confidence, unknowns and next checks for one device whose light change seems ineffective; two GETs, never a write |
 | `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
 | `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |
 | `wled_search_effects` | read-only | Effects of one device matching curated properties, with exact device IDs and an explanation per result |
@@ -110,6 +111,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile and per-device ceilings, last observed outcome per device, call counters; never contacts a device | Launch (S2-ACCESS-03); implemented in #20 ([contract/diagnostics.md](contract/diagnostics.md)) |
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
 | `wled_get_live_snapshot` | `device_id`, optional `max_runs=512` | Sample-only per-segment RGB runs with global bounds, unavailable endpoints and unmapped matrix geometry | LIVE-01; implemented in #150 ([contract/live-snapshot.md](contract/live-snapshot.md)) |
+| `wled_explain_lighting` | `device_id`, optional `segment_id`, optional `requested` (`white_channel`, `effect_id`, `palette_id`) | Fresh state and info read once each, combined with process-local last-control evidence; observations, inferred causes (never above medium), conclusion, limits | S3-EXPLAIN-01/-02; implemented in #30 ([contract/explain.md](contract/explain.md)) |
 | `wled_get_effects` | `device_id`, `refresh=false`, optional `query`, `two_d`, `audio_reactive` | Original IDs/names, optional metadata, freshness | Must |
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
 | `wled_search_effects` | `device_id`, optional `motion`, `flashing`, `colors_min`, `colors_max`, `uses_palette`, `strip_length`, `min_visibility`, `max_palette_saturation_need`, `strict=true`, `min_confidence`, `limit` | Curated property search intersected with the device's effect list; read-only | Stage 3 (S3-EFFECT-01, S3-EFFECT-02); implemented in #31 ([contract/effect-search.md](contract/effect-search.md)) |
@@ -897,6 +899,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   ID-preserving effect catalog filters (#148).
 - [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the
   curated property catalog, matching rules and how to update it (#31).
+- [contract/explain.md](contract/explain.md): the `wled_explain_lighting` tool, evidence
+  allowlist, cause codes, confidence rules and limits (#30).
 - [contract/zones.md](contract/zones.md): named physical lighting zones, the zone document,
   the resolution rule and the existing-segments policy (#27).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
