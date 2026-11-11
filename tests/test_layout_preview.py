@@ -511,6 +511,15 @@ def test_identical_adjacent_runs_are_merged_and_other_statuses_become_lane_notes
     assert by_id(truncated)[0]["colour"] is None  # nothing sampled, nothing invented
 
 
+def test_the_colour_basis_is_mixed_when_only_some_lanes_have_live_samples():
+    sampled = lane(0, 0, 10, live_runs=(LiveRun(0, 10, "FF0000"),), live_status="sampled")
+    state_only = lane(1, 10, 20)  # e.g. returned beyond the live cap: no live runs
+    rendered = render_svg(model(sampled, state_only, led_count=20, live=LiveModel("available", 1)))
+    assert rendered.summary["colour_basis"] == "mixed"
+    assert by_id(rendered)[0]["colour"] == "#ff0000"
+    assert by_id(rendered)[1]["colour_mode"] == "rgb"  # the lane itself stays truthful
+
+
 def test_an_unavailable_live_read_falls_back_to_the_state_colours():
     item = lane(0, 0, 20)
     rendered = render_svg(model(item, led_count=20, live=LiveModel("unavailable", 1)))

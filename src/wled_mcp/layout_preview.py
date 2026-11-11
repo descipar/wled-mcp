@@ -10,7 +10,8 @@ Safety rules (TD-29-9): the output uses only the elements ``svg``, ``title``, ``
 (segment names, device and zone names, notes) passes through :func:`clean_text` and is
 escaped; it is only ever placed in element content, never in an attribute. Numbers are
 formatted from integers or clamped floats, colours from validated hex digits. The only
-URL-shaped string is the SVG namespace.
+URL-shaped string is the SVG namespace; no attribute or reference carries a URL and foreign
+text is inert element content.
 
 Bounds (TD-29-3): fixed ``viewBox`` width, no element per LED, at most
 :data:`MAX_LANES` segment lanes, :data:`MAX_COLOUR_RECTS` colour rectangles and
@@ -418,6 +419,8 @@ def render_svg(model: PreviewModel) -> Rendered:  # noqa: C901 - one linear layo
     clipped_any = False
     unknown_colour = False
     effects_present = False
+    live_lanes = 0
+    state_lanes = 0
     if not drawn:
         notes.append("No active segments.")
     for lane in drawn:
@@ -448,6 +451,10 @@ def render_svg(model: PreviewModel) -> Rendered:  # noqa: C901 - one linear layo
             if live is not None and lane.live_runs is not None
             else None
         )
+        if runs is None:
+            state_lanes += 1
+        else:
+            live_lanes += 1
         if runs is not None:
             allowed = 1 + extra_rects
             kept = runs[:allowed]
@@ -593,9 +600,11 @@ def render_svg(model: PreviewModel) -> Rendered:  # noqa: C901 - one linear layo
     colour_basis = (
         "plan"
         if model.source == "proposed"
-        else "live_samples"
-        if live is not None
         else "state_slot_0"
+        if live is None
+        else "mixed"
+        if live_lanes and state_lanes
+        else "live_samples"
     )
     if live is not None and step > 1:
         flag("unsampled_leds_unknown")

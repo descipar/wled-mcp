@@ -50,7 +50,7 @@ agent or host that wants a file saves `data.svg` verbatim.
 | `zone` | When requested: `id`, `name`, `status` (`drawn` or `topology_stale`) and the drawn `spans`. |
 | `live` | When requested: `requested`, `status` and `sampling_step`. |
 | `removed_segment_ids` | Proposed layout: active IDs the layout would remove (not drawn). |
-| `colour_basis` | `state_slot_0`, `live_samples` or `plan`. |
+| `colour_basis` | `state_slot_0`, `live_samples`, `mixed` (live samples for some lanes, state colours for others; each lane's `colour_mode` says which) or `plan`. |
 | `approximations` | Fixed strings: `rgbw_white_added`, `cct_not_rendered`, `effects_not_simulated`, `live_rgb_brightness_scaled`, `unsampled_leds_unknown`. |
 | `limits` | Fixed strings: 1D only, not calibrated colour, no animation, not a firmware simulator, effect and palette values not validated by the preview; plus one entry when the LED count is unknown. |
 | `captured_at`, `observation` | Observed layout: UTC time of the reads. `observation` says that the reads are not atomic and nothing was written. |
@@ -143,7 +143,7 @@ segment beyond a known count is drawn clipped and marked, never invented.
 
 The renderer emits only `svg`, `title`, `desc`, `g`, `rect`, `line` and `text` and a fixed set of
 presentation and geometry attributes. No script, style, image, link, animation or foreign object
-exists, and the only URL-shaped string is the namespace `http://www.w3.org/2000/svg`. Every
+exists, and no attribute or reference carries a URL; the namespace `http://www.w3.org/2000/svg` is the only URL-shaped string, and foreign text is inert element content. Every
 foreign string (segment names, device and zone names, notes) passes one sanitiser: control
 characters become spaces, format, surrogate and unassigned code points (which include the
 bidirectional controls) are dropped, whitespace is collapsed and the text is truncated, then
