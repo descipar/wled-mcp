@@ -50,7 +50,7 @@ agent or host that wants a file saves `data.svg` verbatim.
 | `zone` | When requested: `id`, `name`, `status` (`drawn` or `topology_stale`) and the drawn `spans`. |
 | `live` | When requested: `requested`, `status` and `sampling_step`. |
 | `removed_segment_ids` | Proposed layout: active IDs the layout would remove (not drawn). |
-| `colour_basis` | `state_slot_0`, `live_samples`, `mixed` (live samples for some lanes, state colours for others; each lane's `colour_mode` and `colour` say which; a lane with live data but no sampled run has `colour` null) or `plan`. |
+| `colour_basis` | `state_slot_0` (no live data, or live data available but no drawn lane carries live samples), `live_samples` (every drawn lane does), `mixed` (live samples for some lanes, state colours for others; each lane's `colour_mode` and `colour` say which; a lane with live data but no sampled run has `colour` null) or `plan`. |
 | `approximations` | Fixed strings: `rgbw_white_added`, `cct_not_rendered`, `effects_not_simulated`, `live_rgb_brightness_scaled`, `unsampled_leds_unknown`. |
 | `limits` | Fixed strings: 1D only, not calibrated colour, no animation, not a firmware simulator, effect and palette values not validated by the preview; plus one entry when the LED count is unknown. |
 | `captured_at`, `observation` | Observed layout: UTC time of the reads. `observation` says that the reads are not atomic and nothing was written. |
