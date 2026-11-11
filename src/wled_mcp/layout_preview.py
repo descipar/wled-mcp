@@ -10,8 +10,9 @@ Safety rules (TD-29-9): the output uses only the elements ``svg``, ``title``, ``
 (segment names, device and zone names, notes) passes through :func:`clean_text` and is
 escaped; it is only ever placed in element content, never in an attribute. Numbers are
 formatted from integers or clamped floats, colours from validated hex digits. The only
-URL-shaped string is the SVG namespace; no attribute or reference carries a URL and foreign
-text is inert element content.
+URL-shaped string in markup is the SVG namespace declaration; no other attribute or reference
+carries a URL. Foreign text (which may itself contain URL-shaped text) is inert, escaped
+element content.
 
 Bounds (TD-29-3): fixed ``viewBox`` width, no element per LED, at most
 :data:`MAX_LANES` segment lanes, :data:`MAX_COLOUR_RECTS` colour rectangles and
