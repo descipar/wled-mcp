@@ -314,3 +314,46 @@ async def test_a_master_off_device_is_an_observed_blocker_with_competitors_liste
     assert result.data["conclusion"] == "observed_blocker"
     assert causes(result)["MASTER_OFF_OR_ZERO_BRIGHTNESS"]["confidence"] == "high"
     assert {"NIGHTLIGHT_ACTIVE", "SYNC_RECEIVE_ENABLED"} <= set(codes(result))
+
+
+@pytest.mark.anyio
+async def test_a_config_only_possibility_does_not_hide_insufficient_evidence(tmp_path):
+    """S3-EXPLAIN-01: firmware-default sync receive is a possibility, not an explanation."""
+    state = make_state(nl={"on": False}, lor=0, udpn={"send": False, "recv": True})
+    info = make_info(live=False, lm="")
+    async with open_resources(tmp_path, fleet(info=info, state=state)) as resources:
+        result = await call(resources, TOOL)
+    assert FALLBACK <= set(codes(result)) and "SYNC_RECEIVE_ENABLED" in codes(result)
+    assert result.data["conclusion"] == "insufficient_evidence"
+    assert explain.UNATTRIBUTED_LIMIT in result.data["limits"]
+    assert observations(result)["info.lm"]["value"] == ""  # idle, not "other"
+
+
+@pytest.mark.anyio
+async def test_an_indicator_candidate_still_gives_candidates_only(tmp_path):
+    """S3-EXPLAIN-01: a real candidate next to sync receive is not downgraded."""
+    state = make_state(pl=2, udpn={"recv": True})
+    async with open_resources(tmp_path, fleet(state=state)) as resources:
+        result = await call(resources, TOOL)
+    assert result.data["conclusion"] == "candidates_only"
+    assert not FALLBACK & set(codes(result))
+
+
+@pytest.mark.anyio
+async def test_realtime_source_text_allows_a_slash_but_not_an_address(tmp_path):
+    """S3-EXPLAIN-02: lm keeps its bound; only safe names are echoed."""
+    seen = {}
+    for lm in ("USB Adalight/TPM2", "x/10.0.0.1"):
+        async with open_resources(tmp_path, fleet(info=make_info(lm=lm))) as resources:
+            seen[lm] = observations(await call(resources, TOOL))["info.lm"]["value"]
+    assert seen == {"USB Adalight/TPM2": "USB Adalight/TPM2", "x/10.0.0.1": "other"}
+
+
+@pytest.mark.anyio
+async def test_a_segment_id_without_a_state_segment_list_is_a_validation_error(tmp_path):
+    """S3-EXPLAIN-02: the contract's segment check does not silently pass."""
+    state = make_state()
+    del state["seg"]
+    async with open_resources(tmp_path, fleet(state=state)) as resources:
+        result = await call(resources, TOOL, segment_id=0)
+    assert not result.ok and result.error.code == "VALIDATION_ERROR"

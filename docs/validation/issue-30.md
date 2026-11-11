@@ -25,6 +25,12 @@ contacts a LAN device.
   and `cli.py` is outside the authorized paths.
 - `info.lm`/`info.ver` use a stricter character allowlist than "32 printable characters", so
   address- or MAC-like text becomes `other`.
+- `docs/WLED-COVERAGE.md` gained a server-only entry for the tool; this is outside the
+  authorized paths but required by check C7 of `scripts/check_coverage.py`.
+- Premise: every call counts as a reported ineffective change, so a device without any
+  explaining indicator still returns `UNATTRIBUTED_MISMATCH` and `INSUFFICIENT_EVIDENCE`.
+- `SYNC_RECEIVE_ENABLED` (a firmware default) does not suppress those fallback codes or lift
+  the conclusion above `insufficient_evidence`.
 - Field meanings were checked against the WLED JSON API semantics; `lor` greater than zero is
   used as contradicting evidence for a realtime candidate.
 

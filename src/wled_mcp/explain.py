@@ -26,6 +26,7 @@ from wled_mcp.server import Operation
 MAX_DATA_BYTES = 32 * 1024
 MAX_CAUSES = 16
 STALE_AFTER_SECONDS = 300
+POSSIBILITY_ONLY = frozenset({"SYNC_RECEIVE_ENABLED"})
 NAME = "wled_explain_lighting"
 
 LIMITS: tuple[str, ...] = (
@@ -42,7 +43,7 @@ UNATTRIBUTED_LIMIT = (
     "not prove the absence of a cause."
 )
 
-_SAFE_TEXT = re.compile(r"[A-Za-z][A-Za-z0-9 .+_-]{0,31}")
+_SAFE_TEXT = re.compile(r"[A-Za-z][A-Za-z0-9 ./+_-]{0,31}")
 _ADDRESS_LIKE = re.compile(r"\d+\.\d+\.\d+")
 _SAFE_VERSION = re.compile(r"[0-9][0-9A-Za-z.+_-]{0,31}")
 
@@ -84,6 +85,8 @@ def _typed(value: JsonValue, kind: str) -> tuple[str, JsonValue]:
     if kind == "lor" and isinstance(value, int) and not isinstance(value, bool):
         return ("observed", value) if 0 <= value <= 2 else ("unavailable", None)
     if kind == "text" and isinstance(value, str):
+        if value == "":
+            return "observed", ""  # idle: no realtime source
         ok = _SAFE_TEXT.fullmatch(value) and not _ADDRESS_LIKE.search(value)
         return "observed", value if ok else "other"
     if kind == "version" and isinstance(value, str):
@@ -267,7 +270,7 @@ def explain(
         segments = cast(list[JsonValue], view["segments"])
     except ClientFailure:
         pass
-    if request.segment_id is not None and state_d.get("seg") is not None:
+    if request.segment_id is not None:
         raw = state_d.get("seg")
         ids = {as_dict(s).get("id") for s in raw} if isinstance(raw, list) else set()
         if request.segment_id not in ids:
@@ -339,7 +342,8 @@ def explain(
                 ["Review the device's sync settings manually; they are not read by this tool."],
             )
         )
-    indicator_causes = len(causes)
+    # A configuration possibility (sync receive is a firmware default) explains nothing.
+    indicator_causes = sum(1 for c in causes if c["code"] not in POSSIBILITY_ONLY)
     if last is not None and last.verification == "mismatch":
         causes.append(
             _cause(

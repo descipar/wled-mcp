@@ -15,7 +15,7 @@ stream, stops playback, disables an input or applies a corrective change. The en
 ## Request
 
 - `device_id` (required), `segment_id` (optional, must exist in the device state, else
-  `VALIDATION_ERROR`) and `requested` (optional): `white_channel` (boolean), `effect_id`,
+  `VALIDATION_ERROR`, also when the state has no segment list) and `requested` (optional): `white_channel` (boolean), `effect_id`,
   `palette_id` (integers). Unknown fields are `VALIDATION_ERROR`.
 - `requested` is checked only against ranges and capabilities the device reports
   (`info.fxcount`, `info.palcount`, the segment's reported colour capability). No catalog is
@@ -39,8 +39,10 @@ Allowlisted indicators (nothing else is read or returned): `state.on`, `state.br
 `info.lm`, `info.ver`, `info.leds.count`, `info.fxcount`, `info.palcount` and `info.vid`
 (as `firmware.build_id`). Addresses, MAC, BSSID, sync group masks, Wi-Fi or network
 configuration and raw state/info are never returned. `info.lm` and `info.ver` are bounded
-to 32 characters from a restricted character set and not address-like; anything else is
-reported as `other`.
+to 32 characters from a restricted character set (letters, digits, space and `. / + _ -`,
+starting with a letter for `lm`) and are not reported if they contain a dotted digit group;
+anything else is reported as `other`. An empty `lm` is observed as an empty string (no
+realtime source).
 
 Field meanings follow the WLED JSON API: `pl` is the running playlist preset ID (-1: none),
 `lor` the realtime override (0: realtime may override the lights; 1 or 2: the local state
@@ -59,10 +61,10 @@ are suggestions naming read tools or manual steps and are never executed.
 | `PLAYBACK_ACTIVE` | `state.pl` >= 0 | medium |
 | `REALTIME_INPUT_ACTIVE` | `info.live` true; `state.lor` > 0 is contradicting evidence | medium, low when contradicted |
 | `NIGHTLIGHT_ACTIVE` | `state.nl.on` true | medium |
-| `SYNC_RECEIVE_ENABLED` | `state.udpn.recv` true (a possibility, not an event) | low |
+| `SYNC_RECEIVE_ENABLED` | `state.udpn.recv` true (a possibility, not an event; a firmware default, so it does not count as an explanation) | low |
 | `LAST_WRITE_VERIFICATION_MISMATCH` | last recorded control outcome had `verification=mismatch` | medium |
 | `LAST_WRITE_UNCERTAIN` | last recorded control outcome had `application=unknown` | medium |
-| `UNATTRIBUTED_MISMATCH`, `INSUFFICIENT_EVIDENCE` | present together whenever no indicator-based cause above the last-write codes exists | unknown |
+| `UNATTRIBUTED_MISMATCH`, `INSUFFICIENT_EVIDENCE` | present together whenever no indicator-based cause exists besides `SYNC_RECEIVE_ENABLED` and the last-write codes | unknown |
 | `DEVICE_UNREACHABLE`, `DEVICE_TIMEOUT` | the read failed (see below) | medium |
 
 Rules: all competing candidates are listed; there is no single root cause and no
@@ -70,7 +72,7 @@ probability ranking. An inferred cause from one snapshot is never above `medium`
 directly observed fact may be `high`. No cause names an external actor. Process-memory
 evidence older than 300 seconds has `stale=true` and limits its cause to `low`.
 `conclusion` is `observed_blocker` (a high-confidence observed fact), `candidates_only`
-(indicator-based candidates only) or `insufficient_evidence`. The last-write causes alone do
+(at least one indicator-based candidate other than `SYNC_RECEIVE_ENABLED`) or `insufficient_evidence`. The last-write causes alone do
 not make a conclusion: the mismatch is a fact, its explanation is not.
 
 `limits` are fixed texts: single non-atomic snapshot, no causality proof or actor
