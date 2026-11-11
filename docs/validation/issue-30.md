@@ -36,6 +36,37 @@ contacts a LAN device.
 
 ## Hardware
 
-None. No live device, LAN access or write was part of this implementation. The M2 read-only
-live run needs separate owner authorization and is not claimed here; mocks and loopback do
-not establish firmware behaviour on a controller.
+None as part of the implementation: no live device, LAN access or write was part of the
+merged candidate. The M2 read-only live run followed separately and is recorded below.
+
+### Live read-only run (M2 exit, ISSUE-30-DEC-001)
+
+On 2026-11-11 the coordinator ran the merged software (content identical to `main` at the
+squash commit of PR #175) through an actual MCP stdio client with the `read-only` profile
+against one owner-selected test controller. Exactly one `wled_explain_lighting` call was
+made, which issued one `GET /json/state` and one `GET /json/info`. The call window was
+08:59:09.586 to 08:59:09.648 UTC. The tool was registered in the read-only profile.
+
+| Field | Observed result |
+| --- | --- |
+| Envelope `ok` / `application` / `verification` | true / `not_attempted` / `not_requested` |
+| Firmware | WLED 16.0.1, build 2606300, 133 LEDs, 220 effects, 72 palettes |
+| Master power / brightness | off / 47 |
+| Playlist `pl` / preset `ps` | -1 / -1 (none active) |
+| Nightlight / realtime `lor` / `live` / `lm` | off / 0 / false / empty |
+| Sync receive `udpn.recv` | true |
+| Last control (process memory) | unknown, no write in this process |
+| Inferred causes | `MASTER_OFF_OR_ZERO_BRIGHTNESS` (high, observed); `SYNC_RECEIVE_ENABLED` (low, possibility only) |
+| Conclusion | `observed_blocker` |
+
+What this shows: the tool works against real firmware over the real transport, every
+indicator in the allowlist was present, and the result stayed within the documented limits
+(no actor named, the sync cause marked as a possibility, limits text present). It also
+confirms the review finding that sync receive is enabled on a default-configured controller,
+which is why that cause alone must not hide insufficient evidence. The run checked no
+write, no other device and no repeated or stale-evidence behaviour; those remain covered by
+mocks only. Because the master switch was off, the run does not exercise the
+playback/realtime-override or the unattributed-mismatch paths on hardware. A second
+permitted call was not needed. No physical write, configuration or firmware change,
+deployment or device discovery occurred. The capture and the inventory stay in the ignored
+runtime directory.
