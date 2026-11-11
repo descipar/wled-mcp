@@ -868,7 +868,14 @@ can explicitly amend them.
   authorized.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030.
 - Affected: docs/ROADMAP.md (M2 row), CHANGELOG.md, README.md, pyproject.toml, server.json,
-  uv.lock and docs/validation/release-0.3.0.md.
+  uv.lock and docs/validation/release-m2.md.
+- Carried out on 2026-11-11, each step on the owner's instruction in the coordinator session:
+  tag and GitHub release ("Tag v0.3.0 setzen und GitHub-Release erstellen", English: "set tag
+  v0.3.0 and create the GitHub release"); PyPI upload (the `pypi` environment approval was
+  given in the GitHub UI by the owner's account, see
+  [the record](validation/release-m2.md#release-and-registry-publication-2026-11-11));
+  registry publication ("mach den rest für #m2", English: "do the rest for #m2", followed by
+  the owner's own `mcp-publisher login github`). M2 is closed after this record is merged.
 
 ## Issue-specific decisions (pointers)
 

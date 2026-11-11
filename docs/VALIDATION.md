@@ -1296,7 +1296,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
   published).
 - [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
   schema validation and the 0.2.0 release preparation and publication (#24). The 0.3.0 preparation is recorded in
-  [validation/release-0.3.0.md](validation/release-0.3.0.md) (nothing published).
+  [validation/release-m2.md](validation/release-m2.md) (preparation and the publication record of 2026-11-11).
 - [validation/issue-30.md](validation/issue-30.md): evidence-separated lighting explanation,
   process-local control evidence, read-only guarantees and parity (#30, mock and loopback
   evidence plus one read-only live run on the test controller; no write path on hardware).
