@@ -1299,7 +1299,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
   [validation/release-0.3.0.md](validation/release-0.3.0.md) (nothing published).
 - [validation/issue-30.md](validation/issue-30.md): evidence-separated lighting explanation,
   process-local control evidence, read-only guarantees and parity (#30, mock and loopback
-  evidence; no hardware run).
+  evidence plus one read-only live run on the test controller; no write path on hardware).
 - [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
   bundles, restore and a playlist on the test controller (#134).
 - [validation/issue-147.md](validation/issue-147.md): agent instructions, static prompt

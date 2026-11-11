@@ -25,8 +25,8 @@ grows from 31 to 33 tools.
   [contract](docs/contract/explain.md)): the read-only `wled_explain_lighting` explains why a
   light change seems ineffective for one device. It reads the controller state and info once
   each, combines them with process-local evidence of the last control call and returns
-  observations, candidate causes with a confidence that never exceeds medium, a conclusion,
-  unknowns and next checks. It never writes and does not prove a cause or name an actor.
+  observations, causes with a confidence (inferred causes never above medium; only a directly
+  observed blocker may be high), a conclusion, unknowns and next checks. It never writes and does not prove a cause or name an actor.
 
 ### Tested and not tested
 
