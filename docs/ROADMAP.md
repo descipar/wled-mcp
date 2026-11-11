@@ -7,7 +7,7 @@ Every open or new issue has exactly one milestone (Backlog counts) and no `Stage
 there remain the source for requirement IDs. The goals and exit criteria below mirror the milestone
 descriptions on GitHub; the milestone is authoritative if they differ.
 
-Order: M1, M2, M3, M4, M5, M6, then Backlog. Timers (W-CFG-04) stay excluded.
+Order: M1, M2, M3, M4, M5, M6, M7, then Backlog. M7 has the lowest priority and is picked when the owner decides. Timers (W-CFG-04) stay excluded.
 M5 depends on authorized hardware and is picked when such a controller is available. The documentation and packaging
 issues of M6 (#23, #151, #181) do not depend on the feature milestones and may run in parallel with M3 to M5; listing and
 launch work (#25; #24 moved to M1) waits for the owner.
@@ -25,6 +25,7 @@ announced without the owner's explicit instruction ([DEC-023](DECISIONS.md#dec-0
 | M4: Temporary signals | A bounded signal restores prior state safely or reports uncertainty. | #28 merged with S3-T02 evidence. | [#28](https://github.com/descipar/wled-mcp/issues/28) |
 | M5: Secured controllers | Behavior with settings-PIN-locked and OTA-locked controllers is verified. | Authorized hardware evidence recorded (#128). | [#128](https://github.com/descipar/wled-mcp/issues/128) |
 | M6: Public distribution | People outside the project can install the server and find it listed. | The stage-2 Launch requirements owned by #22, #23, #25 (and #24 in M1) have evidence or are explicitly dropped by the owner; the bounded source-code security review (#181) is done with its findings fixed or filed; nothing is published, submitted or announced without the owner's explicit instruction. | [#22](https://github.com/descipar/wled-mcp/issues/22), [#23](https://github.com/descipar/wled-mcp/issues/23), [#25](https://github.com/descipar/wled-mcp/issues/25), [#151](https://github.com/descipar/wled-mcp/issues/151), [#181](https://github.com/descipar/wled-mcp/issues/181) |
+| M7: Rooms | An agent addresses lighting by room and applies a state or scene to all controllers of a room. | The room issue merged with mocked tests and one authorized live run; minor release and README update (DEC-030). | [#183](https://github.com/descipar/wled-mcp/issues/183) |
 | Backlog | Small maintenance work picked when it fits. | None; reviewed when a milestone closes. | [#138](https://github.com/descipar/wled-mcp/issues/138), [#117](https://github.com/descipar/wled-mcp/issues/117), [#154](https://github.com/descipar/wled-mcp/issues/154), [#156](https://github.com/descipar/wled-mcp/issues/156), [#159](https://github.com/descipar/wled-mcp/issues/159) |
 
 The superseded stage trackers (#26, #127, #133) are closed; the acceptance line of the stage-5 tracker
