@@ -16,7 +16,7 @@ from wled_mcp.backups import BackupRecord, Firmware, RestorePlan, Snapshot, Snap
 from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, StartupConfig
-from wled_mcp.diagnostics import ServiceMonitor
+from wled_mcp.diagnostics import LastControlStore, ServiceMonitor
 from wled_mcp.models import DomainError, Outcome
 
 SequenceKind = Literal[
@@ -141,7 +141,9 @@ class Resources:
         # Last observed outcome per device and call counters (issue #20, TD-20-11); fed by
         # the client's observer, so it never issues a request of its own.
         self.monitor = ServiceMonitor(
-            (device.id for device in self.inventory), self.clock.monotonic
+            (device.id for device in self.inventory),
+            self.clock.monotonic,
+            LastControlStore((device.id for device in self.inventory), self.clock.now),
         )
         self.client = WLEDClient(config.http, transport, observer=self.monitor.observe)
         self.locks = {device.id: anyio.Lock() for device in self.inventory}

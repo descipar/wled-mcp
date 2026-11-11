@@ -1296,6 +1296,9 @@ All Must requirements need evidence. Mock implementation can be merged while har
   published).
 - [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
   schema validation and the 0.2.0 release preparation (#24; nothing published or submitted).
+- [validation/issue-30.md](validation/issue-30.md): evidence-separated lighting explanation,
+  process-local control evidence, read-only guarantees and parity (#30, mock and loopback
+  evidence; no hardware run).
 - [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
   bundles, restore and a playlist on the test controller (#134).
 - [validation/issue-147.md](validation/issue-147.md): agent instructions, static prompt

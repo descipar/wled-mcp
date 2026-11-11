@@ -22,6 +22,7 @@ from wled_mcp.catalogs import (
 )
 from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.effect_search import SearchEffectsRequest, search, shipped_catalog
+from wled_mcp.explain import build_explain_operation
 from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
 from wled_mcp.live_snapshot import build_live_operation
 from wled_mcp.models import Outcome
@@ -1372,6 +1373,7 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         build_status_operation(resources),
         *_build_read_operations(resources),
         build_live_operation(resources),
+        build_explain_operation(resources),
         *_build_write_operations(resources),
         *_build_preset_operations(resources),
         *build_preset_workflow_operations(resources),

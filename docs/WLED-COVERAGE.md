@@ -235,6 +235,9 @@ counted.
 - `wled_search_effects`: searches a project-curated property catalog (shipped data, #31)
   intersected with the device's effect list; WLED has no such API, so it is not a WLED
   feature row (W-CAT-01 and W-CAT-02 stay as they are).
+- `wled_explain_lighting`: combines two reads with process-local evidence into candidate
+  causes (#30); it only reads an indicator allowlist and does not deliver or extend a WLED
+  feature row (W-STATE-08 and W-STATE-09 stay `unplanned`).
 - `wled_list_zones`: lists the server's own named physical zones (reviewed local files in
   the data directory, #27); no device is contacted and no WLED feature is involved.
 - `wled_plan_zone`: reads state of the zone's devices to resolve a zone onto existing
