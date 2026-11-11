@@ -766,6 +766,23 @@ async def test_call_counters_are_bounded_by_fixed_keys_and_exclude_the_current_c
     assert PLANTED[0] not in json.dumps(counts) and PLANTED[2] not in json.dumps(counts)
 
 
+def test_the_last_control_store_keeps_one_bounded_allowlisted_entry_per_device():
+    """S3-EXPLAIN-01 (#30): configured devices only, latest entry, fixed error vocabulary."""
+    from datetime import UTC, datetime
+
+    ticks = iter(datetime(2026, 1, 1, 0, 0, n, tzinfo=UTC) for n in range(10))
+    store = diagnostics.LastControlStore(["desk"], lambda: next(ticks))
+    store.record("absent", "wled_set_state", "applied", "verified", None)
+    store.record(None, "wled_set_state", "applied", "verified", None)
+    store.record("desk", "wled_set_state", "applied", "verified", None)
+    store.record("desk", "wled_patch_segments", "unknown", "mismatch", "http://secret.invalid")
+    latest = store.latest("desk")
+    assert latest is not None and store.latest("absent") is None
+    assert (latest.operation, latest.error_code) == ("wled_patch_segments", None)
+    assert latest.finished_at.second == 1  # the second accepted record replaced the first
+    assert ServiceMonitor(["desk"]).last_control.latest("desk") is None
+
+
 def test_the_monitor_ignores_unconfigured_devices_and_keeps_bounded_state():
     tick = [0.0]
     monitor = ServiceMonitor(["desk"], lambda: tick[0])

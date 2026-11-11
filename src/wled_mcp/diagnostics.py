@@ -185,6 +185,55 @@ def configure_logging(settings: LogSettings) -> logging.Handler:
     return handler
 
 
+# ------------------------------------------------------------------ last control evidence
+
+
+@dataclass(frozen=True)
+class LastControl:
+    """Allowlisted outcome of the latest control/manage call that reached a device (#30).
+
+    No argument, light value or body is kept; only fixed-vocabulary outcome fields.
+    """
+
+    operation: str
+    finished_at: datetime
+    application: str
+    verification: str
+    error_code: str | None
+
+
+class LastControlStore:
+    """Latest control outcome per configured device; bounded, process-local, lost on restart."""
+
+    def __init__(
+        self,
+        device_ids: Iterable[str] = (),
+        now: Callable[[], datetime] | None = None,
+    ) -> None:
+        self._now = now if now is not None else lambda: datetime.now(UTC)
+        self._device_ids: frozenset[str] = frozenset(device_ids)
+        self._latest: dict[str, LastControl] = {}
+
+    def record(
+        self,
+        device_id: str | None,
+        operation: str,
+        application: str,
+        verification: str,
+        error_code: str | None,
+    ) -> None:
+        """Keep one entry for a configured device; anything else is ignored."""
+        if device_id is None or device_id not in self._device_ids:
+            return
+        code = error_code if error_code in LOGGED_ERROR_CODES else None
+        self._latest[device_id] = LastControl(
+            operation, self._now(), application, verification, code
+        )
+
+    def latest(self, device_id: str) -> LastControl | None:
+        return self._latest.get(device_id)
+
+
 # ---------------------------------------------------------------------------- the monitor
 
 
@@ -203,10 +252,15 @@ class ServiceMonitor:
         self,
         device_ids: Iterable[str] = (),
         monotonic: Callable[[], float] | None = None,
+        last_control: LastControlStore | None = None,
     ) -> None:
         self._clock = monotonic if monotonic is not None else time.monotonic
         self.started_at = self._clock()
         self.device_ids: tuple[str, ...] = tuple(device_ids)
+        # Separate evidence store (AR-04); carried here only so the dispatcher can reach it.
+        self.last_control = (
+            last_control if last_control is not None else LastControlStore(self.device_ids)
+        )
         self.transport = "unknown"
         # None until a startup check ran; never reported as writable without one.
         self.backups_writable: bool | None = None

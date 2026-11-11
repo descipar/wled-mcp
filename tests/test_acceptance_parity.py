@@ -70,6 +70,7 @@ CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
         False,
     ),
     "live_snapshot": ("wled_get_live_snapshot", {"device_id": DESK}, "apply", 0, False),
+    "explain_lighting": ("wled_explain_lighting", {"device_id": DESK}, "apply", 0, False),
     "read_success": ("wled_get_state", {"device_id": DESK}, "apply", 0, False),
     "write_verified": ("wled_set_state", {"device_id": DESK, "on": False}, "apply", 1, False),
     "schema_wrong_type": (
@@ -115,6 +116,14 @@ CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
         1,
         False,
     ),
+    # After the uncertain write: the dispatcher hook has recorded it as process evidence.
+    "explain_after_uncertain_write": (
+        "wled_explain_lighting",
+        {"device_id": DESK},
+        "apply",
+        0,
+        False,
+    ),
 }
 
 EXPECTED_CODE = {
@@ -122,6 +131,8 @@ EXPECTED_CODE = {
     "segment_name_unknown": "VALIDATION_ERROR",
     "read_success": None,
     "live_snapshot": None,
+    "explain_lighting": None,
+    "explain_after_uncertain_write": None,
     "write_verified": None,
     "schema_wrong_type": "VALIDATION_ERROR",
     "schema_extra_field": "VALIDATION_ERROR",
@@ -244,6 +255,12 @@ def mask_volatile(record: dict[str, Any]) -> dict[str, Any]:
             if time_key in data:
                 assert datetime.fromisoformat(data[time_key]).tzinfo is not None
                 data[time_key] = "<timestamp>"
+        for item in data.get("observations") or []:
+            if item.get("observed_at") is not None:
+                assert datetime.fromisoformat(item["observed_at"]).tzinfo is not None
+                item["observed_at"] = "<timestamp>"
+            if item.get("source") == "process_memory":
+                item["age_seconds"] = "<age>"
         freshness = data.get("freshness") or {}
         if "read_at" in freshness:
             assert datetime.fromisoformat(freshness["read_at"]).tzinfo is not None
@@ -265,6 +282,17 @@ def test_outcome_axes_for_mismatch_and_uncertain_writes(outcomes):
         assert unknown["error"]["write_retryable"] is False
         verified = outcomes[transport]["write_verified"]["structured"]
         assert (verified["application"], verified["verification"]) == ("applied", "verified")
+
+
+def test_explain_reports_the_recorded_uncertain_write_on_both_transports(outcomes):
+    for transport in ("stdio", "http"):
+        data = outcomes[transport]["explain_after_uncertain_write"]["structured"]["data"]
+        assert "LAST_WRITE_UNCERTAIN" in [c["code"] for c in data["inferred_causes"]]
+        before = outcomes[transport]["explain_lighting"]["structured"]["data"]
+        assert [c["code"] for c in before["inferred_causes"]] == [
+            "UNATTRIBUTED_MISMATCH",
+            "INSUFFICIENT_EVIDENCE",
+        ]
 
 
 def test_unknown_tool_is_a_protocol_error_on_both_transports(outcomes):

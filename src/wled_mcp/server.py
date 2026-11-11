@@ -202,6 +202,18 @@ def create_server(
             elif code == INTERNAL_FAILURE and tool_class is not ToolClass.READ:
                 # A crash cannot tell "not attempted" from "possibly applied".
                 application = "unknown"
+            if operation is not None and tool_class is not ToolClass.READ:
+                # Evidence for wled_explain_lighting (#30): only outcomes that may have
+                # reached a configured device; refusals and dry runs change nothing.
+                reached = application in {"applied", "not_applied", "unknown"}
+                if reached and calls.is_configured(raw_device):
+                    calls.last_control.record(
+                        raw_device,
+                        tool,
+                        application or "unknown",
+                        "unknown" if outcome is None else outcome.verification,
+                        code,
+                    )
             log_call(
                 CallRecord(
                     tool=tool,
