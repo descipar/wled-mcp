@@ -79,6 +79,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-029 | Project / roadmap | Replace numbered stages by GitHub milestones for open and new work: every open or new issue has exactly one milestone (Backlog counts), no `Stage N:` prefix and no `stage:N` label for new issues; closed history and requirement IDs keep their stages. Supersedes DEC-010 for open and new work, amends DEC-002. Records the new scope (#147 to #151), the order and a bounded standing merge approval for milestones M1 and M2. Amended by DEC-030 (#24 in M1, milestone closure). | Confirmed owner decision, main session, 2026-11-09; see [DEC-029](#dec-029--milestones-instead-of-stages) and [issue #152](https://github.com/descipar/wled-mcp/issues/152) |
 | DEC-030 | Project / roadmap | Closing a milestone includes at least a minor release and a README update. Applies from M1, whose scope also includes #24; M1 stays open until that release is done. Tag, GitHub release, PyPI/registry publication and submissions still need the owner's explicit instruction. | Confirmed owner answers, main session, 2026-11-09; see [DEC-030](#dec-030--milestone-closure-includes-a-minor-release) |
 | DEC-031 | Project / roadmap | Release scope for M2 is the same as for M1: tag, GitHub release, PyPI upload and official MCP Registry publication; preparing release 0.3.0 is allowed now, each publication step needs the owner's explicit instruction at that time, and M2 stays open until the release is done. Applies to M2 only. | Confirmed owner answer, coordinator session, 2026-11-11; see [DEC-031](#dec-031--release-scope-for-milestone-m2) |
+| DEC-032 | Project / roadmap | Milestone M3 is closed without its own minor release: the owner waives DEC-030 item 1 for M3 because its scope is too small for a release. Its merged work (#27, #29) ships with the next minor release. Applies to M3 only. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-032](#dec-032--m3-closes-without-its-own-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -876,6 +877,25 @@ can explicitly amend them.
   [the record](validation/release-m2.md#release-and-registry-publication-2026-11-11));
   registry publication ("mach den rest für #m2", English: "do the rest for #m2", followed by
   the owner's own `mcp-publisher login github`). M2 is closed after this record is merged.
+
+### DEC-032 — M3 closes without its own release
+
+- Status: active project decision, M3 only.
+- Authority/source: owner statement in the coordinator session on 2026-11-11 (no permalink),
+  after the open work of M3 was listed: "wir machen für m3 kein neues release. das zu klein"
+  (English: "we do not make a new release for M3. that is too small").
+- Owner decision (the wording of the items is the coordinator's, from that statement):
+  1. M3 has no release of its own. The owner waives DEC-030 item 1 for M3 under DEC-030 item 3.
+  2. M3 is closed once its issues (#27, #29) are closed and this record is merged.
+  3. The merged work of M3 stays under `Unreleased` in `CHANGELOG.md` and ships with the next
+     minor release (the one that closes the next milestone with a release). No version, tag,
+     GitHub release, PyPI upload or registry publication is prepared for M3.
+  4. The README already describes zones and the layout preview. Its tool count and version
+     statements are updated when that next release is prepared.
+- Scope: milestone M3 only; it is not a general rule that small milestones skip a release.
+  A later milestone needs its own answer.
+- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
+- Affected: docs/ROADMAP.md (M3 row).
 
 ## Issue-specific decisions (pointers)
 
