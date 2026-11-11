@@ -343,10 +343,10 @@ async def test_an_indicator_candidate_still_gives_candidates_only(tmp_path):
 async def test_realtime_source_text_allows_a_slash_but_not_an_address(tmp_path):
     """S3-EXPLAIN-02: lm keeps its bound; only safe names are echoed."""
     seen = {}
-    for lm in ("USB Adalight/TPM2", "x/10.0.0.1"):
+    for lm in ("USB Adalight/TPM2", "x/192.0.2.5"):
         async with open_resources(tmp_path, fleet(info=make_info(lm=lm))) as resources:
             seen[lm] = observations(await call(resources, TOOL))["info.lm"]["value"]
-    assert seen == {"USB Adalight/TPM2": "USB Adalight/TPM2", "x/10.0.0.1": "other"}
+    assert seen == {"USB Adalight/TPM2": "USB Adalight/TPM2", "x/192.0.2.5": "other"}
 
 
 @pytest.mark.anyio
