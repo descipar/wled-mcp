@@ -59,6 +59,7 @@ from wled_mcp.presets import (
     unexpected_state_keys,
     unsafe_playlist_members,
 )
+from wled_mcp.preview_tools import build_preview_operation
 from wled_mcp.readmodels import (
     Collector,
     as_dict,
@@ -1379,4 +1380,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *build_preset_workflow_operations(resources),
         *build_scene_operations(resources),
         *build_zone_operations(resources),
+        build_preview_operation(resources),
     )

@@ -71,6 +71,19 @@ CASES: dict[str, tuple[str, dict[str, Any], PostMode, int, bool]] = {
     ),
     "live_snapshot": ("wled_get_live_snapshot", {"device_id": DESK}, "apply", 0, False),
     "explain_lighting": ("wled_explain_lighting", {"device_id": DESK}, "apply", 0, False),
+    # Issue #29: the SVG preview is plain data in the envelope and never writes.
+    "preview_observed": ("wled_preview_layout", {"device_id": DESK}, "apply", 0, False),
+    "preview_proposed": (
+        "wled_preview_layout",
+        {
+            "device_id": DESK,
+            "segments": [{"id": 0, "start": 0, "stop": 45}, {"id": 2, "start": 45, "stop": 90}],
+        },
+        "apply",
+        0,
+        False,
+    ),
+    "preview_unknown_device": ("wled_preview_layout", {"device_id": "absent"}, "apply", 0, True),
     "read_success": ("wled_get_state", {"device_id": DESK}, "apply", 0, False),
     "write_verified": ("wled_set_state", {"device_id": DESK, "on": False}, "apply", 1, False),
     "schema_wrong_type": (
@@ -132,6 +145,9 @@ EXPECTED_CODE = {
     "read_success": None,
     "live_snapshot": None,
     "explain_lighting": None,
+    "preview_observed": None,
+    "preview_proposed": None,
+    "preview_unknown_device": "UNKNOWN_DEVICE",
     "explain_after_uncertain_write": None,
     "write_verified": None,
     "schema_wrong_type": "VALIDATION_ERROR",
@@ -524,3 +540,12 @@ def test_segment_name_results_show_resolved_ids_and_diagnostic_suggestions(outco
         assert planned["effect_id"] == 3 and planned["palette_id"] == 2
         unknown = outcomes[transport]["segment_name_unknown"]["structured"]
         assert unknown["data"]["candidates"] == [{"id": 3, "name": "Wipe"}]
+
+
+def test_the_layout_preview_svg_is_identical_plain_data_on_both_transports(outcomes):
+    for name, source in (("preview_observed", "observed"), ("preview_proposed", "proposed")):
+        stdio = outcomes["stdio"][name]["structured"]["data"]
+        http = outcomes["http"][name]["structured"]["data"]
+        assert stdio["source"] == source and stdio["media_type"] == "image/svg+xml"
+        assert stdio["svg"].startswith("<svg ") and stdio["svg"] == http["svg"]
+        assert outcomes["stdio"][name]["text"]["data"]["svg"] == stdio["svg"]
