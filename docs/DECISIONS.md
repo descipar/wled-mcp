@@ -78,6 +78,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-028 | Project / workflow | Pragmatic delivery: good enough instead of 100%. Scope, evidence and review depth are bounded up front, evidence is one or two runs instead of matrices, optional polish and nits go to the next PR, small follow-ups are folded into the open PR. Safety gates are unchanged. | Confirmed owner decision, main session, 2026-11-09; see [DEC-028](#dec-028--pragmatic-delivery) |
 | DEC-029 | Project / roadmap | Replace numbered stages by GitHub milestones for open and new work: every open or new issue has exactly one milestone (Backlog counts), no `Stage N:` prefix and no `stage:N` label for new issues; closed history and requirement IDs keep their stages. Supersedes DEC-010 for open and new work, amends DEC-002. Records the new scope (#147 to #151), the order and a bounded standing merge approval for milestones M1 and M2. Amended by DEC-030 (#24 in M1, milestone closure). | Confirmed owner decision, main session, 2026-11-09; see [DEC-029](#dec-029--milestones-instead-of-stages) and [issue #152](https://github.com/descipar/wled-mcp/issues/152) |
 | DEC-030 | Project / roadmap | Closing a milestone includes at least a minor release and a README update. Applies from M1, whose scope also includes #24; M1 stays open until that release is done. Tag, GitHub release, PyPI/registry publication and submissions still need the owner's explicit instruction. | Confirmed owner answers, main session, 2026-11-09; see [DEC-030](#dec-030--milestone-closure-includes-a-minor-release) |
+| DEC-031 | Project / roadmap | Release scope for M2 is the same as for M1: tag, GitHub release, PyPI upload and official MCP Registry publication; preparing release 0.3.0 is allowed now, each publication step needs the owner's explicit instruction at that time, and M2 stays open until the release is done. Applies to M2 only. | Confirmed owner answer, coordinator session, 2026-11-11; see [DEC-031](#dec-031--release-scope-for-milestone-m2) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -847,6 +848,27 @@ can explicitly amend them.
 - Amends: DEC-029 (assignment of #24 to M6 instead of M1, and the closing of milestones).
 - Affected: docs/ROADMAP.md (M1 row, closing rule), docs/AGENT-WORKFLOW.md, pyproject.toml,
   CHANGELOG.md, server.json and README.md (version and features of the M1 release).
+
+### DEC-031 — Release scope for milestone M2
+
+- Status: active project decision, M2 only.
+- Authority/source: owner answer in the coordinator session on 2026-11-11 (no permalink) to
+  the question on the release scope for M2: "ja, 0.3.0 vorbereiten, Veröffentlichung später
+  separat. Alle schritte" (English: "yes, prepare 0.3.0, publication separately later. All
+  steps").
+- Owner decision (the wording is the main session's, from that answer):
+  1. The release scope for M2 is the same as for M1 (DEC-030 item 5): tag, GitHub release,
+     PyPI upload and publication in the official MCP Registry.
+  2. Preparing the release 0.3.0 (version, changelog, README, metadata, evidence) is allowed
+     now and is done in a repository change.
+  3. Every publication step runs only on the owner's explicit instruction at the time of that
+     step (DEC-023). Merging the preparation pull request authorizes none of them.
+  4. M2 stays open until the release is done (DEC-030 item 1).
+- Scope: milestone M2 only; a later milestone needs its own answer. No hub deployment is
+  authorized.
+- Not changed: DEC-023, DEC-029 item 4 and DEC-030.
+- Affected: docs/ROADMAP.md (M2 row), CHANGELOG.md, README.md, pyproject.toml, server.json,
+  uv.lock and docs/validation/release-0.3.0.md.
 
 ## Issue-specific decisions (pointers)
 

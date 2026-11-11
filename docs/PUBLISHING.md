@@ -214,7 +214,8 @@ registry automation (for example GitHub OIDC in a workflow) is wired.
 Done for the milestone M1 release on 2026-11-09, step by step on the owner's
 instructions ([ISSUE-24-DEC-004](decisions/issue-24.md); facts and checksums in
 [validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)).
-For every later release each step needs the owner's explicit instruction at that time;
+The M2 minor release is prepared in the repository and not yet published
+([DEC-031](DECISIONS.md#dec-031--release-scope-for-milestone-m2)). For every later release each step needs the owner's explicit instruction at that time;
 completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release),
 [DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
 
