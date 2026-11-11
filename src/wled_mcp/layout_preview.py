@@ -602,7 +602,7 @@ def render_svg(model: PreviewModel) -> Rendered:  # noqa: C901 - one linear layo
         "plan"
         if model.source == "proposed"
         else "state_slot_0"
-        if live is None
+        if live is None or (state_lanes and not live_lanes)
         else "mixed"
         if live_lanes and state_lanes
         else "live_samples"

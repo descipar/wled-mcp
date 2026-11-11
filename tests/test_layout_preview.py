@@ -520,6 +520,13 @@ def test_the_colour_basis_is_mixed_when_only_some_lanes_have_live_samples():
     assert by_id(rendered)[1]["colour_mode"] == "rgb"  # the lane itself stays truthful
 
 
+def test_the_colour_basis_is_state_slot_0_when_live_data_reaches_no_drawn_lane():
+    first, second = lane(0, 0, 10), lane(1, 10, 20)  # no live runs on any lane
+    rendered = render_svg(model(first, second, led_count=20, live=LiveModel("available", 1)))
+    assert rendered.summary["colour_basis"] == "state_slot_0"
+    assert [by_id(rendered)[i]["colour_mode"] for i in (0, 1)] == ["rgb", "rgb"]
+
+
 def test_an_unavailable_live_read_falls_back_to_the_state_colours():
     item = lane(0, 0, 20)
     rendered = render_svg(model(item, led_count=20, live=LiveModel("unavailable", 1)))
