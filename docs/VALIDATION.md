@@ -1307,3 +1307,5 @@ All Must requirements need evidence. Mock implementation can be merged while har
 
 - [validation/issue-150.md](validation/issue-150.md): bounded live snapshot decoding,
   mapping, transport/profile parity and selected-controller unavailable response (#150).
+- [validation/issue-25.md](validation/issue-25.md): live H07 check with an unreachable configured
+  controller on the deployed HTTP service (#25; read-only, temporary inventory entry).
