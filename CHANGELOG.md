@@ -5,6 +5,41 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## 0.3.0 - M2: observe and explain
+
+The release that closes milestone M2 once it is published
+([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release),
+[DEC-031](docs/DECISIONS.md#dec-031--release-scope-for-milestone-m2)). A minor release under the
+`0.x` policy ([versioning](docs/contract/versioning.md), DEC-020): the changes are additive and
+no tool or field was removed or renamed, so it carries no migration notes. The served tool list
+grows from 31 to 33 tools.
+
+### Added
+
+- Live LED colour snapshot ([#150](https://github.com/descipar/wled-mcp/issues/150),
+  [contract](docs/contract/live-snapshot.md)): the read-only `wled_get_live_snapshot` returns
+  bounded, sampled LED colours per segment with explicit missing data and mapping limits. The
+  colours are sampled values from the controller's live endpoint, not a claim of colour
+  accuracy, and matrix geometry that cannot be mapped is reported as such.
+- Lighting explanation ([#30](https://github.com/descipar/wled-mcp/issues/30),
+  [contract](docs/contract/explain.md)): the read-only `wled_explain_lighting` explains why a
+  light change seems ineffective for one device. It reads the controller state and info once
+  each, combines them with process-local evidence of the last control call and returns
+  observations, candidate causes with a confidence that never exceeds medium, a conclusion,
+  unknowns and next checks. It never writes and does not prove a cause or name an actor.
+
+### Tested and not tested
+
+- Both tools have mocked and loopback tests, including parity over stdio and protected HTTP.
+  The live evidence is one read-only check each on the one test controller (WLED 16.0.1):
+  the snapshot call reported the live endpoint as unavailable (HTTP 501), so no positive colour
+  result was observed on hardware ([#150 record](docs/validation/issue-150.md)); one
+  explanation call read state and info once each and returned an observed blocker (master
+  power off) with a low-confidence sync possibility ([#30 record](docs/validation/issue-30.md)).
+  No write, other device, stale-evidence or playback/realtime-override path ran on hardware.
+- The registry metadata is updated for 0.3.0 and validated locally only; nothing is tagged,
+  released, uploaded or published by this change.
+
 ## 0.2.0 - M1: agent guidance, effect metadata and search, names, zones and the registry marker
 
 The release that closes milestone M1 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).

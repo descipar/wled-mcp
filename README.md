@@ -45,12 +45,19 @@ Hardware acceptance is partial: one controller on WLED 16.0.1. No support is pro
   `change_lighting_safely` and precise field descriptions, identically over stdio and HTTP.
   A client has to pass them on to its agent; forwarding by MCPHub was not observed
   ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/agent-guidance.md)).
+- Observe and explain (read-only): `wled_get_live_snapshot` samples the LED colours per
+  segment from the controller's live endpoint with explicit missing data and mapping limits
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/live-snapshot.md));
+  `wled_explain_lighting` lists observed facts, candidate causes (never above medium
+  confidence), unknowns and next checks for one device whose change seems ineffective
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/explain.md)). Neither
+  claims colour accuracy, and an explanation is not proof of a cause.
 - Persistent presets with snapshots, restore, portable bundles and playlists; named
   device groups and multi-device scenes with a dry-run plan.
 - Server-enforced profiles (`read-only`, `control`, `full`) and, for the HTTP service, a
   bearer credential with Host and Origin allowlists.
 
-All 31 tools, each with its read-only, write or destructive hint, are listed in the
+All 33 tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->
@@ -171,8 +178,10 @@ exercised a one-device group and scene, preset store, export, import and restore
 playlist, with the controller restored afterwards
 ([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
 onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run. Of the newest features, only a read-only run
-covered the effect metadata and one effect search; zones, name resolution in segment writes
-and the served guidance have mocked or local-client tests only.
+covered the effect metadata and one effect search. One read-only call of the explanation ran
+on the controller; its live colour snapshot reported the endpoint as unavailable (HTTP 501), so
+no positive snapshot was observed. Zones, name resolution in segment writes and the served
+guidance have mocked or local-client tests only.
 Other limits:
 
 - No tool deletes a snapshot on request; snapshots are only removed by retention pruning

@@ -1295,7 +1295,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
   local build, metadata and smoke checks of the built files (#22, local evidence; nothing
   published).
 - [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
-  schema validation and the 0.2.0 release preparation (#24; nothing published or submitted).
+  schema validation and the 0.2.0 release preparation and publication (#24). The 0.3.0 preparation is recorded in
+  [validation/release-0.3.0.md](validation/release-0.3.0.md) (nothing published).
 - [validation/issue-30.md](validation/issue-30.md): evidence-separated lighting explanation,
   process-local control evidence, read-only guarantees and parity (#30, mock and loopback
   evidence; no hardware run).
