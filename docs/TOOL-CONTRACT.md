@@ -26,6 +26,9 @@ properties (see [contract/effect-search.md](contract/effect-search.md)).
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
+#29 adds the read-only `wled_preview_layout`: a static, bounded SVG of the observed or of a
+proposed 1D segment layout, returned as `data.svg`, which sends no write (see
+[contract/layout-preview.md](contract/layout-preview.md)).
 `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -80,6 +83,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_list_zones` | read-only | Stored named zones with warnings; one zone's document by ID or name |
 | `wled_plan_zone` | read-only | Preview of a zone: exact device, segment IDs and LED ranges, or the refusal; optional segment-field plan |
 | `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone; no geometry, no master state |
+| `wled_preview_layout` | read-only | Static SVG (`data.svg`) of the observed or a proposed 1D segment layout with ranges, gaps, overlaps and approximate colours; no write |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -118,6 +122,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_list_zones` | optional `zone` (ID or name) | Zone summaries and cross-zone warnings, or one zone's stored document; local files only | Stage 3 (S3-ZONE-01); implemented in #27 ([contract/zones.md](contract/zones.md)) |
 | `wled_plan_zone` | `zone`, optional `segments` (one object of segment fields), `mode=strict` | Read-only resolution onto existing segments, per-device refusals, optional real segment plan | Stage 3 (S3-ZONE-01, S3-ZONE-02); #27 |
 | `wled_apply_zone` | `zone`, `segments` (one object of segment fields), `mode=strict`, `dry_run` | Verified write of those fields to the zone's segments only; `dry_run` equals the plan | Stage 3 (S3-ZONE-02); #27 |
+| `wled_preview_layout` | `device_id`, optional `segments` (a proposed complete layout), `allow_overlap=false`, `zone`, `live_samples=false` | Read-only SVG string `data.svg` plus a summary; observed without `segments`, proposed and planner-validated with them; 1D only, matrix refused | Stage 3 (S3-PREVIEW-01, S3-PREVIEW-02); implemented in #29 ([contract/layout-preview.md](contract/layout-preview.md)) |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -905,6 +910,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   the resolution rule and the existing-segments policy (#27).
 - [contract/groups-scenes.md](contract/groups-scenes.md): device groups, scenes, the plan
   and sharing (#17).
+- [contract/layout-preview.md](contract/layout-preview.md): the `wled_preview_layout` tool, the
+  static SVG, its sources, bounds, colour labels and output security rules (#29).
 - [contract/live-snapshot.md](contract/live-snapshot.md): bounded sampled LED observations,
   mapping provenance, unavailable endpoints and output limits (#150).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,

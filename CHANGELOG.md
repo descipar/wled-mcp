@@ -5,6 +5,19 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## Unreleased
+
+The served tool list grows from 33 to 34 tools; the change is additive.
+
+### Added
+
+- Static layout preview ([#29](https://github.com/descipar/wled-mcp/issues/29),
+  [contract](docs/contract/layout-preview.md)): the read-only `wled_preview_layout` returns a
+  bounded, script-free SVG string (`data.svg`) of one device's observed 1D segment layout or of a
+  proposed complete layout validated by the existing layout planner, with ranges (exclusive
+  stops), a scale, gaps, overlaps and approximate colours, optional zone bands and optional live
+  colour samples. It sends no write, never simulates effects, and refuses matrix devices.
+
 ## 0.3.0 - M2: observe and explain
 
 The release that closes milestone M2 once it is published
