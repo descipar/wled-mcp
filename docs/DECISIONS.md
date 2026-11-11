@@ -80,6 +80,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-030 | Project / roadmap | Closing a milestone includes at least a minor release and a README update. Applies from M1, whose scope also includes #24; M1 stays open until that release is done. Tag, GitHub release, PyPI/registry publication and submissions still need the owner's explicit instruction. | Confirmed owner answers, main session, 2026-11-09; see [DEC-030](#dec-030--milestone-closure-includes-a-minor-release) |
 | DEC-031 | Project / roadmap | Release scope for M2 is the same as for M1: tag, GitHub release, PyPI upload and official MCP Registry publication; preparing release 0.3.0 is allowed now, each publication step needs the owner's explicit instruction at that time, and M2 stays open until the release is done. Applies to M2 only. | Confirmed owner answer, coordinator session, 2026-11-11; see [DEC-031](#dec-031--release-scope-for-milestone-m2) |
 | DEC-032 | Project / roadmap | Milestone M3 is closed without its own minor release: the owner waives DEC-030 item 1 for M3 because its scope is too small for a release. Its merged work (#27, #29) ships with the next minor release. Applies to M3 only. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-032](#dec-032--m3-closes-without-its-own-release) |
+| DEC-033 | Project / development platform | Windows is a supported development platform: the test suite and local tooling are expected to work on a Windows checkout, so Windows-only test failures are defects to fix or to skip with a stated reason. Narrow scope: the user-facing platform tier of DEC-020 item 4 (Windows experimental) and the CI matrix are unchanged. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-033](#dec-033--windows-is-a-supported-development-platform) and [issue #191](https://github.com/descipar/wled-mcp/issues/191) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -896,6 +897,31 @@ can explicitly amend them.
   A later milestone needs its own answer.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
 - Affected: docs/ROADMAP.md (M3 row).
+
+### DEC-033 — Windows is a supported development platform
+
+- Status: active project decision.
+- Authority/source: owner statement in the coordinator session on 2026-11-11 (no permalink),
+  answering the open question of issue #191 whether Windows is a supported development
+  platform: "Windows wird unterstützt als entwicklungsplattform" (English: "Windows is
+  supported as a development platform").
+- Owner decision (the wording of the items is the coordinator's, from that statement):
+  1. Windows is a supported platform for developing this project: the test suite, the lint and
+     type checks and the local scripts are expected to work on a Windows checkout.
+  2. A test that fails only on Windows is a defect to fix, or to skip on `win32` with a visible
+     reason where the behaviour is POSIX-specific. The offline guarantee of tests must not be
+     weakened on any platform.
+  3. Issue #191 (Windows-only test failures) is therefore implemented, not closed as
+     "not supported". Its first acceptance item (decision on Windows support) is answered by
+     this record; documentation of the development setup (docs/DEVELOPMENT.md) is part of that
+     issue.
+- Scope: development platform only. Not changed: DEC-020 item 4 (user-facing platform tiers:
+  Linux supported, Windows and macOS experimental), the CI platform matrix (Linux is
+  authoritative) and the staging rule of DEC-026. Whether the user-facing Windows tier should
+  change is not decided here and needs its own owner answer.
+- Not changed: DEC-023 and the publication gates.
+- Affected: issue #191, docs/DEVELOPMENT.md and the README support table only when a later
+  change adopts this record.
 
 ## Issue-specific decisions (pointers)
 
