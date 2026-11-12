@@ -41,9 +41,9 @@ detail is a technical proposal.
 | DISC-T01 | Identification by `/json/info` content, not by port: non-WLED answers on port 80, malformed, oversized and redirecting responses are never candidates. | mocked |
 | DISC-T02 | Deduplication by MAC across methods and addresses; `known` and `address_changed`; the inventory is unchanged by discovery. | mocked |
 | DISC-T03 | Each hard cap: public, loopback and link-local ranges, a /23, a fifth range, host bits set, and a hostile hand-edited file at startup and at probe time. | mocked |
-| DISC-T04 | Coverage-report precedence, one case per rule: no usable socket gives `not_looked`; mDNS completed with no answers and unicast skipped gives `none_found_incomplete`; a deadline that leaves hosts `not_probed` gives `none_found_incomplete`; all hosts probed with some `timed_out` and every method `completed` gives `none_found_complete`. | mocked |
+| DISC-T04 | Coverage-report precedence, one case per rule: no usable socket gives `not_looked`; mDNS completed with no answers and unicast skipped gives `none_found_incomplete` with `complete` false; a deadline that leaves hosts `not_probed` gives `none_found_incomplete`; all hosts probed with some `timed_out` and every method `completed` gives `none_found_complete`. | mocked |
 | DISC-T05 | Range proposal derivation (mixed private, public and DNS hosts, more than the maximum number of ranges) and "never probes proposals". | mocked |
-| DISC-T06 | Writer and reload: atomic replace, concurrent writers including the CLI, rollback on an invalid result, unwritable file or directory, an in-flight request keeps the old inventory, an `[access]` mismatch refuses the reload. | mocked |
+| DISC-T06 | Writer and reload: atomic replace, concurrent writers including the CLI, rollback on an invalid result, unwritable file or directory, an in-flight request keeps the old inventory, a hand edit after startup refuses with `INVENTORY_CONFLICT` `file_changed`, an `[access]` mismatch refuses the reload. | mocked |
 | DISC-T07 | Tool gating: profile registration filter, `Unknown tool`, annotations, class equal to `tests/tool_contract.py`, identical stdio and HTTP descriptors. | mocked |
 | DISC-T08 | Live (authorized only, #200, #203, #204): read-only discovery runs in both deployment modes and the single enrollment, each restoring the inventory afterwards. | hardware, separate evidence |
 
@@ -156,7 +156,7 @@ never sets `max_class`.
 Errors: `VALIDATION_ERROR` (bad fields, `mac_mismatch`, address outside the policy),
 `UNREACHABLE`, `TIMEOUT`, `INVALID_RESPONSE`, `NOT_WLED` (**TP-3**: the answer is not a WLED
 `/json/info`; nothing written), `INVENTORY_CONFLICT` (**TP-3**: `data.conflict` is `id`,
-`base_url`, `mac` or `file_changed`, with `data.known_device_id`; nothing written; an existing entry is never
+`base_url`, `mac` or `file_changed`, with `data.known_device_id` (omitted for `file_changed`); nothing written; an existing entry is never
 overwritten), `STORAGE_FAILED` and `INVENTORY_RELOAD_FAILED`. A duplicate is an equal
 normalized `base_url` (the rule of `config add-device`, TD-16-3) or an equal MAC of an entry
 that has a stored `mac`. A timeout of the verification read is `not_applied`: nothing was
@@ -222,10 +222,11 @@ An update tool is out of scope for M8 (owner answer 5 of DEC-035).
 `data.coverage` is always present, also when `candidates` is empty (**TP-8**).
 
 - `schema` 1. `conclusion`: `candidates_found`, `none_found_complete`, `none_found_incomplete`
-  or `not_looked`. `complete` is a top-level boolean that is true exactly when `conclusion` is
-  `none_found_complete` or every attempted method is `completed` (with candidates found
-  `complete` can still be false, for example after a deadline). A method's own `status`
-  describes that method only.
+  or `not_looked`. `complete` is a top-level boolean that is true exactly when both
+  `mdns` and `unicast` were requested and ran with status `completed` and no range host is
+  `not_probed`. A method skipped for any reason, including `unicast` skipped for
+  `no_ranges_configured`, makes it false; so does a `partial` or `failed` method. It does not
+  depend on whether candidates were found. A method's own `status` describes that method only.
 - `methods[]`: `{method, requested, status, reason?}` with `method` `mdns` or `unicast`,
   `status` `completed`, `partial`, `skipped` or `failed`, and fixed `reason` codes
   `no_ranges_configured`, `not_requested`, `multicast_unavailable` (the socket cannot open or
@@ -249,11 +250,11 @@ Rule (DISC-04), evaluated in this order:
    none requested), `conclusion` is `not_looked` and `complete` is false.
 2. Otherwise, with candidates found, `conclusion` is `candidates_found`; `complete` follows
    the definition above.
-3. Otherwise, with no candidates, `none_found_complete` requires all of: at least one method
-   ran; the `unicast` method ran (a run without it is never exhaustive, so mDNS `completed` with
-   zero answers while `unicast` was skipped for `no_ranges_configured` is
-   `none_found_incomplete` with `complete` false, and `limits` says so); every attempted method
-   is `completed`; no range host is `not_probed`. A host that was probed and did not answer
+3. Otherwise, with no candidates, `none_found_complete` requires exactly the condition of
+   `complete`: both methods were requested and ran `completed`, and no range host is
+   `not_probed`. A run with only one method, or with `unicast` skipped (for example mDNS
+   `completed` with zero answers and `no_ranges_configured`), is never exhaustive: it is
+   `none_found_incomplete` with `complete` false, and `limits` says so. A host that was probed and did not answer
    within its timeout counts as `timed_out`, is unknown and does not block
    `none_found_complete`; a host left unprobed because a deadline or cap ended the run does
    block it. Any other combination is `none_found_incomplete`.
