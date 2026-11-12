@@ -151,8 +151,9 @@ CCT, RGBW or 2D controllers have no hardware run; details are in
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
   sends no device credentials and does not support a controller behind HTTP authentication.
   On one controller (WLED 16.0.1) with the settings PIN, the OTA lock or both enabled,
-  the probed read tools (state, effects, palettes, preset list and preset read) worked
-  unchanged; writes under a lock are not yet tested
+  the probed reads (state, effects, palettes, preset list and preset read) and a minimal write
+  set (master state, segment patch, preset store and delete) worked unchanged; other writes
+  under a lock were not run
   ([#128](https://github.com/descipar/wled-mcp/issues/128),
   [evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-128.md)).
 
