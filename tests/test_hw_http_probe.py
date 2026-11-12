@@ -10,7 +10,9 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import socket
+import stat
 import sys
 import threading
 import time
@@ -254,8 +256,23 @@ def test_credential_from_environment_and_stdin_and_output_file(tmp_path):
     text = report_path.read_text(encoding="utf-8")
     assert STUB_TOKEN not in text
     assert json.loads(text)["status_counts"] == {"200": 1}
-    assert report_path.stat().st_mode & 0o077 == 0
     assert len(log.requests) == 2
+
+
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows reports synthetic POSIX modes; the report there inherits the directory ACL "
+    "(docs/DEVELOPMENT.md#platform-notes)",
+)
+def test_output_file_is_private_on_posix(tmp_path):
+    report_path = tmp_path / "report.json"
+    with stub_server() as (url, _log):
+        code, out, _ = run_probe(
+            ["--url", url, "--token-stdin", "--output", str(report_path), "ping"],
+            stdin=STUB_TOKEN + "\n",
+        )
+    assert code == 0 and out == ""
+    assert stat.S_IMODE(report_path.stat().st_mode) & 0o077 == 0
 
 
 @pytest.mark.parametrize("bad", ["", "with space", "tab\there", "nön-ascii"])

@@ -11,6 +11,7 @@ from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
 from tests.envelopes import without_correlation_id_text
+from tests.network_guard import PAIR_CODE, connect_allowed, install_no_network
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import ConfigurationError, Device, HTTPSettings, StartupConfig, load_config
 from wled_mcp.operations import ListDevicesRequest, build_operations
@@ -710,17 +711,83 @@ async def test_real_stdio_inventory_schema_and_mock_probes():
 
 @pytest.fixture
 def no_network(monkeypatch):
-    attempts = []
-
-    def refuse(*args, **kwargs):
-        attempts.append(args[:1])
-        raise AssertionError("issue #74 tests must not resolve names or open connections")
-
-    monkeypatch.setattr(socket, "getaddrinfo", refuse)
-    monkeypatch.setattr(socket, "create_connection", refuse)
-    monkeypatch.setattr(socket.socket, "connect", refuse)
-    monkeypatch.setattr(socket.socket, "connect_ex", refuse)
+    attempts = install_no_network(monkeypatch)
     yield attempts
+    assert attempts == []
+
+
+# The guard allows exactly one thing: the stdlib socketpair helper (the Windows asyncio
+# self-pipe) connecting to loopback. These controls run on every platform and show that the
+# allowance does not weaken the offline guarantee.
+
+
+def refused(monkeypatch, action):
+    attempts = install_no_network(monkeypatch)
+    with pytest.raises(AssertionError, match="must not resolve names or open connections"):
+        action()
+    assert len(attempts) == 1
+
+
+def test_guard_refuses_loopback_connect_from_test_code(monkeypatch):
+    def action():
+        with socket.socket() as sock:
+            sock.connect(("127.0.0.1", 9))
+
+    refused(monkeypatch, action)
+
+
+def test_guard_refuses_loopback_connect_ex_from_test_code(monkeypatch):
+    def action():
+        with socket.socket() as sock:
+            sock.connect_ex(("127.0.0.1", 9))
+
+    refused(monkeypatch, action)
+
+
+def test_guard_refuses_outbound_connect(monkeypatch):
+    def action():
+        with socket.socket() as sock:
+            sock.connect(("192.0.2.10", 80))
+
+    refused(monkeypatch, action)
+
+
+def test_guard_refuses_name_resolution(monkeypatch):
+    refused(monkeypatch, lambda: socket.getaddrinfo("example.invalid", 80))
+
+
+def test_guard_refuses_create_connection_itself(monkeypatch):
+    attempts = install_no_network(monkeypatch)
+    # Replace the guarded resolver by one that fails differently: an unpatched
+    # create_connection would then surface this OSError instead of the guard refusal.
+    monkeypatch.setattr(
+        socket, "getaddrinfo", lambda *a, **k: (_ for _ in ()).throw(OSError("resolver"))
+    )
+    with pytest.raises(AssertionError, match="must not resolve names or open connections"):
+        socket.create_connection(("example.invalid", 80))
+    assert len(attempts) == 1
+
+
+def test_guard_predicate_needs_the_socketpair_caller_and_a_loopback_address():
+    assert PAIR_CODE is not None
+    assert connect_allowed(PAIR_CODE, ("127.0.0.1", 49152))
+    assert connect_allowed(PAIR_CODE, ("::1", 49152, 0, 0))
+    assert not connect_allowed(PAIR_CODE, ("192.0.2.10", 80))
+    assert not connect_allowed(PAIR_CODE, ("example.invalid", 80))
+    assert not connect_allowed(PAIR_CODE, "127.0.0.1")
+    assert not connect_allowed(
+        test_guard_predicate_needs_the_socketpair_caller_and_a_loopback_address.__code__,
+        ("127.0.0.1", 49152),
+    )
+    assert not connect_allowed(None, ("127.0.0.1", 49152))
+
+
+def test_guard_allows_the_stdlib_socketpair_helper_without_recording(monkeypatch):
+    attempts = install_no_network(monkeypatch)
+    first, second = socket._fallback_socketpair()  # type: ignore[attr-defined]
+    with first, second:
+        first.sendall(b"x")
+        assert second.recv(1) == b"x"
     assert attempts == []
 
 

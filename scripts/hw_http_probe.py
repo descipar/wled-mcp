@@ -9,7 +9,13 @@ whether the service answers 413 for the oversized body.
 
 The credential comes from exactly one of a file, a named environment variable or stdin.
 It is sent only in the ``Authorization`` header and never printed or logged; the JSON
-report is additionally scrubbed of it. Diagnostics go to stderr.
+report is additionally scrubbed of it. Diagnostics go to stderr. ``--output`` creates the
+report with file mode 0600 on POSIX; on Windows that mode only toggles the read-only
+attribute and the file inherits the access control of its directory, so the script does not
+protect it there (write it to a directory only you can read). The exact bearer token string
+is redacted from the report before it is written; this is not a guarantee for a token with
+characters that JSON escapes if a server echoed it back under ``--include-results``. The
+report can hold the endpoint URL and, with that option, device state.
 
 This is a manual hardware/target tool (ISSUE-12-DEC-002, TD-12-4). It is never run
 against devices or targets in CI; its tests use a loopback stub and the in-process
@@ -408,7 +414,11 @@ def build_parser() -> argparse.ArgumentParser:
     source.add_argument("--token-env", help="Name of an environment variable with the credential")
     source.add_argument("--token-stdin", action="store_true", help="Read the credential from stdin")
     parser.add_argument("--timeout", type=float, default=30.0, help="Per-request timeout (s)")
-    parser.add_argument("--output", help="Write the JSON report here instead of stdout")
+    parser.add_argument(
+        "--output",
+        help="Write the JSON report here instead of stdout (mode 0600 on POSIX; on Windows "
+        "the file inherits its directory's access control and is not protected by the script)",
+    )
     modes = parser.add_subparsers(dest="mode", required=True)
     for name in ("ping", "tools-list", "call"):
         mode = modes.add_parser(name)

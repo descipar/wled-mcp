@@ -209,13 +209,34 @@ EOF closes the process. `--help`/`--version` need no configuration paths.
 
 ## Platform notes
 
-Windows and macOS are experimental (DEC-020): no CI job runs on them and failures there
-do not block a change. Known local results on Windows with Python 3.13, also on `main`:
-the invalid-URL cases of `tests/test_inventory_client.py` and one credential test of
-`tests/test_hw_http_probe.py` fail, the POSIX signal and image checksum tests are
-skipped, and `scripts/check_distribution.py` stops at the uvx stdio handshake when the
-checkout or user profile path contains a space. Linux CI is the reference.
-`scripts/check_container.py` needs a Linux Docker host.
+Windows is a supported development platform (DEC-033): the checks and the complete test
+suite in [Checks and build](#checks-and-build) are expected to pass on a Windows checkout
+with PowerShell, uv and Python 3.13 (add `-n auto` for the parallel run). WSL is not
+required. Linux CI stays authoritative, and for users Windows remains experimental
+(DEC-020 item 4): no CI job runs on it and nothing here promises that the service is
+supported there.
+
+A test that fails only on Windows is a defect. Fix it, or skip it on Windows with a stated
+reason where the behavior is POSIX-specific (POSIX signals, symlinks and `mkfifo`,
+permission bits, `sh`, `bash`, `sha256sum` and GNU `find`, root) or opt-in (the local Docker
+check). The offline guarantee of the tests holds on every platform.
+
+Known differences:
+
+- File modes are not enforced. `--output` of `scripts/hw_http_probe.py` creates the report
+  with mode 0600 on POSIX only; on Windows the file inherits the access control of its
+  directory, so write it to a directory only you can read. Mode assertions in tests are
+  skipped on Windows.
+- asyncio uses the Proactor event loop, whose self-pipe is a loopback socketpair. The
+  offline test guard (`tests/network_guard.py`) allows exactly that connect and refuses every
+  other connect and name resolution.
+- `scripts/check_container.py` needs a Linux Docker host.
+
+Known Windows tooling limit, outside the test suite and not a test failure:
+`scripts/check_distribution.py` exited 1 with `MCPError: Connection closed` at the uvx stdio
+handshake on a checkout whose path contains a space. The same script passed on a clone at a
+space-free path, so the space in the path is the cause. Run it from a space-free checkout
+path until this is fixed (tracked separately from #191).
 
 ## Deployment artifact checks
 
