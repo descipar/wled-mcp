@@ -1302,6 +1302,9 @@ All Must requirements need evidence. Mock implementation can be merged while har
 - [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
   schema validation and the 0.2.0 release preparation and publication (#24). The 0.3.0 preparation is recorded in
   [validation/release-m2.md](validation/release-m2.md) (preparation and the publication record of 2026-11-11).
+- [validation/issue-28.md](validation/issue-28.md): temporary signals with conflict-aware
+  restoration, controlled-clock manager tests and transport parity (#28, mock and loopback
+  evidence; live evidence pending).
 - [validation/issue-29.md](validation/issue-29.md): static SVG layout preview, structural and
   golden renderer tests, planner reuse, bounds and stdio/HTTP parity (#29, mock and loopback
   evidence; no hardware).
