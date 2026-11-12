@@ -42,3 +42,45 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
   #151 work packet.
 - Revalidation needed / next action: the #151 work packet and PR; full-depth review because
   the change adds a write permission to the release workflow.
+
+## ISSUE-151-DEC-002 — Technical defaults for the bundle packet
+
+- ID: ISSUE-151-DEC-002
+- Recorded date: 2026-11-12
+- Status: active for issue #151 only; technical proposal by the requirements role with one
+  coordinator adjustment (item 4) under ISSUE-151-DEC-001, not an owner decision. The owner
+  may overrule any item.
+- Authority: technical proposal (requirements role, coordinator).
+- Source: #151 requirements packet of 2026-11-12 (local run artifact under `.agent-runs/`), based
+  on the MCPB manifest specification and schema fetched that day.
+- Scope: the bundle design, workflow shape and tests of #151.
+- Decision:
+  1. The manifest follows spec version 0.3 with `server.type` `python` and the command `uvx`
+     with the pinned `wled-mcp==<version>` launch of the README and `server.json`; the `uv`
+     server type is not used (experimental, cannot pin a PyPI version). `user_config` has the
+     inventory path and the data directory; HTTP is off.
+  2. Packing and validation are done by a Python script in `deploy/` against a vendored,
+     byte-identical copy of the upstream manifest schema with recorded provenance; the Node
+     `mcpb` tool is not added to the release workflow. A pinned one-time cross-check with it
+     is recorded in the validation document.
+  3. The manifest template uses the existing `REPLACE_WITH_VERSION` placeholder; the version
+     and the author are injected at build time, so no tracked version literal or personal name
+     is added. DIST-04 is defined in `docs/contract/mcpb-bundle.md` and listed in
+     `docs/STAGE-5.md`.
+  4. Coordinator adjustment: the bundle is built in its own job (same release guard, read-only
+     permission) that does not gate the PyPI `publish` job, because the bundle is an untested
+     convenience without warranty (ISSUE-151-DEC-001 item 2). A failure of the bundle build
+     or of the asset upload therefore never prevents or changes the PyPI upload. The
+     `release-asset` job needs both the publish job and the bundle job, has `contents: write`
+     as its only elevated permission, uses SHA-pinned actions and no new secrets, never
+     overwrites an existing asset and accepts an already attached identical asset.
+- Applicability / conditions / expiry: bounded to #151; no publication is authorized.
+- Rationale supplied: keep the PyPI release path unchanged and independent of an untested
+  extra.
+- Affected requirement IDs, files, issues and tests: DIST-04; `.github/workflows/publish.yml`,
+  `deploy/`, `docs/contract/mcpb-bundle.md`, `docs/SOURCES.md`, tests for the bundle and
+  the workflow; issue #151.
+- Supersedes / superseded by: none; item 4 replaces the packet's proposal that a bundle build
+  failure fails the shared `build` job.
+- Propagated to roles / packet references: implementer and reviewer via the packet override.
+- Revalidation needed / next action: owner may overrule; full-depth review of the workflow.
