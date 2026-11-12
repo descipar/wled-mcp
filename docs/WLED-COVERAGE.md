@@ -245,6 +245,13 @@ counted.
 - `wled_preview_layout`: draws an observed or planner-validated proposed 1D segment layout as
   a static SVG (#29) from the state and info reads (and optionally `/json/live`); it sends no
   write and is a project rendering, not a WLED API, so it adds no feature row.
+- `wled_start_signal`: shows a colour on chosen segments and later restores the fields it
+  changed, only if they still hold the signal value (#28); it uses the same verified state
+  write as the segment and master tools, so no feature row changes.
+- `wled_get_signal_status`: reads the server's own in-memory signal records (#28); no device is
+  contacted and no WLED feature is involved.
+- `wled_cancel_signal`: ends a signal early with the same conditional restore (#28); no WLED
+  feature row.
 - `wled_apply_zone`: writes segment fields to the segments a zone resolves to, through the
   same verified path as `wled_patch_segments` (W-SEG rows stay as they are); it never
   changes geometry or master state.

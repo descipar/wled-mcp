@@ -19,6 +19,7 @@ from tests.test_inventory_client import config
 from tests.tool_contract import (
     DEFAULT_PROFILE,
     EXPECTED_TOOLS,
+    IDEMPOTENT_CONTROL_TOOLS,
     PROFILE_CLASSES,
     ToolClass,
     contract_invariant_problems,
@@ -159,7 +160,9 @@ def test_registry_annotations_follow_the_contract_classes(tmp_path):
         hints = operation.annotations
         assert hints.read_only_hint is is_read, operation.name
         assert hints.destructive_hint is expected.destructive, operation.name
-        assert hints.idempotent_hint is is_read, operation.name
+        assert hints.idempotent_hint is (is_read or operation.name in IDEMPOTENT_CONTROL_TOOLS), (
+            operation.name
+        )
         assert hints.open_world_hint is False, operation.name
 
 

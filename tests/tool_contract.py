@@ -71,7 +71,14 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_plan_zone", READ, destructive=False),
     ExpectedTool("wled_apply_zone", CONTROL, destructive=False),
     ExpectedTool("wled_preview_layout", READ, destructive=False),
+    ExpectedTool("wled_start_signal", CONTROL, destructive=False),
+    ExpectedTool("wled_get_signal_status", READ, destructive=False),
+    ExpectedTool("wled_cancel_signal", CONTROL, destructive=False),
 )
+
+# A non-read tool whose repeated call changes nothing more (ISSUE-28-DEC-002): cancelling an
+# ended signal is a no-op, so it hints idempotent although it is not read-only.
+IDEMPOTENT_CONTROL_TOOLS: frozenset[str] = frozenset({"wled_cancel_signal"})
 
 # Cumulative profiles (ISSUE-20-DEC-001); expectation data only, enforcement is #20.
 PROFILE_CLASSES: Mapping[str, frozenset[ToolClass]] = MappingProxyType(

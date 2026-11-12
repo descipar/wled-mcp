@@ -25,8 +25,8 @@ exists.
 
 | Class | Meaning | Tools |
 | --- | --- | --- |
-| `read` | No live, storage or local file mutation | `wled_list_devices`, `wled_get_state`, `wled_get_effects`, `wled_get_palettes`, `wled_search_effects`, `wled_list_presets`, `wled_get_preset`, `wled_list_snapshots`, `wled_export_presets`, `wled_list_groups`, `wled_list_scenes`, `wled_plan_scene`, `wled_list_zones`, `wled_plan_zone`, `wled_preview_layout` |
-| `control` | Live device output only; never device storage or a local persistent artifact | `wled_set_state`, `wled_patch_segments`, `wled_replace_layout`, `wled_activate_preset`, `wled_apply_scene`, `wled_apply_zone` |
+| `read` | No live, storage or local file mutation | `wled_list_devices`, `wled_get_state`, `wled_get_effects`, `wled_get_palettes`, `wled_search_effects`, `wled_list_presets`, `wled_get_preset`, `wled_list_snapshots`, `wled_export_presets`, `wled_list_groups`, `wled_list_scenes`, `wled_plan_scene`, `wled_list_zones`, `wled_plan_zone`, `wled_preview_layout`, `wled_get_signal_status` |
+| `control` | Live device output only; never device storage or a local persistent artifact | `wled_set_state`, `wled_patch_segments`, `wled_replace_layout`, `wled_activate_preset`, `wled_apply_scene`, `wled_apply_zone`, `wled_start_signal`, `wled_cancel_signal` |
 | `manage` | Device storage or local persistent artifacts | `wled_save_preset`, `wled_delete_preset`, `wled_restore_preset`, `wled_store_preset`, `wled_save_playlist`, `wled_import_presets`, `wled_save_group`, `wled_delete_group`, `wled_save_scene`, `wled_delete_scene` |
 
 `wled_replace_layout` is `control` (ISSUE-20-DEC-001, D1): it changes the live segment
@@ -38,6 +38,12 @@ change live output. The group and scene tools that store or delete a definition 
 because it never writes. `wled_apply_scene` (#17) is `control`, applies
 through the write engines and calls `Resources.require_access` in its preflight, once per
 expanded device (it has no single `device_id`; [groups-scenes.md](groups-scenes.md#apply-wled_apply_scene)).
+
+A delayed write has no request of its own to inherit a class from. The temporary-signal task
+(`wled_start_signal`, [signals.md](signals.md#locks-and-access-context)) therefore sets the class
+`control` explicitly for its whole life, so its restore at expiry, cancel or shutdown is checked as
+a `control` operation against the device ceiling and is never the ambient "unknown, assume
+`manage`" case that a restricted deployment refuses.
 
 Profiles are cumulative sets of classes:
 

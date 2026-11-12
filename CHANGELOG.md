@@ -7,10 +7,20 @@ this file. Fixes are made for the latest release only. See
 
 ## Unreleased
 
-The served tool list grows from 33 to 34 tools; the change is additive.
+The served tool list grows from 33 to 37 tools; the change is additive.
 
 ### Added
 
+- Temporary light signals ([#28](https://github.com/descipar/wled-mcp/issues/28),
+  [contract](docs/contract/signals.md)): `wled_start_signal` shows an RGB colour on chosen
+  existing segments of one controller for 1 to 300 seconds and `wled_cancel_signal` ends it
+  early; `wled_get_signal_status` reads the state. The server restores only the fields it changed
+  (slot-0 colour, the Solid effect, and segment or master power it turned on), and only if they
+  still hold the signal value; otherwise the result is `skipped_conflict` and nothing is
+  overwritten. One signal per device, no queue, no scheduler, no preset touched. Timing is best
+  effort and nothing is persisted: a crash or kill can leave a signal applied, an orderly
+  shutdown makes one bounded restore attempt, and a write whose outcome is unknown is never
+  replayed.
 - Static layout preview ([#29](https://github.com/descipar/wled-mcp/issues/29),
   [contract](docs/contract/layout-preview.md)): the read-only `wled_preview_layout` returns a
   bounded, script-free SVG string (`data.svg`) of one device's observed 1D segment layout or of a

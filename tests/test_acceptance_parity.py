@@ -549,3 +549,95 @@ def test_the_layout_preview_svg_is_identical_plain_data_on_both_transports(outco
         assert stdio["source"] == source and stdio["media_type"] == "image/svg+xml"
         assert stdio["svg"].startswith("<svg ") and stdio["svg"] == http["svg"]
         assert outcomes["stdio"][name]["text"]["data"]["svg"] == stdio["svg"]
+
+
+# ================================================ issue #28: a signal across several calls
+
+
+SIGNAL_START = {
+    "device_id": DESK,
+    "segment_ids": [0],
+    "color": [0, 0, 255],
+    "duration_seconds": 300,
+}
+
+
+def mask_signal(envelope: dict[str, Any]) -> dict[str, Any]:
+    """Strip what differs per call or per process: the IDs, the wall-clock stamps, the countdown."""
+    text = json.dumps(comparable_record({"structured": envelope})["structured"])
+    for key in ("operation_id", "active_operation_id", "started_at", "expires_at", "ended_at"):
+        text = re.sub(rf'"{key}": ?"[^"]*"', f'"{key}": "<{key}>"', text)
+    text = re.sub(r'"remaining_seconds": ?[0-9.]+', '"remaining_seconds": 0', text)
+    return json.loads(text)  # type: ignore[no-any-return]
+
+
+async def run_signal_calls(client: Client, fake: LoopbackWLED) -> list[dict[str, Any]]:
+    fake.reset()
+    envelopes: list[dict[str, Any]] = []
+    started = await client.call_tool("wled_start_signal", SIGNAL_START)
+    assert started.structured_content is not None
+    identifier = started.structured_content["data"]["operation_id"]
+    envelopes.append(started.structured_content)
+    for name, arguments in (
+        ("wled_get_signal_status", {"operation_id": identifier}),
+        ("wled_cancel_signal", {"operation_id": identifier}),
+        ("wled_get_signal_status", {"operation_id": identifier}),
+    ):
+        result = await client.call_tool(name, arguments)
+        assert result.structured_content is not None
+        assert json.loads(result.content[0].text) == result.structured_content
+        envelopes.append(result.structured_content)
+    return envelopes
+
+
+def test_a_signal_start_status_cancel_gives_identical_results_over_stdio_and_http(tmp_path):
+    """Both transports share one signal manager: no waiting, exactly apply plus restore."""
+    fake = LoopbackWLED()
+    try:
+        stdio_dir, http_dir = tmp_path / "stdio", tmp_path / "http"
+        stdio_dir.mkdir()
+        http_dir.mkdir()
+        before = [dict(segment) for segment in fake.state["seg"]]
+        params = StdioServerParameters(
+            command=str(CONSOLE),
+            cwd=stdio_dir,
+            args=["--config", str(write_inventory(stdio_dir, fake)), "--data-dir", str(stdio_dir)],
+        )
+
+        async def over_stdio_console() -> list[dict[str, Any]]:
+            with anyio.fail_after(120):
+                async with Client(params, mode="legacy", read_timeout_seconds=30) as client:
+                    return await run_signal_calls(client, fake)
+
+        stdio = anyio.run(over_stdio_console)
+        assert fake.count("POST") == 2 and fake.state["seg"][0]["col"][0][:3] == [255, 160, 0]
+        stdio_posts = list(fake.posts)
+
+        port = free_port()
+        config = write_inventory(http_dir, fake)
+        with console(
+            config, http_dir, *http_args(port), env=clean_env(WLED_MCP_HTTP_TOKEN=TOKEN)
+        ) as (process, lines):
+            wait_ready(lines, port)
+            http = anyio.run(over_http_calls, port, fake)
+            assert process.poll() is None
+        assert fake.count("POST") == 2 and list(fake.posts) == stdio_posts
+        assert [mask_signal(e) for e in stdio] == [mask_signal(e) for e in http]
+        started, first, cancelled, last = stdio
+        assert (started["application"], cancelled["application"]) == ("applied", "applied")
+        assert first["data"]["signal"]["status"] == "active"
+        assert last["data"]["signal"]["status"] == "restored"
+        assert last["data"]["signal"]["ended_by"] == "cancelled"
+        assert before[0]["fx"] == fake.state["seg"][0]["fx"]  # the effect came back as well
+    finally:
+        fake.close()
+
+
+async def over_http_calls(port: int, fake: LoopbackWLED) -> list[dict[str, Any]]:
+    with anyio.fail_after(120):
+        async with httpx.AsyncClient(headers={"Authorization": f"Bearer {TOKEN}"}) as http:
+            transport = streamable_http_client(
+                f"http://127.0.0.1:{port}/mcp", http_client=http, terminate_on_close=False
+            )
+            async with Client(transport, mode="legacy", read_timeout_seconds=30) as client:
+                return await run_signal_calls(client, fake)

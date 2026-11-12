@@ -29,6 +29,10 @@ the geometry (see [contract/zones.md](contract/zones.md)).
 #29 adds the read-only `wled_preview_layout`: a static, bounded SVG of the observed or of a
 proposed 1D segment layout, returned as `data.svg`, which sends no write (see
 [contract/layout-preview.md](contract/layout-preview.md)).
+#28 adds temporary signals: `wled_start_signal` and `wled_cancel_signal` (control) and the
+read-only `wled_get_signal_status` show a colour on chosen segments of one device for a bounded
+time and restore only the fields they changed, only if nobody changed them; best effort, no
+persistence (see [contract/signals.md](contract/signals.md)).
 `wled_patch_raw_state` remains a design
 requirement, not executable behavior: the raw state patch is excluded from stage 1
 (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on WLED
@@ -84,6 +88,9 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_plan_zone` | read-only | Preview of a zone: exact device, segment IDs and LED ranges, or the refusal; optional segment-field plan |
 | `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone; no geometry, no master state |
 | `wled_preview_layout` | read-only | Static SVG (`data.svg`) of the observed or a proposed 1D segment layout with ranges, gaps, overlaps and approximate colours; no write |
+| `wled_start_signal` | write | A colour on chosen segments of one device for 1 to 300 seconds, then a conditional restore of the fields it changed; no preset, nothing persisted |
+| `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
+| `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -123,6 +130,9 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_plan_zone` | `zone`, optional `segments` (one object of segment fields), `mode=strict` | Read-only resolution onto existing segments, per-device refusals, optional real segment plan | Stage 3 (S3-ZONE-01, S3-ZONE-02); #27 |
 | `wled_apply_zone` | `zone`, `segments` (one object of segment fields), `mode=strict`, `dry_run` | Verified write of those fields to the zone's segments only; `dry_run` equals the plan | Stage 3 (S3-ZONE-02); #27 |
 | `wled_preview_layout` | `device_id`, optional `segments` (a proposed complete layout), `allow_overlap=false`, `zone`, `live_samples=false` | Read-only SVG string `data.svg` plus a summary; observed without `segments`, proposed and planner-validated with them; 1D only, matrix refused | Stage 3 (S3-PREVIEW-01, S3-PREVIEW-02); implemented in #29 ([contract/layout-preview.md](contract/layout-preview.md)) |
+| `wled_start_signal` | `device_id`, `segment_ids`, `color` (RGB), `duration_seconds` (1-300), `dry_run` | Verified apply of slot-0 colour and the Solid effect on existing segments, operation ID and captured prior values; restore at expiry only if the owned fields are unchanged, else `skipped_conflict` | Stage 3 (S3-SIGNAL-01, S3-SIGNAL-02); implemented in #28 ([contract/signals.md](contract/signals.md)) |
+| `wled_get_signal_status` | optional `operation_id` | Active and recently ended signals with owned fields and restoration result; process memory only | S3-SIGNAL-01; #28 |
+| `wled_cancel_signal` | `operation_id` | The same conditional restore now; result `restored`, `skipped_conflict` or `uncertain` | S3-SIGNAL-02; #28 |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -873,7 +883,8 @@ deadlines (graceful timeout is the configured operation timeout rounded up plus
 2 s), closes shared resources and exits 0; a second SIGINT forces exit. There is no
 unauthenticated health route: liveness is a TCP connect or an authenticated `ping`
 or `tools/list` POST, neither of which touches a device. Forced interruption leaves possibly applied writes uncertain, never
-resumed on restart. Multiple workers require cross-process coordination and are
+resumed on restart. An orderly shutdown also gives each active temporary signal one bounded
+conditional restore attempt (see [signals](contract/signals.md#shutdown-and-restart)). Multiple workers require cross-process coordination and are
 outside this baseline.
 
 Ownership: #14 implements HTTP/access/lifecycle ([decisions](decisions/issue-14.md)); #10 verifies MCP-03/MCP-04/OPS-05
@@ -922,5 +933,7 @@ mock/protocol tests and actual firmware compatibility evidence.
   and layout replacement tools (#149).
 - [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,
   CCT and 2D layouts (#19).
+- [contract/signals.md](contract/signals.md): temporary signals, the owned fields, the conflict
+  rule, overlap, restart and shutdown behavior and the best-effort timing (#28).
 - [contract/versioning.md](contract/versioning.md): version source, release mapping,
   non-release build identity, contract and schema evolution, migration notes (#21, #70).

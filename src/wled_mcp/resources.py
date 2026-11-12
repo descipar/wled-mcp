@@ -18,6 +18,7 @@ from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, StartupConfig
 from wled_mcp.diagnostics import LastControlStore, ServiceMonitor
 from wled_mcp.models import DomainError, Outcome
+from wled_mcp.signal_manager import SignalManager
 
 SequenceKind = Literal[
     "success",
@@ -156,13 +157,24 @@ class Resources:
             config.backups.retain_per_device,
             lambda: self.clock.now(),
         )
+        # Temporary signals (issue #28): one manager per resource graph, so the stdio and the
+        # HTTP transport share it. Its task group lives between __aenter__ and __aexit__.
+        self.signals = SignalManager(self)
 
     async def __aenter__(self) -> "Resources":
+        await self.signals.open()
         return self
 
     async def __aexit__(self, *args: object) -> None:
-        with anyio.CancelScope(shield=True):
-            await self.client.aclose()
+        # Active signals get one bounded conditional restore before the client is closed.
+        try:
+            await self.signals.shutdown()
+        finally:
+            try:
+                await self.signals.close()
+            finally:
+                with anyio.CancelScope(shield=True):
+                    await self.client.aclose()
 
     def resolve(self, device_id: str) -> Device:
         try:
