@@ -70,6 +70,7 @@ from wled_mcp.readmodels import (
 from wled_mcp.resources import OperationContext, PolledWrite, Resources, SequencePlan, Verdict
 from wled_mcp.scene_tools import build_scene_operations
 from wled_mcp.server import Operation
+from wled_mcp.signal_tools import build_signal_operations
 from wled_mcp.status_tool import build_status_operation
 from wled_mcp.zone_tools import build_zone_operations
 
@@ -1381,4 +1382,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *build_scene_operations(resources),
         *build_zone_operations(resources),
         build_preview_operation(resources),
+        *build_signal_operations(resources),
     )
