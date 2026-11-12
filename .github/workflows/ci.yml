@@ -69,7 +69,7 @@ jobs:
           printf '%s\n' "${PRIVATE_DENYLIST}" > "${denylist}"
           echo "WLED_MCP_PRIVATE_DENYLIST=${denylist}" >> "${GITHUB_ENV}"
       - run: uv run --frozen python scripts/check_private_identifiers.py
-      - run: uv run --frozen pytest
+      - run: uv run --frozen pytest -n auto
         if: steps.scope.outputs.docs_only != 'true'
       - run: uv run --frozen python scripts/check_distribution.py
         if: steps.scope.outputs.docs_only != 'true'

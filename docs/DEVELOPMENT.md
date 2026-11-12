@@ -33,6 +33,11 @@ uv run --frozen pytest
 uv run --frozen python scripts/check_distribution.py
 ```
 
+CI runs the complete suite in parallel with `uv run --frozen pytest -n auto` (pytest-xdist, a
+dev dependency); the same command is an optional local speed-up, and the plain serial
+`uv run --frozen pytest` stays supported. Each worker uses its own subdirectory of
+`.artifacts/pytest-temp`.
+
 ### Documentation-only pull requests
 
 For a pull request event, the `checks` job first runs `scripts/ci_scope.py`, which compares

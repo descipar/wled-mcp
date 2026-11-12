@@ -28,6 +28,11 @@ The served tool list grows from 33 to 37 tools; the change is additive.
   stops), a scale, gaps, overlaps and approximate colours, optional zone bands and optional live
   colour samples. It sends no write, never simulates effects, and refuses matrix devices.
 
+### Changed
+
+- CI runs the complete test suite in parallel with pytest-xdist (`pytest -n auto`); a plain
+  `pytest` run stays serial ([#154](https://github.com/descipar/wled-mcp/issues/154)).
+
 ## 0.3.0 - M2: observe and explain
 
 The release that closes milestone M2 once it is published
