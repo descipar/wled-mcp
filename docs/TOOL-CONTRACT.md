@@ -55,7 +55,7 @@ to [REQUIREMENTS.md](REQUIREMENTS.md); representative synthetic cases are in
 ## Shared conventions
 
 - stdio and Streamable HTTP expose identical tools, schemas and domain outcomes.
-- Device tools require a configured `device_id`; no caller-supplied host/URL.
+- Device tools require a configured `device_id`; no caller-supplied host/URL. The one bounded exception is `wled_add_device` (an RFC 1918 IPv4 literal, one `GET /json/info`, class `manage`; [contract/discovery.md](contract/discovery.md)); discovery probes only configured ranges.
 - Reject unknown fields, null nonnullable values, booleans as integers and values
   outside limits. Omitted fields mean unchanged, never zero/false/reset. Do not
   inject light-value defaults into patch schemas. Empty patch objects/lists fail.
@@ -915,7 +915,7 @@ mock/protocol tests and actual firmware compatibility evidence.
 - [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
 - [contract/discovery.md](contract/discovery.md): discovery, enrollment and discovery-range tools,
-  hard caps and the coverage report (DEC-034, #198 to #203).
+  hard caps and the coverage report (DEC-035, #198 to #203).
 - [contract/effect-metadata.md](contract/effect-metadata.md): lenient fxdata parsing and
   ID-preserving effect catalog filters (#148).
 - [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the

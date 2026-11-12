@@ -5,7 +5,7 @@ The `wled-mcp` console commands for setup and diagnostics, introduced by
 DEV-03, OPS-04). Technical defaults: ISSUE-16-DEC-002
 ([decision log](../decisions/issue-16.md)); `config validate` plus restart instead of an
 in-process reload: ISSUE-16-DEC-001. These commands are not MCP tools; the tool list is
-unchanged. From M8 discovery and enrollment are also MCP tools on a shared engine (#199); see [discovery.md](discovery.md) and DEC-034, which supersedes ISSUE-16-DEC-001 in part. The statements here describe the released CLI.
+unchanged. From M8 discovery and enrollment are also MCP tools on a shared engine (#199); see [discovery.md](discovery.md) and DEC-035, which supersedes ISSUE-16-DEC-001 in part. The statements here describe the released CLI.
 
 ## Serving and subcommands
 

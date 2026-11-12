@@ -1,7 +1,7 @@
 # Issue #198 decisions
 
 Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12. The owner decision for
-milestone M8 is [DEC-034](../DECISIONS.md#dec-034--agent-driven-discovery-and-enrollment);
+milestone M8 is [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment);
 this file holds only the technical proposals around it.
 
 ## ISSUE-198-DEC-001 — Discovery and enrollment contract defaults TP-1 to TP-12
@@ -31,13 +31,13 @@ this file holds only the technical proposals around it.
   validation.
 - Applicability / conditions / expiry: M8 implementation. The implementing PRs may refine a
   value with a recorded rationale; they must not widen a hard cap beyond the owner's answers in
-  DEC-034 (RFC 1918 only, at most a /24 per range, a small number of ranges, bounded timeouts
+  DEC-035 (RFC 1918 only, at most a /24 per range, a small number of ranges, bounded timeouts
   and concurrency).
-- Rationale supplied: none from the owner beyond DEC-034; the rationale in the contract is
+- Rationale supplied: none from the owner beyond DEC-035; the rationale in the contract is
   agent analysis.
 - Affected requirement IDs, files, issues and tests: DISC-01 to DISC-14, DISC-T01 to DISC-T08,
   contract/discovery.md and the tests that later issues add or change (listed in the #198 PR).
-- Supersedes / superseded by: none. Supersession by the owner decision is in DEC-034.
+- Supersedes / superseded by: none. Supersession by the owner decision is in DEC-035.
 - Propagated to roles / packet references: the #199 to #204 requirement packets cite it after
   the #198 merge, with the refreshed main commit.
 - Revalidation needed / next action: none before #199.

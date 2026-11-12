@@ -5,7 +5,7 @@ target behavior of issues #199 to #204, and every statement about current behavi
 elsewhere in the documentation stays true until the owning implementation PR changes it.
 The tools below are not registered in the released server.
 
-Decisions: [DEC-034](../DECISIONS.md#dec-034--agent-driven-discovery-and-enrollment) is the
+Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
 technical proposals; every value or rule marked **TP-n** below is such a proposal, not a
 human decision, and the owner can override it. Both transports (stdio and Streamable HTTP)
@@ -14,7 +14,7 @@ examples use placeholders such as `<private-network>/24`.
 
 ## Requirements
 
-"Confirmed" means derived from the owner answers recorded in DEC-034; "proposed" means the
+"Confirmed" means derived from the owner answers recorded in DEC-035; "proposed" means the
 detail is a technical proposal.
 
 | ID | Statement | Basis | Owner issue |
@@ -41,7 +41,7 @@ detail is a technical proposal.
 | DISC-T01 | Identification by `/json/info` content, not by port: non-WLED answers on port 80, malformed, oversized and redirecting responses are never candidates. | mocked |
 | DISC-T02 | Deduplication by MAC across methods and addresses; `known` and `address_changed`; the inventory is unchanged by discovery. | mocked |
 | DISC-T03 | Each hard cap: public, loopback and link-local ranges, a /23, a fifth range, host bits set, and a hostile hand-edited file at startup and at probe time. | mocked |
-| DISC-T04 | Coverage-report truthfulness: no multicast socket, no answers, a deadline in the middle of a range, a partial failure; none of them yields `none_found_complete`. | mocked |
+| DISC-T04 | Coverage-report precedence, one case per rule: no usable socket gives `not_looked`; mDNS completed with no answers and unicast skipped gives `none_found_incomplete`; a deadline that leaves hosts `not_probed` gives `none_found_incomplete`; all hosts probed with some `timed_out` and every method `completed` gives `none_found_complete`. | mocked |
 | DISC-T05 | Range proposal derivation (mixed private, public and DNS hosts, more than the maximum number of ranges) and "never probes proposals". | mocked |
 | DISC-T06 | Writer and reload: atomic replace, concurrent writers including the CLI, rollback on an invalid result, unwritable file or directory, an in-flight request keeps the old inventory, an `[access]` mismatch refuses the reload. | mocked |
 | DISC-T07 | Tool gating: profile registration filter, `Unknown tool`, annotations, class equal to `tests/tool_contract.py`, identical stdio and HTTP descriptors. | mocked |
@@ -117,18 +117,19 @@ case where no method could run (`conclusion` `not_looked`). Local socket failure
 Request: `ranges` (array of 0 to 4 strings; replace semantics, not merge, so the confirmation
 shows the final list; an empty array clears the list and discovery then runs mDNS only) and
 `dry_run` (default false). Each string is an IPv4 CIDR `a.b.c.d/p`, validated strictly
-(**TP-12**): host bits must be zero (no silent normalization), prefix 24 to 30, no whitespace.
+(**TP-12**): host bits must be zero (no silent normalization), prefix 24 to 30, no whitespace (a /31 or /32 is rejected as `prefix_too_long`).
 
 Rejections come back as `VALIDATION_ERROR` with `data.rejected[]` = `{index, reason}`; the
 reasons are fixed: `not_ipv4_cidr`, `not_network_address`, `not_private` (outside 10/8,
 172.16/12 and 192.168/16, which also covers public, 100.64/10, multicast and reserved
-space), `loopback`, `link_local`, `too_broad`, `too_many`, `overlap`, `duplicate`. Values are
+space), `loopback`, `link_local`, `too_broad`, `prefix_too_long`, `overlap`, `duplicate`. A list of more than 4 entries is rejected by the schema (array maximum), so there is no per-entry reason for it. Values are
 not echoed in `error.message` (fixed text) or in `data.rejected`; the client already holds
 them.
 
 Result `data`: `ranges_before`, `ranges_after`, `changed`, `written` (false for a dry run or
 a no-op), `reloaded`, `backup` (boolean: the previous file was kept) and `caps`. An identical
-list writes nothing. Errors: `VALIDATION_ERROR`, `STORAGE_FAILED` (file or directory not
+list writes nothing. Errors: `VALIDATION_ERROR`, `INVENTORY_CONFLICT` (`file_changed`, see
+[Reload semantics](#reload-semantics)), `STORAGE_FAILED` (file or directory not
 writable, writer failure; nothing changed, `application` `not_applied`) and
 `INVENTORY_RELOAD_FAILED` (**TP-3**: the written candidate failed the startup validator or the
 reload; the previous file is restored and the working inventory kept, `application`
@@ -155,7 +156,7 @@ never sets `max_class`.
 Errors: `VALIDATION_ERROR` (bad fields, `mac_mismatch`, address outside the policy),
 `UNREACHABLE`, `TIMEOUT`, `INVALID_RESPONSE`, `NOT_WLED` (**TP-3**: the answer is not a WLED
 `/json/info`; nothing written), `INVENTORY_CONFLICT` (**TP-3**: `data.conflict` is `id`,
-`base_url` or `mac`, with `data.known_device_id`; nothing written; an existing entry is never
+`base_url`, `mac` or `file_changed`, with `data.known_device_id`; nothing written; an existing entry is never
 overwritten), `STORAGE_FAILED` and `INVENTORY_RELOAD_FAILED`. A duplicate is an equal
 normalized `base_url` (the rule of `config add-device`, TD-16-3) or an equal MAC of an entry
 that has a stored `mac`. A timeout of the verification read is `not_applied`: nothing was
@@ -214,15 +215,17 @@ MAC, the MAC read by one extra `GET /json/info` of that configured device inside
 The candidate gets `status` `address_changed`, `known_device_id` X and `configured_address`.
 The inventory is not modified by discovery, by `wled_add_device` (which answers
 `INVENTORY_CONFLICT` with `conflict` `mac`) or by any other tool; the operator edits the file.
-An update tool is out of scope for M8 (owner answer 5 of DEC-034).
+An update tool is out of scope for M8 (owner answer 5 of DEC-035).
 
 ## Coverage report
 
 `data.coverage` is always present, also when `candidates` is empty (**TP-8**).
 
 - `schema` 1. `conclusion`: `candidates_found`, `none_found_complete`, `none_found_incomplete`
-  or `not_looked`. `complete`: true only if every attempted method ran to completion without a
-  timeout, cap or error.
+  or `not_looked`. `complete` is a top-level boolean that is true exactly when `conclusion` is
+  `none_found_complete` or every attempted method is `completed` (with candidates found
+  `complete` can still be false, for example after a deadline). A method's own `status`
+  describes that method only.
 - `methods[]`: `{method, requested, status, reason?}` with `method` `mdns` or `unicast`,
   `status` `completed`, `partial`, `skipped` or `failed`, and fixed `reason` codes
   `no_ranges_configured`, `not_requested`, `multicast_unavailable` (the socket cannot open or
@@ -239,13 +242,25 @@ An update tool is out of scope for M8 (owner answer 5 of DEC-034).
   empty mDNS name does not announce itself; a probe reaches only configured ranges; hosts that
   did not answer in time are unknown, not absent).
 
-Rule (DISC-04): `none_found_complete` only when at least one method was requested, every
-attempted method is `completed` and no range host was `not_probed`. `none_found_incomplete`
-applies whenever an attempted method is `partial`, `failed` or skipped with a cause, or any
-host timed out unprobed. `not_looked` applies when no method ran. An mDNS run that completed
-with zero answers while the unicast method was skipped is `none_found_incomplete`, because
-mDNS alone is not exhaustive; `limits` says so. The text `content` block of the tool result
-repeats `conclusion` first.
+Rule (DISC-04), evaluated in this order:
+
+1. A method that was requested and could not run (socket failure, `internal_error`) counts as
+   attempted-but-`failed`. If no requested method ran at all (all `failed` or `skipped`, or
+   none requested), `conclusion` is `not_looked` and `complete` is false.
+2. Otherwise, with candidates found, `conclusion` is `candidates_found`; `complete` follows
+   the definition above.
+3. Otherwise, with no candidates, `none_found_complete` requires all of: at least one method
+   ran; the `unicast` method ran (a run without it is never exhaustive, so mDNS `completed` with
+   zero answers while `unicast` was skipped for `no_ranges_configured` is
+   `none_found_incomplete` with `complete` false, and `limits` says so); every attempted method
+   is `completed`; no range host is `not_probed`. A host that was probed and did not answer
+   within its timeout counts as `timed_out`, is unknown and does not block
+   `none_found_complete`; a host left unprobed because a deadline or cap ended the run does
+   block it. Any other combination is `none_found_incomplete`.
+
+The text `content` block of the tool result repeats `conclusion` first. The rule that a run
+which could not look never reports that nothing was found is an owner requirement stated with
+the M8 issue text on 2026-11-12 and recorded in DEC-035.
 
 ## Configuration
 
@@ -275,6 +290,13 @@ version is known.
   new requests see the new one. New device IDs get their lock lazily. Per-device state (catalog
   cache, signals) is keyed by ID and unaffected for unchanged entries. These tools never remove
   an ID.
+- The writer's base is the file on disk, not the loaded snapshot: it re-reads the file under
+  the lock and compares it with the content the running process loaded or last wrote. If they
+  differ (a hand edit or another process's write after startup), the call refuses with
+  `INVENTORY_CONFLICT` and `data.conflict` `file_changed`, writes nothing and tells the
+  operator to run `wled-mcp config validate` and restart. The same refusal applies when the
+  `[access]` profile or a `max_class` in the file on disk differs from the running process
+  (`INVENTORY_RELOAD_FAILED` when only the post-write reload detects it).
 - Hand edits are not picked up: there is no file watching and no signal-triggered reload;
   `wled-mcp config validate` plus a restart remains for them.
 - The writer holds the cross-process lock, so `wled-mcp config add-device` (another process)
@@ -289,6 +311,7 @@ version is known.
   the addresses of an installation. Tool results do contain candidate addresses and MACs
   because that is the product; they go to the MCP client the caller already trusts. Committed
   documentation and examples use generic ranges only (DEC-005).
+- `wled_add_device` accepts any port on a private host, so repeated confirmed calls can tell open from closed ports there. That is acceptable under the client's confirmation of a `manage` call and is limited by the single-GET, size and timeout bounds. The discovery probe itself uses port 80 only.
 - Probing sends no credentials, never POSTs and never reads another path.
 - A discovery or enrollment call is not retried automatically. After `STORAGE_FAILED` the file
   is unchanged.
@@ -298,12 +321,12 @@ version is known.
 Stdio and HTTP use the same operations and schemas. mDNS from a container on a bridge network
 usually hears nothing; the report states `multicast_unavailable` or `no_answers` with the
 limit text. Unicast probing works from a container to its routed network, which is the stated
-reason for the probe in DEC-034 item 3. The write tools need a writable configuration
+reason for the probe in DEC-035 item 3. The write tools need a writable configuration
 directory (`STORAGE_FAILED` otherwise).
 
 ## Related
 
-- [DEC-034](../DECISIONS.md#dec-034--agent-driven-discovery-and-enrollment),
+- [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment),
   [ISSUE-198-DEC-001](../decisions/issue-198.md).
 - [cli.md](cli.md): the `wled-mcp discover` and `config` commands; the shared engine replaces
   the CLI engine in #199.

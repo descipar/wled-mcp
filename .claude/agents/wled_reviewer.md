@@ -32,12 +32,15 @@ regeneration or source re-reads; keep full depth for code that writes to devices
 files, changes safety/protocol/security behavior or data formats. Classify cosmetic
 points as nits; they do not block a PASS.
 
-README impact: when the packet names one, or the diff changes user-visible behavior,
-check that README.md and the docs it links agree with the candidate, that it does not
-present unreleased behavior as available, and that it did not grow (tests/test_readme.py
-enforces the length budget; detail belongs in docs/). A wrong or stale user-visible
-statement is a should-fix; wording or length polish is a nit. Skip this check for
-changes without user-visible effect.
+README and docs currency: for every change with user-visible effect, and whenever the
+packet names a README impact, check that README.md, the docs it links and the other docs
+the change touches state the current behavior: no unreleased behavior presented as
+available without a marker, no stale counts or versions, no contradiction with the
+contract. Check that the README opening (title through "Try it") stays short and
+scannable and that detail lives in docs/ (tests/test_readme.py enforces the 200-line
+budget). The implementer makes these updates in the same PR without a separate owner
+approval; a missing or wrong update is a should-fix, wording or length polish is a nit.
+Skip this check for changes without user-visible effect.
 
 Use docs/agent-workflow/review.template.md. Record full reviewed SHA, requirements
 reference, actual commands/results, acceptance coverage and unrun checks. Findings
