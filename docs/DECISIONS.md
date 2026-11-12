@@ -81,6 +81,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-031 | Project / roadmap | Release scope for M2 is the same as for M1: tag, GitHub release, PyPI upload and official MCP Registry publication; preparing release 0.3.0 is allowed now, each publication step needs the owner's explicit instruction at that time, and M2 stays open until the release is done. Applies to M2 only. | Confirmed owner answer, coordinator session, 2026-11-11; see [DEC-031](#dec-031--release-scope-for-milestone-m2) |
 | DEC-032 | Project / roadmap | Milestone M3 is closed without its own minor release: the owner waives DEC-030 item 1 for M3 because its scope is too small for a release. Its merged work (#27, #29) ships with the next minor release. Applies to M3 only. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-032](#dec-032--m3-closes-without-its-own-release) |
 | DEC-033 | Project / development platform | Windows is a supported development platform: the test suite and local tooling are expected to work on a Windows checkout, so Windows-only test failures are defects to fix or to skip with a stated reason. Narrow scope: the user-facing platform tier of DEC-020 item 4 (Windows experimental) and the CI matrix are unchanged. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-033](#dec-033--windows-is-a-supported-development-platform) and [issue #191](https://github.com/descipar/wled-mcp/issues/191) |
+| DEC-034 | Project / roadmap | Milestone M4 is closed without its own minor release: the owner waives DEC-030 item 1 for M4. Its merged work (#28) ships with the next minor release together with the unreleased work of M3. Applies to M4 only. | Confirmed owner statement, coordinator session, 2026-11-12; see [DEC-034](#dec-034--m4-closes-without-its-own-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -925,6 +926,25 @@ can explicitly amend them.
 - Not changed: DEC-023 and the publication gates.
 - Affected: issue #191, docs/DEVELOPMENT.md and the README support table only when a later
   change adopts this record.
+
+### DEC-034 — M4 closes without its own release
+
+- Status: active project decision, M4 only.
+- Authority/source: owner statement in the coordinator session on 2026-11-12 (no permalink),
+  after the completion of #28 and the open question whether M4 gets a release: "wir
+  verzichten auf das release" (English: "we waive the release").
+- Owner decision (the wording of the items is the coordinator's, from that statement):
+  1. M4 has no release of its own. The owner waives DEC-030 item 1 for M4 under DEC-030 item 3.
+  2. M4 is closed once its issue (#28) is closed and this record is merged.
+  3. The merged work of M4 stays under `Unreleased` in `CHANGELOG.md`, with the unreleased work
+     of M3, and ships with the next minor release. No version, tag, GitHub release, PyPI upload
+     or registry publication is prepared for M4.
+  4. The README already describes the temporary signals as not yet released. Its version
+     statements are updated when that next release is prepared.
+- Scope: milestone M4 only; it is not a general rule that small milestones skip a release,
+  and it does not extend DEC-032. A later milestone needs its own answer.
+- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
+- Affected: docs/ROADMAP.md (M4 row).
 
 ## Issue-specific decisions (pointers)
 
