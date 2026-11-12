@@ -23,6 +23,9 @@ atomic and not synchronized across devices (see
 [contract/groups-scenes.md](contract/groups-scenes.md)).
 #31 adds the read-only `wled_search_effects`: a search of one device's effects by curated
 properties (see [contract/effect-search.md](contract/effect-search.md)).
+M8 specifies `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device`
+(see [contract/discovery.md](contract/discovery.md)); they are not implemented until their
+issues merge.
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
@@ -911,6 +914,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   the tested set and how users install it (#22).
 - [contract/diagnostics.md](contract/diagnostics.md): correlation ID, bounded call logs, the
   `wled_get_service_status` tool, liveness and the rotation/tenancy statements (#20).
+- [contract/discovery.md](contract/discovery.md): discovery, enrollment and discovery-range tools,
+  hard caps and the coverage report (DEC-034, #198 to #203).
 - [contract/effect-metadata.md](contract/effect-metadata.md): lenient fxdata parsing and
   ID-preserving effect catalog filters (#148).
 - [contract/effect-search.md](contract/effect-search.md): the `wled_search_effects` tool, the

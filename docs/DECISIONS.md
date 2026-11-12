@@ -81,6 +81,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-031 | Project / roadmap | Release scope for M2 is the same as for M1: tag, GitHub release, PyPI upload and official MCP Registry publication; preparing release 0.3.0 is allowed now, each publication step needs the owner's explicit instruction at that time, and M2 stays open until the release is done. Applies to M2 only. | Confirmed owner answer, coordinator session, 2026-11-11; see [DEC-031](#dec-031--release-scope-for-milestone-m2) |
 | DEC-032 | Project / roadmap | Milestone M3 is closed without its own minor release: the owner waives DEC-030 item 1 for M3 because its scope is too small for a release. Its merged work (#27, #29) ships with the next minor release. Applies to M3 only. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-032](#dec-032--m3-closes-without-its-own-release) |
 | DEC-033 | Project / development platform | Windows is a supported development platform: the test suite and local tooling are expected to work on a Windows checkout, so Windows-only test failures are defects to fix or to skip with a stated reason. Narrow scope: the user-facing platform tier of DEC-020 item 4 (Windows experimental) and the CI matrix are unchanged. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-033](#dec-033--windows-is-a-supported-development-platform) and [issue #191](https://github.com/descipar/wled-mcp/issues/191) |
+| DEC-034 | Project / discovery and enrollment (M8) | Agents discover WLED controllers through MCP and add them to the inventory after confirmation by the MCP client; inventory changes take effect by in-process reload; a bounded unicast `GET /json/info` probe of configured RFC 1918 ranges is approved in addition to mDNS under hard server-side caps; ranges are set by a separate configuration-write tool; an address change is reported, never rewritten; standard library only. Supersedes ISSUE-16-DEC-001 in part. | Confirmed owner answers, coordinator session, 2026-11-12 (paraphrased in English, no verbatim quote); see [DEC-034](#dec-034--agent-driven-discovery-and-enrollment) and [issue #198](https://github.com/descipar/wled-mcp/issues/198) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -926,8 +927,59 @@ can explicitly amend them.
 - Affected: issue #191, docs/DEVELOPMENT.md and the README support table only when a later
   change adopts this record.
 
+### DEC-034 — Agent-driven discovery and enrollment
+
+- Status: active project decision (milestone M8).
+- Authority/source: owner answers in the coordinator session on 2026-11-12 to the
+  discovery and enrollment questions of milestone M8 (no permalink). The answers reached
+  this record relayed and paraphrased in English by the coordinator; no verbatim owner
+  wording exists in the record, so none is quoted (DEC-017 applies to quotes that exist).
+  [Issue #198](https://github.com/descipar/wled-mcp/issues/198) tracks the work.
+- Owner decision (the wording of the items is the coordinator's paraphrase):
+  1. Agents find controllers through MCP and add them to the inventory after confirmation
+     by the MCP client. There is no interactive approval mechanism inside the plugin.
+  2. Inventory changes made this way take effect by in-process reload, not by restart.
+  3. A bounded unicast `GET /json/info` probe over configured private IPv4 ranges is
+     approved in addition to mDNS, as thorough as possible, under hard server-side caps that
+     no tool parameter can override: RFC 1918 addresses only (no loopback, link-local or
+     public addresses), at most a /24 per range, a small maximum number of ranges, bounded
+     timeouts and concurrency.
+  4. An agent sets the ranges through a separate configuration-write tool,
+     `wled_set_discovery_ranges`: the client confirmation shows the exact ranges, tool
+     profiles can disable it, and operators may set the ranges by hand.
+     `wled_discover_devices` without configured ranges runs mDNS only and proposes ranges
+     derived from the addresses already in the inventory; it never scans the proposals.
+  5. A known controller found at a changed address is only reported, never rewritten
+     automatically.
+  6. No new runtime dependency and no extra service: standard library only (OPS-01).
+  7. The work is organized as milestone M8 (issues #198 to #204).
+  The coverage report of a discovery run must never claim that nothing was found when the
+  run could not look.
+- Scope: milestone M8 only (discovery, enrollment, discovery ranges).
+- Not changed: DEC-023 and the publication gates; DEC-029 item 4 (the standing merge
+  approval covers M1 and M2 only, so M8 has none and every M8 PR needs its own merge
+  approval); DEC-030 (M8 closes with a minor release and a README update); the AGENTS rule
+  against silent preset overwrite, delete, arbitrary endpoint forwarding and configuration
+  migration; device-write authorization (the new tools never write to a device).
+- Supersedes: ISSUE-16-DEC-001 in part and ISSUE-16-DEC-002 TD-16-8 in part: the
+  "restart instead of in-process reload" half of Q1 and the "CLI only, not an MCP tool,
+  never writes the inventory, no unicast probes" parts of Q2 and TD-16-8 no longer hold from
+  M8. Kept from them: standard library only, discovery runs only on explicit invocation, the
+  `wled-mcp discover` command and the validate-then-restart procedure for hand edits.
+  Amends the AGENTS.md rule on discovery scans and inventory writes.
+- Technical details (numeric caps, schemas, error codes, class `manage`, configuration
+  keys, MAC identity) are technical proposals, recorded separately as
+  [ISSUE-198-DEC-001](decisions/issue-198.md); the owner can override them.
+- Affected: AGENTS.md, DEV-03, S2-SETUP-02, [contract/discovery.md](contract/discovery.md),
+  docs/contract/cli.md, docs/DEPLOYMENT.md, issues #198 to #204.
+
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-198-DEC-001](decisions/issue-198.md) (coordinator, technical proposal,
+  2026-11-12, issue #198 / M8 only): technical proposals TP-1 to TP-12 of
+  [contract/discovery.md](contract/discovery.md) (tool classes and annotations, numeric hard
+  caps, schemas, new error codes, `[discovery] ranges` key, optional `devices[].mac`);
+  the owner decision is DEC-034.
 - [ISSUE-150-DEC-001](decisions/issue-150.md) (human, owner chat, 2026-11-10,
   issue #150 verification only): bounded read-only checks on one explicitly selected
   controller; no writes, discovery, deployment or authorization for other targets.
@@ -960,7 +1012,9 @@ Stage 5 (recorded 2026-11-09):
 
 Stage 2 (recorded 2026-11-07):
 - [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart
-  instead of in-process reload; CLI-only standard-library discovery.
+  instead of in-process reload; CLI-only standard-library discovery. Superseded in part
+  by DEC-034 (2026-11-12): ISSUE-16-DEC-001 and TD-16-8 no longer hold for the reload and
+  the MCP/unicast discovery surface from M8.
   ISSUE-16-DEC-002 (coordinator, technical proposal): CLI shape and exit codes, atomic
   config writes, read-only `doctor` with sanitized export, no `config migrate`.
 - [ISSUE-17-DEC-001](decisions/issue-17.md) (human): groups and scenes are local JSON

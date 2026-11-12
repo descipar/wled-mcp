@@ -407,7 +407,7 @@ is the preferred mode where in-flight calls must drain.
 The inventory file is read once at startup in both modes. A change takes effect
 through a restart after `wled-mcp config validate` has accepted the edited file
 (DEV-03); there is no in-process reload (ISSUE-16-DEC-001, closing the deferral of
-ISSUE-13-DEC-001). The procedure is copy, edit, validate, restart:
+ISSUE-13-DEC-001). The procedure is copy, edit, validate, restart. From M8 (not yet released; [contract/discovery.md](contract/discovery.md)) an agent can add a controller and set discovery ranges through tools that take effect by in-process reload; hand edits keep this procedure:
 
 1. Keep a copy of the working file next to it, for example
    `devices.toml` -> `devices.toml.previous`, in the same config directory
@@ -477,6 +477,8 @@ file modes and the backups writability check reflect what the server will see.
   instead, or skip it. The suggested URL uses the IPv4 address because container
   resolvers usually cannot resolve `.local` names; reserve the address in DHCP so that
   it stays valid. Adding a controller by address always works without discovery.
+
+From M8 (not yet released) an agent can also discover controllers through an MCP tool, with an additional bounded unicast probe of configured private ranges that works from a container; see [contract/discovery.md](contract/discovery.md).
 
 Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md).
 

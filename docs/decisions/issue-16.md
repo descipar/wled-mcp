@@ -6,7 +6,10 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
 
 - ID: ISSUE-16-DEC-001
 - Recorded date: 2026-11-07
-- Status: active for issue #16.
+- Status: active for issue #16; superseded in part by DEC-034 (2026-11-12): the "restart
+  instead of reload" half of Q1 and the "CLI only, not an MCP tool, never writes the
+  inventory" half of Q2 no longer hold from M8. The validate-then-restart procedure for
+  hand edits and the `wled-mcp discover` command stay valid.
 - Authority: human decision (repository owner).
 - Source: owner answer in the coordinator session on 2026-11-07 to the Phase-0
   questions of the stage-2 parallel plan (DEC-021), packet
@@ -31,7 +34,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
 - Affected requirement IDs, files, issues and tests: S2-SETUP-02, DEV-03; issue #16
   CLI, docs/DEPLOYMENT.md, quickstart (#23).
 - Supersedes / superseded by: closes the in-process reload deferral of
-  ISSUE-13-DEC-001 (that entry stays as recorded).
+  ISSUE-13-DEC-001 (that entry stays as recorded). Superseded in part by DEC-034 (see
+  Status); the entry text above stays as recorded.
 - Propagated to roles / packet references: issue-16 packet; refresh against main before
   #16 starts (Track A, after #21).
 - Revalidation needed / next action: none before implementation.
@@ -40,7 +44,9 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-07.
 
 - ID: ISSUE-16-DEC-002
 - Recorded date: 2026-11-08
-- Status: active for issue #16.
+- Status: active for issue #16; TD-16-8 superseded in part by DEC-034 (2026-11-12): "no
+  unicast probes" and the CLI-only engine no longer hold from M8 (the engine becomes the
+  shared one of #199).
 - Authority: technical proposal accepted by the coordinator (not a human decision).
 - Source: coordinator acceptance on 2026-11-08 of the technical defaults TD-16-1 to
   TD-16-10 in the issue-16 requirements packet (`.agent-runs/stage2/issue-16/packet.md`,
