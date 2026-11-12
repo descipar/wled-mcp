@@ -25,6 +25,8 @@ README impact: state in the packet whether the change alters what a user sees (n
 changed tools, limits, prerequisites, supported platforms, versions). If it does, name
 the README section or the docs/ file that must change, and move detail to docs/ instead
 of growing the README; if not, write "README unaffected".
+The implementer makes the README and docs update in the same PR; it needs no separate
+owner approval.
 
 Use docs/agent-workflow/packet.template.md for your handoff. Pin the requirements
 to a commit plus explicit changed-document diff/hash if uncommitted. List allowed
