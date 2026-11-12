@@ -38,6 +38,10 @@ on WLED 16.0.1. No support is promised
   of why a change may not show. Neither proves a cause or colour accuracy.
 - Layout preview (read-only, not yet released): a static SVG of a device's segment layout,
   1D only.
+- Temporary signals (not yet released): `wled_start_signal` shows a colour on chosen segments
+  of one controller for a bounded time, then restores the previous state only if nobody
+  changed it; best effort, not a scheduler, nothing survives a restart
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
 - Agent guidance: safe-lighting instructions, a prompt and precise field descriptions, served
   identically over stdio and HTTP; the client has to pass them on to its agent.
 - Server-enforced profiles (`read-only`, `control`, `full`); for the HTTP service a bearer
