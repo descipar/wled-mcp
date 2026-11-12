@@ -1292,6 +1292,10 @@ Stage 2 (recorded 2026-11-07):
   bodies of #23, #25 and #181 now state the current requirements, #151 is unchanged, the
   `stage:5` label is removed, and the defined workflow runs for #23 as a docs-only change; the
   deferred optional items are a coordinator proposal.
+- [ISSUE-151-DEC-001](decisions/issue-151.md) (human, owner chat, 2026-11-12, issue #151 only): the
+  MCPB bundle is built with every release and attached to the GitHub release by a separate job
+  after the PyPI upload; the project does not test it and states so in the README, without
+  warranty; directory submission stays an owner action.
 
 ## Still unresolved
 
