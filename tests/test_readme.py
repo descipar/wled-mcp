@@ -229,7 +229,6 @@ def orientation_problems(text: str) -> list[str]:
         "AGENTS.md",
         "docs/AGENT-WORKFLOW.md",
         "docs/DECISIONS.md",
-        "docs/decisions/README.md",
     ):
         if target not in targets:
             problems.append(f"README does not link {target}")
@@ -339,7 +338,14 @@ def test_readme_has_only_absolute_links():
     # The PyPI project page renders README.md without the repository (AC-22R-README-07).
     text = README.read_text("utf-8")
     assert relative_link_problems(text) == []
-    assert len(LINK.findall(text)) > 30, "README links were not found"
+    assert len(LINK.findall(text)) > 20, "README links were not found"
+
+
+def test_readme_stays_within_its_length_budget():
+    # The README is the PyPI project page and the first thing a stranger reads. Move detail
+    # to docs/ instead of growing it; raise the budget only with a reason in the PR.
+    lines = README.read_text("utf-8").count("\n")
+    assert lines <= 200, f"README has {lines} lines; the budget is 200"
 
 
 @pytest.mark.parametrize(
@@ -491,8 +497,8 @@ def test_tool_table_check_rejects_drift(old, new):
             "README does not link docs/DECISIONS.md",
         ),
         (
-            "is reported as\n  possibly applied",
-            "is reported as\n  failed",
+            "possibly applied",
+            "failed",
             "README safety/validation text lacks 'possibly applied'",
         ),
     ],
@@ -565,7 +571,8 @@ def test_readme_support_table_matches_the_compatibility_matrix():
 def test_support_table_check_rejects_drift(old, new):
     readme, compatibility = README.read_text("utf-8"), COMPATIBILITY.read_text("utf-8")
     assert old in readme
-    assert support_table_problems(readme.replace(old, new, 1), compatibility) != []
+    # Replace every occurrence: the README may link the matrix from more than one place.
+    assert support_table_problems(readme.replace(old, new), compatibility) != []
 
 
 def test_support_table_check_rejects_a_matrix_change_not_shown_in_the_readme():

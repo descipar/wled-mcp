@@ -187,8 +187,8 @@ one argument per field, `wled-mcp@0.2.0`, `----transport`, `stdio`, `----config`
   `getArgs()`, main branch, 2026-11-10): it builds `--${arg.name}` and uses `arg.value`
   literally, which matches the dialog. Whether the owner's running build equals that source
   revision was not checked.
-- `server.json` conforms to the registry schema and was not changed. The README now tells users
-  to edit the dialog ([README](../../README.md#installing-from-the-mcphub-registry-tab)).
+- `server.json` conforms to the registry schema and was not changed. The deployment guide tells users
+  to edit the dialog ([DEPLOYMENT](../DEPLOYMENT.md#installing-from-the-mcphub-registry-tab)).
 
 Result for #24 item 6 (fresh install from generated configuration): a documented finding. The
 configuration this MCPHub generates from the entry is not runnable without a manual edit. The
