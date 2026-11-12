@@ -84,6 +84,17 @@ WLED 16 stores in presets, is accepted as light state on every firmware
 older 0.15.x controller is served exactly like a supported one, only with the warning.
 A new version-specific branch needs a reviewed 16.x difference first.
 
+### Secured controllers
+
+The server sends no device credentials and has no unlock path. Read-only probes of one
+controller (WLED 16.0.1) in three states, settings PIN and OTA lock both enabled, PIN only
+and OTA lock only, were all answered normally by every read tool
+([validation/issue-128.md](../validation/issue-128.md), [#128](https://github.com/descipar/wled-mcp/issues/128)).
+Writes under a lock are untested. A refused read (HTTP 401 or 403, for example from a
+proxy) is reported as `INVALID_RESPONSE` with the status code and is not retried
+(`tests/test_state_catalogs.py`); HTTP authentication in front of a controller stays
+unsupported.
+
 ## Evidence
 
 - Firmware tiers and transports: `tests/test_compat.py` (every tier, one warning,

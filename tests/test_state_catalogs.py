@@ -369,6 +369,22 @@ async def test_offline_device_fails_alone_and_others_unaffected(tmp_path, failur
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("status", [401, 403])
+async def test_refused_read_is_a_clear_error_and_not_retried(tmp_path, status):
+    """Issue #128: a refused read (access lock, proxy) is reported as an error and not retried."""
+    router = Router()
+    router.device(DESK)
+    router.set(DESK, "/json/state", httpx.Response(status, json={"secret": SECRET}))
+    async with open_resources(tmp_path, router, devices=[device()], read_retries=1) as resources:
+        result = await call(resources, "wled_get_state")
+    assert_read_envelope(result, "wled_get_state", ok=False)
+    assert result.error.code == "INVALID_RESPONSE" and str(status) in result.error.message
+    assert SECRET not in result.model_dump_json()
+    assert router.count(DESK, "/json/state") == 1  # one attempt: no retry
+    assert router.count(DESK) == 1  # and no other request follows the refusal
+
+
+@pytest.mark.anyio
 async def test_read_touches_only_the_selected_device_and_unknown_id_makes_no_http(tmp_path):
     router = Router()
     router.device(DESK)

@@ -150,8 +150,10 @@ CCT, RGBW or 2D controllers have no hardware run; details are in
 - No device authentication: WLED has none for its light API ("Anyone with your IP and port
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
   sends no device credentials and does not support a controller behind HTTP authentication.
-  Behavior with a settings PIN or OTA lock is untested
-  ([#128](https://github.com/descipar/wled-mcp/issues/128)).
+  On one controller (WLED 16.0.1) with the settings PIN, the OTA lock or both enabled,
+  all read tools worked unchanged; writes under a lock are not yet tested
+  ([#128](https://github.com/descipar/wled-mcp/issues/128),
+  [evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-128.md)).
 
 ## Documentation
 
