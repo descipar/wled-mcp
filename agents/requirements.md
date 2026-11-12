@@ -21,6 +21,11 @@ trigger, desired behavior, scope, exclusions, requirement IDs and acceptance
 scenarios. Separate confirmed requirements from proposed technical defaults.
 Missing hardware details must not block mockable work. Do not invent facts.
 
+README impact: state in the packet whether the change alters what a user sees (new or
+changed tools, limits, prerequisites, supported platforms, versions). If it does, name
+the README section or the docs/ file that must change, and move detail to docs/ instead
+of growing the README; if not, write "README unaffected".
+
 Use docs/agent-workflow/packet.template.md for your handoff. Pin the requirements
 to a commit plus explicit changed-document diff/hash if uncommitted. List allowed
 paths, expected tests, unresolved decisions and dependency readiness. Never
