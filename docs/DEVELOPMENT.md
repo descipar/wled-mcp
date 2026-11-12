@@ -218,8 +218,8 @@ supported there.
 
 A test that fails only on Windows is a defect. Fix it, or skip it on Windows with a stated
 reason where the behavior is POSIX-specific (POSIX signals, symlinks and `mkfifo`,
-permission bits, `sh`, `bash` and `sha256sum`, root). The offline guarantee of the tests
-holds on every platform.
+permission bits, `sh`, `bash`, `sha256sum` and GNU `find`, root) or opt-in (the local Docker
+check). The offline guarantee of the tests holds on every platform.
 
 Known differences:
 
@@ -231,6 +231,12 @@ Known differences:
   offline test guard (`tests/network_guard.py`) allows exactly that connect and refuses every
   other connect and name resolution.
 - `scripts/check_container.py` needs a Linux Docker host.
+
+Known Windows tooling limit, outside the test suite and not a test failure:
+`scripts/check_distribution.py` exited 1 with `MCPError: Connection closed` at the uvx stdio
+handshake on a checkout whose path contains a space. The same script passed on a clone at a
+space-free path, so the space in the path is the cause. Run it from a space-free checkout
+path until this is fixed (tracked separately from #191).
 
 ## Deployment artifact checks
 

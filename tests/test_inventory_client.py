@@ -756,8 +756,16 @@ def test_guard_refuses_name_resolution(monkeypatch):
     refused(monkeypatch, lambda: socket.getaddrinfo("example.invalid", 80))
 
 
-def test_guard_refuses_create_connection(monkeypatch):
-    refused(monkeypatch, lambda: socket.create_connection(("example.invalid", 80)))
+def test_guard_refuses_create_connection_itself(monkeypatch):
+    attempts = install_no_network(monkeypatch)
+    # Replace the guarded resolver by one that fails differently: an unpatched
+    # create_connection would then surface this OSError instead of the guard refusal.
+    monkeypatch.setattr(
+        socket, "getaddrinfo", lambda *a, **k: (_ for _ in ()).throw(OSError("resolver"))
+    )
+    with pytest.raises(AssertionError, match="must not resolve names or open connections"):
+        socket.create_connection(("example.invalid", 80))
+    assert len(attempts) == 1
 
 
 def test_guard_predicate_needs_the_socketpair_caller_and_a_loopback_address():

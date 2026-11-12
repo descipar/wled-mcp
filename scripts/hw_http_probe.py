@@ -12,8 +12,10 @@ It is sent only in the ``Authorization`` header and never printed or logged; the
 report is additionally scrubbed of it. Diagnostics go to stderr. ``--output`` creates the
 report with file mode 0600 on POSIX; on Windows that mode only toggles the read-only
 attribute and the file inherits the access control of its directory, so the script does not
-protect it there (write it to a directory only you can read; it holds no credential, but
-can hold the endpoint URL and, with ``--include-results``, device state).
+protect it there (write it to a directory only you can read). The exact bearer token string
+is redacted from the report before it is written; this is not a guarantee for a token with
+characters that JSON escapes if a server echoed it back under ``--include-results``. The
+report can hold the endpoint URL and, with that option, device state.
 
 This is a manual hardware/target tool (ISSUE-12-DEC-002, TD-12-4). It is never run
 against devices or targets in CI; its tests use a loopback stub and the in-process
