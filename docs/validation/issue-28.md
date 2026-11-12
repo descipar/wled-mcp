@@ -66,17 +66,17 @@ colour slot 0 and `fx`; the device state and the preset list were unchanged afte
 No write failed, no write was retried and nothing outside the authorized scope was touched: no
 reboot, firmware, settings or preset change. The final state equals the recorded baseline.
 Differences from the mock assumptions: none observed. The firmware kept speed, intensity and
-palette across the effect change; the baseline had no running preset marker, so the clearing of
-that marker was not exercised.
+palette after the signal wrote the Solid effect ID again (the baseline effect was already Solid, so
+no effect change was exercised); the baseline had no running preset marker, so the clearing of that
+marker was not exercised.
 
 ## Limits
 
 - Not exercised on hardware (mock evidence only): an offline or timing-out controller during the
   restore, the shutdown restore, restart and crash behavior, a non-Solid prior effect (if the
-  baseline effect is Solid), RGBW and multi-segment devices, the HTTP transport or stdio (whichever
-  the live run does not use) and any controller other than the selected one.
-- Not confirmed on a controller: that a state write clears the running preset marker (the baseline
-  had none).
+  baseline effect is Solid), RGBW and multi-segment devices, the HTTP transport (the live run used stdio) and any controller other than the selected one.
+- Not confirmed on a controller: that the firmware keeps speed, intensity and palette across a real
+  effect change, and that a state write clears the running preset marker (the baseline had none).
 - Nothing is persisted. A crash, kill or power loss leaves an active signal applied and its ID
   unknown afterwards ([contract](../contract/signals.md#shutdown-and-restart)).
 - Timing is best effort; no exact duration is claimed, in particular not across an outage.
