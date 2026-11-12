@@ -2,7 +2,7 @@
 
 Step-by-step setup for both transports from a locally built release directory, the example
 files, and the device inventory format. The shortest way to try the server, installing from
-Git without building anything, is in the [README](../README.md#try-it). Operating the
+PyPI without building anything, is in the [README](../README.md#try-it). Operating the
 deployment (verification, update, rollback, removal) is in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Build a release directory
@@ -69,6 +69,18 @@ The MCP host starts the server as a subprocess on demand.
 
 stdout carries only MCP messages; diagnostics go to stderr. Run only one writer per
 controller: do not register a stdio entry and an HTTP service against the same devices.
+
+### Installing without a release directory
+
+The README try-it commands install a release from PyPI. If the version is not listed there
+yet, replace `wled-mcp==<version>` with `git+https://github.com/descipar/wled-mcp@v<version>`,
+which builds the package from the tag on your machine; without a tag, `uvx` takes the
+current `main`, which can change at any time. Both routes need network access (the Git
+route to GitHub as well as PyPI). The dependencies are resolved within the ranges the
+package declares when `uvx` first creates the tool environment, so they can be newer than
+the set the release was tested with; for that tested set add the release constraints
+([dependency policy](contract/dependencies.md)). For a checksum-verified wheel use the
+release directory above.
 
 ## Quickstart: Streamable HTTP service
 

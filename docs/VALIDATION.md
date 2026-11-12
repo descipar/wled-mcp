@@ -59,6 +59,11 @@ State of the evidence and the limits of the source releases (see also the
   hardware: multi-device scenes, tool profiles, `discover`, restore onto an occupied slot
   (`overwrite=true`), playlist import and restoring a playlist preset. Advanced segment fields
   (CCT, RGBW, 2D) have mock and loopback evidence only.
+- Of the newer features, a read-only run covered the effect metadata and one effect search.
+  One read-only call of the explanation ran on the controller; the live colour snapshot
+  reported the endpoint as unavailable (HTTP 501), so no positive snapshot was observed.
+  Zones, name resolution in segment writes, the served guidance and the layout preview have
+  mocked or local-client tests only.
 - Storing, restoring or importing a preset without changing the live output is not possible
   on WLED 16, and saving a playlist starts it. Imports do not rescale LED ranges or convert
   matrix layouts, and import one playlist per call
@@ -84,8 +89,8 @@ State of the evidence and the limits of the source releases (see also the
 - `tools/list` was CPU-heavy on small hosts (about 270 ms of CPU per call on the single-board
   target with 27 tools); since release 0.1.2 the schemas are built once per server (about
   23 ms per call, [#67](https://github.com/descipar/wled-mcp/issues/67), closed).
-- No package on PyPI, no container image on GHCR and no registry entry; the release is
-  installed from Git. Automated tests check that the current server reads the retained
+- No container image on GHCR; releases are distributed on PyPI and listed in the official
+  MCP Registry. Automated tests check that the current server reads the retained
   data of earlier releases and rejects newer data versions without changing files; an older
   server reading newer data is not tested and relies on unchanged formats
   ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update of a

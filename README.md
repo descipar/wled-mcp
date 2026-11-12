@@ -12,75 +12,72 @@ MCPHub.
 
 **Status:** early software with `0.x` versions that may break between releases
 ([CHANGELOG.md](https://github.com/descipar/wled-mcp/blob/main/CHANGELOG.md)). Releases are distributed on PyPI as
-[`wled-mcp`](https://pypi.org/project/wled-mcp/) (the first two releases are Git tags only);
-a release that is not listed there installs from its Git tag instead. The server is listed in the
-official [MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.descipar/wled-mcp`
-(unofficial, not affiliated with the WLED project); whether a particular MCP host or hub shows that
-entry was not checked. The container image is not published to GHCR.
-Hardware acceptance is partial: one controller on WLED 16.0.1. No support is promised
+[`wled-mcp`](https://pypi.org/project/wled-mcp/); a release that is not listed there
+installs from its Git tag. The server is listed in the official
+[MCP Registry](https://registry.modelcontextprotocol.io/) as `io.github.descipar/wled-mcp`.
+The container image is not published to GHCR. Hardware acceptance is partial: one controller
+on WLED 16.0.1. No support is promised
 ([Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
 ## What it does
 
-- Self-hosted: no cloud service, account, MQTT broker or public endpoint is needed.
-- Named inventory of controllers in a TOML file. The server and its tools discover
-  nothing; `wled-mcp discover` is an opt-in command.
-- Normalized state, capabilities and each device's own effect and palette catalogs.
-- Typed changes: master power and brightness, a patch of selected segments, or a
-  replacement of the complete layout. Advanced segment fields (CCT, 2D) are written only
-  where the device reports them. Segment tools accept the device's own effect and palette
-  names (`effect_name`, `palette_name`) in place of IDs; a name is resolved against that
-  device's catalog before any write and an ambiguous or unknown name is refused with
-  candidates ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/segment-names.md)).
-- Effect discovery: `wled_get_effects` parses the firmware's effect metadata and filters by
-  name, 2D and audio reactivity ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/effect-metadata.md)).
-  `wled_search_effects` finds a device's effects by curated properties such as motion,
-  flashing, colour slots and palette use; the catalog is small and an effect it does not
-  list is not searchable ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/effect-search.md)).
-- Named zones: a reviewed zone file maps a physical region to configured devices and LED
-  ranges; `wled_plan_zone` previews the exact segments without a write and `wled_apply_zone`
-  changes segment fields only inside the zone, otherwise it refuses before any write
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/zones.md)).
-- Layout preview (read-only): `wled_preview_layout` returns a static, bounded SVG of a device's
-  observed segment layout or of a proposed layout checked by the layout planner, with ranges,
-  gaps, overlaps and approximate colours; 1D only, nothing is written and effects are not
-  simulated ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/layout-preview.md)).
-- Agent guidance: the server serves safe-lighting instructions at initialization, a prompt
-  `change_lighting_safely` and precise field descriptions, identically over stdio and HTTP.
-  A client has to pass them on to its agent; forwarding by MCPHub was not observed
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/agent-guidance.md)).
-- Observe and explain (read-only): `wled_get_live_snapshot` samples the LED colours per
-  segment from the controller's live endpoint with explicit missing data and mapping limits
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/live-snapshot.md));
-  `wled_explain_lighting` lists observed facts, causes (inferred causes never above medium
-  confidence; only a directly observed blocker may be high), unknowns and next checks for one device whose change seems ineffective
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/explain.md)). Neither
-  claims colour accuracy, and an explanation is not proof of a cause.
-- Persistent presets with snapshots, restore, portable bundles and playlists; named
-  device groups and multi-device scenes with a dry-run plan.
-- Server-enforced profiles (`read-only`, `control`, `full`) and, for the HTTP service, a
-  bearer credential with Host and Origin allowlists.
+- Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a
+  named inventory in a TOML file; nothing is discovered unless you run the opt-in
+  `wled-mcp discover`.
+- State and catalogs: normalized state, capabilities and each device's own effect and
+  palette catalogs; effects can be filtered by firmware metadata and searched by curated
+  properties (motion, flashing, colour slots; the catalog is small).
+- Typed changes: power and brightness, a patch of selected segments or a replacement of the
+  complete layout. Effects and palettes by name or ID, checked against the device's catalog
+  before any write.
+- Zones: a reviewed zone file maps a physical region to devices and LED ranges; changes apply
+  only inside the zone, otherwise they are refused before any write.
+- Presets, groups and scenes: persistent presets with snapshots, restore, portable bundles
+  and playlists; named device groups and multi-device scenes with a dry-run plan.
+- Observe and explain (read-only): sampled live LED colours per segment, and an explanation
+  of why a change may not show. Neither proves a cause or colour accuracy.
+- Layout preview (read-only, not yet released): a static SVG of a device's segment layout,
+  1D only.
+- Agent guidance: safe-lighting instructions, a prompt and precise field descriptions, served
+  identically over stdio and HTTP; the client has to pass them on to its agent.
+- Server-enforced profiles (`read-only`, `control`, `full`); for the HTTP service a bearer
+  credential with Host and Origin allowlists.
 
-All 34 tools, each with its read-only, write or destructive hint, are listed in the
+All tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).
 
 <!-- wled-coverage:start -->
 WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method and list](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
 
+## Safety model
+
+- **Validate first.** A complete request is checked against the current device state before
+  the first write; unknown fields and out-of-range values are rejected. Omitted fields mean
+  "unchanged", never "reset".
+- **Patch versus replace.** `wled_patch_segments` changes only the named segments; only
+  `wled_replace_layout` removes segments that are not listed.
+- **Dry run and verification.** `dry_run=true` returns the plan without writing. Writes are
+  read back; a write that timed out is reported as
+  possibly applied and is never retried blindly.
+- **Snapshots.** Overwriting or deleting a preset first stores a durable snapshot in the
+  data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
+  playlist saves change the live output before they store, and the previous lighting is not
+  restored.
+- **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
+  caller-supplied hosts, no silent preset overwrite (`overwrite=true` is required).
+- **Authorization.** Whether a person may run a tool is the MCP host's job; tool
+  annotations are hints only. The HTTP service also requires its own bearer credential and
+  Host allowlist and must not be exposed to the internet.
+
 ## Try it
 
-You need [uv](https://docs.astral.sh/uv/), an MCP host that can start a stdio server and
-a WLED controller reachable over HTTP; the optional HTTP service also needs Docker with
-Docker Compose. Replace `<version>` with the version of the
-[latest release](https://github.com/descipar/wled-mcp/releases/latest) (its tag is
-`v<version>`). The commands install that release from
-[PyPI](https://pypi.org/project/wled-mcp/). If the version is not listed there yet, use the
-Git route instead: replace `wled-mcp==<version>` with
-`git+https://github.com/descipar/wled-mcp@v<version>`, which builds the package from the tag
-on your machine; without a tag, `uvx` takes the current `main`, which can change at any
-time. The commands are for a POSIX shell; Windows is experimental
-([docs/DEVELOPMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEVELOPMENT.md)).
+You need [uv](https://docs.astral.sh/uv/), an MCP host that can start a stdio server and a
+WLED controller reachable over HTTP. Replace `<version>` with the version of the
+[latest release](https://github.com/descipar/wled-mcp/releases/latest). The commands install
+that release from [PyPI](https://pypi.org/project/wled-mcp/) and are for a POSIX shell;
+Windows is experimental
+([compatibility](https://github.com/descipar/wled-mcp/blob/main/docs/contract/compatibility.md)).
 
 1. Check the installation (no device, no configuration):
 
@@ -105,53 +102,15 @@ time. The commands are for a POSIX shell; Windows is experimental
    Ask the agent to list your WLED devices (`wled_list_devices`). Every write tool accepts
    `dry_run=true` to preview a change without touching the lights.
 
-Both routes need network access (the Git route to GitHub as well as PyPI). The dependencies
-are resolved within the ranges the package declares when `uvx` first creates the tool
-environment, so they can be newer than the set the release was tested with; for that tested
-set add the release constraints ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)). For a
-checksum-verified wheel, more devices, the
-[inventory format](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md#inventory) and the HTTP service, follow the
+More devices, the [inventory format](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md#inventory), the Git-tag route, a
+checksum-verified wheel, the MCPHub Registry install note and the HTTP service are in the
 [quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md); updates, rollback and removal are in
-[docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md).
-
-### Installing from the MCPHub Registry tab
-
-The MCPHub build observed for this project (the Install dialog of a Registry card, under
-Packages, for administrators) does not produce a runnable entry from the registry listing: it
-prefixes argument names that already start with `--` with another `--`, leaves `{config_path}`
-and `{data_dir}` unresolved and omits the runtime arguments. Other hosts may handle the listing
-differently, and this is a note about that build, not a claim that anything was fixed upstream.
-Before saving, edit the dialog: command `uvx`; arguments, one per field, `--isolated`,
-`--python`, `3.13`, `wled-mcp@<version>` (the listed version), `--transport`, `stdio`, `--config`,
-`<absolute path of your devices.toml inside the hub container>`, `--data-dir` and
-`<writable directory inside the hub container>`. Container paths, the uv environment variables
-and a complete hub entry are in
-[docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal).
-The corrected entry has not been started inside MCPHub yet.
-
-## Safety model
-
-- **Validate first.** A complete request is checked against the current device state before
-  the first write; unknown fields and out-of-range values are rejected. Omitted fields mean
-  "unchanged", never "reset".
-- **Patch versus replace.** `wled_patch_segments` changes only the named segments; only
-  `wled_replace_layout` removes segments that are not listed.
-- **Dry run and verification.** `dry_run=true` returns the plan without writing. Writes are
-  read back; a write that timed out is reported as
-  possibly applied and is never retried blindly.
-- **Snapshots.** Overwriting or deleting a preset first stores a durable snapshot in the
-  data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
-  playlist saves change the live output before they store, and the previous lighting is not
-  restored.
-- **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
-  caller-supplied hosts, no silent preset overwrite (`overwrite=true` is required).
-- **Authorization.** Whether a person may run a tool is the MCP host's job; tool
-  annotations are hints only. The HTTP service also requires its own bearer credential and
-  Host allowlist and must not be exposed to the internet.
+[docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md). Dependencies resolve within the declared
+ranges ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)).
 
 ## Compatibility
 
-What the checks cover; the evidence for each row and the firmware tiers are in
+What the checks cover; the evidence and the firmware tiers are in
 [docs/contract/compatibility.md](https://github.com/descipar/wled-mcp/blob/main/docs/contract/compatibility.md). This is not a
 support commitment (see [Support](https://github.com/descipar/wled-mcp/blob/main/README.md#support)).
 
@@ -173,40 +132,22 @@ Unsupported or unrecognized firmware is served with a warning and never refused;
 
 ## Limitations
 
-Automated tests use mocks and synthetic loopback devices. Hardware acceptance covers the
-first feature set on one RGB controller, and a live check with an offline controller is
-still pending. A short live check of release 0.1.1 over HTTP and stdio covered state
-reads, power, brightness and effect changes on that controller
-([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/live-check-2026-11-08.md)). A later run on the same controller
-exercised a one-device group and scene, preset store, export, import and restore, and a
-playlist, with the controller restored afterwards
-([record](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-134.md)). Multi-device scenes, profiles, `discover`, restore
-onto an occupied slot, playlist import, restoring a playlist preset and CCT, RGBW and 2D controllers have no hardware run. Of the newest features, only a read-only run
-covered the effect metadata and one effect search. One read-only call of the explanation ran
-on the controller; the live colour snapshot reported the endpoint as unavailable (HTTP 501), so
-no positive snapshot was observed. Zones, name resolution in segment writes and the served
-guidance have mocked or local-client tests only.
-Other limits:
+Automated tests use mocks and synthetic loopback devices. Hardware acceptance is partial:
+core features ran on one RGB controller with WLED 16.0.1, and a live check with an offline
+controller is still pending. Multi-device scenes, profiles, zones, the layout preview and
+CCT, RGBW or 2D controllers have no hardware run; details are in
+[docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
-- No tool deletes a snapshot on request; snapshots are only removed by retention pruning
-  (20 per controller by default).
-- Storing, restoring or importing a preset without changing the live output is not
-  possible on WLED 16, and saving a playlist starts it.
-- One writer per controller: locks are per process, so a second process or service against
-  the same devices is not coordinated.
+- No tool deletes a snapshot on request; retention pruning keeps 20 per controller.
+- On WLED 16, storing, restoring or importing a preset changes the live output, and saving a
+  playlist may start it.
+- One writer per controller: locks are per process.
 - No inventory reload; changes need `wled-mcp config validate` and a restart.
 - No device authentication: WLED has none for its light API ("Anyone with your IP and port
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
-  sends no device credentials and rejects credentials in a device URL, so a controller
-  behind HTTP authentication or a credentialed proxy is not supported. Behavior with a
-  settings PIN or OTA lock is untested; a test is planned
+  sends no device credentials and does not support a controller behind HTTP authentication.
+  Behavior with a settings PIN or OTA lock is untested
   ([#128](https://github.com/descipar/wled-mcp/issues/128)).
-- No image on GHCR. A live update of a deployed HTTP
-  service was checked once, from an earlier build to release 0.1.1; a rollback has not
-  been checked.
-
-The complete list and the evidence are in
-[docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
 ## Documentation
 
@@ -216,10 +157,8 @@ The complete list and the evidence are in
 | [Deployment](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md) | Both transports in detail: staging, verification, update, rollback, removal |
 | [Tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md) | Tools, parameters, results, errors and mutation semantics |
 | [WLED feature coverage](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md) | WLED features with support status, owning issue or decision, and coverage figures |
-| [Inventory and client](https://github.com/descipar/wled-mcp/blob/main/docs/INVENTORY-CLIENT.md) | Inventory schema, limits and HTTP client behavior |
 | [Development](https://github.com/descipar/wled-mcp/blob/main/docs/DEVELOPMENT.md) | Local checks, build and launch, including PowerShell |
 | [Validation](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md) | Automated checks, opt-in hardware checks, recorded evidence, known limitations |
-| [Architecture](https://github.com/descipar/wled-mcp/blob/main/docs/ARCHITECTURE.md) | Components, runtime and design decisions |
 | [Contract examples](https://github.com/descipar/wled-mcp/blob/main/examples/contracts/README.md) | Synthetic request, result and snapshot examples |
 
 ## Support
@@ -236,19 +175,15 @@ Please leave out secrets, hostnames and addresses.
 
 ## Project and contributing
 
-Project status, roadmap and the maintainer document index are in
+Roadmap and maintainer documents are in
 [docs/PROJECT.md](https://github.com/descipar/wled-mcp/blob/main/docs/PROJECT.md). How to report problems and propose changes is in
 [CONTRIBUTING.md](https://github.com/descipar/wled-mcp/blob/main/CONTRIBUTING.md).
 
 ### How this project is developed
 
-The maintainer develops this project with coding agents that follow a documented
-workflow: [AGENTS.md](https://github.com/descipar/wled-mcp/blob/main/AGENTS.md) holds the project rules,
-[docs/AGENT-WORKFLOW.md](https://github.com/descipar/wled-mcp/blob/main/docs/AGENT-WORKFLOW.md) describes the requirements,
-implementation, review and completion roles, and the `agents/` directory holds the
-role definitions. Human contributions do not need this workflow. Design decisions and
-their rationale are recorded in [docs/DECISIONS.md](https://github.com/descipar/wled-mcp/blob/main/docs/DECISIONS.md) and, per issue, in
-[docs/decisions/](https://github.com/descipar/wled-mcp/blob/main/docs/decisions/README.md).
+The maintainer develops this project with coding agents that follow a documented workflow
+([AGENTS.md](https://github.com/descipar/wled-mcp/blob/main/AGENTS.md), [docs/AGENT-WORKFLOW.md](https://github.com/descipar/wled-mcp/blob/main/docs/AGENT-WORKFLOW.md),
+[docs/DECISIONS.md](https://github.com/descipar/wled-mcp/blob/main/docs/DECISIONS.md)). Human contributions do not need this workflow.
 
 ## License
 
