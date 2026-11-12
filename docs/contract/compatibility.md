@@ -23,7 +23,7 @@ that both agree.
 | Linux arm64 | supported | CI `checks (ubuntu-24.04-arm, 3.13)` on a native arm64 runner, same steps |
 | HTTP container image, amd64 and arm64 | supported | CI `container` job per native architecture: image build, `--version`, loopback HTTP `tools/list`, `wled_list_devices`, clean stop |
 | stdio via uvx on Linux | supported | `check_distribution.py` in both `checks` jobs: clean wheel install and uvx stdio handshake |
-| Windows | experimental | No CI job; known local failures in [DEVELOPMENT.md](../DEVELOPMENT.md#platform-notes) |
+| Windows | experimental | No CI job; development platform notes in [DEVELOPMENT.md](../DEVELOPMENT.md#platform-notes) |
 | macOS | experimental | No CI job; not run |
 | WLED 16.0.1 | tested | Hardware acceptance on one RGB controller ([VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-2026-11-06)) |
 | WLED 16.x other than 16.0.1 | unknown | No claim; no source review recorded yet |
