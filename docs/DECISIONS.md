@@ -938,6 +938,8 @@ can explicitly amend them.
   M4 evidence only): bounded live-output writes and temporary-signal runs on one explicitly
   selected controller with full restoration to the recorded baseline; no reboot, OTA,
   configuration, other controllers or hub deployment.
+  ISSUE-28-DEC-002 (coordinator, technical proposal): three signal tools, one signal per
+  device, owned-field conditional restore, no persistence across restarts, bounded shutdown restore.
 - [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, technical proposal, 2026-11-11,
   issue #29 only): `wled_preview_layout` read tool, SVG as `data.svg` in the tool result,
   1D only, pure bounded renderer; no hardware access.

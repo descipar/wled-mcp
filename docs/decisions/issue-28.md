@@ -35,3 +35,30 @@
 - Supersedes: no earlier decision; ISSUE-134, ISSUE-150 and ISSUE-30 approvals are not reused.
 - Propagation: requirements, implementation and reviewer roles receive this decision ID and its
   scope in their handoffs; the live run itself is carried out by the coordinator session.
+
+## ISSUE-28-DEC-002 — Temporary signal design defaults
+
+- Recorded date: 2026-11-12.
+- Status: active technical proposal accepted by the coordinator for issue #28 only; not a
+  human decision. The owner can change any item at the merge decision.
+- Authority/source: requirements packet for issue #28 (items TD-28-1 to TD-28-20), accepted by
+  the coordinator within the owner constraints of the issue and AR-01.
+- Scope: issue #28 / S3-SIGNAL-01/-02 only.
+- Decision: three tools (`wled_start_signal`, `wled_get_signal_status`, `wled_cancel_signal`)
+  with classes control / read / control; one signal per device, overlap rejected, at most eight
+  per process; the signal writes only slot-0 colour, the Solid effect and, when needed, segment
+  and master power, and restores exactly those fields only when they still hold what the signal
+  set (otherwise `skipped_conflict`); unsupported device states (playlist, realtime, nightlight,
+  frozen segments, invisible target) are rejected at start; delayed work runs with an explicit
+  `control` access class; locks are held during capture/apply and compare/restore, not while
+  waiting; one bounded retry only after a failure that happened before any POST left, never a
+  replay; a signal manager owned by `Resources` is shared by stdio and HTTP; orderly shutdown
+  makes one bounded (5 s) conditional restore attempt per active signal; nothing is persisted
+  and nothing is recovered after a crash or restart (the signal may stay applied, the
+  documentation says so and gives the manual recovery); timing is best effort.
+- Applicability / conditions / expiry: issue #28 implementation; persistence with an
+  `interrupted` status on next start is a possible later follow-up, not part of this scope.
+- Rationale supplied: smallest design that meets the acceptance criteria (DEC-028).
+- Affected: `docs/contract/signals.md`, signal modules and tests, `docs/validation/issue-28.md`.
+- Supersedes: none.
+- Propagation: implementer and reviewer receive this ID and the packet.
