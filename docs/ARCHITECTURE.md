@@ -68,8 +68,8 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 | Python 3.12+ baseline, test 3.13 if used by hub | Proposed | Final support range depends on selected SDK and actual runtime; do not install/change hub Python merely to meet a proposal |
 | Streamable HTTP plus stdio in v1 | Confirmed scope update | Independent service mode plus client-managed uvx mode; identical tools and domain layer |
 | One HTTP worker, SDK stateless JSON responses | Issue-2 technical design | No session IDs/replay store; shared process-wide resources and locks; bounded drain, access checks before device work; implemented in #14 ([decisions](decisions/issue-14.md)) |
-| Explicit named inventory | Proposed | Predictable target selection; avoids Docker multicast/mDNS assumptions |
-| No arbitrary caller-supplied hosts | Proposed | Limits tool targeting to the configured installation and removes accidental host selection |
+| Explicit named inventory | Proposed | Predictable target selection; avoids Docker multicast/mDNS assumptions. From M8, discovery is an explicit, bounded, read-only aid; the inventory stays the only source of targets ([DEC-035](DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment)) |
+| No arbitrary caller-supplied hosts | Proposed | Limits tool targeting to the configured installation and removes accidental host selection. From M8 the one bounded exception is `wled_add_device` (RFC 1918 IPv4 literal, one `GET /json/info`, class `manage`), plus the configured discovery ranges ([contract/discovery.md](contract/discovery.md)) |
 | Separate segment patch and layout replacement | Issue-2 technical design | Preserve existing omitted state; new IDs use explicit defaults; reject unrepresentable ID/preservation plans; see contract and decisions |
 | Typed operations before optional raw state | Proposed | Clear agent schemas and validation; raw tool must not bypass domain rules |
 | Direct implementation rather than upstream fork | Proposed | Existing candidates have useful ideas but material limitations; no upstream code copied |
@@ -77,7 +77,7 @@ The layout is guidance; a smaller coherent implementation is preferable to unnec
 
 ## Configuration
 
-See [example inventory](../examples/devices.example.toml). Configuration path is supplied explicitly through `--config`; data path through `--data-dir`. Paths must be absolute in deployed configuration. Startup validates configuration without probing or writing devices. Use atomic replacement for future reload support.
+See [example inventory](../examples/devices.example.toml). Configuration path is supplied explicitly through `--config`; data path through `--data-dir`. Paths must be absolute in deployed configuration. Startup validates configuration without probing or writing devices. Use atomic replacement for future reload support (M8 adds an in-process reload for tool-made changes, see [contract/discovery.md](contract/discovery.md)).
 
 Suggested environment precedence: CLI paths override dedicated `WLED_MCP_CONFIG`/`WLED_MCP_DATA_DIR`; absent values cause an actionable startup failure rather than guessing an installation's file. Do not embed actual URLs or credentials in source. HTTP(S) root URLs may use explicit ports. Disable redirects by default; do not follow a configured controller to an arbitrary host. Avoid implicit proxy environment routing for LAN calls unless deliberately configured.
 

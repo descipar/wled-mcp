@@ -17,6 +17,8 @@ concurrent sessions of one process.
 
 ## Classes and profiles
 
+From M8 (not yet implemented) `wled_discover_devices` is `read`; `wled_set_discovery_ranges` and `wled_add_device` are `manage` ([discovery.md](discovery.md)). The tables below list the registered tools only.
+
 Every tool has exactly one class, set on its `Operation` (`tool_class`, required, no
 default). The class of a tool is the maximum over all its argument combinations:
 `dry_run` does not lower it, so a preview of a `manage` tool is still a `manage` call
