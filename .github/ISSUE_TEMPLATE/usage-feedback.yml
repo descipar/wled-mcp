@@ -1,0 +1,45 @@
+name: Usage feedback
+description: Tell the project how you use WLED MCP, what works and what is missing
+title: "Usage feedback: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The server collects no telemetry, so this issue is the only way the project learns
+        whether and how it is used. Short answers are fine. Please do not include secrets,
+        tokens, hostnames, IP addresses or a real device inventory.
+  - type: textarea
+    id: use
+    attributes:
+      label: What do you use it for?
+      description: For example a lighting scene or a status signal, driven by which agent or client.
+    validations:
+      required: true
+  - type: dropdown
+    id: transport
+    attributes:
+      label: How do you run it?
+      options:
+        - stdio through uvx
+        - stdio from a pip or uv install
+        - independent HTTP service (Docker or host)
+        - through an MCP hub
+        - other
+  - type: input
+    id: setup
+    attributes:
+      label: Client or hub and size of the setup
+      description: For example "desktop client, 2 controllers". No names or addresses.
+  - type: input
+    id: versions
+    attributes:
+      label: Package and WLED firmware versions
+  - type: textarea
+    id: works
+    attributes:
+      label: What worked well?
+  - type: textarea
+    id: missing
+    attributes:
+      label: What was confusing, missing or wrong?
+      description: Open a bug report instead if something misbehaved and you can describe it.

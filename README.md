@@ -229,6 +229,11 @@ There is no support commitment. Questions and problems go to
 effort, without any commitment to respond or fix. There is no security support; see
 [SECURITY.md](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md).
 
+The server collects no telemetry, so the project does not know whether it is used. If you
+run it, a short note on how you use it and what is missing is welcome as a
+[usage feedback issue](https://github.com/descipar/wled-mcp/issues/new?template=usage-feedback.yml).
+Please leave out secrets, hostnames and addresses.
+
 ## Project and contributing
 
 Project status, roadmap and the maintainer document index are in
