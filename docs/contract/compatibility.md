@@ -88,7 +88,8 @@ A new version-specific branch needs a reviewed 16.x difference first.
 
 The server sends no device credentials and has no unlock path. Read-only probes of one
 controller (WLED 16.0.1) in three states, settings PIN and OTA lock both enabled, PIN only
-and OTA lock only, were all answered normally by every read tool
+and OTA lock only, were answered normally by the probed read tools (state, effects,
+palettes, preset list, preset read; other read tools were not probed)
 ([validation/issue-128.md](../validation/issue-128.md), [#128](https://github.com/descipar/wled-mcp/issues/128)).
 Writes under a lock are untested. A refused read (HTTP 401 or 403, for example from a
 proxy) is reported as `INVALID_RESPONSE` with the status code and is not retried

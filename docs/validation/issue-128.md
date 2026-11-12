@@ -65,8 +65,8 @@ are the same without any lock.
 
 | Lock | Reads | Writes |
 | --- | --- | --- |
-| Settings PIN | Supported: no change observed | Unknown |
-| OTA lock | Supported: no change observed | Unknown |
+| Settings PIN | The five probed reads: supported, no change observed | Unknown |
+| OTA lock | The five probed reads: supported, no change observed | Unknown |
 
 ## Not shown
 
@@ -74,6 +74,8 @@ are the same without any lock.
   lock. This matches the WLED documentation, which ties the PIN to the settings pages and the OTA
   lock to firmware updates, but it is not shown here.
 - Any behavior of the settings pages or a firmware update under a lock.
+- Read tools outside the five probed ones (for example export, live snapshot, effect search,
+  explain, signal status).
 - Other controllers or firmware versions.
 - The deployed HTTP service on the hub; this run used a local stdio server.
 - A refusal of a read on hardware (none occurred).
