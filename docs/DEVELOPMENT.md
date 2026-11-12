@@ -7,11 +7,10 @@ Windows/3.13.2; CI checks Linux amd64 and arm64 with Python 3.13 on native runne
 (`container` job, for pull requests and `main`). Windows and macOS are experimental
 (DEC-020) and have no CI job; see [Platform notes](#platform-notes). Official MCP SDK
 2.3.0 owns protocol handling.
-The production registry contains `wled_list_devices`, the three read tools from #5, `wled_set_state` and `wled_patch_segments` (#6) and `wled_replace_layout` (#7) and the persistent-preset tools `wled_list_presets`, `wled_get_preset`, `wled_activate_preset`, `wled_save_preset` and `wled_delete_preset` (#9; mock-tested, H06 pending). `--transport streamable-http` starts the
-authenticated stateless HTTP service from #14 (see below); its software evidence is
-mock/loopback only. Deployment artifacts for both modes (#11: Dockerfile, Compose
-and hub examples, staging helper) are prepared and statically checked; actual
-deployment and hub integration remain pending.
+The tool set is listed in [TOOL-CONTRACT.md](TOOL-CONTRACT.md#tools-at-a-glance) and checked against
+`tests/tool_contract.py`. `--transport streamable-http` starts the authenticated stateless HTTP
+service (see below). Evidence is mock and loopback tests in CI plus the recorded hardware and
+deployment runs in [VALIDATION.md](VALIDATION.md); procedures are in [DEPLOYMENT.md](DEPLOYMENT.md).
 [TRACEABILITY.md](TRACEABILITY.md) maps requirements and T01–T21 to the automated
 evidence; `tests/test_traceability.py` runs `scripts/check_traceability.py` in CI.
 
@@ -23,8 +22,8 @@ Install Python 3.13 and uv 0.11.14. PowerShell, from the repository root:
 $env:UV_CACHE_DIR = Join-Path (Get-Location) '.uv-cache'
 $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
-uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/ci_scope.py scripts/hw_http_probe.py
-uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/ci_scope.py scripts/hw_http_probe.py
+uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -203,7 +202,8 @@ uvx --isolated --no-env-file --python 3.13 --constraints $constraintsUri --from 
 ```
 
 File URIs preserve Windows paths containing spaces. Supply the exact wheel and
-matching constraints together; no public PyPI project package is assumed. stdio
+matching constraints together. This section runs a locally built wheel; released packages
+are installed as in [QUICKSTARTS.md](QUICKSTARTS.md). stdio
 waits for its MCP host on stdin. stdout is protocol only; diagnostics use stderr;
 EOF closes the process. `--help`/`--version` need no configuration paths.
 
@@ -236,7 +236,7 @@ Known Windows tooling limit, outside the test suite and not a test failure:
 `scripts/check_distribution.py` exited 1 with `MCPError: Connection closed` at the uvx stdio
 handshake on a checkout whose path contains a space. The same script passed on a clone at a
 space-free path, so the space in the path is the cause. Run it from a space-free checkout
-path until this is fixed (tracked separately from #191).
+path until this is fixed ([#213](https://github.com/descipar/wled-mcp/issues/213)).
 
 ## Deployment artifact checks
 
@@ -253,9 +253,8 @@ builds are a manual, local step (see DEPLOYMENT.md) and nothing is pushed.
 
 ## License and remaining scope
 
-No outbound project license is selected and no package is published. Official
-SDK package metadata declares MIT; dependencies retain their own notices and
-license metadata. This does not license this repository or complete a distribution
-license review. No upstream WLED server code was copied. T18–T21 and the device tools
-are covered by mock/loopback tests; deployment artifacts are prepared, while actual
-deployment, resource measurements and hardware evidence remain pending.
+The project is licensed Apache-2.0 with a NOTICE file (DEC-011). The official SDK package
+metadata declares MIT; the SDK and other dependencies retain their own notices and license
+metadata. No upstream WLED server code was copied. Hardware, deployment and update/rollback
+evidence and its limits are in [VALIDATION.md](VALIDATION.md) and the README
+[Limitations](../README.md#limitations).

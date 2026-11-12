@@ -71,7 +71,7 @@ Checked 2026-11-04 against the installed locked HTTPX2 2.16.0 API and its
 [official package metadata](https://pypi.org/project/httpx2/) and
 [documentation](https://pydantic.dev/docs/httpx2/). HTTPX2 continues the maintained
 client line used by the selected MCP SDK; the dependency is declared directly.
-Its package metadata is separate from the unselected project outbound license.
+Its package metadata is separate from the project's own license (Apache-2.0 with NOTICE, DEC-011).
 Installed API/source confirms `trust_env=false`, redirect refusal, stream contexts,
 MockTransport injection and zero transport retries by default. Per-I/O inactivity
 timeouts do not provide one logical-operation deadline; an outer AnyIO deadline
@@ -163,8 +163,9 @@ Source evidence only, not hardware evidence; no firmware code was copied. Basis 
 | Per-segment additions in the same serialization ([json.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/json.cpp#L630-L642)): `bm` (blend mode), `rY`/`mY`/`tp` on matrices | Segment-level; classification checks top-level keys only and the save compare ignores segment fields outside its list |
 | No `blendingStyle`/`bs` in `wled00/json.cpp` at v0.15.1 (`4f3992b4dc57c888b53d9576c894a278e03e4cfc`) or anywhere in `wled00` at v0.15.5 (`c2b968a7019c2dc76b09225ade0dc847946a8cb0`) | 0.15.x entries and live state are unchanged; the `bs` compare does not apply there |
 
-Not verified: hardware save-then-activate on WLED 16 (pending as a #12 follow-up),
-other 16.x revisions and forks, and the visible effect of a restored `bs`.
+Saving and activating a WLED 16 preset with the #66 fix was verified on the test controller in
+run 2 ([VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)).
+Not verified: other 16.x revisions and forks, and the visible effect of a restored `bs`.
 
 ## Issue-18 WLED 16 preset write evidence
 
@@ -227,7 +228,7 @@ device; subjective properties are curated judgement or taken from the recorded l
 
 ## Licensing
 
-No upstream code is included in this planning repository. A link is not a vendoring decision. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. The repository is private and no outbound project license has been selected. Reassess dependency and WLED-source licensing if copying code or distributing artifacts; HTTP API interoperability alone does not imply copying firmware code.
+No upstream WLED server code is included in this repository. A link is not a vendoring decision. The project is licensed Apache-2.0 with the NOTICE attribution (DEC-011, `LICENSE`, `NOTICE`); dependencies keep their own licenses, and no overview of them is maintained yet. If a later implementation reuses source, review its actual license at the pinned commit and retain required copyright/license notices. Do not infer reuse permission for projects lacking a license. HTTP API interoperability alone does not imply copying firmware code.
 
 ## Issue-148 effect metadata evidence
 

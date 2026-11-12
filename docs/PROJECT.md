@@ -109,8 +109,9 @@ completion.
 | [Tool contract](TOOL-CONTRACT.md) | V1 design: tools, parameters, result format and mutation semantics |
 | [WLED feature coverage](WLED-COVERAGE.md) | WLED features with support status and the generated coverage figures |
 | [Contract examples](../examples/contracts/README.md) | Synthetic patch/layout/preset/error cases and snapshot format |
-| [Architecture](ARCHITECTURE.md) | Components, runtime, configuration, design decisions |
+| [Architecture](ARCHITECTURE.md) | Current components, lifecycle and pointers to canonical documents |
 | [Deployment](DEPLOYMENT.md) | HTTP-service and uvx/stdio MCPHub deployment: build/stage, update, rollback, removal |
+| [Troubleshooting](TROUBLESHOOTING.md) | Symptom-driven recovery: rejected configuration, uncertain writes, snapshot restore, unreachable controllers, HTTP access errors |
 | [Inventory and client](INVENTORY-CLIENT.md) | Inventory schema and limits, bounded HTTP client behavior |
 | [Development](DEVELOPMENT.md) | Local checks, build, wheel launch and CI-equivalent commands |
 | [Validation](VALIDATION.md) | Meaningful automated checks, opt-in hardware checks, per-issue evidence records |

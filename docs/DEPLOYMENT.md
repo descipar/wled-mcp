@@ -485,10 +485,11 @@ Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md
 ## Device restoration
 
 Code update or rollback does not undo lighting or preset changes on a device. Restoring
-a preset from a snapshot is a manual procedure described in
-[TOOL-CONTRACT](TOOL-CONTRACT.md#snapshot-and-explicit-restoration); there is no restore
-tool (ISSUE-8-DEC-001). Any write to a device, including a restoration, needs its own
-authorization for the selected device. Snapshots stay under
+a preset from a snapshot uses `wled_list_snapshots` and `wled_restore_preset`
+([contract/presets.md](contract/presets.md#restore-wled_restore_preset)); the manual
+procedure in [TOOL-CONTRACT](TOOL-CONTRACT.md#snapshot-and-explicit-restoration) remains
+only for what the tool refuses. Any write to a device, including a restoration, is the
+operator's explicit request for the selected device. Snapshots stay under
 `/app/data/wled-mcp/backups/<device_id>/` in both modes.
 
 ## Persistent paths

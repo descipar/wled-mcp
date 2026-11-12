@@ -45,8 +45,9 @@ State of the evidence and the limits of the source releases (see also the
 - Automated tests use mocked or synthetic loopback devices and run in CI without hardware.
   Hardware acceptance is partial: it was recorded for one RGB controller on WLED 16.0.1 in
   both transports, and one deployment of both modes on one MCPHub host was checked. The
-  live offline-controller check (H07) is pending ([#25](https://github.com/descipar/wled-mcp/issues/25)),
-  as are reboot persistence and the other "Not run" items below. No compatibility with
+  live offline-controller check (H07) ran once on the deployed HTTP service against a
+  non-routed address ([validation/issue-25.md](validation/issue-25.md)); reboot persistence
+  and the other "Not run" items below are pending. No compatibility with
   other controllers or firmware versions is claimed. A short live check of the second
   release over HTTP and stdio on that controller is recorded in
   [validation/live-check-2026-11-08.md](validation/live-check-2026-11-08.md).

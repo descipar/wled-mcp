@@ -1,7 +1,8 @@
 # Hardware quick path: read-only H01/H02 over local stdio
 
 Early, optional check that the implemented read tools match a real device, without
-MCPHub, deployment or any write. It does not replace #11/#12; H03-H07 stay pending.
+MCPHub, deployment or any write. It covers only H01/H02 over local stdio; the other hardware
+records are in [VALIDATION.md](VALIDATION.md).
 Requires explicit authorization for read-only access to one selected device.
 
 ## Setup (any machine)

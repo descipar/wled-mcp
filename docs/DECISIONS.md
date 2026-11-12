@@ -1285,6 +1285,13 @@ Stage 2 (recorded 2026-11-07):
   the minimal write set (master state, segment patch, preset store and delete on an unused
   slot) on the same controller, once per lock state, after the owner confirmed each state; run
   and recorded in [validation/issue-128.md](validation/issue-128.md).
+- [ISSUE-25-DEC-001](decisions/issue-25.md) (human, owner chat, 2026-11-12, issue #25 only):
+  the opt-in synthetic demo/simulator of S2-LAUNCH-01 is dropped, not deferred; no Backlog
+  issue is opened and the rest of #25 is unchanged.
+- [ISSUE-23-DEC-001](decisions/issue-23.md) (human, owner chat, 2026-11-12, open M6 issues): the
+  bodies of #23, #25 and #181 now state the current requirements, #151 is unchanged, the
+  `stage:5` label is removed, and the defined workflow runs for #23 as a docs-only change; the
+  deferred optional items are a coordinator proposal.
 
 ## Still unresolved
 
