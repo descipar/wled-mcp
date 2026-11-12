@@ -33,7 +33,9 @@ update/rollback is moved to stage 2 ([#21](https://github.com/descipar/wled-mcp/
 service removal and redeploy, and the follow-up catalog/preset reads, stdio rebuild and
 hub container recreation are recorded in
 [VALIDATION.md](VALIDATION.md#issue-11-live-deployment-check-2026-11-06); the cells
-below name only what remains open.
+below name only what remains open. The live H07 run (an unreachable configured controller) is
+recorded in [validation/issue-25.md](validation/issue-25.md); this matrix keeps hardware cells in the
+`pending:` form by design because it does not record hardware results.
 
 `scripts/check_traceability.py` (run by `tests/test_traceability.py` in ordinary CI)
 rejects a Must requirement without a row, a duplicate row, an unmapped T-scenario, any

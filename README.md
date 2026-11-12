@@ -171,7 +171,7 @@ CCT, RGBW or 2D controllers have no hardware run; details are in
 
 ## Support
 
-There is no support commitment. Questions and problems go to
+There is no support commitment. Before opening an issue, see the [troubleshooting guide](https://github.com/descipar/wled-mcp/blob/main/docs/TROUBLESHOOTING.md). Questions and problems go to
 [GitHub issues](https://github.com/descipar/wled-mcp/issues), which are answered best
 effort, without any commitment to respond or fix. There is no security support; see
 [SECURITY.md](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md).
