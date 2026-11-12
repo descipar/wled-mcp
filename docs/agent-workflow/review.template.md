@@ -8,6 +8,7 @@
 - Acceptance criterion -> independent evidence:
 - Commands actually run / results:
 - Findings (priority, trigger, file/line, impact, reproducer):
+- README impact checked (result or not applicable):
 - Unrun checks / uncertainty / hardware limits:
 - Verdict: PASS, CHANGES_REQUESTED or NEEDS_DECISION
 - Current-head check / stale verdict status:

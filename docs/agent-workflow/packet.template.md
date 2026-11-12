@@ -11,6 +11,7 @@
 - Newly answered questions saved / superseded entries / propagation to roles:
 - Dependencies ready / evidence:
 - Scope exclusions:
+- README impact (affected section or "README unaffected"):
 - Assigned checkout / branch / writer-owned paths:
 - Expected validation / hardware checks explicitly excluded or separately authorized:
 - Implementer handoff:
