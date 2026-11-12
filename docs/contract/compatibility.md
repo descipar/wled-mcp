@@ -92,8 +92,8 @@ and OTA lock only, were answered normally by the probed read tools (state, effec
 palettes, preset list, preset read; other read tools were not probed)
 ([validation/issue-128.md](../validation/issue-128.md), [#128](https://github.com/descipar/wled-mcp/issues/128)).
 The minimal write set (master state, segment patch, preset store and delete) was also applied and
-verified in each of the three states; other writes under a lock were not run. A refused read (HTTP 401 or 403, for example from a
-proxy) is reported as `INVALID_RESPONSE` with the status code and is not retried
+verified in each of the three states; other writes under a lock were not run. A refused read
+(HTTP 401 or 403, for example from a proxy) is reported as `INVALID_RESPONSE` with the status code and is not retried
 (`tests/test_state_catalogs.py`); HTTP authentication in front of a controller stays
 unsupported.
 

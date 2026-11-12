@@ -1256,8 +1256,8 @@ Stage 2 (recorded 2026-11-07):
   hub-side start of an adapted registry entry is waived; item 6 of #24 is closed by this waiver,
   not by an observation, and the install-test row stays "not run".
 - [ISSUE-128-DEC-001](decisions/issue-128.md) (human, owner chat, 2026-11-12, issue #128 only):
-  read-only probes of one designated controller with the settings PIN and the OTA lock both,
-  then separately, enabled; run once per state and recorded in
+  read-only probes (no writes) of one designated controller with the settings PIN and the OTA
+  lock both, then separately, enabled; run once per state and recorded in
   [validation/issue-128.md](validation/issue-128.md).
 - [ISSUE-128-DEC-002](decisions/issue-128.md) (human, owner chat, 2026-11-12, issue #128 only):
   the minimal write set (master state, segment patch, preset store and delete on an unused

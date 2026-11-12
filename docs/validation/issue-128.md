@@ -56,7 +56,7 @@ are the same without any lock.
 ## Write set and results
 
 The baseline was the same in all three runs: master off, brightness 47, segment 0 speed 128, one
-preset (slot 1), no active preset or playlist. The device stayed off, so the LEDs never lit. Each run
+preset (slot 1), no active preset or playlist. The master stayed off in every readback, so no light output was expected. Each run
 used the same steps, a dry run before every write, no retry:
 
 1. `wled_set_state`: master brightness changed, then restored (power untouched).
