@@ -87,6 +87,7 @@ async def running_service(
     operation_timeout: float = 10,
     graceful_shutdown_seconds: int | None = None,
     wrap: Callable[[list[Operation]], list[Operation]] | None = None,
+    clock: FakeClock | None = None,
 ) -> AsyncIterator[Running]:
     fleet = router if router is not None else make_fleet()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -118,7 +119,9 @@ async def running_service(
     started = anyio.Event()
     executions: list[str] = []
     closes: list[int] = []
-    async with Resources(config, fleet.transport(), FakeClock().clock()) as resources:
+    async with Resources(
+        config, fleet.transport(), (clock if clock is not None else FakeClock()).clock()
+    ) as resources:
         original_close = resources.client.aclose
 
         async def counting_close() -> None:
