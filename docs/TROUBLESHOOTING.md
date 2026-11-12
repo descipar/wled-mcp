@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Symptom-driven recovery for the released server (0.3.0 and `main`). Nothing here needs a
+Symptom-driven recovery for the released server (the latest release and `main`). Nothing here needs a
 controller unless a step says so, and no step writes to a device unless it names a write
 tool. Examples are synthetic (`192.0.2.x`, `*.example.invalid`, `desk` and `shelf`).
 Each recipe says whether it can be reproduced without hardware. Behavior that is not yet
@@ -66,8 +66,8 @@ it later. The server never retries a mutation; a repeat request is a new invocat
   already stopped, so the service stays unavailable until the file is valid. A change needs a
   restart; the released version has no reload.
 - **Never:** edit the live file without keeping a copy.
-- **Reproduce without hardware:** a file with `schema_version = 1`, a device `desk` at
-  `http://192.0.2.10` and a device `shelf` at `http://127.1`:
+- **Reproduce without hardware:** a file with `schema_version = 1`, a device `desk` (name `Desk strip`)
+  at `http://192.0.2.10` and a device `shelf` (name `Shelf strip`) at `http://127.1`:
 
   ```text
   $ wled-mcp config validate --config <abs>/bad.toml
@@ -77,7 +77,7 @@ it later. The server never retries a mutation; a repeat request is a new invocat
   1
   $ wled-mcp doctor --offline --config <abs>/bad.toml
   wled-mcp doctor (read-only)
-  [ok] runtime RUNTIME_OK: wled-mcp 0.3.0 (release build), Python 3.13.2.
+  [ok] runtime RUNTIME_OK: wled-mcp <version> (release build), Python <python>.
   [warning] runtime PLATFORM_EXPERIMENTAL: This platform is experimental.
       action: See the support matrix in docs/contract/compatibility.md.
   [failed] configuration CONFIG_INVALID: Invalid inventory configuration (devices[1].base_url: invalid): check schema version, unique device IDs, credential-free HTTP(S) root URLs and supported settings.
@@ -165,8 +165,8 @@ have been sent.
 ### 5. A preset was overwritten, deleted or restored wrongly
 
 - **Facts:** overwriting or deleting a preset first stores a durable snapshot under
-  `<data-dir>/backups/<device_id>/`. Twenty snapshots per device are kept and no tool deletes
-  one. Stores, restores, imports and playlist saves change the live output on WLED 16 and the
+  `<data-dir>/backups/<device_id>/`. By default 20 snapshots per device are kept and no tool
+  deletes one. Supplied-state stores (`wled_store_preset`), restores, imports and playlist saves change the live output on WLED 16 and the
   previous lighting is not restored.
 - **Do:** `wled_list_snapshots` reads only the data directory (filter with `preset_id`; each
   entry shows `restorable`). Then run `wled_restore_preset` with `dry_run=true` first. The
@@ -201,7 +201,7 @@ then the bearer credential, then the path, then the method.
 | Status | Meaning | Fix |
 | --- | --- | --- |
 | `403` | Host or Origin not allowed | The authority the client uses (host and port) must equal an `--allowed-host` entry exactly (case-insensitive, no implied default port, no wildcard; `X-Forwarded-*` is never consulted). A changed bind host or port needs explicit `--allowed-host`. `--allowed-origin` is empty by default and matters only for browser clients. Example authority: `wled-mcp.example.invalid:8000` |
-| `401` | Missing or invalid credential (`WWW-Authenticate: Bearer`) | Send exactly one `Authorization: Bearer <credential>` header; the credential is 32 to 512 printable ASCII characters. A file credential is read once at startup, so rotation is a restart. The hub does not expand placeholders such as `REPLACE_WITH_PRIVATE_SERVICE_TOKEN`. Hub authentication does not protect the service, and the credential is one shared credential |
+| `401` | Missing or invalid credential (`WWW-Authenticate: Bearer`) | Send exactly one `Authorization: Bearer <credential>` header; the credential is 32 to 512 printable ASCII characters without whitespace. A file credential is read once at startup, so rotation is a restart. The hub does not expand placeholders such as `REPLACE_WITH_PRIVATE_SERVICE_TOKEN`. Hub authentication does not protect the service, and the credential is one shared credential |
 | `404` | Path other than `/mcp` | Use `/mcp` |
 | `405` | Any method except POST | The service is stateless and issues no session IDs; GET and DELETE are not supported |
 | `413` | Body over 256 KiB | Send a smaller request |

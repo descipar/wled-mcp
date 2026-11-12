@@ -43,7 +43,7 @@ flowchart LR
 - **Console commands** (`cli`, `setup`, `doctor`, `discovery`): `config`, `doctor` and `discover` run as
   separate short processes and never serve MCP ([contract/cli.md](contract/cli.md)).
 - **HTTP only** (`http_config`, `http_service`): validated bind, allowlist and credential
-  settings, and the access guard. The stdio path never imports this module.
+  settings, and the access guard. The stdio path never imports these modules.
 
 The device client sends fixed endpoints to configured controllers only. It follows no
 redirects, uses no implicit proxy routing and sends no device credentials
