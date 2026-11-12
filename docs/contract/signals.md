@@ -59,8 +59,8 @@ compares them before restoring and restores only them.
 | segment | `fx` | always | still the Solid effect ID | the captured effect ID |
 | segment | `on` | the segment was off | still `true` | `false` |
 
-The comparison uses the same functions that verified the apply (`matches_segments`,
-`matches_set_state`) plus three side-effect checks (a playlist, realtime data or a nightlight
+The comparison has the same semantics as the functions that verified the apply
+(`matches_segments`, `matches_set_state`; a test pins the agreement) plus three side-effect checks (a playlist, realtime data or a nightlight
 that started meanwhile) and the geometry of the targets (a removed or resized target segment is a
 conflict). **Not compared and never written:** master brightness, the transition, segment
 brightness, speed, intensity, palette, custom sliders, checkboxes and colour temperature, colour
@@ -185,7 +185,8 @@ metadata or journal exists, and nothing is recovered or replayed after a restart
   drained): new starts are refused, and every active signal makes **one** conditional restore
   attempt (same comparison, no retry), concurrently, within a total budget of 5 seconds. Whatever
   has not finished is abandoned and may be left applied (logged as `shutdown_incomplete`; an
-  abandoned POST is uncertain). The budget stays well inside the documented HTTP grace period
+  abandoned POST is uncertain; a start whose apply is still in flight at shutdown is awaited up to
+  the operation timeout, so the exit can take longer than the budget in that rare case). The budget stays well inside the documented HTTP grace period
   ([DEPLOYMENT.md](../DEPLOYMENT.md)).
 - **Crash, kill, second interrupt, power loss:** a signal still active stays applied on the device
   until someone changes it, and after the next start its operation ID is unknown
