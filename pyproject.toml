@@ -46,6 +46,7 @@ dev = [
     "ruff>=0.11,<1",
     "mypy>=1.15,<2",
     "pyyaml>=6.0.2,<7",
+    "pytest-xdist>=3.8,<4",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -83,7 +83,8 @@ def test_ci_runs_the_scanner_as_its_own_step():
     steps = [line.strip() for line in workflow.splitlines() if line.strip().startswith("- run:")]
     command = "- run: uv run --frozen python scripts/check_private_identifiers.py"
     assert command in steps
-    assert steps.index(command) < steps.index("- run: uv run --frozen pytest")
+    pytest_step = next(s for s in steps if s.startswith("- run: uv run --frozen pytest"))
+    assert steps.index(command) < steps.index(pytest_step)
 
 
 def test_scanner_rule_block_is_the_only_exempt_text_of_its_own_file():
