@@ -179,7 +179,7 @@ See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “La
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-LAUNCH-01 | Launch | Reproduce clean install/upgrade/rollback and both-transport interoperability; collect selected beta hardware evidence. An opt-in synthetic demo/simulator helps test without hardware and must never silently substitute for a real device. Record unrun tests and optional feature deferrals. |
+| S2-LAUNCH-01 | Launch | Reproduce clean install/upgrade/rollback and both-transport interoperability; collect selected beta hardware evidence. An opt-in synthetic demo/simulator helps test without hardware and must never silently substitute for a real device. Record unrun tests and optional feature deferrals. The simulator was dropped by the owner ([ISSUE-25-DEC-001](decisions/issue-25.md)). |
 | S2-LAUNCH-02 | Launch | Assemble one reviewable candidate: exact commit, artifact identities, license decision, public docs, known issues and listing drafts. After the actual release instruction, perform the authorized visibility/publish/submission steps and verify real install/visibility. Keep a factual status log for external review delays. |
 
 ## Issue map and order

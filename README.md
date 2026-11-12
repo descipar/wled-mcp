@@ -137,8 +137,8 @@ Unsupported or unrecognized firmware is served with a warning and never refused;
 ## Limitations
 
 Automated tests use mocks and synthetic loopback devices. Hardware acceptance is partial:
-core features ran on one RGB controller with WLED 16.0.1, and a live check with an offline
-controller is still pending. Multi-device scenes, profiles, zones, the layout preview and
+core features ran on one RGB controller with WLED 16.0.1, and an offline controller was checked
+once ([evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-25.md)). Multi-device scenes, profiles, zones, the layout preview and
 CCT, RGBW or 2D controllers have no hardware run; details are in
 [docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
