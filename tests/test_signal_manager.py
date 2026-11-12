@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import re
 from typing import Any
 
 import anyio
@@ -541,4 +542,6 @@ async def test_ended_records_are_bounded_and_no_task_or_waiter_is_left(tmp_path,
     # T28-16: one bounded line per event; no address, colour or body, the configured ID only.
     lines = [r.getMessage() for r in caplog.records if r.name == "wled_mcp.signals"]
     assert len(lines) == 80 and all("sig-" in line and "device_id=desk" in line for line in lines)
-    assert not any("invalid" in line or "255" in line or "col" in line for line in lines)
+    # The random operation IDs are hex and may contain "255" by chance: look at the rest only.
+    rest = [re.sub(r"sig-[0-9a-f]{16}", "sig-", line) for line in lines]
+    assert not any("invalid" in line or "255" in line or "col" in line for line in rest)
