@@ -83,6 +83,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-033 | Project / development platform | Windows is a supported development platform: the test suite and local tooling are expected to work on a Windows checkout, so Windows-only test failures are defects to fix or to skip with a stated reason. Narrow scope: the user-facing platform tier of DEC-020 item 4 (Windows experimental) and the CI matrix are unchanged. | Confirmed owner statement, coordinator session, 2026-11-11; see [DEC-033](#dec-033--windows-is-a-supported-development-platform) and [issue #191](https://github.com/descipar/wled-mcp/issues/191) |
 | DEC-034 | Project / roadmap | Milestone M4 is closed without its own minor release: the owner waives DEC-030 item 1 for M4. Its merged work (#28) ships with the next minor release together with the unreleased work of M3. Applies to M4 only. | Confirmed owner statement, coordinator session, 2026-11-12; see [DEC-034](#dec-034--m4-closes-without-its-own-release) |
 | DEC-035 | Project / discovery and enrollment (M8) | Agents discover WLED controllers through MCP and add them to the inventory after confirmation by the MCP client; inventory changes take effect by in-process reload; a bounded unicast `GET /json/info` probe of configured RFC 1918 ranges is approved in addition to mDNS under hard server-side caps; ranges are set by a separate configuration-write tool; an address change is reported, never rewritten; standard library only. Supersedes ISSUE-16-DEC-001 in part. | Confirmed owner answers, coordinator session, 2026-11-12 (paraphrased in English, no verbatim quote); see [DEC-035](#dec-035--agent-driven-discovery-and-enrollment) and [issue #198](https://github.com/descipar/wled-mcp/issues/198) |
+| DEC-036 | Project / roadmap | Milestone M5 is closed without its own minor release: the owner waives DEC-030 item 1 for M5 (confirmed explicitly after the coordinator read the instruction to close M5 as a waiver). Its merged work (#128, validation evidence and one mock test) needs no release; the README already states the result. Applies to M5 only. | Confirmed owner statements, coordinator session, 2026-11-12; see [DEC-036](#dec-036--m5-closes-without-its-own-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -946,6 +947,27 @@ can explicitly amend them.
   and it does not extend DEC-032. A later milestone needs its own answer.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
 - Affected: docs/ROADMAP.md (M4 row).
+
+### DEC-036 — M5 closes without its own release
+
+- Status: active project decision, M5 only.
+- Authority/source: owner instruction in the coordinator session on 2026-11-12 (no permalink),
+  after the completion of #128 and the coordinator's note that DEC-030 requires a minor release
+  unless the owner waives it (as for M3 and M4): "M5 auf GitHub schließen und in der roadmap
+  vermerken" (English: "close M5 on GitHub and note it in the roadmap"). The coordinator read
+  that as a waiver of the release and said so; the owner then confirmed: "kein minor release"
+  (English: "no minor release").
+- Owner decision (the wording of the items is the coordinator's, from those statements):
+  1. M5 is closed on GitHub now. The owner waives DEC-030 item 1 for M5 under DEC-030 item 3;
+     M5 only records hardware evidence and one mock test.
+  2. M5 has no release of its own. Its merged work (#128) ships with the next minor release; no
+     version, tag, GitHub release, PyPI upload or registry publication is prepared for M5.
+  3. The README limitation already states the verified result; no README change is needed for M5.
+  4. The roadmap notes M5 as done.
+- Scope: milestone M5 only; it extends neither DEC-032 nor DEC-034. A later milestone needs its
+  own answer.
+- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
+- Affected: docs/ROADMAP.md (M5 row), the GitHub milestone M5.
 
 ### DEC-035 — Agent-driven discovery and enrollment
 
