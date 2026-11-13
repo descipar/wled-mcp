@@ -16,8 +16,8 @@ M5 close without a release of their own
 [DEC-036](docs/DECISIONS.md#dec-036--m5-closes-without-its-own-release)). A minor release under the
 `0.x` policy ([versioning](docs/contract/versioning.md), DEC-020). The served tool list grows from
 33 to 37 tools; the tool changes are additive and no tool or field was removed or renamed.
-Three behaviors changed and carry migration notes below: the snapshot directory, the HTTP
-protocol error bodies and the HTTP startup line.
+Four behaviors changed and carry migration notes below: the snapshot directory, the HTTP
+protocol error bodies, the HTTP startup line and the definition-directory scan cap.
 
 ### Migration
 
@@ -61,7 +61,7 @@ protocol error bodies and the HTTP startup line.
   PyPI upload. The bundle only makes Claude Desktop start the released package through `uvx`
   (it needs uv on the PATH of Claude Desktop). It is built along with each release, not tested
   by the project and comes without warranty. The jobs have not run yet; the first bundle is
-  attached to the release that carries this entry.
+  expected to be attached to the release that carries this entry.
 
 - Usage feedback issue template
   ([#193](https://github.com/descipar/wled-mcp/issues/193)): the server collects no telemetry,

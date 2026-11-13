@@ -36,7 +36,7 @@ The MCPM guide contains older CLI examples; validate the current schema/tools in
 - Repository: `descipar/wled-mcp`; its visibility is an owner release decision ([#23](https://github.com/descipar/wled-mcp/issues/23), [#25](https://github.com/descipar/wled-mcp/issues/25)).
 - Registry name: `io.github.descipar/wled-mcp` ([DEC-012](DECISIONS.md#dec-012--project-and-package-identity)); verify namespace ownership and current naming rules with the publisher tooling before preparing actual release metadata.
 - Listing texts and package summaries state "unofficial, not affiliated with the WLED project" and use no WLED logo or logo imitation (DEC-012).
-- PyPI distribution `wled-mcp` is live since 0.1.2 (the ownership marker for the registry is added in the next release, see the [changelog](../CHANGELOG.md)); the OCI repository name is decided/checked with the container work ([#156](https://github.com/descipar/wled-mcp/issues/156)). A repository name alone proves neither ownership nor availability.
+- PyPI distribution `wled-mcp` is live since 0.1.2 (the registry ownership marker has been in the package since 0.2.0, see the [changelog](../CHANGELOG.md)); the OCI repository name is decided/checked with the container work ([#156](https://github.com/descipar/wled-mcp/issues/156)). A repository name alone proves neither ownership nor availability.
 - Console command can remain `wled-mcp` even if a distinct distribution name is needed; use uvx `--from` explicitly where names differ.
 - Build wheel/sdist and versioned amd64/arm64 OCI artifacts first, then test clean install. Use immutable version/digest references in release metadata, and document user-driven updates.
 
