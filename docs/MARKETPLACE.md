@@ -112,8 +112,8 @@ a Python-type bundle that starts `uvx` was not verified.
   in its own job. A separate job attaches `wled-mcp-<version>.mcpb` and
   `wled-mcp-<version>.mcpb.sha256` to the GitHub release only after the PyPI upload succeeded; it
   never replaces an existing asset. A failure of the bundle jobs does not affect the PyPI upload
-  ([PUBLISHING.md](PUBLISHING.md#mcpb-bundle-151)). The job has not run yet: the first bundle
-  appears with the next release the owner publishes.
+  ([PUBLISHING.md](PUBLISHING.md#mcpb-bundle-151)). The job first ran with the release of
+  2026-11-13, which carries the first bundle.
 - **Verify the download.** `sha256sum --check wled-mcp-<version>.mcpb.sha256` or, in PowerShell,
   compare `Get-FileHash -Algorithm SHA256 wled-mcp-<version>.mcpb` with the file's hash. The
   bundle is unsigned and has no attestation, and the checksum comes from the same workflow, so it

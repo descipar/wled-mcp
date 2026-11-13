@@ -106,3 +106,55 @@ the next ([PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-relea
    [issue-25-rollback-plan.md](issue-25-rollback-plan.md)).
 9. Close milestone M6 and confirm the M3 to M5 closure state in GitHub, after the release is done
    (DEC-030); record the publication facts in this file like [release-m2.md](release-m2.md).
+
+## Release and registry publication 2026-11-13
+
+Recorded by the coordinator from the main session's own commands and readbacks, each step on the
+owner's explicit instruction ("everything of the release", 2026-11-13;
+[DEC-023](../DECISIONS.md#dec-023--staged-first-public-release)).
+
+- **Merge:** PR #231 was merged as squash commit `5bd45b96eb4779cd73620dff2c7a1ee3c61a5e71` by
+  admin merge on the owner's instruction; CI was green on head `aa34822`.
+- **Tag and release:** the annotated tag `v0.4.0` on `5bd45b9` and the GitHub release `v0.4.0`
+  (title only the version, notes from the CHANGELOG 0.4.0 section) were created on the owner's
+  instruction.
+- **Workflow:** `publish.yml` run 43414020842: all four jobs succeeded (build and smoke test,
+  MCPB build, publish to PyPI, attach MCPB). The `pypi` environment deployment was approved
+  through the API by the main session on the owner's instruction, after the hash comparison
+  below. The job summary itself was not readable through the API; the upload job re-verifies the
+  files against the build job's checksums.
+- **Hash check:** wheel `wled_mcp-0.4.0-py3-none-any.whl` SHA-256
+  `4c9e3c30c0f744bf9dd2f6f5f5d961bcbe1fd9a72db38144ce9a7a9a201adba3` and sdist
+  `wled_mcp-0.4.0.tar.gz` SHA-256 `a47dacf52ecb09f86d5bfa6ed0445cee038d974d8b5e29aedb35b8a4ae265afc`
+  from the run's artifacts equal an independent rebuild (`uv build`, macOS arm64) from a fresh
+  clone of the tag. The PyPI JSON for 0.4.0 shows the same two values, and its description
+  contains `mcp-name: io.github.descipar/wled-mcp`.
+- **Install check:** `uvx --isolated --python 3.13 --from wled-mcp==0.4.0 wled-mcp --version` in an
+  empty directory with `GH_TOKEN` and `GITHUB_TOKEN` unset printed `wled-mcp 0.4.0`.
+- **MCPB (first run of the bundle jobs, [#151](issue-151.md#first-release-run)):** release assets
+  `wled-mcp-0.4.0.mcpb` (15006 bytes) and `wled-mcp-0.4.0.mcpb.sha256`; SHA-256
+  `a6ccec213a71193c832783a9664d164c071d7e7d1527e34eb42c1b85a0cc2daf` equals the `.sha256` file and
+  the build job artifact. The `build-mcpb` job summary hash was not read via the API. No Claude
+  Desktop run (unchanged).
+- **Registry:** `mcp-publisher` 1.8.9 (darwin_arm64, SHA-256
+  `4175f7281c42ef2f6666d086974aa01f3eecd68a067cfb8329f0a7e620db6e3a`, equal to the line of
+  `registry_1.8.9_checksums.txt`) was run from a scratch directory outside the repository.
+  Verification is by checksum only: `gh attestation verify` found no SLSA provenance and `cosign`
+  is not installed. The owner ran `mcp-publisher login github`; `mcp-publisher publish` at the
+  tagged clone (`server.json` 0.4.0 in both version fields) printed "Successfully published".
+  `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
+  lists 0.2.0, 0.3.0 and 0.4.0; 0.4.0 is active, `isLatest` true, `publishedAt`
+  2026-11-13T11:54:32Z.
+
+### Closure state and what is still owner-gated
+
+- [DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release): the M6 closure
+  condition (a minor release and an adapted README) is met; M3, M4 and M5 closed without releases of
+  their own ([DEC-032](../DECISIONS.md#dec-032--m3-closes-without-its-own-release),
+  [DEC-034](../DECISIONS.md#dec-034--m4-closes-without-its-own-release),
+  [DEC-036](../DECISIONS.md#dec-036--m5-closes-without-its-own-release)). Closing the milestone
+  in GitHub is not a coordinator action in [AGENT-WORKFLOW.md](../AGENT-WORKFLOW.md) (the
+  coordinator prepares, the owner decides), so it is left to the owner or the main session.
+- Not done: deployment of 0.4.0 on the deployed target (it still runs 0.3.0; separate instruction
+  and authorization, no MCPHub reinstall, [DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
+  Upgrade and rollback evidence for 0.3.0 to 0.4.0 stays pending until that deployment.

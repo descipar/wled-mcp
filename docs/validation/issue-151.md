@@ -26,7 +26,7 @@ All evidence below is local and synthetic. Candidate: branch `descipar/M6-151`.
 | D151-10 hand-over, executed | same file, bash steps run on Linux (see below): tested file accepted, modified/extra/missing/other-name and ten hostile tags rejected before `gh`; upload without `--clobber`; identical existing asset accepted; different existing asset fails and nothing is replaced; failing upload fails the job; missing local file stops before any upload |
 | D151-11 wording | README, MARKETPLACE.md and PUBLISHING.md checked for "built along with each release, not tested by the project, no warranty" (README: "without warranty"); the README link anchor resolves; removed phrases are reported |
 | D151-12 template | placeholders `REPLACE_WITH_VERSION` and `REPLACE_WITH_AUTHOR` only; no version literal, no author name |
-| D151-13 first run | not yet run, see "First release run" |
+| D151-13 first run | ran with release 0.4.0 on 2026-11-13, see "First release run" |
 | D151-14 command line | one bundle, one checksum line, empty stderr; existing bundle kept; validation failure, version mismatch and unusable location write nothing |
 
 ## Local runs (2026-11-12 and 2026-11-13)
@@ -102,8 +102,12 @@ every action pinned by SHA with `# vX.Y.Z` and no new action; no `secrets.` refe
 
 ## First release run
 
-Not yet run. The first execution of `build-mcpb` and `release-asset` is the next release the owner
-publishes ([DEC-023](../DECISIONS.md#dec-023--staged-first-public-release)). Record there, after
-that run: the job log summary, whether the release lists `wled-mcp-<version>.mcpb` and its
-`.sha256`, and whether the hash equals the `build-mcpb` job summary. That record does not block
-closing the issue.
+Recorded 2026-11-13 from the main session's readbacks (full release record:
+[release-m3-m6.md](release-m3-m6.md)). `publish.yml` run 43414020842 for release `v0.4.0`: all
+four jobs succeeded (build and smoke test, `build-mcpb`, publish to PyPI, `release-asset`). The
+release lists `wled-mcp-0.4.0.mcpb` (15006 bytes) and `wled-mcp-0.4.0.mcpb.sha256`; the bundle
+SHA-256 `a6ccec213a71193c832783a9664d164c071d7e7d1527e34eb42c1b85a0cc2daf` equals the `.sha256`
+asset and the `build-mcpb` job artifact. The hash printed in the `build-mcpb` job summary itself
+was not read (the job summary was not readable through the API); the upload job checks the files
+against the build job's checksums. The hash also equals the local build recorded before the
+release. No Claude Desktop run; the bundle stays untested in a client.
