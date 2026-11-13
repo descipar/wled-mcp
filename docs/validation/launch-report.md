@@ -8,8 +8,10 @@ report). Decisions: [ISSUE-25-DEC-001, -002 and -003](../decisions/issue-25.md).
 Registry). The work of milestones M3 to M6 is merged on `main` but **unreleased**
 ([CHANGELOG](../../CHANGELOG.md#unreleased): 37 tools against the 33 of 0.3.0). The upgrade and
 rollback evidence for the next minor release is pending the owner's release and rollback
-authorization; nothing in this report claims it. Nothing was published, tagged, released,
-submitted or deployed by this work, and the deployed service was not touched.
+authorization; nothing in this report claims it. Nothing was published, tagged, released
+or submitted by this work. The deployed service was restarted twice for the one authorized rollback
+of 0.3.0 to 0.2.0 and back (section 3); no release was deployed that was not already running there
+or published.
 
 Environment of all new runs: macOS 27.2.1 (arm64), uv 0.11.7, Python 3.13.2, MCP SDK client
 `mcp` 2.3.0 (resolved with the package), run on 2026-11-13 between 09:30 and 09:40 UTC from empty
@@ -78,28 +80,56 @@ Existing evidence is linked, not repeated.
   server reading newer data is not run"). It says nothing about presets snapshots (no device
   write was made in that run), and 0.3.0 changed no data format, so it does not predict a release
   that changes one.
-- **Live rollback on the deployed target:** **not run in this PR.** Authorizations relayed from
-  the owner on 2026-11-13 are recorded in [ISSUE-25-DEC-003](../decisions/issue-25.md): restart and
-  rollback of the deployed service and changes to the wled-mcp entry on the hub, with a hub-entry
-  backup first and restoration afterwards. The first attempt had no access path (the hub's MCP
-  endpoint refused the connection); after the owner reconnected it, only **read-only** inspection was
-  done through the hub's SSH tool and the hub's service-status tool: the deployed service runs
-  release 0.3.0 (service uptime about 1.9 h at 09:5x UTC, access profile `full`, one configured
-  device, `unknown` readiness and 0 calls since start, backups writable). The target keeps the
-  staged release directories of 0.3.0 and **0.1.2**, but only the image `wled-mcp:0.3.0`; the
-  image of 0.1.2 was removed and release 0.2.0 was never staged. A rollback therefore means
-  rebuilding the 0.1.2 image from its retained, checksummed directory (the documented path), which
-  jumps two releases, or staging 0.2.0 on the target first. The owner then chose to roll back to 0.2.0
-  (staged on the target first; the hub itself is never reinstalled, [DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
-  The run could not start: on the next attempt (2026-11-13, later the same day) every call through the
-  hub's SSH and service-status tools failed with a name-resolution error for the target host
-  (`getaddrinfo ENOTFOUND`) although both had answered shortly before, so the target is unreachable
-  from this session now and no further read, staging or restart was possible. The hub entry was not
-  touched (the owner later allowed changing the wled-mcp entry if the verification needs it, with
-  backup and restoration, [ISSUE-25-DEC-003](../decisions/issue-25.md); a retry afterwards failed the same way). Nothing was
-  changed, restarted or built. Issue item 1 stays open; the prepared checklist is
-  [issue-25-rollback-plan.md](issue-25-rollback-plan.md). No MCPHub fresh-install test was run; the
-  waiver (ISSUE-24-DEC-005) stands.
+- **Live rollback on the deployed target: run once on 2026-11-13 (S2-COMPAT-03, live part).**
+  Authority: [ISSUE-25-DEC-003](../decisions/issue-25.md) (owner "go", relayed, this issue only);
+  the hub itself is never reinstalled ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
+  Earlier the same day only read-only inspection was possible (the target was briefly unreachable
+  from the session; it answered again after the owner reconnected the hub). Times are UTC.
+  - **Before:** HTTP service, Compose project `wled-mcp-http`, image `wled-mcp:0.3.0` (image ID
+    `84c035bc0ec0`), healthy, access profile `full`, one configured device, 0 calls since start.
+    Staged release directories 0.1.2 and 0.3.0 existed; 0.2.0 did not and no image of an older
+    release was left, so the previous release had to be staged first.
+  - **Backups (10:12):** `compose.yaml` copied; the whole data directory archived (mode 0600) and a
+    SHA-256 list of its 9 files taken (both need root because the files belong to the container
+    UID and the backups folder is mode 0700); the hub settings file copied. The older backups of
+    earlier updates were left alone.
+  - **Staging 0.2.0 on the target (DEC-026):** clean clone of the tag `v0.2.0` (commit
+    `b27180930febcee7985dce35282a05d8be0dc137`, clean tree), `uv sync --locked`,
+    `check_distribution.py` PASS on the target (aarch64, Python 3.13.5; 29 runtime versions),
+    `deploy/stage_release.py` into the hub-mounted release directory, `sha256sum -c SHA256SUMS` OK.
+    The staged wheel SHA-256 is `383cc49fb73f28bca2ffe2a4c1e2afa85f0d8ed0cc815a2c7dacdac47ec617e8`,
+    **byte-identical to the PyPI 0.2.0 wheel** ([issue-24.md](issue-24.md)). Image
+    `wled-mcp:0.2.0` built locally from that directory (ID `35958734ade1`), never pushed.
+  - **Rollback (10:15:38):** `image:` changed from `0.3.0` to `0.2.0`, `compose config --quiet` OK,
+    `docker compose up -d --no-deps wled-mcp`; the command returned after 2 s, the container
+    reported `healthy` at 42 s. The service log printed only the listen line.
+  - **Verification on 0.2.0:** authenticated `ping` from inside the container HTTP 200 with an empty
+    result; through the hub (entry unchanged) `wled_get_service_status` reported version 0.2.0,
+    profile `full`, backups writable; `wled_list_devices` listed the existing device;
+    `wled_list_snapshots` listed the 7 existing snapshots, `wled_list_groups` and
+    `wled_list_scenes` 0 each (as before); `wled_get_state` of the controller read firmware 16.0.1,
+    master off, brightness 47, segment 0 equal to the baseline of the earlier runs. The service's
+    own counters afterwards: 6 calls, 6 read, 0 control, 0 manage, 0 failed. So the service started
+    on the previous release with its existing inventory and data directory, and **no controller was
+    written** (read calls only; the controller state is unchanged). The data directory checksum list
+    was **identical** to the one taken before.
+  - **Restore (10:16:38):** `compose.yaml` restored byte-identical from its copy, same `up -d`;
+    `healthy` within 33 s; the hub reported version 0.3.0, 0 calls, profile `full`; data checksum
+    list identical again; image `wled-mcp:0.3.0` unchanged (ID `84c035bc0ec0`).
+  - **Hub:** the wled-mcp hub entry was **not changed** and the hub configuration file was
+    byte-identical before and after (verification did not need a change; the owner's permission
+    to change it was not used); nothing else on the hub was touched; no fresh-install test of
+    the hub was run (waiver ISSUE-24-DEC-005).
+  - **Left on the target:** the staged directory and image of 0.2.0 (kept as the rollback source,
+    per DEPLOYMENT.md), the backup files named above; the scratch clone and logs were removed.
+  - **DEPLOYMENT.md:** the update/rollback section was right. Corrections made: backing up the data
+    directory needs root; a release that was never staged is staged first with the documented
+    procedure and its wheel was identical to PyPI's; the "stale tool list after rollback" note is
+    now "not needed in this run" (the tool list the hub shows was not inspected).
+  - **Limits:** one rollback of one deployment, 0.3.0 to 0.2.0 with no data-format change between
+    them; no write was made after the rollback (so reading snapshots written by 0.3.0 was not
+    tested; the existing 7 snapshots pre-date 0.3.0); not a rollback after the next code-changing
+    release.
 - **Pending for the next minor release:** upgrade of the deployed service from 0.3.0 and the
   rollback after that release, on the owner's release and rollback authorization.
 
@@ -201,8 +231,8 @@ breaking changes with migration notes.
 - Linux, Windows and Python versions other than 3.13 for the clean install of 0.3.0.
 - Any client other than the SDK client; MCPHub (waived), Claude Desktop and the MCPB bundle
   (unreleased, never installed by the project), HTTP over TLS or a non-loopback bind.
-- The live rollback and any restart of the deployed service (item 1 of the issue); upgrade and
-  rollback of the next minor release.
+- Upgrade and rollback of the next minor release (the live rollback 0.3.0 to 0.2.0 of item 1 was
+  run, section 3).
 - Hardware: any controller, firmware or capability other than the one above; reboot and
   power-cycle persistence; the items listed as mock-only in section 4; the HTTP transport on
   hardware with the published package (the deployed service runs 0.3.0 per the read-only observation of 2026-11-13; its last recorded hardware use was on 0.1.2).

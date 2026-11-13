@@ -63,8 +63,8 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 
 - ID: ISSUE-25-DEC-003
 - Recorded date: 2026-11-13
-- Status: active for issue #25 only; **not yet exercised** (no restart, rollback or hub change
-  has been made).
+- Status: active for issue #25 only; **exercised once on 2026-11-13** (rollback 0.3.0 to 0.2.0 and
+  restore; the hub entry was not changed); see the launch report.
 - Authority: owner authorization as relayed to the packet session by the coordinator in three
   messages on 2026-11-13 (no permalink; recorded as relayed, not verified by this session).
 - Scope: item 1 of #25 (S2-COMPAT-03, live part): back up the inventory, data directory and the
@@ -97,3 +97,6 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 - Observation: a retry of the target access after this answer still failed with the same
   name-resolution error; no change was made.
 - Revalidation needed / next action: reachability of the target, then the owner's go for the run.
+- Executed 2026-11-13 after the owner's relayed "go" and confirmation of the staging method: the
+  record is in [validation/launch-report.md](../validation/launch-report.md#3-upgrade-and-rollback-evidence).
+  The hub entry was not changed, nothing else on the hub was touched, nothing was published.

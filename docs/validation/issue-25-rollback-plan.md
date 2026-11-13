@@ -1,6 +1,6 @@
 # Issue #25: live rollback checklist for the deployed target
 
-Status: **prepared, not executed.** This is the procedure for acceptance item 1 of
+Status: **executed once on 2026-11-13 (0.3.0 to 0.2.0 and back);** the results are in the [launch report](launch-report.md#3-upgrade-and-rollback-evidence). The checklist below is kept as the procedure that was followed; the data backup needs root (files belong to the container UID). This is the procedure for acceptance item 1 of
 [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-COMPAT-03, live part). It follows
 [DEPLOYMENT.md](../DEPLOYMENT.md#http-service-update-rollback-recreation-removal) and adds only
 preconditions and recording. All names, paths and tags are placeholders. Status of the attempt:
