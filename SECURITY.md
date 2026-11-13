@@ -30,6 +30,11 @@ areas, not an exhaustive audit or a security guarantee.
   non-default ports and reach any address the process can reach; inventory validation
   is not an outbound firewall. Redirects and environment proxies are disabled. Limit
   process network access to the controllers it needs.
+- Run explicit CLI discovery only on trusted networks. Its temporary IPv4 mDNS reply
+  socket binds to all interfaces for the requested 0.5–10 second window and accepts
+  untrusted responses from IPv4 peers using the mDNS source port. Parsing is bounded;
+  discovery does not probe, enroll or write candidates. Interface selection remains a
+  medium-risk follow-up ([#222](https://github.com/descipar/wled-mcp/issues/222)).
 - Keep configuration, token files and the data directory private and operator-owned.
   Created storage files use 0600 and directories 0700 on POSIX; existing permissions
   are not repaired and Windows permission semantics differ. Shared storage with a
@@ -39,6 +44,8 @@ areas, not an exhaustive audit or a security guarantee.
   imported content, or paste those results into public reports. Diagnostic redaction
   is not a general-purpose content scrubber.
 
-Ruff security rules and CodeQL supplement review. Dependabot proposes weekly dependency
-and action updates for review; updates are not automatically merged or deployed. These
+Ruff security rules and CodeQL supplement review; a green workflow does not mean zero
+findings. The bounded review retains one open medium CodeQL finding for discovery
+interface binding ([record](docs/validation/issue-181.md)). Dependabot proposes weekly
+dependency and action updates for review; updates are not automatically merged or deployed. These
 checks do not create security support or a commitment to triage or respond.
