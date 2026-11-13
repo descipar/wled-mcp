@@ -36,9 +36,8 @@ on WLED 16.0.1. No support is promised
   and playlists; named device groups and multi-device scenes with a dry-run plan.
 - Observe and explain (read-only): sampled live LED colours per segment, and an explanation
   of why a change may not show. Neither proves a cause or colour accuracy.
-- Layout preview (read-only, not yet released): a static SVG of a device's segment layout,
-  1D only.
-- Temporary signals (not yet released): `wled_start_signal` shows a colour on chosen segments
+- Layout preview (read-only): a static SVG of an observed or proposed 1D segment layout.
+- Temporary signals: `wled_start_signal` shows a colour on chosen segments
   of one controller for a bounded time, then restores the previous state only if nobody
   changed it; best effort, not a scheduler, nothing survives a restart
   ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
@@ -72,7 +71,7 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
 - **Authorization.** The MCP host authorizes people; annotations are hints only. HTTP
   requires its own token and Host/Origin allowlists even behind a hub: hub authentication
   alone does not protect direct access. Keep it off the internet; see the
-  [residual risks and bounded review](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md#practical-limits).
+  [residual risks and bounded review](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md#practical-limits) (one review pass, no audit).
 
 ## Try it
 
@@ -110,7 +109,7 @@ More devices, the [inventory format](https://github.com/descipar/wled-mcp/blob/m
 checksum-verified wheel, the MCPHub Registry install note and the HTTP service are in the
 [quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md); updates, rollback and removal are in
 [docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md). Dependencies resolve within the declared
-ranges ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)). New GitHub releases also attach a Claude Desktop MCPB bundle (it needs uv on the PATH of Claude Desktop); it is built along with each release, not tested by the project and comes without warranty ([details](https://github.com/descipar/wled-mcp/blob/main/docs/MARKETPLACE.md#claude-desktop-mcpb-bundle)).
+ranges ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)). GitHub releases also attach a Claude Desktop MCPB bundle (it needs uv on the PATH of Claude Desktop); it is built along with each release, not tested by the project and comes without warranty ([details](https://github.com/descipar/wled-mcp/blob/main/docs/MARKETPLACE.md#claude-desktop-mcpb-bundle)).
 
 ## Compatibility
 
@@ -139,7 +138,8 @@ Unsupported or unrecognized firmware is served with a warning and never refused;
 Automated tests use mocks and synthetic loopback devices. Hardware acceptance is partial:
 core features ran on one RGB controller with WLED 16.0.1, and an offline controller was checked
 once ([evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-25.md)). Multi-device scenes, profiles, zones, the layout preview and
-CCT, RGBW or 2D controllers have no hardware run; details are in
+CCT, RGBW or 2D controllers have no hardware run, and temporary signals ran only twice
+on one controller; details are in
 [docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
 - No tool deletes a snapshot on request; retention pruning keeps 20 per controller.

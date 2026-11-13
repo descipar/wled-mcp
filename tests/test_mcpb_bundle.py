@@ -106,7 +106,7 @@ def test_the_rendered_manifest_validates_against_the_vendored_schema():
         (lambda d: d.pop("manifest_version"), "manifest_version is not"),
         (lambda d: d.pop("author"), "'author' is a required property"),
         (lambda d: d.update(version="1.2"), "not semver"),
-        (lambda d: d.update(version="0.4.0rc1"), "not semver"),
+        (lambda d: d.update(version="1.2.3rc1"), "not semver"),
         (lambda d: d["repository"].update(url="http://github.com/descipar/wled-mcp"), "https URL"),
         (lambda d: d.update(homepage="not a url"), "homepage is not a plain https URL"),
         (lambda d: d.update(support="https://user:pw" + "@github.com/x"), "support is not a plain"),
@@ -236,12 +236,12 @@ def test_a_different_requested_version_fails_without_writing(tmp_path, capsys):
 
 
 def test_a_release_candidate_maps_to_semver_only_in_the_version_field():
-    candidate = build_mcpb.render_manifest("0.4.0rc1", author="Synthetic Author")
-    assert candidate["version"] == "0.4.0-rc.1"
+    candidate = build_mcpb.render_manifest("1.2.3rc1", author="Synthetic Author")
+    assert candidate["version"] == "1.2.3-rc.1"
     args = candidate["server"]["mcp_config"]["args"]
-    assert "wled-mcp==0.4.0rc1" in args and not any("-rc." in arg for arg in args)
+    assert "wled-mcp==1.2.3rc1" in args and not any("-rc." in arg for arg in args)
     assert build_mcpb.validate_manifest(candidate) == []
-    assert "wled-mcp==0.4.0rc1" in candidate["long_description"]
+    assert "wled-mcp==1.2.3rc1" in candidate["long_description"]
 
 
 @pytest.mark.parametrize(
@@ -266,12 +266,12 @@ def synthetic_root(tmp_path: Path, new_version: str) -> Path:
 
 
 def test_a_release_candidate_build_names_the_file_with_the_pep440_version(tmp_path):
-    root = synthetic_root(tmp_path, "0.4.0rc1")
-    target, _ = build_mcpb.build(tmp_path / "out", expected_version="0.4.0rc1", root=root)
-    assert target.name == "wled-mcp-0.4.0rc1.mcpb"
+    root = synthetic_root(tmp_path, "1.2.3rc1")
+    target, _ = build_mcpb.build(tmp_path / "out", expected_version="1.2.3rc1", root=root)
+    assert target.name == "wled-mcp-1.2.3rc1.mcpb"
     packed = json.loads(members(target)["manifest.json"])
-    assert packed["version"] == "0.4.0-rc.1"
-    assert "wled-mcp==0.4.0rc1" in packed["server"]["mcp_config"]["args"]
+    assert packed["version"] == "1.2.3-rc.1"
+    assert "wled-mcp==1.2.3rc1" in packed["server"]["mcp_config"]["args"]
 
 
 def test_the_author_comes_from_pyproject_and_is_not_tracked_elsewhere():
