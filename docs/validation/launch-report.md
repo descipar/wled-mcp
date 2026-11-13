@@ -89,7 +89,13 @@ Existing evidence is linked, not repeated.
   staged release directories of 0.3.0 and **0.1.2**, but only the image `wled-mcp:0.3.0`; the
   image of 0.1.2 was removed and release 0.2.0 was never staged. A rollback therefore means
   rebuilding the 0.1.2 image from its retained, checksummed directory (the documented path), which
-  jumps two releases, or staging 0.2.0 on the target first. This choice is open and nothing was
+  jumps two releases, or staging 0.2.0 on the target first. The owner then chose to roll back to 0.2.0
+  (staged on the target first; the hub itself is never reinstalled, [DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
+  The run could not start: on the next attempt (2026-11-13, later the same day) every call through the
+  hub's SSH and service-status tools failed with a name-resolution error for the target host
+  (`getaddrinfo ENOTFOUND`) although both had answered shortly before, so the target is unreachable
+  from this session now and no further read, staging or restart was possible. The hub entry was not
+  touched (the owner has not answered whether it may be changed). Nothing was
   changed, restarted or built. Issue item 1 stays open; the prepared checklist is
   [issue-25-rollback-plan.md](issue-25-rollback-plan.md). No MCPHub fresh-install test was run; the
   waiver (ISSUE-24-DEC-005) stands.

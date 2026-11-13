@@ -84,6 +84,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-034 | Project / roadmap | Milestone M4 is closed without its own minor release: the owner waives DEC-030 item 1 for M4. Its merged work (#28) ships with the next minor release together with the unreleased work of M3. Applies to M4 only. | Confirmed owner statement, coordinator session, 2026-11-12; see [DEC-034](#dec-034--m4-closes-without-its-own-release) |
 | DEC-035 | Project / discovery and enrollment (M8) | Agents discover WLED controllers through MCP and add them to the inventory after confirmation by the MCP client; inventory changes take effect by in-process reload; a bounded unicast `GET /json/info` probe of configured RFC 1918 ranges is approved in addition to mDNS under hard server-side caps; ranges are set by a separate configuration-write tool; an address change is reported, never rewritten; standard library only. Supersedes ISSUE-16-DEC-001 in part. | Confirmed owner answers, coordinator session, 2026-11-12 (paraphrased in English, no verbatim quote); see [DEC-035](#dec-035--agent-driven-discovery-and-enrollment) and [issue #198](https://github.com/descipar/wled-mcp/issues/198) |
 | DEC-036 | Project / roadmap | Milestone M5 is closed without its own minor release: the owner waives DEC-030 item 1 for M5 (confirmed explicitly after the coordinator read the instruction to close M5 as a waiver). Its merged work (#128, validation evidence and one mock test) needs no release; the README already states the result. Applies to M5 only. | Confirmed owner statements, coordinator session, 2026-11-12; see [DEC-036](#dec-036--m5-closes-without-its-own-release) |
+| DEC-037 | Project / operations | A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and never part of a project test, rollback or release step; the MCPHub fresh-install test stays waived (ISSUE-24-DEC-005). Changes to the wled-mcp service on a deployed target do not imply a hub reinstall. | Confirmed owner statement, coordinator session, 2026-11-13 (paraphrased in English, no verbatim quote); see [DEC-037](#dec-037--no-mcphub-reinstall-in-project-steps) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -947,6 +948,24 @@ can explicitly amend them.
   and it does not extend DEC-032. A later milestone needs its own answer.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
 - Affected: docs/ROADMAP.md (M4 row).
+
+### DEC-037 — No MCPHub reinstall in project steps
+
+- Status: active project decision, global.
+- Authority/source: owner statement relayed by the coordinator on 2026-11-13 (no permalink; the
+  wording is the coordinator's paraphrase of the owner's answer, not a verbatim quote).
+- Owner decision:
+  1. A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and is
+     never part of any project test, rollback or release step.
+  2. The MCPHub fresh-install test stays waived ([ISSUE-24-DEC-005](decisions/issue-24.md)).
+  3. Changes to the wled-mcp service on a deployed target (update, rollback, restore, restart)
+     do not imply any hub reinstall. A change to the wled-mcp hub entry needs its own owner
+     answer; other hub entries and the hub are never changed by project work.
+- Scope: global. It narrows nothing that an issue decision authorizes for the wled-mcp service
+  itself; ISSUE-25-DEC-003 is unchanged except that its hub-entry part is not exercised unless the
+  owner answers it.
+- Affected: docs/DEPLOYMENT.md (rollback note), docs/validation/issue-25-rollback-plan.md,
+  docs/validation/launch-report.md.
 
 ### DEC-036 — M5 closes without its own release
 

@@ -331,6 +331,8 @@ of them restarts, recreates or removes the hub or its network.
   cached after a rollback to a release with fewer tools (expected, not observed: reload
   the entry). The live rollback on a deployed target has not been run yet; the prepared
   checklist is [validation/issue-25-rollback-plan.md](validation/issue-25-rollback-plan.md).
+  Updating or rolling back this service never involves reinstalling the MCPHub itself
+  ([DEC-037](DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
 - Runtime recreation: data and inventory live in the bind mount, so recreating the
   container keeps them:
 
