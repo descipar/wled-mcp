@@ -142,3 +142,9 @@ def test_parse_does_not_mutate_the_supplied_object():
     snapshot = copy.deepcopy(original)
     parse_group(original)
     assert original == snapshot
+
+
+def test_unknown_document_keys_are_redacted():
+    marker = "synthetic-token@192.0.2.42"
+    assert marker not in rejected(document(**{marker: marker}))
+    assert marker not in rejected(document(members=[{"device": "desk", marker: marker}]))

@@ -41,6 +41,13 @@ The served tool list grows from 33 to 37 tools; the change is additive.
 
 - CI runs the complete test suite in parallel with pytest-xdist (`pytest -n auto`); a plain
   `pytest` run stays serial ([#154](https://github.com/descipar/wled-mcp/issues/154)).
+- Snapshot storage no longer follows a symlinked `<data_dir>/backups` directory
+  ([#181](https://github.com/descipar/wled-mcp/issues/181)). Earlier versions followed it as an
+  operator choice. **Migration:** if `backups/` is a symlink, the snapshot listing shows no
+  snapshots (with a warning) and load or restore reports `PRESET_NOT_FOUND`, and creating a
+  snapshot fails with `BACKUP_FAILED` (so overwrites and deletes that need a snapshot are
+  refused). The snapshots are not lost; they remain in the link target. Point `data_dir` at
+  the real directory or replace the link with a real directory containing the snapshots.
 
 ## 0.3.0 - M2: observe and explain
 

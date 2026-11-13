@@ -704,10 +704,12 @@ Layout: `<data_dir>/backups/<device_id>/<backup_id>.json` (directories 0700, fil
 0600). `backup_id` matches `b-<YYYYMMDD>T<HHMMSS>Z-<12 hex>`, generated from the UTC
 clock plus 48 random bits, never from preset names or caller text. The file is created
 exclusively and never overwrites; a collision regenerates the ID. IDs resolve only
-inside the data directory: no caller path, name or glob. Symlinked snapshot files and
-device directories are never followed; a symlinked `backups/` root itself is an
-operator choice and is followed. Non-regular files (FIFOs, devices) are rejected
-without being opened.
+inside the data directory: no caller path, name or glob. Symlinked snapshot files,
+device directories and the `backups/` root itself are never followed (#181: the root was
+formerly followed as an operator choice; an operator who linked it now sees an
+empty listing with a warning and `PRESET_NOT_FOUND` on load, and `BACKUP_FAILED` on create;
+the snapshots stay in the link target and `data_dir` must point at the real location).
+Non-regular files (FIFOs, devices) are rejected without being opened.
 
 Write sequence (`backup_preset`, blocking I/O run shielded from cancellation): same-
 directory temporary file created exclusively, write, flush, `fsync`, read back and

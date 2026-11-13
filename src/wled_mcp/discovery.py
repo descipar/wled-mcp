@@ -514,7 +514,7 @@ def open_multicast_socket() -> DatagramSocket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     try:
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
-        sock.bind(("0.0.0.0", 0))
+        sock.bind(("0.0.0.0", 0))  # noqa: S104 - explicit one-shot mDNS UDP reply socket
     except BaseException:
         sock.close()
         raise

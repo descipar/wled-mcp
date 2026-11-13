@@ -20,7 +20,7 @@ from pydantic import ValidationError
 
 from tests.preset_support import PresetDevice, playlist_entry, state_entry
 from tests.state_catalog_support import make_info, make_state
-from tests.test_presets import call, fleet_of, open_resources, snapshot_files
+from tests.test_presets import call, desk_with, fleet_of, open_resources, snapshot_files
 from wled_mcp.operations import build_operations
 from wled_mcp.preset_tools import StorePresetRequest
 from wled_mcp.preset_writes import expected_entry
@@ -373,6 +373,17 @@ async def test_protocol_envelope_and_schema_errors_for_the_new_tools(tmp_path):
                 listing = await client.call_tool("wled_list_snapshots", {"device_id": "desk"})
                 assert json.loads(listing.content[0].text) == listing.structured_content
     assert fleet.post_count() == 0
+
+
+@pytest.mark.anyio
+async def test_list_snapshots_tool_warns_when_backups_root_is_a_symlink(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    (tmp_path / "backups").symlink_to(real, target_is_directory=True)
+    resources = open_resources(tmp_path, fleet_of(desk_with({})))
+    listing = await call(resources, "wled_list_snapshots")
+    assert listing.data["snapshots"] == []
+    assert any("symbolic link" in warning for warning in listing.warnings)
 
 
 # ===================================================== A18-15 log privacy

@@ -10,6 +10,7 @@ import contextlib
 import hmac
 import json
 import logging
+import re
 import signal
 import sys
 import threading
@@ -20,7 +21,8 @@ from typing import Any
 import uvicorn
 from mcp.server.lowlevel import Server
 from mcp.server.transport_security import TransportSecuritySettings
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from wled_mcp.http_config import ENDPOINT_PATH, HTTPServiceSettings, token_digest
 
@@ -73,7 +75,62 @@ class AccessGuard:
             logger.warning("HTTP request rejected: %s", reason)
             await self._respond(scope, send, status, reason, extra)
             return
-        await self.app(self._normalized(scope), receive, send)
+        # SDK validation errors can include raw peer input. Only HTTP errors are
+        # buffered, with a hard cap; successful MCP responses pass through unchanged.
+        error_status: int | None = None
+        error_body = bytearray()
+        overflow = False
+
+        async def safe_send(message: Message) -> None:
+            nonlocal error_status, overflow
+            if message["type"] == "http.response.start" and message["status"] >= 400:
+                error_status = message["status"]
+            elif error_status is not None and message["type"] == "http.response.body":
+                chunk = message.get("body", b"")
+                if len(error_body) + len(chunk) <= 8192 and not overflow:
+                    error_body.extend(chunk)
+                else:
+                    overflow = True
+                if not message.get("more_body", False):
+                    response = JSONResponse(
+                        self._safe_error(b"" if overflow else bytes(error_body)),
+                        status_code=error_status,
+                        headers={"Cache-Control": "no-store"},
+                    )
+                    await response(scope, receive, send)
+            else:
+                await send(message)
+
+        await self.app(self._normalized(scope), receive, safe_send)
+
+    @staticmethod
+    def _safe_error(raw: bytes) -> dict[str, Any]:
+        # Preserve protocol codes and request IDs for MCP clients. Messages supplied
+        # by this server are fixed or contain only a generated correlation ID.
+        safe: dict[str, Any] = {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32600, "message": "HTTP request rejected."},
+        }
+        try:
+            document = json.loads(raw)
+            error = document["error"]
+            code, message = error["code"], error["message"]
+            identifier = document.get("id")
+            if type(identifier) in {str, int}:
+                safe["id"] = identifier
+            if type(code) is int:
+                safe["error"]["code"] = code
+            if isinstance(message, str) and (
+                message in {"Unknown tool", "Unknown prompt or unexpected arguments"}
+                or re.fullmatch(
+                    r"Internal operation failure \(correlation_id=[0-9a-f]{16}\)", message
+                )
+            ):
+                safe["error"]["message"] = message
+        except (ValueError, TypeError, KeyError, RecursionError):
+            return safe
+        return safe
 
     def _check(self, scope: Scope) -> tuple[int, str, list[tuple[bytes, bytes]]] | None:
         hosts = _headers(scope, b"host")
@@ -134,6 +191,24 @@ def build_http_app(server: Server[Any], settings: HTTPServiceSettings) -> ASGIAp
     return AccessGuard(sdk_app, settings)
 
 
+class _StartupLogFilter(logging.Filter):
+    """Uvicorn logs raw bind errors before raising SystemExit; keep startup value-free."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            error_number = record.msg.errno if isinstance(record.msg, OSError) else None
+            record.msg = "HTTP startup failure; check listener configuration and service resources."
+            record.args = ()
+            if type(error_number) is int and 0 <= error_number <= 9999:
+                record.msg += " OS error number: %d."
+                record.args = (error_number,)
+            record.exc_info = None
+            record.exc_text = None
+            record.stack_info = None
+            record.__dict__.pop("color_message", None)
+        return True
+
+
 class _Server(uvicorn.Server):
     """uvicorn server that owns SIGINT/SIGTERM and never re-raises them afterwards."""
 
@@ -169,7 +244,15 @@ class _Server(uvicorn.Server):
         self.should_exit = True
 
     async def startup(self, sockets: list[Any] | None = None) -> None:
-        await super().startup(sockets=sockets)
+        # This dependency catches bind errors and logs them before we can catch
+        # its SystemExit. Filter at the source logger, including traceback fields.
+        dependency_logger = logging.getLogger("uvicorn.error")
+        startup_filter = _StartupLogFilter()
+        dependency_logger.addFilter(startup_filter)
+        try:
+            await super().startup(sockets=sockets)
+        finally:
+            dependency_logger.removeFilter(startup_filter)
         if self.started and self._on_started is not None:
             self._on_started()
 
@@ -219,7 +302,7 @@ class HTTPService:
 def announce(settings: HTTPServiceSettings) -> Callable[[], None]:
     def write() -> None:
         print(
-            f"listening on {settings.host}:{settings.port} path {ENDPOINT_PATH}",
+            f"listening on configured address path {ENDPOINT_PATH}",
             file=sys.stderr,
             flush=True,
         )

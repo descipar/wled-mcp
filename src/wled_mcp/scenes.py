@@ -81,6 +81,33 @@ SEGMENT_FIELDS: Final = (
 EXCLUSIVE: Final = (("effect_id", "effect_name"), ("palette_id", "palette_name"))
 TARGET_KEYS: Final = frozenset({"device", "group", "master", "segments"})
 ENTRY_KEYS: Final = frozenset({"ids", *SEGMENT_FIELDS})
+# Preserve helpful names for known unsupported fields without echoing arbitrary input.
+UNSUPPORTED_SEGMENT_FIELDS: Final = frozenset(
+    {
+        "start",
+        "stop",
+        "start_y",
+        "grouping",
+        "spacing",
+        "offset",
+        "reverse",
+        "mirror",
+        "selected",
+        "name",
+        "freeze",
+        "blend_mode",
+        "transpose",
+        "map_1d_2d",
+        "segment_set",
+        "sound_simulation",
+        "seg",
+        "i",
+        "timers",
+        "nl",
+        "udpn",
+        "allow_overlap",
+    }
+)
 
 TargetKind = Literal["device", "group"]
 
@@ -209,7 +236,10 @@ def _parse_entry(value: object, kind: TargetKind, where: str) -> SegmentEntry:
         raise invalid(f"{where} must be an object.")
     unknown = sorted(str(key) for key in value if key not in ENTRY_KEYS)
     if unknown:
-        raise invalid(f"{where}: unknown or unsupported segment field {echo(unknown[0])}.")
+        raise invalid(
+            f"{where}: unknown or unsupported segment field "
+            f"{echo(unknown[0], UNSUPPORTED_SEGMENT_FIELDS)}."
+        )
     ids: tuple[int, ...] | None = None
     if "ids" in value:
         ids = check_segment_ids(value["ids"], where, "ids")

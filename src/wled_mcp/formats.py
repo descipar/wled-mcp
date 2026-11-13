@@ -20,7 +20,6 @@ from pydantic import JsonValue
 from wled_mcp.client import ClientFailure, validate_json
 
 MAX_FORMAT_VERSION = 9999
-KEY_ECHO = 32
 
 # A group or scene ID is also the file name. The pattern keeps it free of separators, dots
 # and case, and the reserved names keep it from naming a Windows device (``con.json`` opens
@@ -47,9 +46,9 @@ def is_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def echo(key: object) -> str:
-    """A bounded representation of an unknown key name for a message."""
-    return repr(str(key)[:KEY_ECHO])
+def echo(key: object, known: Collection[str] = ()) -> str:
+    """Unknown keys are untrusted content, potentially credentials or addresses."""
+    return repr(key) if isinstance(key, str) and key in known else "'<redacted>'"
 
 
 LOCAL_RECONCILE = (
