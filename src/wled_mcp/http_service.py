@@ -191,6 +191,24 @@ def build_http_app(server: Server[Any], settings: HTTPServiceSettings) -> ASGIAp
     return AccessGuard(sdk_app, settings)
 
 
+class _StartupLogFilter(logging.Filter):
+    """Uvicorn logs raw bind errors before raising SystemExit; keep startup value-free."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno >= logging.WARNING:
+            error_number = record.msg.errno if isinstance(record.msg, OSError) else None
+            record.msg = "HTTP startup failure; check listener configuration and service resources."
+            record.args = ()
+            if type(error_number) is int and 0 <= error_number <= 9999:
+                record.msg += " OS error number: %d."
+                record.args = (error_number,)
+            record.exc_info = None
+            record.exc_text = None
+            record.stack_info = None
+            record.__dict__.pop("color_message", None)
+        return True
+
+
 class _Server(uvicorn.Server):
     """uvicorn server that owns SIGINT/SIGTERM and never re-raises them afterwards."""
 
@@ -226,7 +244,15 @@ class _Server(uvicorn.Server):
         self.should_exit = True
 
     async def startup(self, sockets: list[Any] | None = None) -> None:
-        await super().startup(sockets=sockets)
+        # This dependency catches bind errors and logs them before we can catch
+        # its SystemExit. Filter at the source logger, including traceback fields.
+        dependency_logger = logging.getLogger("uvicorn.error")
+        startup_filter = _StartupLogFilter()
+        dependency_logger.addFilter(startup_filter)
+        try:
+            await super().startup(sockets=sockets)
+        finally:
+            dependency_logger.removeFilter(startup_filter)
         if self.started and self._on_started is not None:
             self._on_started()
 
