@@ -242,3 +242,54 @@ in [FX.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b9
 no firmware implementation is copied. Empty metadata and missing flags remain unknown
 instead of inheriting the UI's display fallback. This source evidence is not a
 controller probe or proof of effect behavior.
+
+## Issue-151 MCPB manifest schema
+
+Read 2026-11-12 from tag `v2.1.2` (published 2025-12-04), commit
+`2a788100a60db19a6b1c018fb1cf84ae85de9537`, of
+[modelcontextprotocol/mcpb](https://github.com/modelcontextprotocol/mcpb) (the repository
+formerly `anthropics/mcpb`, which redirects there): the manifest specification
+[MANIFEST.md](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/MANIFEST.md) and the JSON
+schema
+[schemas/mcpb-manifest-v0.3.schema.json](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/schemas/mcpb-manifest-v0.3.schema.json)
+(manifest version `0.3`; the published `latest` schema is byte-identical). The npm package
+`@anthropic-ai/mcpb` 2.1.2 (integrity
+`sha512-goRbBC8ySo7SWb7tRzr+tL6FxDc4JPTRCdgfD2omba7freofvjq5rom1lBnYHZHo6Mizs1jAHJeN53aZbDoy8A==`)
+is used only for the one-time cross-check in [validation/issue-151.md](validation/issue-151.md);
+no upstream code is included in this repository.
+
+**Vendored file.** `deploy/mcpb/schema/mcpb-manifest-v0.3.schema.json` is an unmodified copy of
+that schema (7902 bytes, SHA-256
+`3a0ac9d845711a1b9b17dfa5a52f8b60628239d6a86a9db417206a9efc78592d`), used by
+`deploy/build_mcpb.py` to validate the bundle manifest ([contract](contract/mcpb-bundle.md)). A
+JSON file cannot carry a comment, so the notice is kept here.
+
+**Licence review (2026-11-12).** The repository `LICENSE` at the pinned tag and the `license`
+field of `package.json` (`MIT`) grant the MIT licence; the repository's GitHub licence detector
+reports "other" because the file starts with the copyright line instead of a title. The MIT licence
+permits copying, modification and redistribution, and permits sublicensing, with the condition that
+the copyright and permission notice is kept in all copies or substantial portions. It is compatible
+with this project's Apache-2.0 licence. The schema is redistributed in the repository (and in a
+source distribution), never in the wheel or the bundle. The upstream default branch announces
+that contributions move from MIT to Apache-2.0; the tag used here is MIT. Preserved notice, verbatim
+from `LICENSE` at the pinned tag:
+
+> Copyright 2025 Anthropic, PBC.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+> and associated documentation files (the "Software"), to deal in the Software without
+> restriction, including without limitation the rights to use, copy, modify, merge, publish,
+> distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+> Software is furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or
+> substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+> BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+> NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+> DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+When the vendored schema is updated, repeat the review for the new tag and update the commit,
+size and checksum here and in `tests/test_mcpb_bundle.py`.

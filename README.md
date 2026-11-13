@@ -110,7 +110,7 @@ More devices, the [inventory format](https://github.com/descipar/wled-mcp/blob/m
 checksum-verified wheel, the MCPHub Registry install note and the HTTP service are in the
 [quickstarts](https://github.com/descipar/wled-mcp/blob/main/docs/QUICKSTARTS.md); updates, rollback and removal are in
 [docs/DEPLOYMENT.md](https://github.com/descipar/wled-mcp/blob/main/docs/DEPLOYMENT.md). Dependencies resolve within the declared
-ranges ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)).
+ranges ([dependency policy](https://github.com/descipar/wled-mcp/blob/main/docs/contract/dependencies.md)). New GitHub releases also attach a Claude Desktop MCPB bundle (it needs uv on the PATH of Claude Desktop); it is built along with each release, not tested by the project and comes without warranty ([details](https://github.com/descipar/wled-mcp/blob/main/docs/MARKETPLACE.md#claude-desktop-mcpb-bundle)).
 
 ## Compatibility
 

@@ -28,6 +28,9 @@ follow the build-identity sections below. The support matrix is in
   shows `diagnostics.server_version` as `0.0.0+example`, a fixed placeholder that never
   equals a real version (chosen over deriving the value, so the example file does not
   change with each release).
+- The Claude Desktop bundle manifest (`deploy/mcpb/manifest.template.json`, #151) names the
+  version by the placeholder `REPLACE_WITH_VERSION`; `deploy/build_mcpb.py` renders it from
+  `project.version` and refuses a different requested version before writing anything.
 - `tests/test_version_source.py` fails when a tracked file other than the allowlisted
   ones contains the current version as a literal. Allowlisted: `pyproject.toml`, its
   generated `uv.lock` entry, the registry metadata `server.json` (it names the version twice, as

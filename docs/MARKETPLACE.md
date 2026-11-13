@@ -94,6 +94,38 @@ The registry entry has no `remotes`: a per-user HTTP deployment is not a public 
 no private or placeholder URL is listed. The listings point to the self-hosted setup instead:
 [quickstart for the Streamable HTTP service](QUICKSTARTS.md#quickstart-streamable-http-service).
 
+## Claude Desktop MCPB bundle
+
+Each release workflow run also builds a Claude Desktop bundle, `wled-mcp-<version>.mcpb`
+([#151](https://github.com/descipar/wled-mcp/issues/151), requirement DIST-04,
+[contract](contract/mcpb-bundle.md)). **The bundle is built along with each release, not tested by
+the project, no warranty.** No Claude Desktop install run was made; whether Claude Desktop accepts
+a Python-type bundle that starts `uvx` was not verified.
+
+- **What it is.** An MCPB manifest (version 0.3) that makes Claude Desktop run the released PyPI
+  package through `uvx`, pinned to the release version, over stdio only. It contains no server
+  code, no secret, no inventory and no device address, and no HTTP service.
+- **Prerequisites.** `uv` (`uvx`) installed and on the PATH that Claude Desktop sees; an
+  inventory file made with `wled-mcp config init` ([README](../README.md#try-it)); an existing
+  data directory. The install dialog asks for exactly these two paths.
+- **Flow.** The release workflow builds the bundle from the tagged version after the release guard,
+  in its own job. A separate job attaches `wled-mcp-<version>.mcpb` and
+  `wled-mcp-<version>.mcpb.sha256` to the GitHub release only after the PyPI upload succeeded; it
+  never replaces an existing asset. A failure of the bundle jobs does not affect the PyPI upload
+  ([PUBLISHING.md](PUBLISHING.md#mcpb-bundle-151)). The job has not run yet: the first bundle
+  appears with the next release the owner publishes.
+- **Verify the download.** `sha256sum --check wled-mcp-<version>.mcpb.sha256` or, in PowerShell,
+  compare `Get-FileHash -Algorithm SHA256 wled-mcp-<version>.mcpb` with the file's hash. The
+  bundle is unsigned and has no attestation, and the checksum comes from the same workflow, so it
+  detects a damaged download and does not prove origin.
+- **Manifest facts.** Manifest version 0.3, validated against a vendored copy of the upstream JSON
+  schema (tag v2.1.2, [provenance](SOURCES.md#issue-151-mcpb-manifest-schema)); `uvx` runs
+  `--isolated --python 3.13 --from wled-mcp==<version> wled-mcp --transport stdio`. The bundle is
+  marked unofficial and not affiliated with the WLED project and has no icon (DEC-012).
+- **Directories.** Submitting the bundle to any directory is an owner action that is neither
+  planned nor done ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)); this section
+  adds no row to the status table above.
+
 ## Release and listing sequence
 
 1. Complete relevant stage-1 evidence and stage-2 Launch requirements. Choose license, names and supported versions.

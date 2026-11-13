@@ -28,6 +28,15 @@ The served tool list grows from 33 to 37 tools; the change is additive.
   stops), a scale, gaps, overlaps and approximate colours, optional zone bands and optional live
   colour samples. It sends no write, never simulates effects, and refuses matrix devices.
 
+- Claude Desktop MCPB bundle ([#151](https://github.com/descipar/wled-mcp/issues/151),
+  [contract](docs/contract/mcpb-bundle.md)): the release workflow builds
+  `wled-mcp-<version>.mcpb` in its own job and, after the PyPI upload succeeded, a separate job
+  attaches it with a SHA-256 file to the GitHub release; a failure of either job does not affect the
+  PyPI upload. The bundle only makes Claude Desktop start the released package through `uvx`
+  (it needs uv on the PATH of Claude Desktop). It is built along with each release, not tested
+  by the project and comes without warranty. The jobs have not run yet; the first bundle is
+  attached to the next release.
+
 ### Changed
 
 - CI runs the complete test suite in parallel with pytest-xdist (`pytest -n auto`); a plain

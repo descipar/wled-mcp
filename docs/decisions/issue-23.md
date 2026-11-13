@@ -44,3 +44,5 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 - Propagated to roles / packet references: requirements, implementer and reviewer through the
   #23 work packet.
 - Revalidation needed / next action: the #23 work packet and PR.
+- Update 2026-11-12: after this entry the body of #151 was rewritten under
+  [ISSUE-151-DEC-001](issue-151.md); "#151 needed no change" above describes the state at the time.
