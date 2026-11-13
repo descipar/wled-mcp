@@ -486,9 +486,9 @@ def test_marketplace_and_publishing_state_the_bundle_limits():
     flat_market = re.sub(r"\s+", " ", market)
     assert "No Claude Desktop install run was made" in flat_market
     assert "whether Claude Desktop accepts" in flat_market
-    # The job has not run: no document may claim it did (first run: the next release).
+    # The jobs first ran with the release of 2026-11-13; the documents say so.
     for text in (market, publishing):
-        assert re.search(r"not (yet )?run|next release", text), text[:80]
+        assert re.search(r"first ran|ran first|2026-11-13", text), text[:80]
 
 
 @pytest.mark.parametrize("phrase", DOC_PHRASES)
@@ -509,7 +509,8 @@ def test_the_contract_lists_every_scenario_and_the_requirement():
     assert "DIST-04" in (ROOT / "docs/STAGE-5.md").read_text("utf-8")
     assert "contract/mcpb-bundle.md" in (ROOT / "docs/TOOL-CONTRACT.md").read_text("utf-8")
     assert "validation/issue-151.md" in (ROOT / "docs/VALIDATION.md").read_text("utf-8")
-    assert "not yet run" in (ROOT / "docs/validation/issue-151.md").read_text("utf-8").lower()
+    record = (ROOT / "docs/validation/issue-151.md").read_text("utf-8")
+    assert "## First release run" in record and "not yet run" not in record.lower()
 
 
 # --------------------------------------------------------- D151-12 template placeholder

@@ -125,7 +125,7 @@ asset with identical bytes is accepted as a no-op, a different one fails the job
 - The bundle is unsigned and has no attestation. The SHA-256 asset is published by the same
   workflow, so it checks transport only and does not prove origin.
 - No Claude Desktop install, start or tool call was made by the project.
-- The release job has not run: its first execution is the next release the owner publishes, and
+- The release job first ran with the release of 2026-11-13, and
   submitting the bundle to any directory is an owner action
   ([DEC-023](../DECISIONS.md#dec-023--staged-first-public-release)) that is not planned.
 - Not in scope: an icon (DEC-012, no WLED logo), HTTP transport, signing, bundled configuration,

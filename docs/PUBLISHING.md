@@ -11,7 +11,7 @@ Status: the workflow has published releases (see "First release" and the registr
 below). Merging a change to the workflow does not publish anything. Registering the publisher, changing the environment, creating a tag or
 release and approving an upload each need the owner's explicit instruction at that time
 ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs
-(see "MCPB bundle (#151)" below) ran for the first time with release 0.4.0 on 2026-11-13
+(see "MCPB bundle (#151)" below) ran for the first time with the release of 2026-11-13
 ([validation/issue-151.md](validation/issue-151.md#first-release-run)).
 
 ## What the workflow does
@@ -133,7 +133,7 @@ Each step needs the owner's instruction at that time. Done for the first PyPI re
 7. After the `release-asset` job ran, check that the GitHub release lists
    `wled-mcp-<version>.mcpb` and `wled-mcp-<version>.mcpb.sha256` and that the hash matches the
    `build-mcpb` job summary. The bundle jobs do not gate the PyPI files; the first such check was
-   release 0.4.0's, and a wrong asset is removed by hand.
+   the release of 2026-11-13, and a wrong asset is removed by hand.
 
 ## Pinning, update and rollback
 
@@ -192,7 +192,8 @@ warranty** ([ISSUE-151-DEC-001](decisions/issue-151.md)). It contains no server 
 manifest starts the released PyPI package through `uvx`. Format, manifest design and limits:
 [contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view:
 [MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made and
-the bundle jobs have not run yet.
+the bundle jobs ran first with
+the release of 2026-11-13.
 
 Two further jobs, both outside the PyPI path (`publish` needs only `build`, so a failure of
 either never prevents or changes the PyPI upload; ISSUE-151-DEC-002 item 4):
@@ -234,8 +235,8 @@ ruleset above. The `gh` CLI is the version of the runner image (the job prints i
 unsigned and has no attestation; the `.sha256` asset is published by the same workflow, so it
 checks a download against damage and does not prove origin.
 
-**First run.** Merging the change publishes nothing. The first execution of both jobs was release
-0.4.0 on 2026-11-13 (DEC-023). Before it the jobs were verified by review, the static and
+**First run.** Merging the change publishes nothing. The first execution of both jobs was
+the release of 2026-11-13 (DEC-023). Before it the jobs were verified by review, the static and
 shell tests of `tests/test_publish_workflow.py` and a local dry run of the build step; the first
 real run is recorded in [validation/issue-151.md](validation/issue-151.md#first-release-run). Submitting the bundle to any directory is an
 owner action and not planned.
