@@ -50,7 +50,7 @@ pydantic==2.14.2
     #   mcp
     #   mcp-types
     #   wled-mcp
-pydantic-core==2.50.2
+pydantic-core==2.50.4
     # via pydantic
 pyjwt==2.15.1
     # via mcp
