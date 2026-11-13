@@ -323,7 +323,14 @@ of them restarts, recreates or removes the hub or its network.
   is never migrated in place; snapshot local data before any future schema change.
   Rolling back the code does not restore device state: lights, segments and presets
   stay as the newer version left them; restore them from the snapshots under the data
-  directory if needed.
+  directory if needed. Back up `compose.yaml`, the inventory and the data directory
+  first, repeat `ps`, `logs` and the authenticated `ping` afterwards and check that no
+  data or inventory format changed between the two releases (the CHANGELOG says so; an
+  older server rejects a newer format). A run on local files confirmed that two consecutive
+  releases read each other's groups and scenes (see the launch report); the hub may keep the older tool list
+  cached after a rollback to a release with fewer tools (expected, not observed: reload
+  the entry). The live rollback on a deployed target has not been run yet; the prepared
+  checklist is [validation/issue-25-rollback-plan.md](validation/issue-25-rollback-plan.md).
 - Runtime recreation: data and inventory live in the bind mount, so recreating the
   container keeps them:
 

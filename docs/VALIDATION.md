@@ -1331,3 +1331,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
   not run).
 - [validation/issue-25.md](validation/issue-25.md): live H07 check with an unreachable configured
   controller on the deployed HTTP service (#25; read-only, temporary inventory entry).
+- [validation/launch-report.md](validation/launch-report.md): launch report for the published
+  release 0.3.0 (clean PyPI install, one interoperability run per transport, hardware and
+  firmware observations, external routes, maintenance scope, tests not run) and the prepared,
+  not executed [rollback checklist](validation/issue-25-rollback-plan.md) (#25).
