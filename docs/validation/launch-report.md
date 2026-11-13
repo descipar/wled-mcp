@@ -95,7 +95,8 @@ Existing evidence is linked, not repeated.
   hub's SSH and service-status tools failed with a name-resolution error for the target host
   (`getaddrinfo ENOTFOUND`) although both had answered shortly before, so the target is unreachable
   from this session now and no further read, staging or restart was possible. The hub entry was not
-  touched (the owner has not answered whether it may be changed). Nothing was
+  touched (the owner later allowed changing the wled-mcp entry if the verification needs it, with
+  backup and restoration, [ISSUE-25-DEC-003](../decisions/issue-25.md); a retry afterwards failed the same way). Nothing was
   changed, restarted or built. Issue item 1 stays open; the prepared checklist is
   [issue-25-rollback-plan.md](issue-25-rollback-plan.md). No MCPHub fresh-install test was run; the
   waiver (ISSUE-24-DEC-005) stands.

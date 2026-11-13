@@ -88,5 +88,12 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 - Observation (2026-11-13, read-only): the deployed service ran 0.3.0 with only its image and the
   staged directories of 0.3.0 and 0.1.2. A later attempt to start the run failed because the target
   was unreachable from the session (name resolution); nothing was changed.
-- Revalidation needed / next action: reachability of the target, then the owner's go for the run;
-  the owner's answer on the hub entry if verification needs it.
+- Update 2026-11-13, later (relayed owner answer, no permalink): the wled-mcp entry on the hub
+  **may** be changed for the #25 rollback, this issue only, not standing. Bounds: only that entry;
+  back it up first and restore it afterwards, recording both states without hostnames or
+  addresses; no other hub entry, no hub reinstall (DEC-037); no publish, release, tag or registry
+  step. The entry is changed only if the rollback verification needs it; otherwise it stays
+  untouched and the report says so. This replaces the "pending" state of the hub-entry part above.
+- Observation: a retry of the target access after this answer still failed with the same
+  name-resolution error; no change was made.
+- Revalidation needed / next action: reachability of the target, then the owner's go for the run.

@@ -21,9 +21,12 @@ this run (restart and rollback). No publication, release, tag or registry step a
    `scripts/check_distribution.py`; the wheel on PyPI is not the staged artifact. Confirm that this (checkout of the tag, then compare the staged wheel
    hash with the PyPI wheel hash of 0.2.0, which `stage_release.py` does not guarantee to equal) is
    what "stage from PyPI" meant. The image `wled-mcp:0.2.0` is then built from that directory.
-   The hub itself is never reinstalled ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps));
-   the wled-mcp hub entry is not changed unless the owner answers that separately: verify on the
-   target directly (and read-only through the hub).
+   The hub itself is never reinstalled ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
+   The wled-mcp hub entry may be changed only if the verification needs it (ISSUE-25-DEC-003):
+   back it up first, restore it at the end, record both states without hostnames or addresses;
+   otherwise leave it untouched and say so. Verify on the target directly (and read-only through
+   the hub).
+
 1. **A real rollback exists.** The target runs release **N** and an older release **P** is
    retained as image `wled-mcp:<tag-P>` and as `/app/binaries/wled-mcp/<P>/` (or can be rebuilt
    there from the retained directory, staged on the target per DEC-026). Record both. If the target
