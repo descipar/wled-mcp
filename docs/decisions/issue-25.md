@@ -58,3 +58,27 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 - Propagated to roles / packet references: reviewer via the coordinator handoff.
 - Revalidation needed / next action: none for this run; the rollback needs a separate
   authorization.
+
+## ISSUE-25-DEC-003 — Restart, rollback and hub-entry changes for the live rollback
+
+- ID: ISSUE-25-DEC-003
+- Recorded date: 2026-11-13
+- Status: active for issue #25 only; **not yet exercised** (no restart, rollback or hub change
+  has been made).
+- Authority: owner authorization as relayed to the packet session by the coordinator in three
+  messages on 2026-11-13 (no permalink; recorded as relayed, not verified by this session).
+- Scope: item 1 of #25 (S2-COMPAT-03, live part): back up the inventory, data directory and the
+  wled-mcp hub entry, roll the deployed HTTP service back to the previous release following
+  DEPLOYMENT.md, check it with read-only calls only, restore the release it ran before, and
+  restore the hub entry; change only the wled-mcp entry; keep hostnames, addresses and
+  credentials out of committed files.
+- Decision: the run is authorized in that scope. It stops and reports, without improvising, if a
+  true rollback needs an artifact that is not available or a choice the owner has not made.
+- Not authorized: publishing, releasing, tagging, registry submission, other hub entries; the
+  waiver ISSUE-24-DEC-005 is unchanged and no fresh-install test is claimed.
+- Superseded part: the sentence "restart and rollback are not authorized" of ISSUE-25-DEC-002
+  no longer holds for the scope above; the hardware part of DEC-002 is unchanged.
+- Observation that needs a choice (2026-11-13, read-only): the deployed service runs 0.3.0; only
+  its image and the staged directories of 0.3.0 and 0.1.2 exist, so the rollback target is 0.1.2
+  (rebuilt image, two releases back) unless 0.2.0 is staged first.
+- Revalidation needed / next action: the owner (via the coordinator) selects the rollback target.

@@ -13,6 +13,9 @@ this run (restart and rollback). No publication, release, tag, registry or hub c
 
 ## Preconditions
 
+0. **Observed 2026-11-13 (read-only):** the target runs 0.3.0 with only the image of 0.3.0 and the
+   retained staged directories of 0.3.0 and 0.1.2. P is therefore 0.1.2 (image rebuilt from the
+   retained directory, jumping 0.2.0) unless 0.2.0 is staged first; the owner picks.
 1. **A real rollback exists.** The target runs release **N** and an older release **P** is
    retained as image `wled-mcp:<tag-P>` and as `/app/binaries/wled-mcp/<P>/` (or can be rebuilt
    there from the retained directory, staged on the target per DEC-026). Record both. If the target
@@ -30,7 +33,7 @@ this run (restart and rollback). No publication, release, tag, registry or hub c
    format changed (0.2.0 to 0.3.0 changed none; `config validate` and `doctor` exist on 0.1.2, 0.2.0
    and 0.3.0). If a format changed, stop and ask: the older server rejects newer data.
 6. Note the hub entry's cached tool list: a rollback to a release with fewer tools may need the hub
-   entry reloaded (expected from the `correlation_id` note in DEPLOYMENT.md, **not observed**).
+   entry reloaded (expected from the tool-list refresh finding of [live-check-2026-11-08.md](live-check-2026-11-08.md), **not observed**).
 
 ## Steps
 
@@ -48,7 +51,7 @@ this run (restart and rollback). No publication, release, tag, registry or hub c
    `wled_get_state` of one controller `ok`, `wled_list_groups`, `wled_list_scenes` and
    `wled_list_snapshots` show the data written by N, `wled_get_service_status`.
 5. Prove nothing was written to a controller: the call counters and per-call log lines of the run
-   show only read-class calls (`class=read`), no `application=applied`; the data directory checksum
+   show only read-class calls (`class=read`, no `application=applied`; an older target may log in another format, then use the status tool's per-class counters); the data directory checksum
    list of step 4 of the preconditions is unchanged by the reads.
 6. Restore: set `image:` back to `wled-mcp:<tag-N>`, repeat the `up -d --no-deps` command, then repeat
    step 4 (counts equal N's) and record that the service is healthy.

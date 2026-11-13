@@ -26,7 +26,7 @@ area and are not part of the repository.
 | `wled-mcp --help` | stdio default; `--transport streamable-http`, `--profile`, `--allowed-host`, `--http-token-file` listed |
 
 This repeats the install check of [release-m2.md](release-m2.md#release-and-registry-publication-2026-11-11)
-from a clean cache on a second machine class (macOS arm64 instead of Windows/Linux). It does not
+from a clean cache (`--no-cache`, empty cache directory). It does not
 cover Linux, Windows or any Python other than 3.13 (the package requires `>=3.13,<3.14`).
 
 ## 2. Interoperability, one run per transport
@@ -59,10 +59,10 @@ The authenticated `ping` snippet of DEPLOYMENT.md was also run once against this
 
 Existing evidence is linked, not repeated.
 
-- **Live update of the deployed HTTP service:** earlier build to the second release in the second
-  #12 run ([VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)) and
-  the live check of the second release ([live-check-2026-11-08.md](live-check-2026-11-08.md)); the
-  deployed service ran release 0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)).
+- **Live updates of the deployed HTTP service:** to a newer build in the second #12 run
+  ([VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)) and to the
+  second release in [live-check-2026-11-08.md](live-check-2026-11-08.md); the service ran release
+  0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)) and runs 0.3.0 now (read-only observation above).
 - **Retained data, newer code reads older data:** `tests/test_upgrade_compat.py`
   ([issue-21.md](issue-21.md), [versioning](../contract/versioning.md#upgrade-downgrade-and-rollback)).
 - **New in this report, published releases, local synthetic run (not the deployed service):** one
@@ -78,18 +78,21 @@ Existing evidence is linked, not repeated.
   server reading newer data is not run"). It says nothing about presets snapshots (no device
   write was made in that run), and 0.3.0 changed no data format, so it does not predict a release
   that changes one.
-- **Live rollback on the deployed target:** **not run, blocked.** The owner authorized the restart
-  and rollback of the deployed service for this issue on 2026-11-13, after the checklist
-  [issue-25-rollback-plan.md](issue-25-rollback-plan.md) was prepared. The session that produced
-  this report has no access path to the deployed target: it holds no shell, SSH or Docker access
-  to the host (the local Docker endpoints list no containers) and the hub's MCP endpoint
-  refused the connection (`ECONNREFUSED`) at session start, so not even a read-only status check
-  was possible. The rollback needs `docker compose` on the target, which an MCP connection to
-  the hub does not give. Nothing on the target was touched, and the current release of the
-  deployed service is unknown to this session (last recorded: 0.1.2, in [issue-25.md](issue-25.md)),
-  so whether a "rollback after a code-changing release" is possible without a preceding update
-  to a newer published release is also open. Issue item 1 stays open. Needed: an access path (or the
-  owner running the plan) and the current release of the target.
+- **Live rollback on the deployed target:** **not run in this PR.** Authorizations relayed from
+  the owner on 2026-11-13 are recorded in [ISSUE-25-DEC-003](../decisions/issue-25.md): restart and
+  rollback of the deployed service and changes to the wled-mcp entry on the hub, with a hub-entry
+  backup first and restoration afterwards. The first attempt had no access path (the hub's MCP
+  endpoint refused the connection); after the owner reconnected it, only **read-only** inspection was
+  done through the hub's SSH tool and the hub's service-status tool: the deployed service runs
+  release 0.3.0 (service uptime about 1.9 h at 09:5x UTC, access profile `full`, one configured
+  device, `unknown` readiness and 0 calls since start, backups writable). The target keeps the
+  staged release directories of 0.3.0 and **0.1.2**, but only the image `wled-mcp:0.3.0`; the
+  image of 0.1.2 was removed and release 0.2.0 was never staged. A rollback therefore means
+  rebuilding the 0.1.2 image from its retained, checksummed directory (the documented path), which
+  jumps two releases, or staging 0.2.0 on the target first. This choice is open and nothing was
+  changed, restarted or built. Issue item 1 stays open; the prepared checklist is
+  [issue-25-rollback-plan.md](issue-25-rollback-plan.md). No MCPHub fresh-install test was run; the
+  waiver (ISSUE-24-DEC-005) stands.
 - **Pending for the next minor release:** upgrade of the deployed service from 0.3.0 and the
   rollback after that release, on the owner's release and rollback authorization.
 
@@ -162,7 +165,7 @@ No other listing exists or is planned ([ISSUE-24-DEC-003](../decisions/issue-24.
 
 ## 6. Unresolved defects and limits
 
-Open issues on 2026-11-13, all Backlog, none a blocker for the published release: #223
+Open Backlog issues on 2026-11-13, none a blocker for the published release: #223
 (redaction of caller arguments in error messages), #222 (interface selection for bounded mDNS
 discovery), #220 (local storage hardening against concurrent directory replacement), #217 and #216
 (test guard for network access), #215 and #214 (probe script redaction and file mode), #213
