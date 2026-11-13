@@ -5,9 +5,10 @@ acceptance items 2 to 4 of the issue body, and the live rollback of item 1 in se
 
 **Target.** This report covers the published release **v0.3.0** (PyPI, GitHub release and MCP
 Registry). The work of milestones M3 to M6 is merged on `main` but **unreleased**
-([CHANGELOG](../../CHANGELOG.md#unreleased): 37 tools against the 33 of 0.3.0). The upgrade and
-rollback evidence for the next minor release is pending the owner's release and rollback
-authorization; nothing in this report claims it. Nothing was published, tagged, released
+([CHANGELOG](../../CHANGELOG.md#unreleased): 37 tools against the 33 of 0.3.0). Release 0.4.0 was published later
+the same day and deployed to the target after this report was written
+([deploy-0.4.0.md](deploy-0.4.0.md)); the rollback after that release was not run, and nothing in
+this report claims it. Nothing was published, tagged, released
 or submitted by this work. The deployed service was restarted twice for the one authorized rollback
 of 0.3.0 to 0.2.0 and back (section 3); no release was deployed that was not already running there
 or published.
@@ -63,7 +64,8 @@ Existing evidence is linked, not repeated.
 - **Live updates of the deployed HTTP service:** to a newer build in the second #12 run
   ([VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)) and to the
   second release in [live-check-2026-11-08.md](live-check-2026-11-08.md); the service ran release
-  0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)) and runs 0.3.0 now (read-only observation below).
+  0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)) and ran 0.3.0 when this report was written (read-only observation below); it was updated to
+  0.4.0 afterwards ([deploy-0.4.0.md](deploy-0.4.0.md)).
 - **Retained data, newer code reads older data:** `tests/test_upgrade_compat.py`
   ([issue-21.md](issue-21.md), [versioning](../contract/versioning.md#upgrade-downgrade-and-rollback)).
 - **New in this report, published releases, local synthetic run (not the deployed service):** one
@@ -130,8 +132,9 @@ Existing evidence is linked, not repeated.
     them; no write was made after the rollback (so reading snapshots written by 0.3.0 was not
     tested; the existing 7 snapshots pre-date 0.3.0); not a rollback after the next code-changing
     release.
-- **Pending for the next minor release:** upgrade of the deployed service from 0.3.0 and the
-  rollback after that release, on the owner's release and rollback authorization.
+- **Next minor release (0.4.0):** the upgrade of the deployed service from 0.3.0 was run and
+  succeeded ([deploy-0.4.0.md](deploy-0.4.0.md)); the rollback after that release (0.4.0 back to
+  0.3.0) was **not** run and stays pending.
 
 ## 4. Hardware and firmware observations
 
@@ -235,7 +238,7 @@ breaking changes with migration notes.
   run, section 3).
 - Hardware: any controller, firmware or capability other than the one above; reboot and
   power-cycle persistence; the items listed as mock-only in section 4; the HTTP transport on
-  hardware with the published package (the deployed service runs 0.3.0 per the read-only observation of 2026-11-13; its last recorded hardware use was on 0.1.2).
+  hardware with the published package (the deployed service ran 0.3.0 per the read-only observation of 2026-11-13 and runs 0.4.0 since the update recorded in [deploy-0.4.0.md](deploy-0.4.0.md); its last recorded hardware use was on 0.1.2).
 - Preset snapshots read by an older release after a newer release wrote them (groups and scenes
   only were tested in section 3).
 - No load, soak or fuzz testing of the published package.

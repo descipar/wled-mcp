@@ -155,6 +155,7 @@ owner's explicit instruction ("everything of the release", 2026-11-13;
   [DEC-036](../DECISIONS.md#dec-036--m5-closes-without-its-own-release)). Closing the milestone
   in GitHub is not a coordinator action in [AGENT-WORKFLOW.md](../AGENT-WORKFLOW.md) (the
   coordinator prepares, the owner decides), so it is left to the owner or the main session.
-- Not done: deployment of 0.4.0 on the deployed target (it still runs 0.3.0; separate instruction
-  and authorization, no MCPHub reinstall, [DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
-  Upgrade and rollback evidence for 0.3.0 to 0.4.0 stays pending until that deployment.
+- Deployment of 0.4.0 on the deployed target: done afterwards on a separate owner instruction, see
+  [deploy-0.4.0.md](deploy-0.4.0.md) (update from 0.3.0 succeeded, no MCPHub reinstall,
+  [DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)). The rollback after
+  0.4.0 (to 0.3.0) was not run and stays pending.

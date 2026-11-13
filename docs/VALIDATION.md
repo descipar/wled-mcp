@@ -1341,4 +1341,5 @@ All Must requirements need evidence. Mock implementation can be merged while har
 - [validation/launch-report.md](validation/launch-report.md): launch report for the published
   release 0.3.0 (clean PyPI install, one interoperability run per transport, hardware and
   firmware observations, external routes, maintenance scope, tests not run) and the
-  [rollback checklist](validation/issue-25-rollback-plan.md) (#25).
+  [rollback checklist](validation/issue-25-rollback-plan.md) (#25); the update of the deployed
+  service to release 0.4.0 is recorded in [validation/deploy-0.4.0.md](validation/deploy-0.4.0.md).

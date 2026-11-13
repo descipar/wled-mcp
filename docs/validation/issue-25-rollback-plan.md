@@ -13,7 +13,8 @@ this run (restart and rollback). No publication, release, tag or registry step a
 
 ## Preconditions
 
-0. **Observed 2026-11-13 (read-only) and decided.** The target runs 0.3.0 with only the image of
+0. **Observed 2026-11-13 (read-only) and decided.** The target ran 0.3.0 at that time (it was updated to 0.4.0 later, see
+   [deploy-0.4.0.md](deploy-0.4.0.md)) with only the image of
    0.3.0 and the retained staged directories of 0.3.0 and 0.1.2. The owner chose rollback target P =
    **0.2.0**, which first has to be staged on the target. DEC-026 stages a release on the target
    machine with `deploy/stage_release.py` from a clean checkout of the tag `v0.2.0`, which also
