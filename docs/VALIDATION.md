@@ -1308,6 +1308,9 @@ All Must requirements need evidence. Mock implementation can be merged while har
 - [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
   schema validation and the 0.2.0 release preparation and publication (#24). The 0.3.0 preparation is recorded in
   [validation/release-m2.md](validation/release-m2.md) (preparation and the publication record of 2026-11-11).
+- [validation/release-m3-m6.md](validation/release-m3-m6.md): preparation of the minor release
+  that carries all work merged since 0.3.0 (completeness check against the commit list, local
+  build and check results, owner-gated steps still to run; nothing published).
 - [validation/issue-28.md](validation/issue-28.md): temporary signals with conflict-aware
   restoration, controlled-clock manager tests and transport parity (#28, mock and loopback
   evidence; live evidence pending).

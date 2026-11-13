@@ -5,9 +5,35 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## Unreleased
+## 0.4.0 - M3 to M6: layout preview, signals, security review and the MCPB bundle
 
-The served tool list grows from 33 to 37 tools; the change is additive.
+The minor release that carries all work merged since 0.3.0: milestones M3 (layout preview), M4
+(temporary signals), M5 (validation with locked controllers) and M6 (public distribution
+and the bounded security review), plus the backlog and tooling changes listed below. M3, M4 and
+M5 close without a release of their own
+([DEC-032](docs/DECISIONS.md#dec-032--m3-closes-without-its-own-release),
+[DEC-034](docs/DECISIONS.md#dec-034--m4-closes-without-its-own-release),
+[DEC-036](docs/DECISIONS.md#dec-036--m5-closes-without-its-own-release)). A minor release under the
+`0.x` policy ([versioning](docs/contract/versioning.md), DEC-020). The served tool list grows from
+33 to 37 tools; the tool changes are additive and no tool or field was removed or renamed.
+Four behaviors changed and carry migration notes below: the snapshot directory, the HTTP
+protocol error bodies, the HTTP startup line and the definition-directory scan cap.
+
+### Migration
+
+- **Snapshot directory (#181).** A symlinked `<data_dir>/backups` is no longer followed; see the
+  symlink entry under "Changed" below.
+- **HTTP error bodies (#181).** Transport-level HTTP errors (status 400 and above, such as a
+  malformed request) now carry a fixed message and no SDK text that could quote the request. The
+  status, the JSON-RPC code and request ID and the server's own fixed messages are unchanged; a
+  client that parsed the SDK's validation text of such an error sees "HTTP request rejected."
+  instead. Successful responses are unchanged.
+- **HTTP startup line (#181).** The stderr notice at startup is `listening on configured address
+  path /mcp` and no longer names the host and port; a bind failure prints a fixed message with the
+  OS error number. A script that waited for or parsed `listening on <host>:<port>` must match
+  the new line.
+- **Definition directories (#181).** A group, scene or zone directory with more files than the scan
+  cap now refuses to store a new definition instead of using an incomplete count.
 
 ### Added
 
@@ -35,10 +61,38 @@ The served tool list grows from 33 to 37 tools; the change is additive.
   PyPI upload. The bundle only makes Claude Desktop start the released package through `uvx`
   (it needs uv on the PATH of Claude Desktop). It is built along with each release, not tested
   by the project and comes without warranty. The jobs have not run yet; the first bundle is
-  attached to the next release.
+  expected to be attached to the release that carries this entry.
+
+- Usage feedback issue template
+  ([#193](https://github.com/descipar/wled-mcp/issues/193)): the server collects no telemetry,
+  and a voluntary template and a README note ask how people use it (no secrets or addresses).
+- Troubleshooting guide and current architecture description
+  ([#23](https://github.com/descipar/wled-mcp/issues/23),
+  [troubleshooting](docs/TROUBLESHOOTING.md)); stale statements in the public documents were
+  corrected.
+- Security and supply-chain checks in CI ([#181](https://github.com/descipar/wled-mcp/issues/181),
+  [record](docs/validation/issue-181.md)): Ruff security rules over `src`, CodeQL Python
+  `security-extended` analysis, weekly Dependabot updates and SHA-pinned CI actions with
+  discarded checkout credentials. CodeQL reports one open medium finding: the explicit CLI mDNS
+  discovery binds its ephemeral reply socket to all IPv4 interfaces
+  ([#222](https://github.com/descipar/wled-mcp/issues/222)); see
+  [SECURITY.md](SECURITY.md#practical-limits).
 
 ### Changed
 
+- Bounded source security review fixes ([#181](https://github.com/descipar/wled-mcp/issues/181)):
+  unknown keys in rejected definitions, bundles and segment inputs are no longer echoed in error
+  text, and the startup and bind-error diagnostics of the HTTP service no longer name the
+  listener (see the migration notes). One pass over five areas, not an audit; remaining local
+  directory-replacement risk is [#220](https://github.com/descipar/wled-mcp/issues/220).
+- Layout preview `colour_basis` states `mixed` when only some lanes use live samples and
+  `state_slot_0` when none does ([#187](https://github.com/descipar/wled-mcp/pull/187),
+  [#189](https://github.com/descipar/wled-mcp/pull/189)); an additive value of a tolerant schema.
+- The README is shorter and links to the documents that own the detail
+  ([#194](https://github.com/descipar/wled-mcp/pull/194)).
+- The test suite passes on a Windows checkout
+  ([#191](https://github.com/descipar/wled-mcp/issues/191), [DEC-033](docs/DECISIONS.md#dec-033--windows-is-a-supported-development-platform));
+  the user-facing Windows tier stays experimental.
 - CI runs the complete test suite in parallel with pytest-xdist (`pytest -n auto`); a plain
   `pytest` run stays serial ([#154](https://github.com/descipar/wled-mcp/issues/154)).
 - Snapshot storage no longer follows a symlinked `<data_dir>/backups` directory
@@ -48,6 +102,28 @@ The served tool list grows from 33 to 37 tools; the change is additive.
   snapshot fails with `BACKUP_FAILED` (so overwrites and deletes that need a snapshot are
   refused). The snapshots are not lost; they remain in the link target. Point `data_dir` at
   the real directory or replace the link with a real directory containing the snapshots.
+
+### Tested and not tested
+
+- All new tools have mocked and loopback tests, including parity over stdio and protected HTTP.
+  Temporary signals ran twice on the one test controller (WLED 16.0.1, stdio only;
+  [record](docs/validation/issue-28.md)). The layout preview has no hardware run. The MCPB bundle
+  was never started in Claude Desktop and its release jobs have not run on GitHub. The security
+  review is one bounded pass, not an audit, and gives no security support
+  ([DEC-013](docs/DECISIONS.md)).
+
+### Documentation and evidence
+
+- Validation records without code change: behavior with a settings PIN and an OTA lock
+  ([#128](https://github.com/descipar/wled-mcp/issues/128),
+  [record](docs/validation/issue-128.md)) and the launch report with the live rollback from 0.3.0
+  to 0.2.0 on the deployed service ([#25](https://github.com/descipar/wled-mcp/issues/25),
+  [report](docs/validation/launch-report.md)).
+- Contract text for agent-driven discovery and enrollment
+  ([#198](https://github.com/descipar/wled-mcp/issues/198), [contract](docs/contract/discovery.md)) is
+  merged as documentation of milestone M8; **none of it is implemented in this release**: there is no
+  `wled_discover_devices`, `wled_add_device` or `wled_set_discovery_ranges` tool.
+- Decision records, roadmap and agent-workflow documents changed; they do not affect the package.
 
 ## 0.3.0 - M2: observe and explain
 
