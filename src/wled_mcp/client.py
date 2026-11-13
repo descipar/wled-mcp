@@ -175,7 +175,7 @@ class WLEDClient:
         if self.observer is not None:
             try:
                 self.observer(device.id, code)
-            except Exception:
+            except Exception:  # noqa: S110 - observer faults cannot alter request outcomes
                 pass  # a diagnostics fault must never change the outcome of a request
 
     async def _exchange(

@@ -215,10 +215,10 @@ def text_of(bundle: dict[str, Any]) -> str:
         (lambda b: b.update(format_version="1"), "integer 0-9999"),
         (lambda b: b.update(format_version=True), "integer 0-9999"),
         (lambda b: b.update(format_version=10000), "integer 0-9999"),
-        (lambda b: b.update(signature="x"), "Unknown bundle key 'signature'"),
+        (lambda b: b.update(signature="x"), "Unknown bundle key '<redacted>'"),
         (lambda b: b.pop("catalog"), "Missing bundle key 'catalog'"),
         (lambda b: b.update(created_at="yesterday"), "created_at"),
-        (lambda b: b["source"].update(device_id="desk"), "Unknown key 'device_id'"),
+        (lambda b: b["source"].update(device_id="desk"), "Unknown key '<redacted>'"),
         (lambda b: b["source"]["capabilities"].update(matrix={"w": 0, "h": 2}), "matrix"),
         (lambda b: b["catalog"]["effects"].update({"01": "x"}), "catalog ID"),
         (lambda b: b["presets"][0].update(source_id=0), "1-250"),
@@ -228,7 +228,7 @@ def text_of(bundle: dict[str, Any]) -> str:
         (lambda b: b["presets"][2].update(type="state"), "never treated as a state preset"),
         (lambda b: b["presets"][0].update(type="playlist"), "does not match"),
         (lambda b: b["presets"][0].update(name="Other"), "name"),
-        (lambda b: b["presets"][0].update(extra=1), "Unknown key 'extra'"),
+        (lambda b: b["presets"][0].update(extra=1), "Unknown key '<redacted>'"),
         (lambda b: b.update(presets={}), "must be a list"),
     ],
 )
@@ -786,3 +786,13 @@ async def test_segment_stop_boundary_at_the_target_led_count(tmp_path, stop, blo
     assert outcome.ok is not blocked
     if blocked:
         assert "stop 31 exceeds the target LED count 30" in json.dumps(outcome.data["plan"])
+
+
+def test_unknown_bundle_key_diagnostic_does_not_echo_sensitive_input():
+    marker = "synthetic-token@192.0.2.42"
+    bundle = load_fixture()
+    bundle[marker] = marker
+    with pytest.raises(ClientFailure) as caught:
+        parse_bundle(bundle)
+    assert "Unknown bundle key" in caught.value.error.message
+    assert marker not in str(caught.value)

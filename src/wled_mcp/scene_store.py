@@ -177,11 +177,16 @@ class DefinitionStore[T]:
             return 0
         try:
             with os.scandir(self.directory) as entries:
-                return sum(
-                    1
-                    for count, entry in enumerate(entries)
-                    if count < MAX_DIRECTORY_ENTRIES and FILE_NAME_RE.match(entry.name)
-                )
+                matched = 0
+                for count, entry in enumerate(entries):
+                    if count >= MAX_DIRECTORY_ENTRIES:
+                        # A partial count cannot prove that there is room for a new item.
+                        raise storage_failed(
+                            "Definition directory scan limit reached; no file stored."
+                        )
+                    if FILE_NAME_RE.match(entry.name):
+                        matched += 1
+                return matched
         except OSError:
             LOGGER.warning("definition store scan failure kind=%s", self.kind)
             raise storage_failed() from None

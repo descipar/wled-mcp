@@ -617,3 +617,67 @@ async def test_forced_shutdown_leaves_write_uncertain_without_replay(tmp_path):
             await anyio.sleep(0.2)
             assert fresh.calls == [] and again.executions == []
         assert router.count("POST") == 1
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("modern", [False, True])
+async def test_protocol_validation_errors_do_not_echo_peer_input(tmp_path, modern, caplog):
+    marker = "synthetic-secret@192.0.2.42"
+    async with running_service(tmp_path) as run:
+        headers = {**run.headers, **MCP_HEADERS}
+        if modern:
+            headers["MCP-Protocol-Version"] = "2026-07-28"
+        async with run.raw(headers=headers) as http:
+            response = await http.post(
+                "/mcp", json={"jsonrpc": "2.0", "id": 1, "method": {marker: marker}}
+            )
+        assert response.status_code == 400
+        assert marker not in response.text and marker not in caplog.text
+        assert response.json()["error"]["message"] == "HTTP request rejected."
+        assert run.router.calls == [] and run.executions == []
+
+
+@pytest.mark.anyio
+async def test_bind_failure_keeps_safe_diagnostic_without_raw_os_error(monkeypatch, capsys):
+    import asyncio
+
+    import uvicorn
+
+    from wled_mcp.diagnostics import LogSettings, configure_logging
+    from wled_mcp.http_service import _Server
+
+    marker = "synthetic-secret@192.0.2.42 bind failure"
+    called = []
+
+    async def fail_create_server(*args, **kwargs):
+        called.append(True)
+        raise OSError(98, marker)
+
+    async def app(scope, receive, send):
+        raise AssertionError("lifespan is disabled; no application invocation expected")
+
+    root = logging.getLogger()
+    previous_handlers, previous_level = list(root.handlers), root.level
+    package = logging.getLogger("wled_mcp")
+    previous_package_level = package.level
+    dependency = logging.getLogger("uvicorn.error")
+    previous_filters = list(dependency.filters)
+    try:
+        configure_logging(LogSettings())
+        monkeypatch.setattr(asyncio.get_running_loop(), "create_server", fail_create_server)
+        config = uvicorn.Config(app, host="192.0.2.42", port=8000, lifespan="off", log_config=None)
+        config.load()
+        server = _Server(config, install_signal_handlers=False, on_started=None)
+        server.lifespan = config.lifespan_class(config)
+        with pytest.raises(SystemExit):
+            await server.startup()
+        captured = capsys.readouterr()
+        assert called == [True] and not server.started
+        assert captured.out == ""
+        assert marker not in captured.err and "192.0.2.42" not in captured.err
+        assert "HTTP startup failure" in captured.err and "OS error number: 98" in captured.err
+        assert dependency.filters == previous_filters
+    finally:
+        root.handlers[:] = previous_handlers
+        root.setLevel(previous_level)
+        package.setLevel(previous_package_level)
