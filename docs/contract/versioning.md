@@ -211,7 +211,8 @@ output of the `wled-mcp` subcommands and the `doctor --export` summary
   stay on disk untouched.
 - What is tested: the current server reading the retained data of earlier releases
   and rejecting newer versions without modifying files. An older server reading data
-  of a newer one is not run in a test; it holds while the configuration and snapshot
+  of a newer one is not run in a test (one manual run of two consecutive releases on the same
+  groups and scenes is in the [launch report](../validation/launch-report.md)); it holds while the configuration and snapshot
   formats are unchanged (both are still version 1), and any format change gets a new
   version and a migration note.
 - A code rollback does not restore any device state, preset or layout; device state

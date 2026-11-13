@@ -99,8 +99,10 @@ State of the evidence and the limits of the source releases (see also the
   server reading newer data is not tested and relies on unchanged formats
   ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update of a
   deployed HTTP service was checked once (earlier build to the second release, see the
-  record above); a rollback has not been checked and stays part of the deferred launch
-  work ([#25](https://github.com/descipar/wled-mcp/issues/25)).
+  record above); one rollback of the deployed service to the previous release and back was
+  checked once, without a data-format change ([launch report](validation/launch-report.md#3-upgrade-and-rollback-evidence),
+  [#25](https://github.com/descipar/wled-mcp/issues/25)); a rollback after the next code-changing
+  release is not checked.
 
 ## Issue-2 contract traceability
 
@@ -1333,3 +1335,7 @@ All Must requirements need evidence. Mock implementation can be merged while har
   static analysis, dependency updates and residual risks (#181; mocks and loopback only).
 - [validation/issue-25.md](validation/issue-25.md): live H07 check with an unreachable configured
   controller on the deployed HTTP service (#25; read-only, temporary inventory entry).
+- [validation/launch-report.md](validation/launch-report.md): launch report for the published
+  release 0.3.0 (clean PyPI install, one interoperability run per transport, hardware and
+  firmware observations, external routes, maintenance scope, tests not run) and the
+  [rollback checklist](validation/issue-25-rollback-plan.md) (#25).
