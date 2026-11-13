@@ -40,6 +40,10 @@ ENVELOPE_KEYS = frozenset(
     {"format_version", "backup_id", "device_id", "preset_id", "firmware", "created_at", "preset"}
 )
 
+_SYMLINK_ROOT_WARNING = (
+    "The snapshot directory is a symbolic link and is not followed; existing snapshots are "
+    "not listed. Point data_dir at the real directory."
+)
 _SAFE = {
     "BACKUP_FAILED": "Preset snapshot could not be stored durably; no write was sent.",
     "READ_FAILED": "Preset snapshot storage could not be read.",
@@ -297,6 +301,8 @@ class SnapshotStore:
     def list_snapshots(self, device_id: str) -> SnapshotListing:
         """Valid snapshots oldest first; invalid entries are counted, never named."""
         device_dir = self._device_dir(device_id)
+        if self.directory.is_symlink():
+            return SnapshotListing((), 0, (_SYMLINK_ROOT_WARNING,))
         if not _device_dir_ok(self.directory) or not _device_dir_ok(device_dir):
             return SnapshotListing((), 0)
         valid: list[Snapshot] = []

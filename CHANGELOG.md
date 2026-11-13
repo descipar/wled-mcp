@@ -44,7 +44,7 @@ The served tool list grows from 33 to 37 tools; the change is additive.
 - Snapshot storage no longer follows a symlinked `<data_dir>/backups` directory
   ([#181](https://github.com/descipar/wled-mcp/issues/181)). Earlier versions followed it as an
   operator choice. **Migration:** if `backups/` is a symlink, the snapshot listing shows no
-  snapshots and load or restore reports `PRESET_NOT_FOUND`, and creating a snapshot fails with
+  snapshots (with a warning) and load or restore reports `PRESET_NOT_FOUND`, and creating a snapshot fails with
   `BACKUP_FAILED` (so overwrites and deletes that need a snapshot are refused). The snapshots
   are not lost; they remain in the link target. Point `data_dir` at the real directory or replace the link with a real directory containing the
   snapshots.

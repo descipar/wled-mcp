@@ -838,4 +838,6 @@ def test_snapshot_root_symlink_is_not_used_for_read_or_write(tmp_path):
     (outside / "desk").mkdir()
     (outside / "desk" / f"{GOOD_ID}.json").write_text(json.dumps(envelope(GOOD_ID)))
     assert code_of(store.load, "desk", GOOD_ID) == "PRESET_NOT_FOUND"
-    assert store.list_snapshots("desk").snapshots == ()
+    listing = store.list_snapshots("desk")
+    assert listing.snapshots == ()
+    assert any("symbolic link" in warning for warning in listing.warnings)
