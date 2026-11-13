@@ -17,8 +17,8 @@ this run (restart and rollback). No publication, release, tag or registry step a
    0.3.0 and the retained staged directories of 0.3.0 and 0.1.2. The owner chose rollback target P =
    **0.2.0**, which first has to be staged on the target. DEC-026 stages a release on the target
    machine with `deploy/stage_release.py` from a clean checkout of the tag `v0.2.0`, which also
-   writes `SHA256SUMS` and `RELEASE` and builds a wheel from the checkout; the wheel on PyPI is
-   not the staged artifact. Confirm that this (checkout of the tag, then compare the staged wheel
+   writes `SHA256SUMS` and `RELEASE` and copies the wheel built from that checkout by
+   `scripts/check_distribution.py`; the wheel on PyPI is not the staged artifact. Confirm that this (checkout of the tag, then compare the staged wheel
    hash with the PyPI wheel hash of 0.2.0, which `stage_release.py` does not guarantee to equal) is
    what "stage from PyPI" meant. The image `wled-mcp:0.2.0` is then built from that directory.
    The hub itself is never reinstalled ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps));

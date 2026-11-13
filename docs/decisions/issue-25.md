@@ -78,7 +78,15 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
   waiver ISSUE-24-DEC-005 is unchanged and no fresh-install test is claimed.
 - Superseded part: the sentence "restart and rollback are not authorized" of ISSUE-25-DEC-002
   no longer holds for the scope above; the hardware part of DEC-002 is unchanged.
-- Observation that needs a choice (2026-11-13, read-only): the deployed service runs 0.3.0; only
-  its image and the staged directories of 0.3.0 and 0.1.2 exist, so the rollback target is 0.1.2
-  (rebuilt image, two releases back) unless 0.2.0 is staged first.
-- Revalidation needed / next action: the owner (via the coordinator) selects the rollback target.
+- Update 2026-11-13 (relayed owner decisions, no permalink): (a) rollback target: the owner chose
+  release 0.2.0, staged on the deployed target first; (b) hub entry: the owner has **not** answered
+  whether the wled-mcp hub entry may be changed, so the hub-entry part of the scope above is
+  **pending** and not exercised; the default is not to touch the entry and to verify the service
+  directly on the target (read-only through the hub if reachable), stopping and reporting if the
+  rollback cannot be verified without changing it; (c) the hub itself is never reinstalled
+  ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
+- Observation (2026-11-13, read-only): the deployed service ran 0.3.0 with only its image and the
+  staged directories of 0.3.0 and 0.1.2. A later attempt to start the run failed because the target
+  was unreachable from the session (name resolution); nothing was changed.
+- Revalidation needed / next action: reachability of the target, then the owner's go for the run;
+  the owner's answer on the hub entry if verification needs it.

@@ -959,13 +959,11 @@ can explicitly amend them.
      never part of any project test, rollback or release step.
   2. The MCPHub fresh-install test stays waived ([ISSUE-24-DEC-005](decisions/issue-24.md)).
   3. Changes to the wled-mcp service on a deployed target (update, rollback, restore, restart)
-     do not imply any hub reinstall. A change to the wled-mcp hub entry needs its own owner
-     answer; other hub entries and the hub are never changed by project work.
-- Scope: global. It narrows nothing that an issue decision authorizes for the wled-mcp service
-  itself; ISSUE-25-DEC-003 is unchanged except that its hub-entry part is not exercised unless the
-  owner answers it.
-- Affected: docs/DEPLOYMENT.md (rollback note), docs/validation/issue-25-rollback-plan.md,
-  docs/validation/launch-report.md.
+     do not imply any hub reinstall.
+- Scope: global, limited to reinstalling the hub. It says nothing about the wled-mcp hub entry or
+  other hub entries; those are governed by the issue decisions (ISSUE-25-DEC-003).
+- Affected: docs/DEPLOYMENT.md (rollback note), docs/decisions/issue-25.md,
+  docs/validation/issue-25-rollback-plan.md, docs/validation/launch-report.md.
 
 ### DEC-036 — M5 closes without its own release
 
