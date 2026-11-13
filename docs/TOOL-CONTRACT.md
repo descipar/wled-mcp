@@ -706,8 +706,9 @@ clock plus 48 random bits, never from preset names or caller text. The file is c
 exclusively and never overwrites; a collision regenerates the ID. IDs resolve only
 inside the data directory: no caller path, name or glob. Symlinked snapshot files,
 device directories and the `backups/` root itself are never followed (#181: the root was
-formerly followed as an operator choice; an operator who linked it now gets
-`BACKUP_FAILED` and must point `data_dir` at the real location). Non-regular files (FIFOs, devices) are rejected
+formerly followed as an operator choice; an operator who linked it now sees an
+empty listing and `PRESET_NOT_FOUND` on load, and `BACKUP_FAILED` on create; the snapshots stay
+in the link target and `data_dir` must point at the real location). Non-regular files (FIFOs, devices) are rejected
 without being opened.
 
 Write sequence (`backup_preset`, blocking I/O run shielded from cancellation): same-
