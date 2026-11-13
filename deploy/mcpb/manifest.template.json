@@ -1,0 +1,58 @@
+{
+  "manifest_version": "0.3",
+  "name": "wled-mcp",
+  "display_name": "WLED MCP (unofficial)",
+  "version": "REPLACE_WITH_VERSION",
+  "description": "Unofficial MCP server for WLED LED controllers; not affiliated with the WLED project",
+  "long_description": "Unofficial MCP server for WLED LED controllers; not affiliated with the WLED project and not endorsed by it.\n\nThis bundle contains no server code. It makes Claude Desktop start the released PyPI package `wled-mcp==REPLACE_WITH_VERSION` through `uvx`, over stdio only. The HTTP service is not part of the bundle.\n\nPrerequisites:\n\n- `uv` (which provides `uvx`) installed and on the PATH that Claude Desktop sees.\n- A device inventory file listing your own controllers, created beforehand with `wled-mcp config init`.\n- An existing, writable data directory.\n\nThe install dialog asks for the inventory file and the data directory. Nothing else is configured and no secret is stored.\n\nThe bundle is built along with each release by the project's release workflow, is not tested by the project and comes without warranty (Apache-2.0).",
+  "author": {
+    "name": "REPLACE_WITH_AUTHOR"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/descipar/wled-mcp"
+  },
+  "homepage": "https://github.com/descipar/wled-mcp#readme",
+  "documentation": "https://github.com/descipar/wled-mcp#readme",
+  "support": "https://github.com/descipar/wled-mcp/issues",
+  "server": {
+    "type": "python",
+    "entry_point": "server/main.py",
+    "mcp_config": {
+      "command": "uvx",
+      "args": [
+        "--isolated",
+        "--python",
+        "3.13",
+        "--from",
+        "wled-mcp==REPLACE_WITH_VERSION",
+        "wled-mcp",
+        "--transport",
+        "stdio",
+        "--config",
+        "${user_config.config_path}",
+        "--data-dir",
+        "${user_config.data_dir}"
+      ]
+    }
+  },
+  "keywords": ["wled", "mcp", "led", "lighting"],
+  "license": "Apache-2.0",
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"]
+  },
+  "user_config": {
+    "config_path": {
+      "type": "file",
+      "title": "Device inventory",
+      "description": "Absolute path of the device inventory (TOML file) that lists your own WLED controllers",
+      "required": true
+    },
+    "data_dir": {
+      "type": "directory",
+      "title": "Data directory",
+      "description": "Absolute path of an existing, writable directory for the server's snapshots and stored data",
+      "required": true
+    }
+  }
+}

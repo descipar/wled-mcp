@@ -3,17 +3,22 @@
 How the package `wled-mcp` gets to PyPI: the workflow
 [`.github/workflows/publish.yml`](../.github/workflows/publish.yml), the setup the owner does
 once, and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-002 in
-[decisions/issue-22.md](decisions/issue-22.md). Evidence:
-[validation/issue-22.md](validation/issue-22.md).
+[decisions/issue-22.md](decisions/issue-22.md); for the MCPB bundle ISSUE-151-DEC-001 and
+ISSUE-151-DEC-002 in [decisions/issue-151.md](decisions/issue-151.md). Evidence:
+[validation/issue-22.md](validation/issue-22.md), [validation/issue-151.md](validation/issue-151.md).
 
 Status: the workflow has published releases (see "First release" and the registry section
 below). Merging a change to the workflow does not publish anything. Registering the publisher, changing the environment, creating a tag or
 release and approving an upload each need the owner's explicit instruction at that time
-([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)).
+([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs
+(see "MCPB bundle (#151)" below) have not run yet: their first run is the next release the owner
+publishes.
 
 ## What the workflow does
 
-Two jobs, one run per ref at a time; a running publish is never cancelled.
+Four jobs, one run per ref at a time; a running publish is never cancelled. `build` and
+`publish` are the PyPI path described here and are independent of the other two jobs,
+`build-mcpb` and `release-asset`, which handle the Claude Desktop bundle (next sections).
 
 1. **build** (`contents: read`, no other permission):
    1. checks out the ref with full history and without stored credentials;
@@ -125,6 +130,10 @@ Each step needs the owner's instruction at that time. Done for the first PyPI re
 6. After the upload, compare the file names and SHA-256 on the PyPI project page with the
    job summary and check a clean install:
    `uvx --from wled-mcp==<version> wled-mcp --version`.
+7. After the `release-asset` job ran, check that the GitHub release lists
+   `wled-mcp-<version>.mcpb` and `wled-mcp-<version>.mcpb.sha256` and that the hash matches the
+   `build-mcpb` job summary. The bundle jobs do not gate the PyPI files; the first such check is
+   the next release's, and a wrong asset is removed by hand.
 
 ## Pinning, update and rollback
 
@@ -174,6 +183,63 @@ never accepts the name of a deleted file again.
 With Trusted Publishing, `pypa/gh-action-pypi-publish` creates PEP 740 attestations for the
 uploaded files by default. They are the provenance for the PyPI files; a separate SBOM
 file is not produced (see the inventory below).
+
+## MCPB bundle (#151)
+
+Each run also builds a Claude Desktop bundle (`wled-mcp-<version>.mcpb`) and attaches it to the
+GitHub release. **The bundle is built along with each release, not tested by the project, no
+warranty** ([ISSUE-151-DEC-001](decisions/issue-151.md)). It contains no server code: its
+manifest starts the released PyPI package through `uvx`. Format, manifest design and limits:
+[contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view:
+[MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made and
+the bundle jobs have not run yet.
+
+Two further jobs, both outside the PyPI path (`publish` needs only `build`, so a failure of
+either never prevents or changes the PyPI upload; ISSUE-151-DEC-002 item 4):
+
+1. **build-mcpb** (`contents: read`, no `needs`, no environment): checks out the ref without
+   stored credentials, installs the locked environment without the project, runs the same release
+   guard and then `deploy/build_mcpb.py --version "${GITHUB_REF_NAME#v}" --output mcpb-dist`. The
+   script fails unless the requested version equals `project.version`, the manifest validates
+   against the vendored upstream schema and the archive has the four expected members. The
+   SHA-256 goes to the job summary and to a job output, and `mcpb-dist/` is uploaded as the
+   artifact `mcpb-bundle`. `dist/` is not touched.
+2. **release-asset** (`contents: write`, the only job with a write permission): `needs:
+   [build-mcpb, publish]` and no `if:`, so it runs only when the PyPI upload (after the `pypi`
+   environment review) and the bundle build both succeeded; it never runs after a rejected,
+   cancelled or failed deployment. It has no checkout, no build or install step and uses only
+   `actions/download-artifact`. A first step verifies the download against the checksum of the
+   `build-mcpb` job output (exactly that one file, nothing else in the directory) and writes
+   `wled-mcp-<version>.mcpb.sha256` in `sha256sum` format from the tested value. The upload step,
+   the only one that sees the token (`GH_TOKEN` from `github.token`, no new secret), re-checks the
+   tag against `^v<digits>.<digits>.<digits>(rc<digits>)?$` and attaches both files with
+   `gh release upload`. The job calls no `gh release create`, `edit` or `delete`, no `gh api`, no
+   `curl` or `git push`, never unpacks the bundle and does not use `--clobber`.
+
+**Re-runs.** "Re-run failed jobs" re-runs only `release-asset` with the same artifact and
+checksum. An asset that already exists with identical bytes is accepted as a no-op, as PyPI
+accepts identical files; an existing asset with different bytes fails the job and is never
+replaced. A full new run on the same tag rebuilds the archive; it is deterministic, so the bytes
+are identical, and a difference fails the job for the owner to decide. A wrong asset is removed by
+hand in the release page, and a broken bundle is fixed with a new release, like the PyPI files.
+`workflow_dispatch` on a tag without a release makes `gh release view` fail; the job never
+creates a release.
+
+**Residual risk.** `contents: write` is a broad permission (releases, tags, branches; not
+workflow files). The main-branch rulesets ([DEC-024](DECISIONS.md#dec-024--main-branch-rules-with-review-for-external-pull-requests))
+block a direct push by this token because it is not a bypass actor, which this change did not
+re-verify; tag creation and deletion is restricted only if the owner set the recommended `v*` tag
+ruleset above. The `gh` CLI is the version of the runner image (the job prints it), and
+`actions/download-artifact` receives the workflow token through its default input. The bundle is
+unsigned and has no attestation; the `.sha256` asset is published by the same workflow, so it
+checks a download against damage and does not prove origin.
+
+**First run.** Merging the change publishes nothing. The first execution of both jobs is the next
+release the owner publishes (DEC-023). Until then the jobs are verified by review, the static and
+shell tests of `tests/test_publish_workflow.py` and a local dry run of the build step
+([validation/issue-151.md](validation/issue-151.md)); the first real run is recorded there
+afterwards and does not block closing the issue. Submitting the bundle to any directory is an
+owner action and not planned.
 
 ## Dependency and licence inventory, vulnerability review
 
@@ -236,6 +302,7 @@ completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md
 6. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
    and record the result. Whether a published entry can be corrected under the same version
    was not checked; read the registry's rules before relying on it.
+7. Check the bundle assets on the GitHub release (see "MCPB bundle (#151)").
 
 **`mcp-publisher` on Windows (recipe used for the M1 release).** Download the release asset
 `mcp-publisher_windows_amd64.tar.gz` and `registry_<publisher version>_checksums.txt` of the
@@ -264,6 +331,14 @@ uv build --no-build-isolation --offline --no-create-gitignore --out-dir .artifac
 uvx --from twine==7.0.0 twine check --strict .artifacts/dist-check/*
 uv run --frozen python scripts/check_distribution.py --wheel .artifacts/dist-check/<wheel> --sdist .artifacts/dist-check/<sdist>
 uvx --from actionlint-py actionlint .github/workflows/publish.yml
+uv run --frozen pytest tests/test_mcpb_bundle.py tests/test_publish_workflow.py
+uv run --frozen python deploy/build_mcpb.py --output .artifacts/mcpb-dry-run
+uv run --frozen python -I -m zipfile -l .artifacts/mcpb-dry-run/wled-mcp-<version>.mcpb
 ```
 
-`--release-ref` fails outside a tagged workflow run by design.
+`--release-ref` fails outside a tagged workflow run by design. The bundle dry run prints
+`<sha256>  wled-mcp-<version>.mcpb`, writes only that file and lists `LICENSE`, `NOTICE`,
+`manifest.json` and `server/main.py`; the same command on another operating system is
+non-release evidence ([DEC-026](DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
+The tests that run the workflow's shell steps need bash, GNU `find` and `sha256sum` and are
+skipped with a stated reason on a plain Windows checkout.

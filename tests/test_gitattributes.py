@@ -22,6 +22,9 @@ PACKAGED = (
     "requirements-runtime.txt",
     "deploy/http/Dockerfile",
     "deploy/http/Dockerfile.dockerignore",
+    "deploy/mcpb/manifest.template.json",
+    "deploy/mcpb/server/main.py",
+    "deploy/mcpb/schema/mcpb-manifest-v0.3.schema.json",
 )
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")

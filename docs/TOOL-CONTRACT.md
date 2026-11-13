@@ -930,6 +930,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   static SVG, its sources, bounds, colour labels and output security rules (#29).
 - [contract/live-snapshot.md](contract/live-snapshot.md): bounded sampled LED observations,
   mapping provenance, unavailable endpoints and output limits (#150).
+- [contract/mcpb-bundle.md](contract/mcpb-bundle.md): the Claude Desktop MCPB bundle, its manifest
+  design, validation, release flow and limits (DIST-04, #151).
 - [contract/presets.md](contract/presets.md): preset restore, supplied-state save,
   snapshot listing, playlist authoring and preset bundles (#18).
 - [contract/profiles.md](contract/profiles.md): tool classes, access profiles,
