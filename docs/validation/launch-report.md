@@ -1,8 +1,7 @@
 # Launch report: published release 0.3.0
 
 Evidence for [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01, S2-LAUNCH-02,
-acceptance items 2 to 4 of the issue body; the live rollback is item 1 and is **not** part of this
-report). Decisions: [ISSUE-25-DEC-001, -002 and -003](../decisions/issue-25.md).
+acceptance items 2 to 4 of the issue body, and the live rollback of item 1 in section 3). Decisions: [ISSUE-25-DEC-001, -002 and -003](../decisions/issue-25.md).
 
 **Target.** This report covers the published release **v0.3.0** (PyPI, GitHub release and MCP
 Registry). The work of milestones M3 to M6 is merged on `main` but **unreleased**
@@ -124,8 +123,9 @@ Existing evidence is linked, not repeated.
     per DEPLOYMENT.md), the backup files named above; the scratch clone and logs were removed.
   - **DEPLOYMENT.md:** the update/rollback section was right. Corrections made: backing up the data
     directory needs root; a release that was never staged is staged first with the documented
-    procedure and its wheel was identical to PyPI's; the "stale tool list after rollback" note is
-    now "not needed in this run" (the tool list the hub shows was not inspected).
+    procedure (here its wheel was identical to PyPI's, an observation of this run); the "stale tool
+    list after rollback" note now says the hub entry needed no change and the cached tool list
+    was not observed (the tool list the hub shows was not inspected).
   - **Limits:** one rollback of one deployment, 0.3.0 to 0.2.0 with no data-format change between
     them; no write was made after the rollback (so reading snapshots written by 0.3.0 was not
     tested; the existing 7 snapshots pre-date 0.3.0); not a rollback after the next code-changing
