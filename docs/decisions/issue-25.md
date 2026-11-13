@@ -100,3 +100,6 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-12.
 - Executed 2026-11-13 after the owner's relayed "go" and confirmation of the staging method: the
   record is in [validation/launch-report.md](../validation/launch-report.md#3-upgrade-and-rollback-evidence).
   The hub entry was not changed, nothing else on the hub was touched, nothing was published.
+- 2026-11-13, later: the update of the deployed service to release 0.4.0 was run on a separate owner
+  instruction ([validation/deploy-0.4.0.md](../validation/deploy-0.4.0.md)); it is outside this
+  decision's rollback scope and did not use it. The hub entry was again not changed.
