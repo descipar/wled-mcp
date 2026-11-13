@@ -2,7 +2,7 @@
 
 Evidence for [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01, S2-LAUNCH-02,
 acceptance items 2 to 4 of the issue body; the live rollback is item 1 and is **not** part of this
-report). Decisions: [ISSUE-25-DEC-001 and ISSUE-25-DEC-002](../decisions/issue-25.md).
+report). Decisions: [ISSUE-25-DEC-001, -002 and -003](../decisions/issue-25.md).
 
 **Target.** This report covers the published release **v0.3.0** (PyPI, GitHub release and MCP
 Registry). The work of milestones M3 to M6 is merged on `main` but **unreleased**
@@ -62,7 +62,7 @@ Existing evidence is linked, not repeated.
 - **Live updates of the deployed HTTP service:** to a newer build in the second #12 run
   ([VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06)) and to the
   second release in [live-check-2026-11-08.md](live-check-2026-11-08.md); the service ran release
-  0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)) and runs 0.3.0 now (read-only observation above).
+  0.1.2 on 2026-11-11 ([issue-25.md](issue-25.md)) and runs 0.3.0 now (read-only observation below).
 - **Retained data, newer code reads older data:** `tests/test_upgrade_compat.py`
   ([issue-21.md](issue-21.md), [versioning](../contract/versioning.md#upgrade-downgrade-and-rollback)).
 - **New in this report, published releases, local synthetic run (not the deployed service):** one
@@ -198,7 +198,7 @@ breaking changes with migration notes.
   rollback of the next minor release.
 - Hardware: any controller, firmware or capability other than the one above; reboot and
   power-cycle persistence; the items listed as mock-only in section 4; the HTTP transport on
-  hardware with the published package (the deployed service ran 0.1.2 on the last check).
+  hardware with the published package (the deployed service runs 0.3.0 per the read-only observation of 2026-11-13; its last recorded hardware use was on 0.1.2).
 - Preset snapshots read by an older release after a newer release wrote them (groups and scenes
   only were tested in section 3).
 - No load, soak or fuzz testing of the published package.

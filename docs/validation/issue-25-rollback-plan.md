@@ -9,7 +9,7 @@ preconditions and recording. All names, paths and tags are placeholders. Status 
 The run restarts the deployed HTTP service twice (rollback, restore) and the hub sees a short
 outage each time. It touches only the `wled-mcp-http` Compose project and its `wled-mcp` service,
 never the hub or its network. Authorization needed: the owner's instruction naming the target and
-this run (restart and rollback). No publication, release, tag, registry or hub change is part of it.
+this run (restart and rollback). No publication, release, tag or registry step and no hub change other than backing up and restoring the wled-mcp entry is part of it (authorization: [ISSUE-25-DEC-003](../decisions/issue-25.md)).
 
 ## Preconditions
 
