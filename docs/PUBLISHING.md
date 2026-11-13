@@ -11,8 +11,8 @@ Status: the workflow has published releases (see "First release" and the registr
 below). Merging a change to the workflow does not publish anything. Registering the publisher, changing the environment, creating a tag or
 release and approving an upload each need the owner's explicit instruction at that time
 ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs
-(see "MCPB bundle (#151)" below) have not run yet: their first run is the next release the owner
-publishes.
+(see "MCPB bundle (#151)" below) ran for the first time with release 0.4.0 on 2026-11-13
+([validation/issue-151.md](validation/issue-151.md#first-release-run)).
 
 ## What the workflow does
 
@@ -132,8 +132,8 @@ Each step needs the owner's instruction at that time. Done for the first PyPI re
    `uvx --from wled-mcp==<version> wled-mcp --version`.
 7. After the `release-asset` job ran, check that the GitHub release lists
    `wled-mcp-<version>.mcpb` and `wled-mcp-<version>.mcpb.sha256` and that the hash matches the
-   `build-mcpb` job summary. The bundle jobs do not gate the PyPI files; the first such check is
-   the next release's, and a wrong asset is removed by hand.
+   `build-mcpb` job summary. The bundle jobs do not gate the PyPI files; the first such check was
+   release 0.4.0's, and a wrong asset is removed by hand.
 
 ## Pinning, update and rollback
 
@@ -234,11 +234,10 @@ ruleset above. The `gh` CLI is the version of the runner image (the job prints i
 unsigned and has no attestation; the `.sha256` asset is published by the same workflow, so it
 checks a download against damage and does not prove origin.
 
-**First run.** Merging the change publishes nothing. The first execution of both jobs is the next
-release the owner publishes (DEC-023). Until then the jobs are verified by review, the static and
-shell tests of `tests/test_publish_workflow.py` and a local dry run of the build step
-([validation/issue-151.md](validation/issue-151.md)); the first real run is recorded there
-afterwards and does not block closing the issue. Submitting the bundle to any directory is an
+**First run.** Merging the change publishes nothing. The first execution of both jobs was release
+0.4.0 on 2026-11-13 (DEC-023). Before it the jobs were verified by review, the static and
+shell tests of `tests/test_publish_workflow.py` and a local dry run of the build step; the first
+real run is recorded in [validation/issue-151.md](validation/issue-151.md#first-release-run). Submitting the bundle to any directory is an
 owner action and not planned.
 
 ## Dependency and licence inventory, vulnerability review
