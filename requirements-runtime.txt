@@ -13,7 +13,7 @@ attrs==26.1.0
     #   referencing
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
-click==8.5.0
+click==8.5.1
     # via uvicorn
 cryptography==50.0.2
     # via pyjwt
@@ -45,12 +45,12 @@ opentelemetry-api==1.45.2
     # via mcp
 pycparser==3.12 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pydantic==2.14.2
+pydantic==2.14.3
     # via
     #   mcp
     #   mcp-types
     #   wled-mcp
-pydantic-core==2.50.2
+pydantic-core==2.50.4
     # via pydantic
 pyjwt==2.15.1
     # via mcp
