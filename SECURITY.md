@@ -39,6 +39,8 @@ areas, not an exhaustive audit or a security guarantee.
   Created storage files use 0600 and directories 0700 on POSIX; existing permissions
   are not repaired and Windows permission semantics differ. Shared storage with a
   hostile concurrent writer is not supported ([#220](https://github.com/descipar/wled-mcp/issues/220)).
+  Symlinked snapshot files, device directories and the `backups/` root are refused, so the
+  data directory must be a real location (not reached through a link inside it).
 - Results intentionally carry lighting content, configured names/IDs and discovery
   candidates. Do not put credentials or installation details in names, presets or
   imported content, or paste those results into public reports. Diagnostic redaction
