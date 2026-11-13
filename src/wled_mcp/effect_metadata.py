@@ -66,14 +66,14 @@ def parse_fxdata(raw: str) -> tuple[dict[str, JsonValue], list[str]]:
     labels: dict[str, JsonValue] = {}
     for i, key in enumerate((*SLIDERS, *OPTIONS)):
         token = controls[i].strip() if i < len(controls) else ""
-        labels[key] = DEFAULT_LABELS[i] if token == "!" else token or None
+        labels[key] = DEFAULT_LABELS[i] if token == "!" else token or None  # noqa: S105 - metadata marker
     parsed["sliders"] = {key: labels[key] for key in SLIDERS}
     parsed["options"] = {key: labels[key] for key in OPTIONS}
     colors = parts[1].split(",")
     if len(colors) > 3:
         warnings.append("Extra color labels were ignored.")
     parsed["color_slots"] = [
-        COLOR_LABELS[i] if token == "!" else token or None
+        COLOR_LABELS[i] if token == "!" else token or None  # noqa: S105 - metadata marker
         for i in range(3)
         for token in [colors[i].strip() if i < len(colors) else ""]
     ]

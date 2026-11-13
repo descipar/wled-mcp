@@ -269,7 +269,7 @@ class SnapshotStore:
         self._check_backup_id(backup_id)
         device_dir = self._device_dir(device_id)
         path = device_dir / f"{backup_id}.json"
-        if not _device_dir_ok(device_dir):
+        if not _device_dir_ok(self.directory) or not _device_dir_ok(device_dir):
             raise fail("PRESET_NOT_FOUND", "No snapshot with this ID exists for the device.")
         try:
             if not stat.S_ISREG(path.lstat().st_mode):  # no FIFO/device/symlink/dir open
@@ -297,7 +297,7 @@ class SnapshotStore:
     def list_snapshots(self, device_id: str) -> SnapshotListing:
         """Valid snapshots oldest first; invalid entries are counted, never named."""
         device_dir = self._device_dir(device_id)
-        if not _device_dir_ok(device_dir):
+        if not _device_dir_ok(self.directory) or not _device_dir_ok(device_dir):
             return SnapshotListing((), 0)
         valid: list[Snapshot] = []
         invalid = 0
@@ -379,14 +379,19 @@ class SnapshotStore:
             # an existing directory is fine (validated below). Sync the parent only
             # when this call created the directory.
             for directory in (self.directory, device_dir):
+                created_directory = False
                 try:
                     directory.mkdir(mode=0o700)
+                    created_directory = True
                 except FileExistsError:
-                    continue
-                self._fsync_directory(directory.parent)
+                    pass
+                if not _device_dir_ok(directory):
+                    raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"])
+                if created_directory:
+                    self._fsync_directory(directory.parent)
         except OSError:
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"]) from None
-        if not _device_dir_ok(device_dir):
+        if not _device_dir_ok(self.directory) or not _device_dir_ok(device_dir):
             raise fail("BACKUP_FAILED", _SAFE["BACKUP_FAILED"])
         for _ in range(ID_ATTEMPTS):
             created = self._now().astimezone(UTC).replace(microsecond=0)

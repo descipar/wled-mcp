@@ -529,3 +529,44 @@ def test_canonical_document_is_stored_exactly_as_serialized(tmp_path):
     item = parse_scene(canonical_scene(), allow_placeholders=False)
     save(store, item)
     assert (tmp_path / "scenes" / "evening.json").read_bytes() == body_of(item)
+
+
+def test_new_definition_refused_when_directory_count_cannot_be_bounded(tmp_path, monkeypatch):
+    import wled_mcp.scene_store as module
+
+    store = scene_store(tmp_path)
+    store.directory.mkdir()
+    # Foreign files count towards traversal work even though they are not definitions.
+    for number in range(3):
+        (store.directory / f"foreign-{number}").touch()
+    monkeypatch.setattr(module, "MAX_DIRECTORY_ENTRIES", 2)
+    error = refused(lambda: save(store, scene(), dry_run=True))
+    assert error.error.code == "STORAGE_FAILED" and "scan limit" in error.error.message
+    assert not (store.directory / "evening.json").exists()
+
+
+def test_count_stops_traversing_at_scan_limit(tmp_path, monkeypatch):
+    import wled_mcp.scene_store as module
+
+    store = scene_store(tmp_path)
+    store.directory.mkdir()
+    visited = []
+
+    class Entries:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def __iter__(self):
+            from types import SimpleNamespace
+
+            for number in range(4):
+                visited.append(number)
+                yield SimpleNamespace(name=f"foreign-{number}")
+
+    monkeypatch.setattr(module, "MAX_DIRECTORY_ENTRIES", 2)
+    monkeypatch.setattr(module.os, "scandir", lambda _: Entries())
+    assert refused(store._count).error.code == "STORAGE_FAILED"
+    assert visited == [0, 1, 2], "one lookahead establishes overflow; then stop"

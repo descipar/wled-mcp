@@ -10,6 +10,7 @@ import contextlib
 import hmac
 import json
 import logging
+import re
 import signal
 import sys
 import threading
@@ -20,7 +21,8 @@ from typing import Any
 import uvicorn
 from mcp.server.lowlevel import Server
 from mcp.server.transport_security import TransportSecuritySettings
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from wled_mcp.http_config import ENDPOINT_PATH, HTTPServiceSettings, token_digest
 
@@ -73,7 +75,62 @@ class AccessGuard:
             logger.warning("HTTP request rejected: %s", reason)
             await self._respond(scope, send, status, reason, extra)
             return
-        await self.app(self._normalized(scope), receive, send)
+        # SDK validation errors can include raw peer input. Only HTTP errors are
+        # buffered, with a hard cap; successful MCP responses pass through unchanged.
+        error_status: int | None = None
+        error_body = bytearray()
+        overflow = False
+
+        async def safe_send(message: Message) -> None:
+            nonlocal error_status, overflow
+            if message["type"] == "http.response.start" and message["status"] >= 400:
+                error_status = message["status"]
+            elif error_status is not None and message["type"] == "http.response.body":
+                chunk = message.get("body", b"")
+                if len(error_body) + len(chunk) <= 8192 and not overflow:
+                    error_body.extend(chunk)
+                else:
+                    overflow = True
+                if not message.get("more_body", False):
+                    response = JSONResponse(
+                        self._safe_error(b"" if overflow else bytes(error_body)),
+                        status_code=error_status,
+                        headers={"Cache-Control": "no-store"},
+                    )
+                    await response(scope, receive, send)
+            else:
+                await send(message)
+
+        await self.app(self._normalized(scope), receive, safe_send)
+
+    @staticmethod
+    def _safe_error(raw: bytes) -> dict[str, Any]:
+        # Preserve protocol codes and request IDs for MCP clients. Messages supplied
+        # by this server are fixed or contain only a generated correlation ID.
+        safe: dict[str, Any] = {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {"code": -32600, "message": "HTTP request rejected."},
+        }
+        try:
+            document = json.loads(raw)
+            error = document["error"]
+            code, message = error["code"], error["message"]
+            identifier = document.get("id")
+            if type(identifier) in {str, int}:
+                safe["id"] = identifier
+            if type(code) is int:
+                safe["error"]["code"] = code
+            if isinstance(message, str) and (
+                message in {"Unknown tool", "Unknown prompt or unexpected arguments"}
+                or re.fullmatch(
+                    r"Internal operation failure \(correlation_id=[0-9a-f]{16}\)", message
+                )
+            ):
+                safe["error"]["message"] = message
+        except (ValueError, TypeError, KeyError, RecursionError):
+            return safe
+        return safe
 
     def _check(self, scope: Scope) -> tuple[int, str, list[tuple[bytes, bytes]]] | None:
         hosts = _headers(scope, b"host")
@@ -219,7 +276,7 @@ class HTTPService:
 def announce(settings: HTTPServiceSettings) -> Callable[[], None]:
     def write() -> None:
         print(
-            f"listening on {settings.host}:{settings.port} path {ENDPOINT_PATH}",
+            f"listening on configured address path {ENDPOINT_PATH}",
             file=sys.stderr,
             flush=True,
         )

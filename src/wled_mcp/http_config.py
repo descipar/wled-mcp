@@ -15,7 +15,7 @@ from pathlib import Path
 
 from wled_mcp.config import ConfigurationError
 
-TOKEN_ENV = "WLED_MCP_HTTP_TOKEN"
+TOKEN_ENV = "WLED_MCP_HTTP_TOKEN"  # noqa: S105 - environment variable name, no credential
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8000
 ENDPOINT_PATH = "/mcp"

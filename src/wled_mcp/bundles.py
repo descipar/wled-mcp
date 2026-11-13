@@ -28,7 +28,7 @@ from pydantic import JsonValue
 
 from wled_mcp.capabilities import parse_matrix
 from wled_mcp.client import ClientFailure, validate_json
-from wled_mcp.formats import check_format
+from wled_mcp.formats import check_format, echo
 from wled_mcp.models import ErrorCode
 from wled_mcp.preset_writes import (
     Route,
@@ -54,7 +54,6 @@ MAX_IMPORT_ENTRIES: Final = 50
 MAX_BUNDLE_ENTRIES: Final = MAX_PERSISTENT_ID
 MAX_CATALOG_ID: Final = 65_535
 MAX_TEXT: Final = 256
-KEY_ECHO: Final = 32
 
 ENVELOPE_KEYS: Final = ("format", "format_version", "created_at", "source", "catalog", "presets")
 ENTRY_KEYS: Final = frozenset({"source_id", "name", "type", "preset"})
@@ -77,7 +76,7 @@ def _is_int(value: object) -> bool:
 
 
 def _echo(key: object) -> str:
-    return repr(str(key)[:KEY_ECHO])
+    return echo(key)
 
 
 def serialized_size(value: object) -> int:

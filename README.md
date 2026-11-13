@@ -53,7 +53,6 @@ All tools, each with its read-only, write or destructive hint, are listed in the
 <!-- wled-coverage:start -->
 WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method and list](https://github.com/descipar/wled-mcp/blob/main/docs/WLED-COVERAGE.md)).
 <!-- wled-coverage:end -->
-
 ## Safety model
 
 - **Validate first.** A complete request is checked against the current device state before
@@ -70,9 +69,10 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
   restored.
 - **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
   caller-supplied hosts, no silent preset overwrite (`overwrite=true` is required).
-- **Authorization.** Whether a person may run a tool is the MCP host's job; tool
-  annotations are hints only. The HTTP service also requires its own bearer credential and
-  Host allowlist and must not be exposed to the internet.
+- **Authorization.** The MCP host authorizes people; annotations are hints only. HTTP
+  requires its own token and Host/Origin allowlists even behind a hub: hub authentication
+  alone does not protect direct access. Keep it off the internet; see the
+  [residual risks and bounded review](https://github.com/descipar/wled-mcp/blob/main/SECURITY.md#practical-limits).
 
 ## Try it
 

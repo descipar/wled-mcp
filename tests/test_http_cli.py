@@ -100,7 +100,7 @@ def wait_ready(lines: queue.Queue[str], port: int) -> list[str]:
     while True:
         line = lines.get(timeout=20)
         seen.append(line)
-        if f"listening on 127.0.0.1:{port} path /mcp" in line:
+        if "listening on configured address path /mcp" in line:
             return seen
 
 
@@ -529,3 +529,21 @@ def test_signal_drains_in_flight_write_and_exits_zero(tmp_path, sig):
         assert fake.posts == [{"on": True, "bri": 200}], "exactly one device POST"
     finally:
         fake.close()
+
+
+def test_startup_announcement_omits_configured_address(capsys):
+    from wled_mcp.http_config import HTTPServiceSettings
+    from wled_mcp.http_service import announce
+
+    settings = HTTPServiceSettings(
+        host="192.0.2.42",
+        port=12345,
+        allowed_hosts=frozenset(),
+        allowed_origins=frozenset(),
+        token_digest=b"synthetic",
+        graceful_shutdown_seconds=12,
+    )
+    announce(settings)()
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "listening on configured address path /mcp\n"

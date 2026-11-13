@@ -617,3 +617,21 @@ async def test_forced_shutdown_leaves_write_uncertain_without_replay(tmp_path):
             await anyio.sleep(0.2)
             assert fresh.calls == [] and again.executions == []
         assert router.count("POST") == 1
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("modern", [False, True])
+async def test_protocol_validation_errors_do_not_echo_peer_input(tmp_path, modern, caplog):
+    marker = "synthetic-secret@192.0.2.42"
+    async with running_service(tmp_path) as run:
+        headers = {**run.headers, **MCP_HEADERS}
+        if modern:
+            headers["MCP-Protocol-Version"] = "2026-07-28"
+        async with run.raw(headers=headers) as http:
+            response = await http.post(
+                "/mcp", json={"jsonrpc": "2.0", "id": 1, "method": {marker: marker}}
+            )
+        assert response.status_code == 400
+        assert marker not in response.text and marker not in caplog.text
+        assert response.json()["error"]["message"] == "HTTP request rejected."
+        assert run.router.calls == [] and run.executions == []

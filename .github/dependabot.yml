@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Update the real manifest AND uv.lock; pip-only updates could leave the lock stale.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

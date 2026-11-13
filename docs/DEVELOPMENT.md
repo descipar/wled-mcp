@@ -24,6 +24,7 @@ $env:UV_PYTHON_DOWNLOADS = 'never'
 uv sync --locked
 uv run --frozen ruff check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
 uv run --frozen ruff format --check src tests deploy scripts/check_lock.py scripts/check_distribution.py scripts/check_container.py scripts/check_traceability.py scripts/check_private_identifiers.py scripts/check_issue_content.py scripts/check_coverage.py scripts/ci_scope.py scripts/hw_http_probe.py
+uv run --frozen ruff check src --select S --ignore S101
 uv run --frozen mypy
 uv run --frozen python scripts/check_agent_setup.py
 uv run --frozen python scripts/check_lock.py
@@ -36,6 +37,13 @@ CI runs the complete suite in parallel with `uv run --frozen pytest -n auto` (py
 dev dependency); the same command is an optional local speed-up, and the plain serial
 `uv run --frozen pytest` stays supported. Each worker uses its own subdirectory of
 `.artifacts/pytest-temp`.
+
+The independent security-lint job always runs Ruff S rules over `src`; S101 is excluded
+for type/invariant assertions, and individual false positives carry site-specific reasons.
+The separate CodeQL workflow analyzes Python with security-extended queries on PRs, main
+and weekly without building project code. Weekly Dependabot PRs cover uv and Actions;
+updates require review and are not automatically merged. See the
+[bounded review record](validation/issue-181.md) for scope and limits.
 
 ### Documentation-only pull requests
 

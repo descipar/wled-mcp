@@ -825,3 +825,17 @@ def test_concurrent_first_snapshots_of_two_devices_both_succeed(tmp_path, monkey
     assert errors == [] and set(results) == {"desk", "lamp"}
     for device_id, record in results.items():
         assert store.load(device_id, record.backup_id).preset == PRESET
+
+
+@pytest.mark.skipif(not POSIX, reason="symlinks need POSIX privileges")
+def test_snapshot_root_symlink_is_not_used_for_read_or_write(tmp_path):
+    store = make_store(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    store.directory.symlink_to(outside, target_is_directory=True)
+    assert code_of(store.backup_preset, "desk", 5, PRESET, FIRMWARE) == "BACKUP_FAILED"
+    assert list(outside.iterdir()) == [], "do not even create a device directory through the link"
+    (outside / "desk").mkdir()
+    (outside / "desk" / f"{GOOD_ID}.json").write_text(json.dumps(envelope(GOOD_ID)))
+    assert code_of(store.load, "desk", GOOD_ID) == "PRESET_NOT_FOUND"
+    assert store.list_snapshots("desk").snapshots == ()
