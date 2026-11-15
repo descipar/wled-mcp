@@ -236,15 +236,13 @@ Known differences:
   directory, so write it to a directory only you can read. Mode assertions in tests are
   skipped on Windows.
 - asyncio uses the Proactor event loop, whose self-pipe is a loopback socketpair. The
-  offline test guard (`tests/network_guard.py`) allows exactly that connect and refuses every
-  other connect and name resolution.
+  offline test guard (`tests/network_guard.py`, the shared `no_network` fixture of
+  `tests/conftest.py`) allows exactly that connect and refuses every other connect, event-loop
+  connect (`IocpProactor.connect`) and name resolution.
 - `scripts/check_container.py` needs a Linux Docker host.
-
-Known Windows tooling limit, outside the test suite and not a test failure:
-`scripts/check_distribution.py` exited 1 with `MCPError: Connection closed` at the uvx stdio
-handshake on a checkout whose path contains a space. The same script passed on a clone at a
-space-free path, so the space in the path is the cause. Run it from a space-free checkout
-path until this is fixed ([#213](https://github.com/descipar/wled-mcp/issues/213)).
+- `scripts/check_distribution.py` passes the staged wheel and constraints file of the hub
+  example to uv as file URIs when the checkout path contains whitespace, because uv would split
+  a plain path there ([#213](https://github.com/descipar/wled-mcp/issues/213)).
 
 ## Deployment artifact checks
 

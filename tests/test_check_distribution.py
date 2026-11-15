@@ -479,3 +479,26 @@ def test_a_wheel_with_the_marker_passes_the_metadata_check(monkeypatch, tmp_path
 def test_registry_name_follows_a_changed_server_json(tmp_path):
     (tmp_path / "server.json").write_text(json.dumps({"name": "io.github.x/y"}), "utf-8")
     assert script.registry_name(tmp_path) == "io.github.x/y"
+
+
+@pytest.mark.parametrize("folder", ["plain", "with space"])
+def test_hub_example_gives_uv_one_token_per_path_even_with_a_space(tmp_path, folder):
+    # #213: uv reads --from as a requirement and splits a plain path at whitespace. The
+    # release files are never opened; only their paths are rewritten.
+    release = Path(Path.cwd().anchor) / folder / "release"
+    wheel = release / script.release_names(script.VERSION)[1]
+    constraints = release / "requirements-runtime.txt"
+    env = {
+        name: str(tmp_path / name)
+        for name in ("UV_CACHE_DIR", "UV_TOOL_DIR", "UV_PYTHON_INSTALL_DIR")
+    }
+    data = tmp_path / "data"
+    _, args, _ = script.hub_example_uvx(Path.cwd(), wheel, constraints, data, env)
+    values = {flag: args[args.index(flag) + 1] for flag in ("--constraints", "--from")}
+    if " " in folder:
+        assert values == {"--constraints": constraints.as_uri(), "--from": wheel.as_uri()}
+        assert all(" " not in value for value in values.values())
+    else:  # the documented shape is kept where it already works
+        assert values == {"--constraints": str(constraints), "--from": str(wheel)}
+    # Paths the wled-mcp command receives are not rewritten: it handles spaces itself.
+    assert args[args.index("--config") + 1] == str(data / "config" / "devices.toml")
