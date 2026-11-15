@@ -527,6 +527,16 @@ def test_the_colour_basis_is_state_slot_0_when_live_data_reaches_no_drawn_lane()
     assert [by_id(rendered)[i]["colour_mode"] for i in (0, 1)] == ["rgb", "rgb"]
 
 
+def test_the_every_led_sampled_note_needs_a_lane_with_live_runs():
+    live = LiveModel("available", 1)
+    sampled = lane(0, 0, 10, live_runs=(LiveRun(0, 10, "FF0000"),), live_status="sampled")
+    note = "live: every LED sampled; brightness-scaled firmware RGB."
+    assert note in texts(render_svg(model(sampled, led_count=10, live=live)).svg)
+    no_live_lane = render_svg(model(lane(0, 0, 10), lane(1, 10, 20), led_count=20, live=live))
+    assert no_live_lane.summary["colour_basis"] == "state_slot_0"
+    assert not any("every LED sampled" in text for text in texts(no_live_lane.svg))
+
+
 def test_an_unavailable_live_read_falls_back_to_the_state_colours():
     item = lane(0, 0, 20)
     rendered = render_svg(model(item, led_count=20, live=LiveModel("unavailable", 1)))

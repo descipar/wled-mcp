@@ -1,5 +1,6 @@
 """Shared SDK adapter; production starts with no operations until later issues."""
 
+import contextlib
 import functools
 import json
 import time
@@ -207,13 +208,16 @@ def create_server(
                 # reached a configured device; refusals and dry runs change nothing.
                 reached = application in {"applied", "not_applied", "unknown"}
                 if reached and calls.is_configured(raw_device):
-                    calls.last_control.record(
-                        raw_device,
-                        tool,
-                        application or "unknown",
-                        "unknown" if outcome is None else outcome.verification,
-                        code,
-                    )
+                    # The evidence store must never change a tool outcome or skip the log
+                    # line below, so a failure here is dropped.
+                    with contextlib.suppress(Exception):
+                        calls.last_control.record(
+                            raw_device,
+                            tool,
+                            application or "unknown",
+                            "unknown" if outcome is None else outcome.verification,
+                            code,
+                        )
             log_call(
                 CallRecord(
                     tool=tool,
