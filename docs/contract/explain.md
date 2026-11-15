@@ -38,11 +38,15 @@ Allowlisted indicators (nothing else is read or returned): `state.on`, `state.br
 `state.pl`, `state.ps`, `state.nl.on`, `state.lor`, `state.udpn.recv`, `info.live`,
 `info.lm`, `info.ver`, `info.leds.count`, `info.fxcount`, `info.palcount` and `info.vid`
 (as `firmware.build_id`). Addresses, MAC, BSSID, sync group masks, Wi-Fi or network
-configuration and raw state/info are never returned. `info.lm` and `info.ver` are bounded
-to 32 characters from a restricted character set (letters, digits, space and `. / + _ -`,
-starting with a letter for `lm`) and are not reported if they contain a dotted digit group;
-anything else is reported as `other`. An empty `lm` is observed as an empty string (no
-realtime source).
+configuration and raw state/info are never returned. Both text indicators are bounded to
+32 characters and anything outside their pattern is reported as `other`:
+
+- `info.lm` starts with a letter and uses letters, digits, space and `. / + _ -`. It is also
+  reported as `other` if it contains a dotted digit group (address-like) or consists only of
+  at least twelve hexadecimal digits with optional separators (MAC-like). An empty `lm` is
+  observed as an empty string (no realtime source).
+- `info.ver` starts with a digit and uses letters, digits and `. + _ -`; spaces and slashes
+  are not allowed, and dots between digit groups are allowed (a version is not an address).
 
 Field meanings follow the WLED JSON API: `pl` is the running playlist preset ID (-1: none),
 `lor` the realtime override (0: realtime may override the lights; 1 or 2: the local state

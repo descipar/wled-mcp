@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from tests.preset_support import PresetDevice, playlist_entry, state_entry
 from tests.state_catalog_support import make_info, make_state
+from tests.symlink_support import symlink_or_skip
 from tests.test_presets import call, desk_with, fleet_of, open_resources, snapshot_files
 from wled_mcp.operations import build_operations
 from wled_mcp.preset_tools import StorePresetRequest
@@ -379,7 +380,7 @@ async def test_protocol_envelope_and_schema_errors_for_the_new_tools(tmp_path):
 async def test_list_snapshots_tool_warns_when_backups_root_is_a_symlink(tmp_path):
     real = tmp_path / "real"
     real.mkdir()
-    (tmp_path / "backups").symlink_to(real, target_is_directory=True)
+    symlink_or_skip(tmp_path / "backups", real, target_is_directory=True)
     resources = open_resources(tmp_path, fleet_of(desk_with({})))
     listing = await call(resources, "wled_list_snapshots")
     assert listing.data["snapshots"] == []

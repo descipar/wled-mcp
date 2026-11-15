@@ -270,6 +270,7 @@ GATED = (
     "scripts/check_distribution.py",
 )
 ALWAYS = ("check_agent_setup.py", "check_private_identifiers.py", "git diff --exit-code")
+DENYLIST_PROVIDER = "WLED_MCP_PRIVATE_DENYLIST="
 FULL_ONLY = "steps.scope.outputs.docs_only != 'true'"
 REDUCED_ONLY = "steps.scope.outputs.docs_only == 'true'"
 
@@ -306,6 +307,19 @@ def workflow_problems(text: str) -> list[str]:
                 problems.append(f"gated step precedes the gate: {command}")
         elif any(a in command for a in ALWAYS) and condition is not None:
             problems.append(f"step must always run: {command}")
+    provider = [i for i, s in enumerate(steps) if DENYLIST_PROVIDER in s.get("run", "")]
+    scanner = [
+        i
+        for i, s in enumerate(steps)
+        if "python scripts/check_private_identifiers.py" in s.get("run", "")
+    ]
+    if len(provider) != 1 or len(scanner) != 1:
+        problems.append("expected one denylist provider step and one private-identifier scan")
+    else:
+        if "if" in steps[provider[0]]:
+            problems.append("the denylist provider step must always run")
+        if provider[0] > scanner[0]:
+            problems.append("the denylist provider step must precede the scan")
     commands = " ".join(s.get("run", "") for s in steps)
     if not all(g in commands for g in GATED) or "ci_scope.py tests" not in commands:
         problems.append("expected steps are missing")
@@ -322,6 +336,10 @@ def test_workflow_shape_negative_controls() -> None:
     assert workflow_problems(text.replace("fetch-depth: 2", "fetch-depth: 1"))
     assert workflow_problems(text.replace("contents: read", "contents: write", 1))
     assert workflow_problems(text.replace("  checks:\n", "  checks:\n    if: false\n", 1))
+    step = "      - name: Provide private denylist from secret\n"
+    gated_provider = text.replace(step, step + f"        if: {FULL_ONLY}\n")
+    assert gated_provider != text and workflow_problems(gated_provider)
+    assert workflow_problems(text.replace(DENYLIST_PROVIDER, "WLED_MCP_DENYLIST_PATH=", 1))
     assert workflow_problems(
         text.replace(
             "- run: uv run --frozen python scripts/check_agent_setup.py",

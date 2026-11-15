@@ -3,8 +3,9 @@
 The package supports Python 3.13 only (`>=3.13,<3.14`), locally tested on
 Windows/3.13.2; CI checks Linux amd64 and arm64 with Python 3.13 on native runners
 (`checks` job; documentation-only pull requests run a reduced set, see
-[Documentation-only pull requests](#documentation-only-pull-requests)) and builds and smoke-tests the HTTP image on both architectures
-(`container` job, for pull requests and `main`). Windows and macOS are experimental
+[Documentation-only pull requests](#documentation-only-pull-requests)) and builds and
+smoke-tests the HTTP image on both architectures (`container` job, for pull requests and
+`main`). Windows and macOS are experimental
 (DEC-020) and have no CI job; see [Platform notes](#platform-notes). Official MCP SDK
 2.3.0 owns protocol handling.
 The tool set is listed in [TOOL-CONTRACT.md](TOOL-CONTRACT.md#tools-at-a-glance) and checked against
@@ -32,6 +33,9 @@ uv run --frozen python scripts/check_private_identifiers.py
 uv run --frozen pytest
 uv run --frozen python scripts/check_distribution.py
 ```
+
+The two Ruff file lists repeat those of the `checks` job in `.github/workflows/ci.yml`; the
+workflow is authoritative.
 
 CI runs the complete suite in parallel with `uv run --frozen pytest -n auto` (pytest-xdist, a
 dev dependency); the same command is an optional local speed-up, and the plain serial
@@ -62,7 +66,11 @@ conditioned on `docs_only != 'true'`). `tests/test_ci_scope.py` keeps the reduce
 complete: a static scan fails when a file that names a repository document is neither in
 `DOC_READER_TESTS` nor in `DOC_READER_EXCLUSIONS` (with a reason). The scan is best effort;
 a reader without any document literal is not found, and the next run on `main` covers it.
-The `container` job is unchanged. Dry run on a local merge commit:
+The private-identifier denylist step and the scan stay outside this gating and always run
+(`tests/test_ci_scope.py` asserts it). Deleting the root `README.md` counts as a documentation
+change, but `tests/test_readme.py` then fails on the missing file, as it does in the full
+suite; this is intended, so that deletion fails the check either way. The `container` job is
+unchanged. Dry run on a local merge commit:
 `GITHUB_EVENT_NAME=pull_request python scripts/ci_scope.py`; reduced tests:
 `uv run --frozen pytest $(python scripts/ci_scope.py tests)`.
 
@@ -227,7 +235,9 @@ supported there.
 A test that fails only on Windows is a defect. Fix it, or skip it on Windows with a stated
 reason where the behavior is POSIX-specific (POSIX signals, symlinks and `mkfifo`,
 permission bits, `sh`, `bash`, `sha256sum` and GNU `find`, root) or opt-in (the local Docker
-check). The offline guarantee of the tests holds on every platform.
+check). The offline guarantee of the tests holds on every platform. A test that needs a symbolic link
+creates it with `symlink_or_skip` from `tests/symlink_support.py`, which skips with a stated
+reason on a host without the privilege (Windows without Developer Mode, not elevated).
 
 Known differences:
 

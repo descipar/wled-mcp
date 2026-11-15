@@ -610,7 +610,8 @@ def render_svg(model: PreviewModel) -> Rendered:  # noqa: C901 - one linear layo
     if live is not None and step > 1:
         flag("unsampled_leds_unknown")
         notes.append(f"live: sampled every {step} LEDs; unsampled LEDs are unknown.")
-    elif live is not None:
+    elif live is not None and live_lanes:
+        # Only when a lane carries live runs: the note describes the lane colours.
         notes.append("live: every LED sampled; brightness-scaled firmware RGB.")
     if unknown_colour:
         notes.append("Segments with unknown colour are drawn neutral grey.")

@@ -45,6 +45,7 @@ UNATTRIBUTED_LIMIT = (
 
 _SAFE_TEXT = re.compile(r"[A-Za-z][A-Za-z0-9 ./+_-]{0,31}")
 _ADDRESS_LIKE = re.compile(r"\d+\.\d+\.\d+")
+_MAC_LIKE = re.compile(r"(?:[0-9A-Fa-f][ ._+-]?){12,}")
 _SAFE_VERSION = re.compile(r"[0-9][0-9A-Za-z.+_-]{0,31}")
 
 
@@ -87,7 +88,11 @@ def _typed(value: JsonValue, kind: str) -> tuple[str, JsonValue]:
     if kind == "text" and isinstance(value, str):
         if value == "":
             return "observed", ""  # idle: no realtime source
-        ok = _SAFE_TEXT.fullmatch(value) and not _ADDRESS_LIKE.search(value)
+        ok = (
+            _SAFE_TEXT.fullmatch(value)
+            and not _ADDRESS_LIKE.search(value)
+            and not _MAC_LIKE.fullmatch(value)
+        )
         return "observed", value if ok else "other"
     if kind == "version" and isinstance(value, str):
         return "observed", value if _SAFE_VERSION.fullmatch(value) else "other"

@@ -350,6 +350,43 @@ async def test_realtime_source_text_allows_a_slash_but_not_an_address(tmp_path):
 
 
 @pytest.mark.anyio
+async def test_realtime_source_text_hides_mac_shaped_values_but_keeps_source_names(tmp_path):
+    """S3-EXPLAIN-02: hexadecimal groups look like a hardware address and are not echoed."""
+    mac_like = ("AABBCCDDEEFF", "-".join(["ab"] * 6), "Dead Beef Cafe Babe")  # dashes: no literal
+    names = ("Art-Net", "E131", "DDP", "Abc Def")
+    seen = {}
+    for lm in (*mac_like, *names):
+        async with open_resources(tmp_path, fleet(info=make_info(lm=lm))) as resources:
+            seen[lm] = observations(await call(resources, TOOL))["info.lm"]["value"]
+    assert seen == {**{lm: "other" for lm in mac_like}, **{lm: lm for lm in names}}
+
+
+@pytest.mark.anyio
+async def test_a_failing_evidence_store_changes_neither_the_outcome_nor_the_call_log(
+    tmp_path, caplog, monkeypatch
+):
+    """The dispatcher hook never turns an applied write into an error or skips the log line."""
+    caplog.set_level(logging.INFO, logger="wled_mcp")
+    config = make_config(tmp_path, "full", shelf="read")
+    router = WriteRouter()
+    router.device("desk.invalid")
+    async with open_access(config, router) as resources:
+
+        def broken(*_args: object) -> None:
+            raise RuntimeError("synthetic evidence store failure")
+
+        monkeypatch.setattr(resources.monitor.last_control, "record", broken)
+        server = create_server(build_operations(resources), config.access, resources.monitor)
+        async with Client(server) as client:
+            result = await client.call_tool("wled_set_state", {"device_id": "desk", "on": False})
+    # The mock device does not change state, so the tool reports its readback mismatch; the
+    # point is that the outcome is the one the write produced, not a generic internal error.
+    assert result.structured_content["error"]["code"] == "VERIFICATION_MISMATCH"
+    lines = [r for r in caplog.records if r.name == "wled_mcp.calls"]
+    assert len(lines) == 1 and "wled_set_state" in lines[0].getMessage()
+
+
+@pytest.mark.anyio
 async def test_a_segment_id_without_a_state_segment_list_is_a_validation_error(tmp_path):
     """S3-EXPLAIN-02: the contract's segment check does not silently pass."""
     state = make_state()
