@@ -63,7 +63,12 @@ class StubLog:
 
 
 def make_handler(
-    log: StubLog, *, limit: int, slow_seconds: float, accepted_status: int | None = None
+    log: StubLog,
+    *,
+    limit: int,
+    slow_seconds: float,
+    accepted_status: int | None = None,
+    token: str = STUB_TOKEN,
 ) -> type:
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args: Any) -> None:  # keep test output quiet
@@ -83,7 +88,7 @@ def make_handler(
                 self._reply(accepted_status, {"error": "synthetic failure"})
                 return
             body = json.loads(self.rfile.read(length))
-            if auth != f"Bearer {STUB_TOKEN}":
+            if auth != f"Bearer {token}":
                 self._reply(401, {"error": "unauthorized"})
                 return
             method = body.get("method")
@@ -126,11 +131,15 @@ def make_handler(
 
 @contextmanager
 def stub_server(
-    *, limit: int = 4096, slow_seconds: float = 1.0, accepted_status: int | None = None
+    *,
+    limit: int = 4096,
+    slow_seconds: float = 1.0,
+    accepted_status: int | None = None,
+    token: str = STUB_TOKEN,
 ) -> Iterator[tuple[str, StubLog]]:
     log = StubLog()
     handler = make_handler(
-        log, limit=limit, slow_seconds=slow_seconds, accepted_status=accepted_status
+        log, limit=limit, slow_seconds=slow_seconds, accepted_status=accepted_status, token=token
     )
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     server.daemon_threads = True
@@ -242,6 +251,39 @@ def test_credential_from_file_is_sent_but_never_output(tmp_path):
     assert probe.REDACTED in json.dumps(report["results"])
 
 
+def test_token_with_json_escaped_characters_is_redacted_in_the_written_report(tmp_path):
+    # #215: a double quote and a backslash are legal token characters and JSON escapes both,
+    # so a plain replace of the raw token would leave the escaped spelling in the file.
+    token = 'synthetic"probe\\token-0123456789'
+    assert json.dumps(token)[1:-1] != token
+    report_path = tmp_path / "report.json"
+    with stub_server(token=token) as (url, log):
+        code, out, err = run_probe(
+            [
+                "--url",
+                url,
+                "--token-stdin",
+                "--output",
+                str(report_path),
+                "call",
+                "--tool",
+                "wled_get_state",
+                "--arguments",
+                '{"device_id": "echo"}',
+                "--include-results",
+            ],
+            stdin=token + "\n",
+        )
+    assert code == 0 and out == ""
+    assert [r["auth"] for r in log.requests] == [f"Bearer {token}"]  # the server did echo it
+    text = report_path.read_text(encoding="utf-8")
+    assert token not in text and json.dumps(token)[1:-1] not in text
+    assert token not in err
+    report = json.loads(text)  # the redacted report is still valid JSON
+    assert report["results"] == [{"code": -32000, "message": f"seen Bearer {probe.REDACTED}"}]
+    assert report["errors"][0]["detail"] == f"seen Bearer {probe.REDACTED}"
+
+
 def test_credential_from_environment_and_stdin_and_output_file(tmp_path):
     with stub_server() as (url, log):
         code, out, _ = run_probe(["--url", url, "--token-env", "T", "ping"], {"T": STUB_TOKEN})
@@ -273,6 +315,27 @@ def test_output_file_is_private_on_posix(tmp_path):
         )
     assert code == 0 and out == ""
     assert stat.S_IMODE(report_path.stat().st_mode) & 0o077 == 0
+
+
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Windows reports synthetic POSIX modes; the report there inherits the directory ACL "
+    "(docs/DEVELOPMENT.md#platform-notes)",
+)
+def test_existing_output_file_is_restricted_to_private_on_posix(tmp_path):
+    # #214: the creation mode does not apply to a file that already exists.
+    report_path = tmp_path / "report.json"
+    report_path.write_text("old report", encoding="utf-8")
+    report_path.chmod(0o666)
+    assert stat.S_IMODE(report_path.stat().st_mode) & 0o077 != 0
+    with stub_server() as (url, _log):
+        code, out, _ = run_probe(
+            ["--url", url, "--token-stdin", "--output", str(report_path), "ping"],
+            stdin=STUB_TOKEN + "\n",
+        )
+    assert code == 0 and out == ""
+    assert stat.S_IMODE(report_path.stat().st_mode) == 0o600
+    assert json.loads(report_path.read_text(encoding="utf-8"))["mode"] == "ping"
 
 
 @pytest.mark.parametrize("bad", ["", "with space", "tab\there", "nön-ascii"])

@@ -10,12 +10,12 @@ whether the service answers 413 for the oversized body.
 The credential comes from exactly one of a file, a named environment variable or stdin.
 It is sent only in the ``Authorization`` header and never printed or logged; the JSON
 report is additionally scrubbed of it. Diagnostics go to stderr. ``--output`` creates the
-report with file mode 0600 on POSIX; on Windows that mode only toggles the read-only
-attribute and the file inherits the access control of its directory, so the script does not
-protect it there (write it to a directory only you can read). The exact bearer token string
-is redacted from the report before it is written; this is not a guarantee for a token with
-characters that JSON escapes if a server echoed it back under ``--include-results``. The
-report can hold the endpoint URL and, with that option, device state.
+report with file mode 0600 on POSIX, also when the file already exists; on Windows that mode
+only toggles the read-only attribute and the file inherits the access control of its
+directory, so the script does not protect it there (write it to a directory only you can
+read). The bearer token is redacted from the report before it is written, both as the raw
+string and in its JSON-escaped form (a token may contain a double quote or a backslash). The
+report can hold the endpoint URL and, with ``--include-results``, device state.
 
 This is a manual hardware/target tool (ISSUE-12-DEC-002, TD-12-4). It is never run
 against devices or targets in CI; its tests use a loopback stub and the in-process
@@ -439,7 +439,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def redact(text: str, token: str) -> str:
-    return text.replace(token, REDACTED) if token else text
+    """Replace the token in ``text``, also where JSON escaping changed its spelling.
+
+    In the serialized report a double quote or backslash of the token is escaped, so the
+    escaped form is replaced first; the raw form covers plain text such as a diagnostic.
+    """
+    if not token:
+        return text
+    escaped = json.dumps(token, ensure_ascii=False)[1:-1]
+    return text.replace(escaped, REDACTED).replace(token, REDACTED)
 
 
 def main(
@@ -506,6 +514,10 @@ def main(
     text = redact(json.dumps(report, indent=2, ensure_ascii=False, default=str), token)
     if args.output:
         descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        if sys.platform != "win32":
+            # The creation mode applies to a new file only; restrict an existing one too,
+            # before anything is written to it.
+            os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(text + "\n")
         print(f"hw_http_probe: report written to {args.output}", file=err)

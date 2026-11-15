@@ -1,3 +1,4 @@
+import asyncio
 import json
 import socket
 import sys
@@ -706,14 +707,8 @@ async def test_real_stdio_inventory_schema_and_mock_probes():
 
 # Issue #74: IPv4-like hosts (ISSUE-74-DEC-001/002). Every test below is offline: hosts
 # are validated locally, requests go to httpx.MockTransport or an in-process MCP client,
-# and the ``no_network`` guard fails any resolution or socket connect attempt.
-
-
-@pytest.fixture
-def no_network(monkeypatch):
-    attempts = install_no_network(monkeypatch)
-    yield attempts
-    assert attempts == []
+# and the shared ``no_network`` fixture (tests/conftest.py, built on tests/network_guard.py)
+# fails any resolution or socket connect attempt.
 
 
 # The guard allows exactly one thing: the stdlib socketpair helper (the Windows asyncio
@@ -780,6 +775,29 @@ def test_guard_predicate_needs_the_socketpair_caller_and_a_loopback_address():
         ("127.0.0.1", 49152),
     )
     assert not connect_allowed(None, ("127.0.0.1", 49152))
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32",
+    reason="only the Windows Proactor loop connects through IocpProactor.connect (ConnectEx)",
+)
+@pytest.mark.parametrize("via", ["sock_connect", "open_connection"])
+def test_guard_refuses_an_event_loop_connect_on_windows(monkeypatch, via):
+    # #216: ConnectEx bypasses socket.socket.connect, so the socket patches alone miss it.
+    attempts = install_no_network(monkeypatch)
+    address = ("192.0.2.10", 80)
+
+    async def connect() -> None:
+        if via == "open_connection":
+            await asyncio.open_connection(*address)
+            return
+        with socket.socket() as sock:
+            sock.setblocking(False)
+            await asyncio.get_running_loop().sock_connect(sock, address)
+
+    with pytest.raises(AssertionError, match="must not resolve names or open connections"):
+        asyncio.run(connect())
+    assert attempts == [(address,)]
 
 
 def test_guard_allows_the_stdlib_socketpair_helper_without_recording(monkeypatch):

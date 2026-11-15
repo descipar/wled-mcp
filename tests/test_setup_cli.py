@@ -1,13 +1,12 @@
 """``wled-mcp config init|add-device|validate`` (issue #16: S16-T02, -T03, -T07, -T09).
 
 Everything runs in ``tmp_path`` with synthetic values; no command contacts a device or
-the network (a socket guard enforces it for validate).
+the network (the shared ``no_network`` guard of tests/conftest.py enforces it for validate).
 """
 
 import json
 import os
 import shutil
-import socket
 import stat
 import tomllib
 from pathlib import Path
@@ -324,15 +323,6 @@ def test_newer_schema_version_is_named_and_the_file_untouched(tmp_path, capsys):
 
 
 # ------------------------------------------------------------------ S16-T07 validate
-
-
-@pytest.fixture
-def no_network(monkeypatch):
-    class Forbidden(socket.socket):
-        def __init__(self, *args: object, **kwargs: object) -> None:
-            raise AssertionError("config commands must not open sockets")
-
-    monkeypatch.setattr(socket, "socket", Forbidden)
 
 
 @pytest.mark.parametrize(

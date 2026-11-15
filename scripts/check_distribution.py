@@ -425,6 +425,18 @@ def setup_smoke(console: Path, directory: Path, env: dict[str, str]) -> None:
     assert leftovers == ["data", "devices.toml"], f"setup commands left files: {leftovers}"
 
 
+def uv_location(path: Path) -> str:
+    """``path`` as a ``--constraints``/``--from`` value of uv.
+
+    uv parses ``--from`` as a requirement, which splits a plain path at whitespace (a
+    checkout path with a space then fails with ``File not found`` for the part before the
+    space, #213). A file URI is one token, so it is used only where the plain path would not
+    survive; every other path stays exactly as the hub example documents it.
+    """
+    text = str(path)
+    return path.as_uri() if any(char.isspace() for char in text) else text
+
+
 def hub_example_uvx(
     root: Path, wheel: Path, constraints: Path, data: Path, env: dict[str, str]
 ) -> tuple[str, list[str], dict[str, str]]:
@@ -447,7 +459,9 @@ def hub_example_uvx(
                 assert documented.parent.name == VERSION_PLACEHOLDER, f"{token} release dir"
                 staged = documented.name.replace(VERSION_PLACEHOLDER, VERSION)
                 assert staged == local.name, f"{token} names the staged {local.name}"
-            args[index + 1] = str(local)
+                args[index + 1] = uv_location(local)
+            else:
+                args[index + 1] = str(local)
     assert sum(token in replacements for token in args) == len(replacements)
     hub_env = dict(env)
     for name, value in entry["env"].items():

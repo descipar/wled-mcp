@@ -10,10 +10,11 @@ the address is loopback (the caller attribution of ``tests/stdio_socket_probe.py
 Native ``socketpair()`` on POSIX never connects, so nothing changes there. Every other
 caller, including loopback connects from test code, httpx or anyio, is refused and recorded.
 
-Known limit (pre-existing, not widened here): the Windows Proactor loop connects outbound
-through ``ConnectEx`` in ``_overlapped``, which bypasses ``socket.socket.connect``. The tests
-that use this guard run against ``httpx.MockTransport`` or an in-process client, so the code
-under test never attempts a connection.
+The Windows Proactor loop connects outbound through ``ConnectEx`` in ``_overlapped``, which
+bypasses ``socket.socket.connect``. On Windows ``IocpProactor.connect`` is therefore replaced
+too (as ``tests/stdio_socket_probe.py`` does) and every call is refused and recorded, loopback
+included: the self-pipe never goes through it. The tests that use this guard run against
+``httpx.MockTransport`` or an in-process client, so the code under test attempts no connection.
 """
 
 from __future__ import annotations
@@ -68,4 +69,11 @@ def install_no_network(monkeypatch: pytest.MonkeyPatch) -> list[Any]:
     monkeypatch.setattr(socket, "create_connection", refuse)
     monkeypatch.setattr(socket.socket, "connect", guarded(original_connect))
     monkeypatch.setattr(socket.socket, "connect_ex", guarded(original_connect_ex))
+    if sys.platform == "win32":
+        from asyncio import windows_events
+
+        def proactor_connect(self: Any, conn: socket.socket, address: Any) -> Any:
+            return refuse(address)
+
+        monkeypatch.setattr(windows_events.IocpProactor, "connect", proactor_connect)
     return attempts
