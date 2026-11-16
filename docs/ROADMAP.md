@@ -7,7 +7,7 @@ Every open or new issue has exactly one milestone (Backlog counts) and no `Stage
 there remain the source for requirement IDs. The goals and exit criteria below mirror the milestone
 descriptions on GitHub; the milestone is authoritative if they differ.
 
-Order: M1, M2, M3, M4, M5, M6, M9, M10, M7, M8, then Backlog. M9 comes first because every new field enlarges the served tool schemas. M7 and M8 have the lowest priority and are picked when the owner decides. Timers (W-CFG-04) stay excluded.
+Order: M1 to M10 by number, then Backlog; the numbers follow the order of implementation. The owner can still pick a milestone out of order; the order line is updated when that happens. Timers (W-CFG-04) stay excluded.
 M5 depends on authorized hardware and is picked when such a controller is available. The documentation and packaging
 issues of M6 (#23, #151, #181) do not depend on the feature milestones and may run in parallel with M3 to M5; listing and
 launch work (#25; #24 moved to M1) waits for the owner.
