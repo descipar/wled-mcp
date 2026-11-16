@@ -1336,6 +1336,8 @@ All Must requirements need evidence. Mock implementation can be merged while har
   not run).
 - [validation/issue-181.md](validation/issue-181.md): bounded source security review, regression fixes,
   static analysis, dependency updates and residual risks (#181; mocks and loopback only).
+- [validation/issue-235.md](validation/issue-235.md): slimmed served schemas, tighter tool
+  descriptions and the size budget with before/after measurements (#235; mocks only).
 - [validation/issue-25.md](validation/issue-25.md): live H07 check with an unreachable configured
   controller on the deployed HTTP service (#25; read-only, temporary inventory entry).
 - [validation/launch-report.md](validation/launch-report.md): launch report for the published

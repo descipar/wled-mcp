@@ -67,8 +67,8 @@ from wled_mcp.segment_rules import (
 class LayoutSegment(BaseModel):
     """One segment of the complete desired layout (id, start and stop are required).
 
-    On a matrix a new segment also needs ``start_y`` and ``stop_y`` (planner rule). The
-    #19 fields after ``name`` need fresh capability, field or matrix evidence.
+    A new matrix segment also needs ``start_y`` and ``stop_y``. The fields after ``name`` need
+    fresh capability, field or matrix evidence.
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)

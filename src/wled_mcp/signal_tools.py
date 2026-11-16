@@ -55,6 +55,44 @@ NO_PERSISTENCE_NOTE = (
     "restore attempt."
 )
 
+# Tool-description wording (#235). The longer notes above are the warning texts of results
+# and stay as they are.
+START_DESCRIPTION = (
+    "Show an RGB colour on explicitly listed existing segments of one configured device for "
+    "1 to 300 seconds, then restore exactly the fields this tool changed (colour slot 0, the "
+    "Solid effect, and segment or master power only when it turned them on), but only if they "
+    "still hold what the signal set; if someone changed them meanwhile the result is "
+    "skipped_conflict and nothing is overwritten. A restoration that cannot be established is "
+    "uncertain and is never replayed. Returns an operation ID and the captured prior values. "
+    "One signal per device, at most eight per process; a second start is refused, not queued. "
+    "Refused before any write: a running playlist, realtime data, an active nightlight, "
+    "frozen segments, a master that is off while other segments would light up, zero "
+    "brightness. Not a scheduler: no recurrence, no deferred start, no preset created or "
+    "changed. Changes the live output only. Timing is best effort: the restore starts at "
+    "expiry plus the lock wait and device round trips, the exact duration is not guaranteed "
+    "(not across a device or network outage), and if the device is unreachable the signal "
+    "may never be restored. Signals are kept in memory only: after a crash, kill or restart "
+    "an active signal stays on the device and its ID is unknown; an orderly shutdown makes "
+    "one bounded restore attempt. dry_run reads the device and returns the plan without any "
+    "write."
+)
+STATUS_DESCRIPTION = (
+    "Read the state of temporary signals from this process: one signal by operation ID, or "
+    "all active signals and the most recent ended ones (status active, restoring, restored, "
+    "skipped_conflict or uncertain, with the owned fields and the restoration result). Reads "
+    "process memory only and does not contact any device. Signals are kept in memory only: "
+    "after a crash, kill or restart an active signal stays on the device and its ID is "
+    "unknown. Read-only."
+)
+CANCEL_DESCRIPTION = (
+    "End a temporary signal now by operation ID: the server re-reads the device and restores "
+    "the fields the signal changed, only if they still hold the signal value, then returns "
+    "restored, skipped_conflict or uncertain. There is no cancel-without-restore; patch the "
+    "segment to keep a colour. Cancelling an ended signal changes nothing. A restore that "
+    "cannot be established is uncertain and is never replayed. Timing is best effort; if "
+    "the device is unreachable the signal may never be restored."
+)
+
 OperationId = Annotated[str, Field(pattern=OPERATION_ID_PATTERN)]
 
 
@@ -371,22 +409,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=START,
             tool_class=ToolClass.CONTROL,
-            description=(
-                "Show an RGB colour on explicitly listed existing segments of one configured "
-                "device for a bounded time (1 to 300 seconds), then restore exactly the fields "
-                "this tool changed (colour slot 0, the Solid effect, and segment or master "
-                "power only when it turned them on), but only if they still hold what the "
-                "signal set. If someone changed them meanwhile the result is skipped_conflict "
-                "and nothing is overwritten; a restoration that cannot be established is "
-                "uncertain and is never replayed. Returns an operation ID and the captured "
-                "prior values. One signal per device and at most eight per process; a second "
-                "start is refused, not queued. Refused before any write: a running playlist, "
-                "realtime data, an active nightlight, frozen segments, a master that is off "
-                "while other segments would light up, zero brightness. Not a scheduler: no "
-                "recurrence, no deferred start, no preset created or changed. Changes the live "
-                "output only. " + TIMING_NOTE + " " + NO_PERSISTENCE_NOTE + " dry_run reads "
-                "the device and returns the plan without any write."
-            ),
+            description=START_DESCRIPTION,
             request_model=StartSignalRequest,
             execute=start_signal,
             annotations=START_ANNOTATIONS,
@@ -394,13 +417,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=STATUS,
             tool_class=ToolClass.READ,
-            description=(
-                "Read the state of temporary signals from this process: one signal by "
-                "operation ID, or all active signals and the most recent ended ones (status "
-                "active, restoring, restored, skipped_conflict or uncertain, with the owned "
-                "fields and the restoration result). Reads process memory only and does not "
-                "contact any device. " + NO_PERSISTENCE_NOTE + " Read-only."
-            ),
+            description=STATUS_DESCRIPTION,
             request_model=GetSignalStatusRequest,
             execute=get_status,
             annotations=READ_ONLY,
@@ -408,14 +425,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=CANCEL,
             tool_class=ToolClass.CONTROL,
-            description=(
-                "End a temporary signal now by operation ID: the server re-reads the device and "
-                "restores the fields the signal changed, only if they still hold the signal "
-                "value, then returns the result (restored, skipped_conflict or uncertain). "
-                "There is no cancel-without-restore; patch the segment to keep a colour. "
-                "Cancelling an ended signal changes nothing. A restore that cannot be "
-                "established is uncertain and is never replayed. " + TIMING_NOTE
-            ),
+            description=CANCEL_DESCRIPTION,
             request_model=CancelSignalRequest,
             execute=cancel_signal,
             annotations=CANCEL_ANNOTATIONS,
