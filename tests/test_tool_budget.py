@@ -23,7 +23,7 @@ from wled_mcp.guidance import INSTRUCTIONS, PROMPT_DESCRIPTION, PROMPT_TEXT
 
 # Characters of compact JSON: name + description + input schema, one tool.
 TOOL_BUDGET = {
-    "wled_list_devices": 250,
+    "wled_list_devices": 350,
     "wled_get_service_status": 400,
     "wled_get_state": 400,
     "wled_get_effects": 1000,
@@ -45,8 +45,8 @@ TOOL_BUDGET = {
     "wled_save_playlist": 2150,
     "wled_export_presets": 900,
     "wled_import_presets": 2150,
-    "wled_list_groups": 550,
-    "wled_save_group": 1750,
+    "wled_list_groups": 650,
+    "wled_save_group": 2000,
     "wled_delete_group": 650,
     "wled_list_scenes": 900,
     "wled_save_scene": 2600,
@@ -54,15 +54,16 @@ TOOL_BUDGET = {
     "wled_plan_scene": 1050,
     "wled_apply_scene": 1600,
     "wled_list_zones": 750,
-    "wled_plan_zone": 1750,
-    "wled_apply_zone": 1950,
+    "wled_plan_zone": 1950,
+    "wled_apply_zone": 2150,
+    "wled_apply_room": 2300,
     "wled_preview_layout": 7650,
     "wled_start_signal": 2650,
     "wled_get_signal_status": 800,
     "wled_cancel_signal": 800,
 }
 # The same measure summed over the tools a profile serves.
-PROFILE_BUDGET = {"full": 62400, "control": 45300, "read-only": 21700}
+PROFILE_BUDGET = {"full": 65000, "control": 47800, "read-only": 21700}
 
 GROW = (
     "The served tool list grew past its budget. If the growth is deliberate, raise the limit in "

@@ -248,6 +248,8 @@ CONTROL_TOOLS = frozenset(
         "wled_apply_scene",
         # A zone has no device_id either: its parts are checked per device, like a scene.
         "wled_apply_zone",
+        # A room has no device_id either: its members are checked per device, like a scene.
+        "wled_apply_room",
         # A signal restores later, as control (the signal task sets the class itself).
         "wled_start_signal",
         # No device_id: the signal's device already passed its ceiling at start.
@@ -326,6 +328,7 @@ CONTROL_CALLS: dict[str, dict[str, Any]] = {
     # Refused without a stored scene (the scene tests apply one); it never writes then.
     "wled_apply_scene": {"scene_id": "evening"},
     "wled_apply_zone": {"zone": "shelf-left", "segments": [{"brightness": 40}]},
+    "wled_apply_room": {"room": "living", "state": {"on": False}},
     "wled_start_signal": {
         "device_id": "desk",
         "segment_ids": [0],
@@ -441,7 +444,9 @@ def test_build_operations_stays_unfiltered_under_a_restricted_policy(tmp_path):
 
 # A control tool without a device_id: the per-device ceiling is checked per expanded device
 # (preflight and write engine), covered by tests/test_scene_apply.py, not by the G2 filter.
-DEVICELESS_CONTROL_TOOLS = frozenset({"wled_apply_scene", "wled_apply_zone", "wled_cancel_signal"})
+DEVICELESS_CONTROL_TOOLS = frozenset(
+    {"wled_apply_scene", "wled_apply_zone", "wled_apply_room", "wled_cancel_signal"}
+)
 WRITE_CALLS: dict[str, dict[str, Any]] = {
     **{k: v for k, v in CONTROL_CALLS.items() if k not in DEVICELESS_CONTROL_TOOLS},
     "wled_save_preset": {"device_id": "desk", "name": "Mine"},

@@ -198,7 +198,7 @@ def _field_message(where: str, error: ValidationError) -> ClientFailure:
     return invalid(f"{where}: field {location or 'value'!r} is invalid.")
 
 
-def _parse_master(value: object, where: str) -> dict[str, JsonValue]:
+def parse_master(value: object, where: str) -> dict[str, JsonValue]:
     if not isinstance(value, dict) or not value:
         raise invalid(f"{where}: 'master' must be a nonempty object.")
     unknown = sorted(str(key) for key in value if key not in MASTER_FIELDS)
@@ -291,7 +291,7 @@ def _parse_target(value: object, position: int) -> SceneTarget:
     ref = check_id(value[kind], f"{kind} reference of target {position}")
     if "master" not in value and "segments" not in value:
         raise invalid(f"{where}: set 'master' and/or 'segments'.")
-    master = _parse_master(value["master"], where) if "master" in value else None
+    master = parse_master(value["master"], where) if "master" in value else None
     entries: tuple[SegmentEntry, ...] = ()
     if "segments" in value:
         raw = value["segments"]

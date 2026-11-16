@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Collection
 from dataclasses import dataclass
-from typing import Final
+from typing import Final, Literal
 
 from pydantic import JsonValue
 
@@ -36,7 +36,13 @@ MAX_SEGMENT_ID: Final = 254
 MAX_MEMBER_SEGMENTS: Final = 64
 MAX_NAME: Final = 128
 
-GROUP_KEYS: Final = ("format", "format_version", "id", "name", "members")
+REQUIRED_GROUP_KEYS: Final = ("format", "format_version", "id", "name", "members")
+# ``kind`` is optional (issue #183): absent means a plain group and is never written back
+# for one, so documents that were valid before stay byte-identical.
+OPTIONAL_GROUP_KEYS: Final = ("kind",)
+GROUP_KEYS: Final = (*REQUIRED_GROUP_KEYS, *OPTIONAL_GROUP_KEYS)
+GROUP_KINDS: Final = ("group", "room")
+GroupKind = Literal["group", "room"]
 MEMBER_KEYS: Final = frozenset({"device", "segments"})
 
 
@@ -52,6 +58,7 @@ class Group:
     id: str
     name: str
     members: tuple[Member, ...]
+    kind: GroupKind = "group"
 
 
 def check_id(value: object, label: str) -> str:
@@ -101,6 +108,13 @@ def check_segment_ids(value: object, where: str, key: str = "segments") -> tuple
     return ids
 
 
+def check_kind(value: object) -> GroupKind:
+    """``group`` or ``room``; anything else (any other value or type) is refused."""
+    if value == "group" or value == "room":
+        return value
+    raise invalid('The group \'kind\' must be "group" or "room".')
+
+
 def _parse_members(value: object) -> tuple[Member, ...]:
     if not isinstance(value, list) or not 1 <= len(value) <= MAX_MEMBERS:
         raise invalid(f"'members' must list 1-{MAX_MEMBERS} entries.")
@@ -147,13 +161,14 @@ def parse_group(raw: str | bytes | dict[str, JsonValue]) -> Group:
     unknown = sorted(str(key) for key in document if key not in GROUP_KEYS)
     if unknown:
         raise invalid(f"Unknown group key {echo(unknown[0])}.")
-    missing = [key for key in GROUP_KEYS if key not in document]
+    missing = [key for key in REQUIRED_GROUP_KEYS if key not in document]
     if missing:
         raise invalid(f"Missing group key {missing[0]!r}.")
     return Group(
         check_definition_id(document["id"], "group ID"),
         check_name(document["name"], "group name"),
         _parse_members(document["members"]),
+        check_kind(document["kind"]) if "kind" in document else "group",
     )
 
 
@@ -165,13 +180,16 @@ def group_document(group: Group) -> dict[str, JsonValue]:
         if member.segments is not None:
             entry["segments"] = list(member.segments)
         members.append(entry)
-    return {
+    document: dict[str, JsonValue] = {
         "format": GROUP_FORMAT,
         "format_version": GROUP_FORMAT_VERSION,
         "id": group.id,
         "name": group.name,
-        "members": members,
     }
+    if group.kind != "group":
+        document["kind"] = group.kind  # canonical: a plain group never carries the key
+    document["members"] = members
+    return document
 
 
 def member_views(group: Group, configured: Collection[str]) -> list[JsonValue]:

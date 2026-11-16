@@ -590,3 +590,148 @@ async def test_an_unverified_write_is_unknown_and_never_retried(tmp_path):
     assert outcome.error.code == "WRITE_OUTCOME_UNKNOWN"
     assert len(bodies(fleet, "b")) == 1  # exactly one POST: no replay
     assert device_entry(outcome, "a")["ok"] is True  # the other device is not undone
+
+
+# ================================================================== zones inside rooms (#183)
+
+
+def put_room(tmp_path: Path, room_id: str, *members: dict[str, Any], kind: str = "room") -> None:
+    document: dict[str, Any] = {
+        "format": "wled-mcp.group",
+        "format_version": 1,
+        "id": room_id,
+        "name": f"Room {room_id}",
+        "kind": kind,
+        "members": list(members),
+    }
+    write_raw(tmp_path / "groups" / f"{room_id}.json", json.dumps(document, indent=2) + "\n")
+
+
+LEFT_HALF = zone_doc("left", [part("a", 100, span(50, 100))])
+RIGHT_QUARTERS = zone_doc("low", [part("a", 100, span(0, 50))])
+
+
+async def test_a_zone_inside_a_room_resolves_to_exact_targets_and_names_the_room(tmp_path):
+    fleet = fleet_ab()
+    put_zone(tmp_path, LEFT_HALF)
+    put_room(tmp_path, "den", {"device": "a", "segments": [2, 3]}, {"device": "b"})
+    async with open_fleet(tmp_path, fleet) as resources:
+        plan = await call(resources, "wled_plan_zone", zone="left", room="den")
+        bare = await call(resources, "wled_plan_zone", zone="left")
+    assert plan.ok, plan.error
+    assert plan.data["room"] == {"id": "den", "name": "Room den"}
+    assert target_of(plan, "a")["zone_target"]["segment_ids"] == [2, 3]
+    assert target_of(plan, "a")["zone_target"]["spans"][0]["start"] == 50
+    assert "room" not in bare.data  # without the argument nothing about the result changes
+    assert fleet.post_count() == 0
+
+
+async def test_apply_in_a_room_writes_only_the_zone_segments_and_never_master(tmp_path):
+    fleet = fleet_ab()
+    put_zone(tmp_path, LEFT_HALF)
+    put_room(tmp_path, "den", {"device": "a", "segments": [2, 3]})
+    async with open_fleet(tmp_path, fleet) as resources:
+        before = lit(fake_of(fleet, "a"))
+        outcome = await call(
+            resources, "wled_apply_zone", zone="left", room="den", segments=[{"brightness": 21}]
+        )
+    assert outcome.ok, outcome.error
+    assert outcome.data["room"]["id"] == "den"
+    (body,) = bodies(fleet, "a")
+    assert sorted(seg["id"] for seg in body["seg"]) == [2, 3]
+    assert not {"on", "bri", "tt"} & body.keys()
+    after = lit(fake_of(fleet, "a"))
+    assert after[2] == after[3] == 21 and after[0] == before[0] and after[1] == before[1]
+
+
+async def test_a_whole_device_member_allows_every_segment_of_the_zone(tmp_path):
+    fleet = fleet_ab()
+    put_zone(tmp_path, LEFT_HALF)
+    put_room(tmp_path, "den", {"device": "a"})
+    async with open_fleet(tmp_path, fleet) as resources:
+        outcome = await call(
+            resources, "wled_apply_zone", zone="left", room="den", segments=[{"brightness": 9}]
+        )
+    assert outcome.ok, outcome.error
+
+
+async def test_a_zone_with_a_device_outside_the_room_is_refused_before_any_io(tmp_path):
+    fleet = fleet_ab()
+    shelf_left(tmp_path)  # parts on a and b
+    put_room(tmp_path, "den", {"device": "a"})
+    async with open_fleet(tmp_path, fleet) as resources:
+        plan = await call(resources, "wled_plan_zone", zone="shelf-left", room="den")
+        applied = await call(
+            resources,
+            "wled_apply_zone",
+            zone="shelf-left",
+            room="den",
+            segments=[{"brightness": 5}],
+        )
+    for outcome in (plan, applied):
+        assert error_of(outcome)["code"] == "VALIDATION_ERROR"
+        assert (
+            "extends outside the room" in outcome.error.message and "'b'" in outcome.error.message
+        )
+        assert outcome.data["problems"][0]["reason"] == "device_outside_room"
+        assert (outcome.application, outcome.verification) == ("not_attempted", "not_requested")
+    assert fleet.calls == []
+
+
+async def test_a_zone_segment_outside_the_designated_segments_fails_that_part(tmp_path):
+    fleet = fleet_ab()
+    put_zone(tmp_path, RIGHT_QUARTERS)  # resolves to segments 0 and 1
+    put_room(tmp_path, "den", {"device": "a", "segments": [2, 3]})
+    async with open_fleet(tmp_path, fleet) as resources:
+        plan = await call(resources, "wled_plan_zone", zone="low", room="den")
+        applied = await call(
+            resources, "wled_apply_zone", zone="low", room="den", segments=[{"brightness": 5}]
+        )
+    problem = target_of(plan, "a")["problem"]
+    assert problem["reason"] == "outside_room" and problem["layout_change_required"] is False
+    assert error_of(plan)["code"] == "VALIDATION_ERROR"
+    assert (applied.application, applied.verification, applied.ok) == (
+        "not_attempted",
+        "not_requested",
+        False,
+    )
+    assert fleet.post_count() == 0
+
+
+async def test_a_layout_change_between_preview_and_write_is_still_topology_changed_in_a_room(
+    tmp_path, monkeypatch
+):
+    fleet = fleet_ab()
+    put_zone(tmp_path, LEFT_HALF)
+    put_room(tmp_path, "den", {"device": "a", "segments": [2, 3]})
+    real = zone_tools.apply_device
+
+    async def changed_then_write(resources, plan, name):
+        fake_of(fleet, "a").slots[2]["stop"] = 60
+        fake_of(fleet, "a").slots[3]["start"] = 60
+        return await real(resources, plan, name)
+
+    monkeypatch.setattr(zone_tools, "apply_device", changed_then_write)
+    async with open_fleet(tmp_path, fleet) as resources:
+        outcome = await call(
+            resources, "wled_apply_zone", zone="left", room="den", segments=[{"brightness": 20}]
+        )
+    stale = device_entry(outcome, "a")
+    assert stale["steps"][0]["problem"]["reason"] == "topology_changed"
+    assert bodies(fleet, "a") == [] and outcome.ok is False
+
+
+async def test_a_conflicting_room_a_plain_group_and_an_unknown_room_are_refused_up_front(tmp_path):
+    fleet = fleet_ab()
+    put_zone(tmp_path, LEFT_HALF)
+    put_room(tmp_path, "den", {"device": "a"})
+    put_room(tmp_path, "hall", {"device": "a"})
+    put_room(tmp_path, "floor", {"device": "a"}, kind="group")
+    async with open_fleet(tmp_path, fleet) as resources:
+        conflict = await call(resources, "wled_plan_zone", zone="left", room="den")
+        plain = await call(resources, "wled_plan_zone", zone="left", room="floor")
+        unknown = await call(resources, "wled_plan_zone", zone="left", room="nowhere")
+    assert conflict.data["problems"][0]["reason"] == "room_conflict"
+    assert "is a group, not a room" in plain.error.message
+    assert unknown.error.code == "VALIDATION_ERROR"
+    assert fleet.calls == []

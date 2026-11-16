@@ -24,6 +24,7 @@ import logging
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import partial
+from pathlib import Path
 from typing import Annotated, Any, Final, Literal, Protocol
 
 import anyio
@@ -59,6 +60,7 @@ from wled_mcp.patches import (
 from wled_mcp.preset_tools import DESTRUCTIVE, READ_ONLY
 from wled_mcp.readmodels import Collector, as_dict, normalize_state
 from wled_mcp.resources import OperationContext, Resources
+from wled_mcp.rooms import room_conflicts, save_conflict
 from wled_mcp.scene_store import DefinitionStore, serialize_document
 from wled_mcp.scenes import (
     MAX_DOCUMENT_BYTES as MAX_SCENE_BYTES,
@@ -158,6 +160,10 @@ class SaveGroupRequest(BaseModel):
         min_length=1,
         max_length=MAX_MEMBERS,
         description="Configured device members with optional explicit segment IDs.",
+    )
+    kind: Literal["group", "room"] = Field(
+        default="group",
+        description="room: where controllers are, one room per controller; group: any set.",
     )
     overwrite: bool = Field(
         default=False,
@@ -1002,6 +1008,32 @@ def apply_outcome(
     )
 
 
+# ------------------------------------------------------------------------------- stores
+
+
+def open_group_store(data_dir: Path) -> DefinitionStore[Group]:
+    """The one wiring of the ``groups/`` store (scenes, zones, rooms and the device list)."""
+    return DefinitionStore(
+        data_dir / "groups",
+        "group",
+        lambda raw: parse_group(raw),
+        lambda item: item.id,
+        max_items=MAX_GROUPS,
+        max_bytes=MAX_GROUP_BYTES,
+    )
+
+
+def open_scene_store(data_dir: Path) -> DefinitionStore[Scene]:
+    return DefinitionStore(
+        data_dir / "scenes",
+        "scene",
+        lambda raw: parse_scene(raw, allow_placeholders=False),
+        lambda item: item.id,
+        max_items=MAX_SCENES,
+        max_bytes=MAX_SCENE_BYTES,
+    )
+
+
 # -------------------------------------------------------------------------------- tools
 
 
@@ -1009,28 +1041,8 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
     data_dir = resources.config.data_dir
     configured = frozenset(device.id for device in resources.inventory)
 
-    def parse_group_bytes(raw: bytes) -> Group:
-        return parse_group(raw)
-
-    def parse_scene_bytes(raw: bytes) -> Scene:
-        return parse_scene(raw, allow_placeholders=False)
-
-    groups: DefinitionStore[Group] = DefinitionStore(
-        data_dir / "groups",
-        "group",
-        parse_group_bytes,
-        lambda item: item.id,
-        max_items=MAX_GROUPS,
-        max_bytes=MAX_GROUP_BYTES,
-    )
-    scenes: DefinitionStore[Scene] = DefinitionStore(
-        data_dir / "scenes",
-        "scene",
-        parse_scene_bytes,
-        lambda item: item.id,
-        max_items=MAX_SCENES,
-        max_bytes=MAX_SCENE_BYTES,
-    )
+    groups = open_group_store(data_dir)
+    scenes = open_scene_store(data_dir)
 
     async def read_store(call: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         return await anyio.to_thread.run_sync(partial(call, *args, **kwargs))
@@ -1048,6 +1060,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         return {
             "id": group.id,
             "name": group.name,
+            "kind": group.kind,
             "member_count": len(group.members),
             "unresolved_members": unresolved,
             "members": members,
@@ -1079,15 +1092,20 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
             return _local_failed(name, failure)
         entries = [group_entry(group) for group in listing.items]
         shown: list[JsonValue] = [*entries]
-        return _local_ok(
-            name,
-            {
-                "groups": shown,
-                "count": len(entries),
-                "invalid_count": listing.invalid_count,
-            },
-            warnings=[*listing.warnings, *unresolved_warnings(entries)],
-        )
+        data: dict[str, JsonValue] = {
+            "groups": shown,
+            "count": len(entries),
+            "invalid_count": listing.invalid_count,
+        }
+        conflicts = room_conflicts(listing.items)
+        warnings = [*listing.warnings, *unresolved_warnings(entries)]
+        if conflicts:
+            data["room_conflicts"] = [*conflicts]
+            warnings.append(
+                f"{len(conflicts)} device(s) are in more than one room; a room action on them "
+                "is refused until each is in one room only (see room_conflicts)."
+            )
+        return _local_ok(name, data, warnings=warnings)
 
     async def save_group(arguments: dict[str, Any]) -> Outcome:
         name = "wled_save_group"
@@ -1106,6 +1124,8 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "name": arguments["name"],
                 "members": members,
             }
+            if arguments["kind"] != "group":
+                document["kind"] = arguments["kind"]
             group = parse_group(document)
             for position, member_ in enumerate(group.members, start=1):
                 if member_.device not in configured:
@@ -1113,6 +1133,12 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                         f"Member {position} names device {member_.device!r}, which is not "
                         "configured."
                     )
+            if group.kind == "room":
+                # One room per controller: refused before anything is written (a room being
+                # replaced is excluded by ID).
+                conflict = save_conflict(group, (await read_store(groups.list_items)).items)
+                if conflict is not None:
+                    raise invalid(conflict.message, conflict.reconciliation)
             body = serialize_document(group_document(group), "group document", MAX_GROUP_BYTES)
             result = await write_store(
                 groups.save, group, body, overwrite=arguments["overwrite"], dry_run=dry_run
@@ -1120,10 +1146,17 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
         except ClientFailure as failure:
             return _local_failed(name, failure, dry_run=dry_run)
         previous = group_document(result.replaced) if result.replaced is not None else None
+        notes: list[str] = []
+        if result.replaced is not None and result.replaced.kind != group.kind:
+            notes.append(
+                f"The kind changed from {result.replaced.kind!r} to {group.kind!r}; the "
+                "previous document is in data.replaced."
+            )
         return _local_ok(
             name,
             {"group": group_entry(group), "saved": result.stored, "replaced": previous},
             dry_run=dry_run,
+            warnings=notes,
         )
 
     async def delete_group(arguments: dict[str, Any]) -> Outcome:
@@ -1296,7 +1329,9 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
             description=(
                 "List the stored device groups with their exact member expansion (device ID, "
                 "designated segment IDs and whether the device is still configured). An "
-                "optional group_id returns that group with its stored document. Reads the "
+                "optional group_id returns that group with its stored document. Each entry "
+                "shows its kind (group or room); devices in more than one room are reported. "
+                "Reads the "
                 "local data directory only; no device is contacted and nothing is discovered. "
                 "Read-only."
             ),
@@ -1312,7 +1347,9 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "segment IDs per member (never 'all'). Stored as a local file in the data "
                 "directory; replacing an existing group needs overwrite=true and returns the "
                 "previous document. Members must be configured devices. No device is "
-                "contacted. dry_run validates and reports without writing."
+                "contacted. kind=room makes it a room (one room per controller; a controller "
+                "already in another room is refused). dry_run validates and reports without "
+                "writing."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SaveGroupRequest,

@@ -70,6 +70,7 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_list_zones", READ, destructive=False),
     ExpectedTool("wled_plan_zone", READ, destructive=False),
     ExpectedTool("wled_apply_zone", CONTROL, destructive=False),
+    ExpectedTool("wled_apply_room", CONTROL, destructive=False),
     ExpectedTool("wled_preview_layout", READ, destructive=False),
     ExpectedTool("wled_start_signal", CONTROL, destructive=False),
     ExpectedTool("wled_get_signal_status", READ, destructive=False),

@@ -148,3 +148,37 @@ def test_unknown_document_keys_are_redacted():
     marker = "synthetic-token@192.0.2.42"
     assert marker not in rejected(document(**{marker: marker}))
     assert marker not in rejected(document(members=[{"device": "desk", marker: marker}]))
+
+
+# ------------------------------------------------------------------ issue #183: kind
+
+
+def test_a_group_without_kind_is_a_plain_group_and_an_explicit_group_kind_loads():
+    assert parse_group(document()).kind == "group"
+    assert parse_group(document(kind="group")).kind == "group"
+    assert parse_group(document(kind="room")).kind == "room"
+
+
+@pytest.mark.parametrize("value", ["floor", "Room", "", None, 1, True, ["room"], {"a": 1}])
+def test_any_other_kind_value_or_type_is_rejected_naming_the_key(value):
+    assert "'kind'" in rejected(document(kind=value))
+
+
+def test_a_misspelled_key_is_still_rejected_and_version_two_by_number():
+    assert "Unknown group key" in rejected(document(kinds="room"))
+    assert "format_version 2" in rejected(document(format_version=2, kind="room"))
+
+
+def test_a_plain_group_is_serialized_exactly_as_before_and_a_room_carries_kind():
+    plain = group_document(parse_group(document(kind="group")))
+    assert "kind" not in plain
+    # The pre-change golden bytes: key order and content of a plain group never change.
+    assert json.dumps(plain) == (
+        '{"format": "wled-mcp.group", "format_version": 1, "id": "shelf", '
+        '"name": "Shelf strips", "members": [{"device": "desk"}, '
+        '{"device": "left", "segments": [0, 2]}]}'
+    )
+    room = group_document(parse_group(document(kind="room")))
+    assert room["kind"] == "room"
+    assert group_document(parse_group(room)) == room
+    assert parse_group(json.dumps(room)).kind == "room"
