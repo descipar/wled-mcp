@@ -173,7 +173,7 @@ for exactly this). Same method as above; mocks and in-memory servers only. Befor
 The served `instructions` and the prompt grew by one sentence (about 330 characters, outside the
 per-tool measure). Why the cost is justified: the extension-only variant (no new tool) could not
 deliver the state patch to a room that the acceptance criteria require, and no separate plan tool
-was added (about 1200 more characters): `dry_run=true` on the apply is the preview. The three
+was added (about 1200 more characters): `dry_run=true` on the apply is the preview. The five
 tools that are not new stayed within about 14 percent of their previous size. If the tool-group
 work of M9 (#236) or the segment schema simplification (#246) merge, the limits move again.
 

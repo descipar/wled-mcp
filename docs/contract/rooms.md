@@ -76,6 +76,9 @@ group). A controller listed by two rooms, with or without segments, is a *confli
   `room` keys are omitted and a warning says so.
 - A hand-edited conflict is caught by the listings and by the refusals below. A conflict that
   does not involve the requested room does not block it.
+- The conflict check at save time reads the store and then saves, like every other store write;
+  two server processes saving two rooms for the same device at the same moment are not
+  coordinated, and the listings and the room actions still report and refuse the conflict.
 
 ## `wled_apply_room`
 

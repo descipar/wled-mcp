@@ -9,8 +9,7 @@ Evidence for [#183](https://github.com/descipar/wled-mcp/issues/183) (milestone 
 the loopback fakes of `tests/acceptance_support.py` on `127.0.0.1` and pytest `tmp_path`; the
 network guard of the test suite stays intact. No LAN device, no real data directory and no
 hardware was used while implementing. The live run below is a separate step that is authorized
-by ISSUE-183-DEC-001 and is **pending**; nothing in this file claims live evidence until the
-section "Live run record" is filled in.
+by ISSUE-183-DEC-001; its result is in the section "Live run record" (one controller only).
 
 ## Requirement to test map
 
@@ -118,19 +117,28 @@ instrumentation. Raw captures stay in the ignored `.agent-runs/m7/issue-183/live
 
 ## Live run record
 
-**Pending live evidence.** Not yet run. The coordinator fills this section after the run, against
-the exact PASS-ready candidate commit, with:
+Run 1 of the script above, 2026-11-16, against candidate `e7cf3d4ce98405a08a7f9d08705d3fd0be5408f1`
+(PASS-reviewed head of the pull request), local build over stdio with a scratch data directory and a
+one-device inventory entry; the hub, its inventory and its data were not touched. One run was enough
+(DEC-028); Run 2 was not needed.
 
-- date and the candidate's full SHA;
-- controller class, firmware, LED count and segment facts only (no address or hostname);
-- the baseline and the post-restore state side by side (power, brightness, segment values,
-  preset list);
-- per step the envelope fields (`ok`, `application`, `verification`, per-device outcome,
-  `dry_run`) and the refusals of L1;
-- the transport used and any stop or deviation;
-- the limit statement: "only one controller was available; partial failure, an unreachable
-  member, strict versus best-effort across several devices and conflicts between controllers
-  are evidenced by mocks only, not by this run."
+The test controller: WLED 16.0.1, ESP32-C3, 133 LEDs, one RGB segment (0 to 133), preset list
+exactly `[1 "Solid"]`.
 
-Until it is filled in, hardware acceptance of rooms is not claimed and the issue acceptance
-bullet for the live run stays open.
+| Step | Result |
+| --- | --- |
+| P0 | Baseline as specified: power off, brightness 47, one segment (colour 0 `[138,189,255]`, effect 0 Solid, palette 11, speed 128, intensity 128), presets `[1 "Solid"]`. |
+| L1 (local) | `wled_save_group kind=room` stored the room; `wled_list_groups` showed `kind` `room` and `group` and no conflict; `wled_list_devices` showed `room` on the controller; saving a second room for the same controller was refused (`VALIDATION_ERROR`, device and room named, `application=not_attempted`); `wled_apply_room` on a plain group was refused ("is a group, not a room", no device contacted). |
+| L2 | `wled_apply_room` with `dry_run=true`, state and scene: `ok`, `dry_run=true`, `application=not_attempted`, `would_write=[controller]`, preflight ok; the device state afterwards was unchanged. |
+| L3 | `state={on:true, brightness:60}`: `ok`, `applied`/`verified`, one master step; read-back on, brightness 60. |
+| L4 | Scene with colour `[255,96,16]` and effect Solid on segment 0 through the room: `ok`, `applied`/`verified`, one segments step; read-back colour 0 `[255,96,16]`. |
+| L5 | Restore through the room path (baseline segment scene, then `state={on:false, brightness:47}`): both `ok`, `applied`/`verified`. Read-back equals the baseline: power off, brightness 47, one segment with the baseline colours, effect, palette, speed and intensity, presets `[1 "Solid"]`; the full state and the raw WLED state compare equal to P0 (apart from read timestamps). No corrective write was needed. |
+
+Four device writes in total (master, segments, segments, master), each a single verified POST of
+the existing engine. No preset, playlist, configuration, network, firmware, reboot, discovery or
+geometry operation, and no other controller. L6 (the optional zone check) was not run.
+
+**Limit:** only one controller was available; partial failure, an unreachable member, strict
+versus best-effort across several devices and conflicts between controllers are evidenced by mocks
+only, not by this run. The raw captures stay in the ignored `.agent-runs/m7/issue-183/live/`
+directory.
