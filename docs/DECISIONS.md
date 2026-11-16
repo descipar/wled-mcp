@@ -85,6 +85,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-035 | Project / discovery and enrollment (M8) | Agents discover WLED controllers through MCP and add them to the inventory after confirmation by the MCP client; inventory changes take effect by in-process reload; a bounded unicast `GET /json/info` probe of configured RFC 1918 ranges is approved in addition to mDNS under hard server-side caps; ranges are set by a separate configuration-write tool; an address change is reported, never rewritten; standard library only. Supersedes ISSUE-16-DEC-001 in part. | Confirmed owner answers, coordinator session, 2026-11-12 (paraphrased in English, no verbatim quote); see [DEC-035](#dec-035--agent-driven-discovery-and-enrollment) and [issue #198](https://github.com/descipar/wled-mcp/issues/198) |
 | DEC-036 | Project / roadmap | Milestone M5 is closed without its own minor release: the owner waives DEC-030 item 1 for M5 (confirmed explicitly after the coordinator read the instruction to close M5 as a waiver). Its merged work (#128, validation evidence and one mock test) needs no release; the README already states the result. Applies to M5 only. | Confirmed owner statements, coordinator session, 2026-11-12; see [DEC-036](#dec-036--m5-closes-without-its-own-release) |
 | DEC-037 | Project / operations | A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and never part of a project test, rollback or release step; the MCPHub fresh-install test stays waived (ISSUE-24-DEC-005). Changes to the wled-mcp service on a deployed target do not imply a hub reinstall. | Confirmed owner statement, coordinator session, 2026-11-13 (paraphrased in English, no verbatim quote); see [DEC-037](#dec-037--no-mcphub-reinstall-in-project-steps) |
+| DEC-038 | Project / roadmap | Milestone M7 is closed without its own minor release: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships with the next minor release and stays under Unreleased in the changelog until then; the README marks it "not yet released". Applies to M7 only. | Confirmed owner statement, coordinator session, 2026-11-16; see [DEC-038](#dec-038--m7-closes-without-its-own-release) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -948,6 +949,24 @@ can explicitly amend them.
   and it does not extend DEC-032. A later milestone needs its own answer.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
 - Affected: docs/ROADMAP.md (M4 row).
+
+### DEC-038 — M7 closes without its own release
+
+- Status: active project decision, M7 only.
+- Authority/source: owner statement in the coordinator session on 2026-11-16 (no permalink),
+  asked for the DEC-030 release question of milestone M7: "keine release für m7" (English: "no
+  release for M7").
+- Owner decision (the wording of the items is the coordinator's, from that statement):
+  1. The owner waives DEC-030 item 1 for M7 under DEC-030 item 3.
+  2. M7 has no release of its own. Its work (#183), once merged, ships with the next minor release and
+     stays under Unreleased in the changelog until then; no version, tag, GitHub release, PyPI
+     upload or registry publication is prepared for M7. The README marks the room behavior
+     "not yet released" until that release exists.
+  3. M7 is closed on GitHub once #183 is closed and this record is merged.
+- Scope: milestone M7 only; it extends none of DEC-032, DEC-034 or DEC-036. A later milestone
+  needs its own answer.
+- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
+- Affected: docs/ROADMAP.md (M7 row), the GitHub milestone M7.
 
 ### DEC-037 — No MCPHub reinstall in project steps
 
