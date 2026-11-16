@@ -20,12 +20,16 @@ contacted (in-memory servers, mocks only). Hardware is not part of this issue.
    `TIMING_NOTE` and `NO_PERSISTENCE_NOTE` stay as the warnings of results, which are unchanged).
    The repeated trailer "Overwriting replaces the destination's previous stored entry after a
    snapshot." is removed from the five tools that already state "needs overwrite=true and is
-   snapshotted first". Smaller rewordings in `wled_apply_scene`, `wled_apply_zone` and the
-   segment model docstrings (issue numbers and document paths removed). Every safety statement
+   snapshotted first". Smaller rewordings in `wled_apply_scene`, `wled_apply_zone`, `wled_plan_zone`,
+   `wled_save_scene` and the segment model docstrings (issue numbers and document paths removed). Every safety statement
    and mandatory rule stays: `Use dry_run=true when the requested replacement or deletion is
    unclear.` on every destructive tool, the LIVE EFFECT warnings, never-replayed and uncertain
    statements, exclusive stops, the `overwrite`/`allow_overlap` requirements, "omitted means
-   unchanged" and the capability evidence rules.
+   unchanged" and the capability evidence rules. The 36 segment field descriptions were
+   reviewed and kept as they are: they average about 60 characters and each carries a contract
+   rule (exclusive stop, "omit to preserve", capability or field evidence, device-specific IDs),
+   so the saving there comes from dropping titles and `default: null` (the segment schema
+   appears in three tools).
 3. **Guard.** `tests/test_tool_budget.py` enforces a per-tool and a per-profile size budget
    and checks that the served guidance resolves every tool and field reference it makes.
 
