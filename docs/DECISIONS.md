@@ -1051,6 +1051,9 @@ can explicitly amend them.
   configuration, other controllers or hub deployment.
   ISSUE-28-DEC-002 (coordinator, technical proposal): three signal tools, one signal per
   device, owned-field conditional restore, no persistence across restarts, bounded shutdown restore.
+- [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, technical proposal, 2026-11-11,
+  issue #29 only): `wled_preview_layout` read tool, SVG as `data.svg` in the tool result,
+  1D only, pure bounded renderer; no hardware access.
 - [ISSUE-183-DEC-001](decisions/issue-183.md) (human, owner chat, 2026-11-16, issue #183 /
   M7 evidence only): bounded live writes (room action, restore) on one selected controller
   against the PASS-ready candidate, full restoration to the recorded baseline; no preset or
@@ -1059,9 +1062,6 @@ can explicitly amend them.
   issue #183 only): a room is a stored group with `kind`; one room per controller; one control
   tool `wled_apply_room` on the scene write path; optional `room` on the zone tools; the owner
   can change any default at the merge decision.
-- [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, technical proposal, 2026-11-11,
-  issue #29 only): `wled_preview_layout` read tool, SVG as `data.svg` in the tool result,
-  1D only, pure bounded renderer; no hardware access.
 
 Stage 5 (recorded 2026-11-09):
 - [ISSUE-22-DEC-001](decisions/issue-22.md) (human, owner chat instruction, 2026-11-09,

@@ -128,11 +128,11 @@ exactly `[1 "Solid"]`.
 | Step | Result |
 | --- | --- |
 | P0 | Baseline as specified: power off, brightness 47, one segment (colour 0 `[138,189,255]`, effect 0 Solid, palette 11, speed 128, intensity 128), presets `[1 "Solid"]`. |
-| L1 (local) | `wled_save_group kind=room` stored the room; `wled_list_groups` showed `kind` `room` and `group` and no conflict; `wled_list_devices` showed `room` on the controller; saving a second room for the same controller was refused (`VALIDATION_ERROR`, device and room named, `application=not_attempted`); `wled_apply_room` on a plain group was refused ("is a group, not a room", no device contacted). |
+| L1 (local) | `wled_save_group kind=room` stored the room; `wled_list_groups` showed `kind` `room` and `group` and no conflict; `wled_list_devices` showed `room` on the controller; saving a second room for the same controller (`dry_run=true`) was refused (`VALIDATION_ERROR`, device and room named, `application=not_attempted`); `wled_apply_room` on a plain group was refused ("is a group, not a room", no device contacted). |
 | L2 | `wled_apply_room` with `dry_run=true`, state and scene: `ok`, `dry_run=true`, `application=not_attempted`, `would_write=[controller]`, preflight ok; the device state afterwards was unchanged. |
 | L3 | `state={on:true, brightness:60}`: `ok`, `applied`/`verified`, one master step; read-back on, brightness 60. |
 | L4 | Scene with colour `[255,96,16]` and effect Solid on segment 0 through the room: `ok`, `applied`/`verified`, one segments step; read-back colour 0 `[255,96,16]`. |
-| L5 | Restore through the room path (baseline segment scene, then `state={on:false, brightness:47}`): both `ok`, `applied`/`verified`. Read-back equals the baseline: power off, brightness 47, one segment with the baseline colours, effect, palette, speed and intensity, presets `[1 "Solid"]`; the full state and the raw WLED state compare equal to P0 (apart from read timestamps). No corrective write was needed. |
+| L5 | Restore through the room path (baseline segment scene, then `state={on:false, brightness:47}`): both `ok`, `applied`/`verified`. Read-back equals the baseline: power off, brightness 47, one segment with the baseline colours, effect, palette, speed and intensity, presets `[1 "Solid"]`; the full state and the raw WLED state compare equal to P0 (apart from read timestamps and runtime counters). No corrective write was needed. |
 
 Four device writes in total (master, segments, segments, master), each a single verified POST of
 the existing engine. No preset, playlist, configuration, network, firmware, reboot, discovery or

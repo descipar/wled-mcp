@@ -1,12 +1,11 @@
 # WLED MCP
 
-An unofficial [MCP](https://modelcontextprotocol.io/) server that lets an AI agent read
-and control [WLED](https://kno.wled.ge/) LED controllers by name: power, brightness,
-segments, effects, palettes, presets, groups, scenes and zones. It talks to each controller's
-JSON API on your network, validates every change before sending it and reads it back
-afterwards. It runs as a subprocess of your MCP host (stdio) or as a separate HTTP
-service. It is not affiliated with, endorsed by or supported by the WLED project or
-MCPHub.
+An unofficial [MCP](https://modelcontextprotocol.io/) server that lets an AI agent read and control
+[WLED](https://kno.wled.ge/) LED controllers by name: power, brightness, segments, effects,
+palettes, presets, groups, scenes and zones. It talks to each controller's JSON API on your network,
+validates every change before sending it and reads it back afterwards. It runs as a subprocess of
+your MCP host (stdio) or as a separate HTTP service. It is not affiliated with, endorsed by or
+supported by the WLED project or MCPHub.
 
 <!-- mcp-name: io.github.descipar/wled-mcp -->
 
@@ -32,15 +31,18 @@ on WLED 16.0.1. No support is promised
   before any write.
 - Zones: a reviewed zone file maps a physical region to devices and LED ranges; changes apply
   only inside the zone, otherwise they are refused before any write.
-- Presets, groups, scenes, rooms: presets with snapshots, restore, bundles and playlists;
-  scenes with a dry-run plan; rooms apply a state or scene per room (not yet released).
+- Presets, groups and scenes: persistent presets with snapshots, restore, portable bundles
+  and playlists; named device groups and multi-device scenes with a dry-run plan.
+- Rooms (not yet released): a stored group can be marked as a room; `wled_apply_room` applies
+  a state or a stored scene to every controller of one room, with dry run and per-device
+  results; a controller belongs to one room
+  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/rooms.md)).
 - Observe and explain (read-only): sampled live LED colours per segment, and an explanation
   of why a change may not show. Neither proves a cause or colour accuracy.
 - Layout preview (read-only): a static SVG of an observed or proposed 1D segment layout.
-- Temporary signals: `wled_start_signal` shows a colour on chosen segments
-  of one controller for a bounded time, then restores the previous state only if nobody
-  changed it; best effort, not a scheduler, nothing survives a restart
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
+- Temporary signals: `wled_start_signal` shows a colour on chosen segments of one controller
+  for a bounded time, then restores the previous state only if nobody changed it; best effort,
+  not a scheduler, nothing survives a restart ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
 - Agent guidance: safe-lighting instructions, a prompt and precise field descriptions, served
   identically over stdio and HTTP; the client has to pass them on to its agent.
 - Server-enforced profiles (`read-only`, `control`, `full`); for the HTTP service a bearer
@@ -60,8 +62,7 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
 - **Patch versus replace.** `wled_patch_segments` changes only the named segments; only
   `wled_replace_layout` removes segments that are not listed.
 - **Dry run and verification.** `dry_run=true` returns the plan without writing. Writes are
-  read back; a write that timed out is reported as
-  possibly applied and is never retried blindly.
+  read back; a write that timed out is reported as possibly applied, never retried blindly.
 - **Snapshots.** Overwriting or deleting a preset first stores a durable snapshot in the
   data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
   playlist saves change the live output before they store, and the previous lighting is not
@@ -139,8 +140,7 @@ Automated tests use mocks and synthetic loopback devices. Hardware acceptance is
 core features ran on one RGB controller with WLED 16.0.1, and an offline controller was checked
 once ([evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-25.md)). Multi-device scenes, profiles, zones, the layout preview and
 CCT, RGBW or 2D controllers have no hardware run, and temporary signals ran only twice
-on one controller; details are in
-[docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
+on one controller; details are in [docs/VALIDATION.md](https://github.com/descipar/wled-mcp/blob/main/docs/VALIDATION.md#known-limitations).
 
 - No tool deletes a snapshot on request; retention pruning keeps 20 per controller.
 - On WLED 16, storing, restoring or importing a preset changes the live output, and saving a
@@ -150,10 +150,10 @@ on one controller; details are in
 - No device authentication: WLED has none for its light API ("Anyone with your IP and port
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
   sends no device credentials and does not support a controller behind HTTP authentication.
-  On one controller (WLED 16.0.1) with the settings PIN, the OTA lock or both enabled,
-  the probed reads (state, effects, palettes, preset list and preset read) and a minimal write
-  set (master state, segment patch, preset store and delete) worked unchanged; other writes
-  under a lock were not run
+  On one controller (WLED 16.0.1) with the settings PIN, the OTA lock or both enabled, the
+  probed reads (state, effects, palettes, preset list and preset read) and a minimal write set
+  (master state, segment patch, preset store and delete) worked unchanged; other writes under
+  a lock were not run
   ([#128](https://github.com/descipar/wled-mcp/issues/128),
   [evidence](https://github.com/descipar/wled-mcp/blob/main/docs/validation/issue-128.md)).
 
