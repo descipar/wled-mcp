@@ -182,7 +182,7 @@ class ExpandedTarget:
     """
 
     device_id: str
-    origin: str  # "device", "group:<id>/member:<n>" or "zone:<id>/part:<n>"
+    origin: str  # "device", "group:<id>/member:<n>", "zone:<id>/part:<n>" or "room:<id>/member:<n>"
     target_index: int  # 1-based position of the scene target
     master: Mapping[str, JsonValue] | None
     segments: tuple[ResolvedSegments, ...]
