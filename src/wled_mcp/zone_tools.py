@@ -418,8 +418,8 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
                 "object of segment fields: on, brightness, colors, effect_id or effect_name, "
                 "palette_id or palette_name, speed, intensity, cct, custom1-3, check1-3) also "
                 "plans the change with the real segment planner. mode strict (default) blocks "
-                "every device when one fails. Sends no write and changes no lighting. The "
-                "preview is not a reservation. Read-only."
+                "every device when one fails. Sends no write and changes no lighting; not a "
+                "reservation. Read-only."
             ),
             request_model=PlanZoneRequest,
             execute=plan_zone,
@@ -431,16 +431,17 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
             description=(
                 "Apply segment fields (one object: on, brightness, colors, effect_id or "
                 "effect_name, palette_id or palette_name, speed, intensity, cct, custom1-3, "
-                "check1-3) to exactly the segments inside one zone. Changes the live output "
-                "of the zone's devices only: no geometry change, no master state, only "
-                "segments fully inside the zone, so no LED outside it is affected. Resolves "
-                "the zone against each device's existing segments, preflights every device "
-                "(including its access ceiling), then writes each through the verified write "
-                "path, replanning under the device lock; a layout that changed since the "
-                "preflight fails that device with topology_changed and nothing sent. mode "
-                "strict (default) writes nothing anywhere when any device fails preflight; "
-                "best_effort skips failing devices. Not atomic and not synchronized: no "
-                "rollback or replay, and a write that could not be verified is never retried. "
+                "check1-3) to exactly the segments inside "
+                "one zone. Changes the live output of the zone's devices only: no geometry "
+                "change, no master state, only segments fully inside the zone, so no LED "
+                "outside it is affected. Resolves the zone against each device's existing "
+                "segments, preflights every device (including its access ceiling), then writes "
+                "each through the verified write path, replanning under the device lock; a "
+                "layout that changed since the preflight fails that device with "
+                "topology_changed and nothing sent. mode strict (default) writes nothing "
+                "anywhere when any device fails preflight; best_effort skips failing devices. "
+                "Not atomic and not synchronized: no rollback or replay, an unverified write "
+                "is never retried. "
                 "dry_run returns exactly the plan of wled_plan_zone and sends no write."
             ),
             request_model=ApplyZoneRequest,

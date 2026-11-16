@@ -147,6 +147,14 @@ LOWER_BOUNDS = frozenset({"minimum", "exclusiveMinimum", "minLength", "minItems"
 UPPER_BOUNDS = frozenset({"maximum", "exclusiveMaximum", "maxLength", "maxItems"})
 
 
+def nullable(node: dict[str, Any]) -> bool:
+    """True when ``node`` is an ``anyOf`` with a ``null`` branch."""
+    return any(
+        isinstance(option, dict) and option.get("type") == "null"
+        for option in node.get("anyOf", [])
+    )
+
+
 def schema_breaks(old: Any, new: Any, pointer: str, *, inbound: bool) -> Iterator[str]:
     """Breaking differences from ``old`` to ``new`` (TD-21-4), as ``pointer: reason``.
 
@@ -176,6 +184,8 @@ def schema_breaks(old: Any, new: Any, pointer: str, *, inbound: bool) -> Iterato
         if key not in new:
             if inbound and key in LOWER_BOUNDS | UPPER_BOUNDS | {"pattern", "const"}:
                 continue  # an input constraint was dropped: looser
+            if key == "default" and old[key] is None and nullable(old):
+                continue  # an omitted nullable field already means "no value" (#235)
             yield f"{here}: removed"
             continue
         if key not in old:
@@ -447,6 +457,39 @@ def test_additive_changes_pass_without_a_migration_note(served, change):
             change(tool)
         assert mutated != retained
     assert contract_breaks(retained, mutated, []) == []
+
+
+def _synthetic_tool(prop: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": "wled_synthetic",
+        "inputSchema": {"type": "object", "properties": {"option": prop}},
+        "outputSchema": {"type": "object"},
+        "annotations": {},
+    }
+
+
+NULLABLE = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
+
+
+def test_dropping_default_null_of_a_nullable_optional_is_not_a_break():
+    """#235: the served schemas omit ``default: null``; omitted already means no value."""
+    retained = _synthetic_tool({**NULLABLE, "default": None})
+    assert contract_breaks([retained], [_synthetic_tool(NULLABLE)], []) == []
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ({"type": "boolean", "default": False}, {"type": "boolean"}),
+        ({**NULLABLE, "default": 5}, NULLABLE),
+        ({**NULLABLE, "default": None}, {**NULLABLE, "default": 5}),
+        ({"type": "string", "default": None}, {"type": "string"}),
+    ],
+    ids=["non-null-default-dropped", "other-default-dropped", "default-changed", "not-nullable"],
+)
+def test_other_default_changes_still_break(old, new):
+    problems = contract_breaks([_synthetic_tool(old)], [_synthetic_tool(new)], [])
+    assert any("/default" in problem for problem in problems), problems
 
 
 def test_renamed_model_class_is_not_a_schema_change(served):

@@ -480,7 +480,6 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
                 "and is snapshotted first. API-command and unknown snapshots are refused. One "
                 "POST, verified by bounded /presets.json polling, never replayed. dry_run "
                 "performs bounded reads only."
-                " Overwriting replaces the destination’s previous stored entry after a snapshot."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=RestorePresetRequest,
@@ -499,7 +498,6 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
                 "before any write; control keys are not accepted. An occupied ID needs "
                 "overwrite=true and is snapshotted first. One POST, verified by bounded "
                 "/presets.json polling, never replayed. dry_run performs bounded reads only."
-                " Overwriting replaces the destination’s previous stored entry after a snapshot."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=StorePresetRequest,
@@ -520,7 +518,6 @@ def build_preset_workflow_operations(resources: Resources) -> tuple[Operation, .
                 "occupied ID needs overwrite=true and is snapshotted first. One POST, verified "
                 "semantically by bounded /presets.json polling, never replayed. dry_run "
                 "performs bounded reads only."
-                " Overwriting replaces the destination’s previous stored entry after a snapshot."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SavePlaylistRequest,

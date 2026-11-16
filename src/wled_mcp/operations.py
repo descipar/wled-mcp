@@ -1207,7 +1207,6 @@ def _build_preset_operations(resources: Resources) -> tuple[Operation, ...]:
                 "are not verified. Outcome is decided by bounded /presets.json polling; an "
                 "uncertain outcome is never replayed. No supplied-state input exists. "
                 "dry_run performs bounded reads only."
-                " Overwriting replaces the destination’s previous stored entry after a snapshot."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SavePresetRequest,

@@ -5,6 +5,19 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## Unreleased
+
+### Changed
+
+- **Smaller served tool list (#235).** The served input and output schemas no longer carry the
+  generated `title` keys or `"default": null` on optional nullable fields, and the longest tool
+  descriptions are tighter (for example the signal tools, and the repeated overwrite sentence of
+  the preset tools). On the 37-tool `full` profile the name, description and input schemas
+  shrink from 70926 to 60572 characters (14.6 %, about 2600 tokens), and the output schemas from
+  67118 to 53095. No tool, name, annotation, field name, validation rule or result changed;
+  every safety statement of the descriptions stays. A test now guards a size budget per tool and
+  per profile. Measurements: [validation/issue-235.md](docs/validation/issue-235.md).
+
 ## 0.4.0 - M3 to M6: layout preview, signals, security review and the MCPB bundle
 
 The minor release that carries all work merged since 0.3.0: milestones M3 (layout preview), M4

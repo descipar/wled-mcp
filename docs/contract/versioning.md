@@ -126,7 +126,9 @@ meaning. While the major version is `0` (DEC-020):
   migration note (below). Nothing is renamed or removed silently.
 - Non-breaking: a new tool; a new optional input field; a looser input bound or a new
   accepted input enum value; a new output field; a new output enum value or error code;
-  reworded descriptions and titles that keep the meaning.
+  reworded descriptions and titles that keep the meaning; a generated `title` or a
+  `default: null` on an optional nullable input field that is no longer served (both are
+  annotations: an omitted nullable field already means no value, #235).
 - Breaking: removing or renaming a tool, field, error code or enum value; a new
   required input; a tighter input (lower maximum, higher minimum, new pattern, new
   constraint); a changed type or default; a changed annotation (`readOnlyHint`,

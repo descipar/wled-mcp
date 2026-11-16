@@ -1359,7 +1359,7 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "Effect and palette names resolve per device at plan time; a numeric ID is not "
                 "portable. A shared document with placeholders needs target_map. Stored as a "
                 "local file; replacing needs overwrite=true. No device is contacted and no "
-                "lighting changes. dry_run validates without writing."
+                "lighting changes."
                 " Use dry_run=true when the requested replacement or deletion is unclear."
             ),
             request_model=SaveSceneRequest,
@@ -1405,15 +1405,14 @@ def build_scene_operations(resources: Resources) -> tuple[Operation, ...]:
                 "device, capability checks, the device's access ceiling), then writes each "
                 "device through the verified write path: master state first, then segments, "
                 "each replanned under the device lock and checked by readback. At most four "
-                "devices are written at once, at most 16 per scene. mode strict (default) "
-                "writes nothing anywhere when any target fails preflight; best_effort skips "
-                "failing devices and writes the rest. The result lists one independent "
-                "outcome per device in data.devices. A scene is not atomic and not "
-                "synchronized: there is no rollback, compensation or replay, a write that "
-                "could not be verified is never retried, and if the call is stopped "
-                "(timeout, shutdown) devices not yet started are untouched while writes in "
-                "flight may or may not have been applied. dry_run returns exactly the plan "
-                "of wled_plan_scene and sends no write."
+                "devices at once, 16 per scene. mode strict (default) writes nothing anywhere "
+                "when any target fails preflight; best_effort skips failing devices and writes "
+                "the rest. One independent outcome per device in data.devices. A scene is not "
+                "atomic or synchronized: no rollback, compensation or replay, an unverified "
+                "write is never retried, and if the call is stopped (timeout, shutdown) "
+                "devices not yet started are untouched while writes in flight may or may not "
+                "have been applied. dry_run returns exactly the plan of wled_plan_scene and sends "
+                "no write."
             ),
             request_model=ApplySceneRequest,
             execute=apply_scene,

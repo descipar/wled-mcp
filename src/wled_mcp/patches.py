@@ -94,11 +94,10 @@ class SetStateRequest(BaseModel):
 
 
 class SegmentPatch(BaseModel):
-    """One explicit segment patch. At least one mutable field must be set.
+    """One explicit segment patch; set at least one mutable field.
 
-    ``start`` and ``stop`` must be supplied together when either is present, and so must
-    ``start_y`` and ``stop_y``. The #19 fields after ``name`` are settable only with
-    fresh capability, field-presence or matrix evidence (docs/contract/segments.md).
+    ``start`` with ``stop`` and ``start_y`` with ``stop_y`` go together. The fields after
+    ``name`` need fresh capability, field or matrix evidence.
     """
 
     model_config = ConfigDict(extra="forbid", strict=True)
