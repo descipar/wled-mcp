@@ -148,3 +148,34 @@ non-nullable node and a changed default still break, with their own controls.
   required lists; only titles and `default: null` are gone. Behavior of the server does not
   depend on the served schema.
 - No client-side measurement of a real MCP host was made.
+
+## Rooms (#183)
+
+Rooms add one tool and a few fields, so the budget was raised on purpose (the test message asks
+for exactly this). Same method as above; mocks and in-memory servers only. Before values are
+`main` at `e766976`.
+
+| Profile | Tools before | Tools after | Before (chars) | After (chars) | Growth | New limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| `full` | 37 | 38 | 60572 | 63676 | 3104 (5.1 %, about 780 tokens) | 65000 |
+| `control` | 27 | 28 | 43933 | 46782 | 2849 | 47800 |
+| `read-only` | 19 | 19 | 21036 | 21415 | 379 | 21700 (unchanged) |
+
+| Tool | Before (chars) | After (chars) | New limit | What grew |
+| --- | --- | --- | --- | --- |
+| `wled_apply_room` | - | 2246 | 2300 | new tool: `room`, `state` (3 fields), `scene_id`, `mode`, `dry_run` and the description |
+| `wled_save_group` | 1673 | 1928 | 2000 | `kind` and one description sentence |
+| `wled_plan_zone` | 1696 | 1914 | 1950 | optional `room` and one sentence |
+| `wled_apply_zone` | 1884 | 2108 | 2150 | optional `room` and one sentence |
+| `wled_list_groups` | 517 | 604 | 650 | one sentence (`kind`, conflicts) |
+| `wled_list_devices` | 237 | 311 | 350 | one sentence (`room`, unusable store never fails the list) |
+
+The served `instructions` and the prompt grew by one sentence (about 330 characters, outside the
+per-tool measure). Why the cost is justified: the extension-only variant (no new tool) could not
+deliver the state patch to a room that the acceptance criteria require, and no separate plan tool
+was added (about 1200 more characters): `dry_run=true` on the apply is the preview. The three
+tools that are not new stayed within about 14 percent of their previous size. If the tool-group
+work of M9 (#236) or the segment schema simplification (#246) merge, the limits move again.
+
+Checks: `uv run pytest tests/test_tool_budget.py` (per-tool and per-profile limits, the guidance
+resolution test) passes with the numbers above.

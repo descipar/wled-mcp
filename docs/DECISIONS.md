@@ -1055,6 +1055,10 @@ can explicitly amend them.
   M7 evidence only): bounded live writes (room action, restore) on one selected controller
   against the PASS-ready candidate, full restoration to the recorded baseline; no preset or
   configuration writes, reboot, OTA, other controllers or hub deployment.
+- [ISSUE-183-DEC-002](decisions/issue-183.md) (coordinator, technical proposal, 2026-11-16,
+  issue #183 only): a room is a stored group with `kind`; one room per controller; one control
+  tool `wled_apply_room` on the scene write path; optional `room` on the zone tools; the owner
+  can change any default at the merge decision.
 - [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, technical proposal, 2026-11-11,
   issue #29 only): `wled_preview_layout` read tool, SVG as `data.svg` in the tool result,
   1D only, pure bounded renderer; no hardware access.

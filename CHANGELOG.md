@@ -7,6 +7,27 @@ this file. Fixes are made for the latest release only. See
 
 ## Unreleased
 
+### Added
+
+- **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of
+  `wled_save_group`; the group format stays version 1 and a plain group is saved byte-identical
+  to before). A controller is in at most one room: saving a room that lists a device of another
+  room is refused, a hand-edited conflict is reported by `wled_list_groups` (`kind`,
+  `room_conflicts`) and `wled_list_devices` (`room`, `room_conflict`), and the room actions refuse
+  it before any write. The new control tool `wled_apply_room` applies a master state or a stored
+  scene to the members of a room through the scene write path (dry run, strict by default,
+  per-device outcomes, uncertain writes never retried, partial failure never overall success);
+  it is refused as a whole when a scene touches a controller or segment outside the room or a
+  state meets a member that designates segments. `wled_plan_zone` and `wled_apply_zone` take an
+  optional `room` (a zone outside the room is refused, `outside_room`). The tool list grows from
+  37 to 38 tools and the `full` profile from 60572 to 63676 characters (see
+  [validation/issue-235.md](docs/validation/issue-235.md)). All changes are additive. Downgrade:
+  an older server counts a room file as invalid and leaves it untouched
+  ([migration note](docs/contract/versioning.md#migration-notes), provisional release number).
+  Contract: [docs/contract/rooms.md](docs/contract/rooms.md). Mocked tests; the one authorized
+  live run on a single controller is recorded in
+  [validation/issue-183.md](docs/validation/issue-183.md), not yet released.
+
 ### Changed
 
 - **Smaller served tool list (#235).** The served input and output schemas no longer carry the

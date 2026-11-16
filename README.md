@@ -32,8 +32,8 @@ on WLED 16.0.1. No support is promised
   before any write.
 - Zones: a reviewed zone file maps a physical region to devices and LED ranges; changes apply
   only inside the zone, otherwise they are refused before any write.
-- Presets, groups and scenes: persistent presets with snapshots, restore, portable bundles
-  and playlists; named device groups and multi-device scenes with a dry-run plan.
+- Presets, groups, scenes, rooms: presets with snapshots, restore, bundles and playlists;
+  scenes with a dry-run plan; rooms apply a state or scene per room (not yet released).
 - Observe and explain (read-only): sampled live LED colours per segment, and an explanation
   of why a change may not show. Neither proves a cause or colour accuracy.
 - Layout preview (read-only): a static SVG of an observed or proposed 1D segment layout.

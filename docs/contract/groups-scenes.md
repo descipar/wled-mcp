@@ -68,6 +68,11 @@ timestamp, address, credential or URL, and no field takes a free URL.
 }
 ```
 
+- `kind`: optional, `"group"` (default when absent) or `"room"` ([rooms.md](rooms.md)). Any
+  other value or type is `VALIDATION_ERROR` naming `kind`. Serialization is canonical: the key
+  is written only for a room, so a plain group stays byte-identical to documents saved before
+  rooms existed. The version stays 1; scene `group` targets accept a room-kind group unchanged
+  (`kind` is a label there).
 - `name`: 1-128 characters, not blank, no control characters (the device name rule).
 - `members`: 1-16 entries in a defined order. `device` is a configured device ID; `segments` is
   an optional unique list of explicit segment IDs 0-254 (1-64 entries). An absent list never
@@ -158,8 +163,8 @@ use the existing generic `VALIDATION_ERROR` of the tool schema.
 
 | Tool | Class | Result `data` |
 | --- | --- | --- |
-| `wled_list_groups(group_id?)` | read | `groups[]` (`id`, `name`, `member_count`, `unresolved_members`, `members[]` with `member`, `device_id`, `segments`, `in_inventory`), `count`, `invalid_count`; with `group_id`: `group` and `document` |
-| `wled_save_group(group_id, name, members, overwrite=false, dry_run=false)` | manage | `group`, `saved`, `replaced` (previous document or null) |
+| `wled_list_groups(group_id?)` | read | `groups[]` (`id`, `name`, `kind`, `member_count`, `unresolved_members`, `members[]` with `member`, `device_id`, `segments`, `in_inventory`), `count`, `invalid_count`, `room_conflicts` (only when a device is in two rooms); with `group_id`: `group` and `document` |
+| `wled_save_group(group_id, name, members, kind="group", overwrite=false, dry_run=false)` | manage | `group`, `saved`, `replaced` (previous document or null); `kind="room"` refuses a device of another room |
 | `wled_delete_group(group_id, dry_run=false)` | manage | `removed`, `deleted` (the document) |
 | `wled_list_scenes(scene_id?, shareable=false, include_targets=false)` | read | `scenes[]` (`id`, `name`, `description`, `target_count`, `references`), `count`, `invalid_count`; with `scene_id`: `scene` and `document` |
 | `wled_save_scene(scene, target_map?, overwrite=false, dry_run=false)` | manage | `scene`, `saved`, `replaced` |
@@ -354,7 +359,7 @@ not register the tool; the `control` and `full` profiles do, and a device capped
 
 ## Not provided
 
-Discovery or implicit enrollment, inventory edits, saving a scene as a preset, scheduling,
+Rooms are specified in [rooms.md](rooms.md). Discovery or implicit enrollment, inventory edits, saving a scene as a preset, scheduling,
 triggers, server-orchestrated transitions, synchronized frames, cross-device atomicity,
 rollback or compensating writes, restoring the lighting before a scene, a background
 watcher, per-user ownership,

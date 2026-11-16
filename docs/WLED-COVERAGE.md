@@ -252,6 +252,9 @@ counted.
   contacted and no WLED feature is involved.
 - `wled_cancel_signal`: ends a signal early with the same conditional restore (#28); no WLED
   feature row.
+- `wled_apply_room`: applies a master state or a stored scene to the members of a room (a
+  stored group with `kind=room`, a project concept, #183) through the same verified master and
+  segment path as `wled_set_state` and `wled_patch_segments`; no WLED feature row changes.
 - `wled_apply_zone`: writes segment fields to the segments a zone resolves to, through the
   same verified path as `wled_patch_segments` (W-SEG rows stay as they are); it never
   changes geometry or master state.
