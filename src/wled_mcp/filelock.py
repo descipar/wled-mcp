@@ -6,6 +6,7 @@ server and the CLI) serialize alike. The OS releases the lock when the holder ex
 crash never leaves a stale lock; the lock file itself is never deleted.
 """
 
+import contextlib
 import os
 import threading
 import time
@@ -30,6 +31,10 @@ def config_backup_path(config_path: Path) -> Path:
 
 class LockTimeout(Exception):
     """The lock stayed held by another writer for the whole bounded wait."""
+
+
+class LockUnavailable(Exception):
+    """The lock file could not be opened (for example a read-only directory)."""
 
 
 def _try_lock(fd: int) -> bool:
@@ -67,13 +72,17 @@ def _unlock(fd: int) -> None:
 def exclusive_lock(path: Path, timeout: float) -> Iterator[None]:
     """Hold the exclusive lock on ``path`` (created if missing); ``LockTimeout`` after ``timeout``.
 
-    ``OSError`` from opening the lock file (for example a read-only directory) propagates.
+    ``LockUnavailable`` when the lock file cannot be opened. Errors while releasing are
+    ignored: the OS drops the lock when the descriptor closes, and the guarded work is done.
     """
     deadline = time.monotonic() + timeout
     if not _thread_lock.acquire(timeout=max(0.0, timeout)):
         raise LockTimeout
     try:
-        fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+        except OSError:
+            raise LockUnavailable from None
         try:
             if os.name == "nt" and os.fstat(fd).st_size == 0:
                 os.write(fd, b"\0")  # a byte range must exist to be locked
@@ -84,8 +93,10 @@ def exclusive_lock(path: Path, timeout: float) -> Iterator[None]:
             try:
                 yield
             finally:
-                _unlock(fd)
+                with contextlib.suppress(OSError):
+                    _unlock(fd)
         finally:
-            os.close(fd)
+            with contextlib.suppress(OSError):
+                os.close(fd)
     finally:
         _thread_lock.release()

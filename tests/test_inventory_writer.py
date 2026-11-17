@@ -6,12 +6,14 @@ network. Permission failures are simulated by patching, never by chmod (DEC-033)
 
 import hashlib
 import os
+import subprocess
+import sys
 import threading
 from pathlib import Path
 
 import pytest
 
-from wled_mcp import cli, setup
+from wled_mcp import cli, filelock, setup
 from wled_mcp.access import AccessPolicy, ToolClass
 from wled_mcp.config import InventoryConfig, load_config, validate_document
 from wled_mcp.filelock import LockTimeout, config_backup_path, config_lock_path, exclusive_lock
@@ -382,3 +384,78 @@ def test_a_cap_in_the_running_policy_blocks_a_candidate_that_drops_it(tmp_path):
     assert writer.update(appender(block("lamp", "192.0.2.20"))).written
     bad = error_of(lambda: writer.update(lambda c: c.replace(b'max_class = "control"\n', b"")))
     assert bad.data == {"stage": "access"}
+
+
+HOLDER = (
+    "import sys\n"
+    "from pathlib import Path\n"
+    "from wled_mcp.filelock import exclusive_lock\n"
+    "with exclusive_lock(Path(sys.argv[1]), 5):\n"
+    "    print('held', flush=True)\n"
+    "    sys.stdin.readline()\n"
+)
+
+
+def test_a_lock_held_by_another_process_refuses_the_writer_and_the_cli(
+    tmp_path, capsys, monkeypatch
+):
+    rig = Rig(tmp_path, lock_timeout=0.3)
+    monkeypatch.setattr(setup, "DEFAULT_TIMEOUT_SECONDS", 0.3)
+    before = rig.path.read_bytes()
+    holder = subprocess.Popen(  # noqa: S603 - fixed interpreter and script, synthetic path
+        [sys.executable, "-I", "-c", HOLDER, str(config_lock_path(rig.path))],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert holder.stdout.readline().strip() == "held"
+        error = error_of(lambda: rig.writer.update(appender(block("lamp", "192.0.2.20"))))
+        assert (error.code, error.data) == ("STORAGE_FAILED", {"reason": "locked"})
+        argv = [
+            "config", "add-device", "--config", str(rig.path), "--device-id", "lamp",
+            "--device-name", "Lamp", "--base-url", "http://192.0.2.20", "--format", "json",
+        ]  # fmt: skip
+        assert cli.main(argv) == 1
+        assert "CONFIG_LOCKED" in capsys.readouterr().out
+        assert rig.path.read_bytes() == before
+    finally:
+        holder.communicate("\n", timeout=10)
+    assert rig.writer.update(appender(block("lamp", "192.0.2.20"))).written
+
+
+def test_init_force_backup_is_the_exact_file_replaced_under_the_lock(tmp_path, capsys):
+    rig = Rig(tmp_path)
+    changed = BASE.encode() + b"# changed after the command read the file\n"
+    real = setup.atomic_write
+
+    def late_edit(target, content, mode, before_replace=None):
+        if target == rig.path:  # between the command's read and its locked write
+            target.write_bytes(changed)
+        real(target, content, mode, before_replace)
+
+    setup.atomic_write = late_edit
+    try:
+        assert cli.main(["config", "init", "--config", str(rig.path), "--force"]) == 0
+    finally:
+        setup.atomic_write = real
+    capsys.readouterr()
+    assert config_backup_path(rig.path).read_bytes() == changed
+
+
+def test_an_oserror_from_the_edit_callback_is_not_reported_as_a_storage_failure(tmp_path):
+    rig = Rig(tmp_path)
+
+    def broken(current: bytes) -> bytes:
+        raise OSError(SECRET)
+
+    with pytest.raises(OSError):
+        rig.writer.update(broken)
+    assert rig.applied == [] and not config_backup_path(rig.path).exists()
+
+
+def test_a_release_failure_after_a_successful_write_still_reports_success(tmp_path, monkeypatch):
+    rig = Rig(tmp_path)
+    monkeypatch.setattr(filelock, "_unlock", denied)
+    result = rig.writer.update(appender(block("lamp", "192.0.2.20")))
+    assert result.written and result.reloaded and len(rig.applied) == 1

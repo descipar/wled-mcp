@@ -327,8 +327,8 @@ version is known.
   Failure data is fixed text; it never holds a path or a file value.
 - **Evidence (DISC-T06, mocked).** `tests/test_inventory_writer.py` covers atomic replace
   and backup, rollback (invalid, access-changing and ID-dropping candidates, failing apply,
-  failing restore), storage failures, conflict, concurrent writers including the CLI, and the
-  reload view. It uses temporary directories and no network; no hardware evidence (#204).
+  failing restore), storage failures, conflict, concurrent writers including the CLI (threads, and a real
+  subprocess holding the lock on POSIX and the host OS), and the reload view. It uses temporary directories and no network; no hardware evidence (#204).
 
 ## Security and privacy
 

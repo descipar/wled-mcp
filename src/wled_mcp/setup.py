@@ -32,6 +32,7 @@ from wled_mcp.config import (
 from wled_mcp.filelock import (
     DEFAULT_TIMEOUT_SECONDS,
     LockTimeout,
+    LockUnavailable,
     config_backup_path,
     config_lock_path,
     exclusive_lock,
@@ -345,7 +346,7 @@ def _locked_write(
     content: bytes,
     mode: int | None,
     before_replace: Callable[[], None] | None,
-    backup: bytes | None,
+    backup: bool,
 ) -> None:
     """The write phase under the inventory lock shared with the server (TP-201-2).
 
@@ -357,12 +358,14 @@ def _locked_write(
     def guarded() -> None:
         if before_replace is not None:
             before_replace()
-        if backup is not None:
-            atomic_write(config_backup_path(target), backup, mode)
+        if backup:  # read under the lock: the backup is exactly the file replaced next
+            atomic_write(config_backup_path(target), target.read_bytes(), mode)
 
     try:
         with exclusive_lock(config_lock_path(target), DEFAULT_TIMEOUT_SECONDS):
             atomic_write(target, content, mode, guarded)
+    except LockUnavailable:
+        raise OSError("lock file unavailable") from None  # reported as WRITE_FAILED
     except LockTimeout:
         raise Refusal(
             "CONFIG_LOCKED",
@@ -397,8 +400,7 @@ def config_init(args: argparse.Namespace, environ: Mapping[str, str]) -> Command
                 "Use --force to replace it.",
             )
         mode = existing.st_mode
-    previous = target.read_bytes() if existing is not None else None
-    _locked_write(target, document.encode("utf-8"), mode, None, previous)
+    _locked_write(target, document.encode("utf-8"), mode, None, existing is not None)
     count = len(validated.devices)
     return CommandResult(
         command,
@@ -458,7 +460,7 @@ def config_add_device(
         if before_replace is not None:
             before_replace()
 
-    _locked_write(target, candidate.encode("utf-8"), info.st_mode, unchanged, original)
+    _locked_write(target, candidate.encode("utf-8"), info.st_mode, unchanged, True)
     count = len(validated.devices)
     return CommandResult(
         command,

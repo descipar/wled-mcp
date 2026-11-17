@@ -507,7 +507,13 @@ operator's explicit request for the selected device. Snapshots stay under
 
 ## Persistent paths
 
-- `/app/data/wled-mcp/config/devices.toml`: local inventory, not in Git. The directory must be writable by the service user and mounted as a directory, not as a single file: an inventory write (`config add-device`, `config init --force` and the discovery tools of milestone M8) replaces the file atomically and keeps one previous generation as `devices.toml.bak`, and it takes the lock file `.devices.toml.lock` in the same directory. Neither file is secret beyond what the inventory already is; keep both out of Git.
+- `/app/data/wled-mcp/config/devices.toml`: local inventory, not in Git. A service that only
+  reads it can keep it read-only. Where the inventory is written (`config add-device`,
+  `config init --force`, and the discovery tools of milestone M8 once they exist) the
+  directory must be writable by that user and mounted as a directory, not as a single file:
+  a write replaces the file atomically, keeps one previous generation as `devices.toml.bak`
+  and takes the lock file `.devices.toml.lock` in the same directory. Neither file is secret
+  beyond what the inventory already is; keep both out of Git.
 - `/app/data/wled-mcp/backups/<device_id>/<backup_id>.json`: persistent preset snapshots (directories 0700, files 0600, created on first snapshot; never in Git). The service user needs write access; keep the volume persistent and back it up like other runtime data. Snapshots are published with a hard link, so a filesystem without hard-link support (some network or FAT volumes) makes every snapshot fail closed with `BACKUP_FAILED`. When the backups location is not writable, the server prints one advisory line on stderr at startup and still starts; `wled-mcp doctor` reports it as `BACKUPS_NOT_WRITABLE` (hard-link support is not checked, because that needs a write).
 - `/app/data/wled-mcp/groups/<id>.json` and `/app/data/wled-mcp/scenes/<id>.json`: device groups and scenes saved by the group and scene tools (directories 0700, files 0600, created on first save; never in Git); keep them on the persistent volume and back them up like other runtime data.
 - `/app/binaries/wled-mcp/<version>/`: immutable staged release (wheel, constraints, checksums).

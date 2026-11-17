@@ -19,6 +19,7 @@ from wled_mcp.config import ConfigurationError, Device, InventoryConfig, validat
 from wled_mcp.filelock import (
     DEFAULT_TIMEOUT_SECONDS,
     LockTimeout,
+    LockUnavailable,
     config_backup_path,
     config_lock_path,
     exclusive_lock,
@@ -95,7 +96,7 @@ class InventoryWriter:
             raise _storage(
                 "locked", "The inventory is being written by another process; nothing was changed."
             ) from None
-        except OSError:
+        except LockUnavailable:
             raise _storage(
                 "not_writable", "The inventory directory is not writable; nothing was changed."
             ) from None
