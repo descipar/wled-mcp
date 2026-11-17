@@ -30,6 +30,12 @@ this file. Fixes are made for the latest release only. See
 
 ### Changed
 
+- **Inventory writes keep a backup and take a lock (#201).** `wled-mcp config add-device` and
+  `config init --force` now keep the previous file as `<config>.bak` next to the configuration
+  and take the lock file `.<config>.lock` there, so they cannot interleave with another writer
+  (new refusal `CONFIG_LOCKED`). A reusable inventory writer with in-process reload (no new tool;
+  the discovery tools of milestone M8 use it) and the error codes `INVENTORY_CONFLICT` and
+  `INVENTORY_RELOAD_FAILED` are added. The configuration directory must be writable.
 - **Smaller served tool list (#235).** The served input and output schemas no longer carry the
   generated `title` keys or `"default": null` on optional nullable fields, and the longest tool
   descriptions are tighter (for example the signal tools, and the repeated overwrite sentence of

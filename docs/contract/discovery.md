@@ -301,10 +301,34 @@ version is known.
 - Hand edits are not picked up: there is no file watching and no signal-triggered reload;
   `wled-mcp config validate` plus a restart remains for them.
 - The writer holds the cross-process lock, so `wled-mcp config add-device` (another process)
-  and the tools cannot interleave. It keeps the previous file as a backup (location decided by
-  #201) and fails with `STORAGE_FAILED` if the file or its directory is not writable. A
-  read-only bind mount of a single file cannot be replaced atomically: mount the configuration
-  directory, not the file.
+  and the tools cannot interleave. It keeps the previous file as a backup and fails with
+  `STORAGE_FAILED` if the file or its directory is not writable. A read-only bind mount of a
+  single file cannot be replaced atomically: mount the configuration directory, not the file.
+- **Backup (TP-201-1).** One generation: `<config filename>.bak` next to the configuration
+  (`inventory.toml.bak`), same mode, replaced by every successful write and by `config
+  add-device` and `config init --force`. It is written atomically before the replace; a backup
+  failure is `STORAGE_FAILED` (`data.reason` `backup_failed`) and the file is unchanged. An
+  unchanged candidate writes nothing and makes no backup. The per-device preset snapshots
+  under `<data-dir>/backups` are a separate store.
+- **Lock (TP-201-2).** The sibling file `.<config filename>.lock` in the configuration
+  directory, never deleted, holds an OS-level exclusive lock (`fcntl.flock` on POSIX,
+  `msvcrt.locking` on Windows) plus an in-process lock. The wait is bounded (5 s); a timeout is
+  `STORAGE_FAILED` with `data.reason` `locked` and the CLI's `CONFIG_LOCKED`. The OS drops the
+  lock when its holder exits, so a crash leaves no stale lock.
+- **Baseline and error fields (TP-201-3, TP-201-4).** The baseline of `file_changed` is the
+  SHA-256 of the bytes loaded at startup, advanced by each own successful write; without a
+  baseline every write is a conflict. `STORAGE_FAILED` `data.reason` is `locked`,
+  `not_writable`, `unreadable`, `backup_failed` or `write_failed`; `INVENTORY_RELOAD_FAILED`
+  `data.stage` is `validation` (candidate invalid or would drop a configured ID), `access`
+  (profile or a `max_class` would change) or `reload` (apply failed after the replace; the
+  previous bytes are restored, `unknown` if that restore also failed). The candidate is
+  validated before the file is replaced. The profile is compared with the profile of the loaded
+  file (a `serve --profile` option can differ from it), the caps with the running policy.
+  Failure data is fixed text; it never holds a path or a file value.
+- **Evidence (DISC-T06, mocked).** `tests/test_inventory_writer.py` covers atomic replace
+  and backup, rollback (invalid, access-changing and ID-dropping candidates, failing apply,
+  failing restore), storage failures, conflict, concurrent writers including the CLI, and the
+  reload view. It uses temporary directories and no network; no hardware evidence (#204).
 
 ## Security and privacy
 

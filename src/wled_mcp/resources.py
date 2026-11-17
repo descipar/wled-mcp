@@ -1,6 +1,6 @@
 """One process resource graph; future sessions share clients, caches and device locks."""
 
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from functools import partial
@@ -15,7 +15,7 @@ from wled_mcp.access import CURRENT_TOOL_CLASS, AccessPolicy, ToolClass, denial_
 from wled_mcp.backups import BackupRecord, Firmware, RestorePlan, Snapshot, SnapshotStore
 from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
-from wled_mcp.config import Device, StartupConfig
+from wled_mcp.config import Device, InventoryConfig, StartupConfig
 from wled_mcp.diagnostics import LastControlStore, ServiceMonitor
 from wled_mcp.models import DomainError, Outcome
 from wled_mcp.signal_manager import SignalManager
@@ -126,6 +126,15 @@ class OperationContext:
         return await self.client.read(self.device, endpoint, self.deadline)
 
 
+@dataclass(frozen=True)
+class _InventoryView:
+    """One immutable inventory snapshot (replaced whole on reload)."""
+
+    devices: tuple[Device, ...]
+    by_id: Mapping[str, Device]
+    locks: dict[str, anyio.Lock]
+
+
 class Resources:
     def __init__(
         self,
@@ -135,19 +144,21 @@ class Resources:
     ) -> None:
         self.config = config
         self.clock = clock if clock is not None else Clock()
-        self.inventory = config.devices
+        self._view = _InventoryView(
+            config.devices,
+            {device.id: device for device in config.devices},
+            {device.id: anyio.Lock() for device in config.devices},
+        )
         # Profile and per-device ceilings (issue #20); the write engines enforce them (G3).
         self.access: AccessPolicy = config.access
-        self._devices = {device.id: device for device in self.inventory}
         # Last observed outcome per device and call counters (issue #20, TD-20-11); fed by
         # the client's observer, so it never issues a request of its own.
         self.monitor = ServiceMonitor(
-            (device.id for device in self.inventory),
+            (device.id for device in config.devices),
             self.clock.monotonic,
-            LastControlStore((device.id for device in self.inventory), self.clock.now),
+            LastControlStore((device.id for device in config.devices), self.clock.now),
         )
         self.client = WLEDClient(config.http, transport, observer=self.monitor.observe)
-        self.locks = {device.id: anyio.Lock() for device in self.inventory}
         # One shared effect/palette catalog cache (issue #5); never holds state/info.
         self.metadata_cache = CatalogCache(config.http.catalog_cache_seconds, self.clock)
         # Poll interval for persistent-file/activation readbacks (tests shorten it).
@@ -176,9 +187,35 @@ class Resources:
                 with anyio.CancelScope(shield=True):
                     await self.client.aclose()
 
+    @property
+    def inventory(self) -> tuple[Device, ...]:
+        """The devices now in effect; a tuple snapshot that a later reload never mutates."""
+        return self._view.devices
+
+    @property
+    def locks(self) -> dict[str, anyio.Lock]:
+        return self._view.locks
+
+    def apply_inventory(self, config: InventoryConfig) -> None:
+        """Swap in a reloaded device list without a restart (issue #201, TP-10).
+
+        Builds a new immutable view and assigns it by one reference, so an iteration or
+        a request that began on the old tuple finishes on the old snapshot. Existing lock
+        objects are reused (a running operation keeps holding its lock); a new ID gets a
+        new one. IDs are never removed here; the writer refuses a candidate that drops one.
+        """
+        old = self._view
+        devices = tuple(config.devices)
+        locks = {
+            device.id: old.locks[device.id] if device.id in old.locks else anyio.Lock()
+            for device in devices
+        }
+        self.monitor.extend_ids(device.id for device in devices)
+        self._view = _InventoryView(devices, {d.id: d for d in devices}, locks)
+
     def resolve(self, device_id: str) -> Device:
         try:
-            return self._devices[device_id]
+            return self._view.by_id[device_id]
         except KeyError:
             raise ClientFailure("UNKNOWN_DEVICE", "Unknown configured device ID.") from None
 

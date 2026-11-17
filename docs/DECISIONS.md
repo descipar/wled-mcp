@@ -1053,6 +1053,10 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-201-DEC-001](decisions/issue-201.md) (coordinator, technical proposal,
+  2026-11-17, issue #201 / M8 only): inventory writer defaults TP-201-1 to TP-201-5 (one
+  `<config>.bak` backup, sibling OS lock file, SHA-256 baseline for `file_changed`, error
+  mapping, edit callback); not a human decision.
 - [ISSUE-198-DEC-001](decisions/issue-198.md) (coordinator, technical proposal,
   2026-11-12, issue #198 / M8 only): technical proposals TP-1 to TP-12 of
   [contract/discovery.md](contract/discovery.md) (tool classes and annotations, numeric hard
