@@ -1,9 +1,11 @@
 # Discovery and enrollment (DISC-01 to DISC-14, #198 to #204)
 
-Contract for milestone M8. Nothing here is implemented yet: the statements describe the
-target behavior of issues #199 to #204, and every statement about current behavior
-elsewhere in the documentation stays true until the owning implementation PR changes it.
-The tools below are not registered in the released server.
+Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`, #199) and
+the CLI `discover` on top of it are implemented (mocked evidence only; live evidence is
+#204). The tools, ranges key, enrollment, writer and reload below are not implemented yet:
+they describe the target behavior of #200 to #204, and every statement about current
+behavior elsewhere in the documentation stays true until the owning implementation PR
+changes it. The tools below are not registered in the released server.
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
@@ -325,11 +327,32 @@ limit text. Unicast probing works from a container to its routed network, which 
 reason for the probe in DEC-035 item 3. The write tools need a writable configuration
 directory (`STORAGE_FAILED` otherwise).
 
+## Engine status (#199)
+
+`wled_mcp.discovery_engine.run_discovery(methods, ranges, known, timeout, max_candidates,
+transport, opener, clock)` is the single entry point for the CLI and, through a worker
+thread, for #200. It reads no configuration, registers nothing and never writes: `ranges`
+and the `known` snapshot are arguments. Refinements found while implementing, all within
+the contract above:
+
+- The mDNS verification target is every announced IPv4 address in RFC 1918 space with an
+  announced port of 80; other answers count in `answers_rejected` and are never probed.
+- Mapping of `/json/info` outcomes: `wled` (identity check passed), `other` (not WLED,
+  redirect or any non-200 status, oversize, malformed), `refused`, `timeout` (no usable answer,
+  including no route). An unexpected transport exception counts as probed, makes the method
+  `partial` with `internal_error` and does not stop the run.
+- The candidate cap or the mDNS instance bound (64 `_wled._tcp` and 64 `_http._tcp`
+  instances) makes a method `partial` with `cap_reached` and adds a `warnings` entry.
+- Known devices matched by address are not read again; a stored MAC that differs from the
+  controller at the configured address does not block `known` (the address wins).
+- Process-level single flight and the gap between probe phases (`DISCOVERY_BUSY`) are
+  not in the engine; the #200 wrapper owns them.
+
 ## Related
 
 - [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment),
   [ISSUE-198-DEC-001](../decisions/issue-198.md).
-- [cli.md](cli.md): the `wled-mcp discover` and `config` commands; the shared engine replaces
+- [cli.md](cli.md): the `wled-mcp discover` and `config` commands; the shared engine replaced
   the CLI engine in #199.
 - [profiles.md](profiles.md): classes, profiles and the registration filter.
 - [DEPLOYMENT.md](../DEPLOYMENT.md): inventory changes and the released `discover` behavior.

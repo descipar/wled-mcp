@@ -1,17 +1,18 @@
-"""``wled-mcp discover``: one-shot IPv4 mDNS discovery of WLED controllers (issue #16).
+"""``wled-mcp discover`` and the mDNS packet layer of the shared discovery engine.
 
-Contract: docs/contract/cli.md; decisions ISSUE-16-DEC-001 (CLI only, standard library
-only, never enrolls) and ISSUE-16-DEC-002 (TD-16-8). Runs only on explicit invocation:
-never at startup, in ``doctor`` or as a fallback, and never from an MCP tool.
+Contract: docs/contract/cli.md and docs/contract/discovery.md; decisions DEC-035 (which
+supersedes ISSUE-16-DEC-001 in part) and ISSUE-16-DEC-002 (standard library only). Runs
+only on explicit invocation: never at startup, in ``doctor`` or as a fallback.
 
-On the network it sends at most two datagrams, both to the mDNS group 224.0.0.251:5353
-from an ephemeral port (a one-shot query, RFC 6762 section 5.1): one PTR question for
-``_wled._tcp.local`` and at most one follow-up for SRV, TXT or A records that the
-answers left out. It sends nothing to a candidate, reads no candidate over HTTP and
-uses no IPv6. Answers are untrusted: parsing is bounded (datagram size, record count,
-name length, compression pointers that must point backwards) and a malformed datagram
-is dropped, never fatal. Text taken from answers is sanitized before it is printed.
+This module keeps the bounded mDNS parser (datagram size, record count, name length,
+compression pointers that must point backwards; a malformed datagram is dropped, never
+fatal), the text sanitizer and the command. The search itself (mDNS rounds, verification
+through ``GET /json/info``, the unicast probe, merging, coverage) is
+``wled_mcp.discovery_engine``; the command only feeds it and formats the result. Text
+taken from the network is sanitized before it is printed.
 """
+
+from __future__ import annotations
 
 import argparse
 import ipaddress
@@ -22,14 +23,17 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import monotonic
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from wled_mcp import setup
 from wled_mcp.config import ConfigurationError, validate_document
 
+if TYPE_CHECKING:  # the engine imports this module's parser; the command imports it lazily
+    from wled_mcp.discovery_engine import DiscoveryResult, FoundDevice, KnownDevice
+
 MDNS_GROUP = "224.0.0.251"
 MDNS_PORT = 5353
-SERVICE = ("_wled", "_tcp", "local")
+SERVICES = (("_wled", "_tcp", "local"), ("_http", "_tcp", "local"))
 
 DEFAULT_TIMEOUT = 3.0
 MIN_TIMEOUT = 0.5
@@ -238,7 +242,7 @@ def _txt(data: bytes) -> dict[str, bytes]:
 
 
 def _is_instance(name: Name) -> bool:
-    return len(name) == len(SERVICE) + 1 and name_key(name[1:]) == SERVICE
+    return len(name) == 4 and name_key(name[1:]) in SERVICES
 
 
 @dataclass
@@ -272,10 +276,13 @@ class Collector:
     def _add(self, record: Record) -> None:
         key = name_key(record.name)
         if record.rtype == TYPE_PTR:
-            if key == SERVICE and _is_instance(record.data):
+            if key in SERVICES and _is_instance(record.data) and key == name_key(record.data[1:]):
                 instance = name_key(record.data)
                 if instance not in self.instances:
-                    if len(self.instances) >= MAX_CANDIDATES:
+                    # The bound is per service, so many `_http._tcp` hosts of a network
+                    # cannot crowd out `_wled._tcp` instances.
+                    same = sum(1 for other in self.instances if other[1:] == key)
+                    if same >= MAX_CANDIDATES:
                         self.truncated = True
                         return
                     self.instances[instance] = record.data
@@ -351,118 +358,6 @@ def safe_text(value: str, limit: int = MAX_TEXT * 4) -> str:
     return cleaned[:limit]
 
 
-@dataclass
-class Candidate:
-    instance: str
-    host: str | None
-    addresses: list[str]
-    port: int | None
-    mac: str | None
-    local_name: str | None
-    already_configured: bool = False
-    device_id: str | None = None
-    device_name: str | None = None
-
-    @property
-    def base_url(self) -> str | None:
-        if not self.addresses or not self.port:
-            return None
-        return _url(self.addresses[0], self.port)
-
-    @property
-    def local_url(self) -> str | None:
-        if self.local_name is None or not self.port:
-            return None
-        return _url(self.local_name, self.port)
-
-    def command(self) -> str | None:
-        url = self.base_url
-        if url is None or self.already_configured:
-            return None
-        return (
-            "wled-mcp config add-device --config <CONFIG> "
-            f'--device-id {self.device_id} --device-name "{self.device_name}" '
-            f"--base-url {url}"
-        )
-
-    def as_json(self) -> dict[str, Any]:
-        return {
-            "instance": self.instance,
-            "host": self.host,
-            "addresses": self.addresses,
-            "port": self.port,
-            "mac": self.mac,
-            "suggested_base_url": self.base_url,
-            "alternative_base_url": self.local_url,
-            "already_configured": self.already_configured,
-            "suggested_device_id": self.device_id,
-            "suggested_device_name": self.device_name,
-            "add_device_command": self.command(),
-        }
-
-
-def _url(host: str, port: int) -> str:
-    return f"http://{host}" if port == 80 else f"http://{host}:{port}"
-
-
-def _local_name(target: Name) -> str | None:
-    """The mDNS host name for an LDH name in the ``.local`` domain, else ``None``."""
-    if len(target) < 2 or target[-1].lower() != "local":
-        return None
-    if not all(_LDH_LABEL.fullmatch(label) for label in target):
-        return None
-    return ".".join(label.lower() for label in target)
-
-
-def _mac(text: dict[str, bytes] | None) -> str | None:
-    if text is None or "mac" not in text:
-        return None
-    value = text["mac"].decode("ascii", errors="replace").lower().replace(":", "")
-    return value if _MAC.fullmatch(value) else None
-
-
-def assemble(collector: Collector) -> list[Candidate]:
-    """Candidates deduplicated by TXT ``mac``, else by IPv4 address, else by instance."""
-    merged: dict[tuple[str, str], Candidate] = {}
-    for key, name in collector.instances.items():
-        service = collector.services.get(key)
-        port = service[0] if service is not None and service[0] > 0 else None
-        target = service[1] if service is not None else None
-        addresses = [str(address) for address in collector.hosts.get(name_key(target or ()), [])]
-        candidate = Candidate(
-            instance=safe_text(name[0]),
-            host=safe_text(".".join(target)) if target else None,
-            addresses=addresses,
-            port=port,
-            mac=_mac(collector.texts.get(key)),
-            local_name=_local_name(target) if target else None,
-        )
-        if candidate.mac is not None:
-            identity = ("mac", candidate.mac)
-        elif addresses:
-            identity = ("address", addresses[0])
-        else:
-            identity = ("instance", ".".join(key))
-        existing = merged.get(identity)
-        if existing is None:
-            merged[identity] = candidate
-            continue
-        for address in addresses:
-            if address not in existing.addresses:
-                existing.addresses.append(address)
-        if existing.port is None:
-            existing.port = candidate.port
-        if existing.host is None:
-            existing.host, existing.local_name = candidate.host, candidate.local_name
-    return sorted(merged.values(), key=_order)
-
-
-def _order(candidate: Candidate) -> tuple[int, int, str]:
-    if candidate.addresses:
-        return 0, int(ipaddress.IPv4Address(candidate.addresses[0])), candidate.instance
-    return 1, 0, candidate.instance
-
-
 def suggest_id(instance: str, taken: set[str]) -> str:
     """A configuration-valid ID from the instance name, unique against ``taken``."""
     base = re.sub(r"[^a-z0-9]+", "-", instance.lower()).strip("-")[:56] or "wled"
@@ -483,17 +378,6 @@ def suggest_name(instance: str) -> str:
     name = " ".join(_UNSAFE_NAME.sub(" ", instance).split())[:MAX_TEXT]
     # A leading dash would be read as an option by the add-device command.
     return name.lstrip("- ") or "WLED"
-
-
-def annotate(candidates: list[Candidate], hosts: set[str], ids: set[str]) -> None:
-    taken = set(ids)
-    for candidate in candidates:
-        names = {address for address in candidate.addresses}
-        if candidate.local_name is not None:
-            names.add(candidate.local_name)
-        candidate.already_configured = bool(names & hosts)
-        candidate.device_id = suggest_id(candidate.instance, taken)
-        candidate.device_name = suggest_name(candidate.instance)
 
 
 # -- the network exchange ----------------------------------------------------------------
@@ -521,15 +405,6 @@ def open_multicast_socket() -> DatagramSocket:
     return sock
 
 
-@dataclass
-class Outcome:
-    candidates: list[Candidate]
-    collector: Collector
-    queries_sent: int
-    follow_up_sent: bool
-    multicast_unavailable: bool
-
-
 def _from_mdns_port(source: Any) -> bool:
     """RFC 6762 section 6: a response comes from IPv4 port 5353.
 
@@ -549,7 +424,7 @@ def _from_mdns_port(source: Any) -> bool:
     return True
 
 
-def _listen(
+def listen(
     sock: DatagramSocket, until: float, clock: Callable[[], float], collector: Collector
 ) -> None:
     errors = 0
@@ -573,50 +448,15 @@ def _listen(
         collector.feed(packet)
 
 
-def discover(
-    timeout: float,
-    opener: Callable[[], DatagramSocket] = open_multicast_socket,
-    clock: Callable[[], float] = monotonic,
-) -> Outcome:
-    """Send the PTR query, listen for ``timeout`` seconds, send at most one follow-up."""
-    collector = Collector()
-    destination = (MDNS_GROUP, MDNS_PORT)
-    try:
-        sock = opener()
-    except OSError:
-        return Outcome([], collector, 0, False, True)
-    sent = 0
-    follow_up = False
-    try:
-        start = clock()
-        try:
-            sock.sendto(build_query([(SERVICE, TYPE_PTR)]), destination)
-        except OSError:
-            return Outcome([], collector, 0, False, True)
-        sent = 1
-        _listen(sock, start + min(1.0, timeout / 2), clock, collector)
-        query = follow_up_query(collector.missing_questions())
-        if query is not None and clock() < start + timeout:
-            try:
-                sock.sendto(query, destination)
-                sent, follow_up = 2, True
-            except OSError:
-                pass
-        _listen(sock, start + timeout, clock, collector)
-    finally:
-        sock.close()
-    return Outcome(assemble(collector), collector, sent, follow_up, False)
-
-
 # -- the command -------------------------------------------------------------------------
 
 
-def _configured(
-    raw: str | None,
-) -> tuple[set[str], set[str]]:
-    """Hosts and IDs of the configuration given with ``--config`` (read-only)."""
+def _configured(raw: str | None) -> list[KnownDevice]:
+    """Known controllers of the configuration given with ``--config`` (read-only)."""
+    from wled_mcp.discovery_engine import KnownDevice
+
     if raw is None:
-        return set(), set()
+        return []
     path = Path(raw)
     if not path.is_absolute():
         raise setup.Refusal("PATH_NOT_ABSOLUTE", "The --config path must be absolute.")
@@ -625,18 +465,62 @@ def _configured(
         inventory = validate_document(content)
     except ConfigurationError as exc:
         raise setup.Refusal("CONFIG_INVALID", f"The configuration is invalid: {exc}") from None
-    hosts = {setup.url_identity(device.base_url)[1].rstrip(".") for device in inventory.devices}
-    return hosts, {device.id for device in inventory.devices}
+    known: list[KnownDevice] = []
+    for device in inventory.devices:
+        _, host, port = setup.url_identity(device.base_url)
+        known.append(KnownDevice(device.id, host.rstrip("."), None, port))
+    return known
 
 
-def _timeout(value: float | None) -> float:
+def configured_ranges(config: object | None) -> tuple[str, ...]:
+    """The discovery ranges of the stored configuration.
+
+    A seam: the ``[discovery].ranges`` key does not exist yet (#202 adds it to the
+    validator and fills this in). The command has no range option: a scan never runs over
+    ranges that were not configured, so until then only mDNS runs.
+    """
+    return ()
+
+
+def build_transport(clock: Callable[[], float]) -> Any:
+    from wled_mcp.discovery_engine import HttpTransport
+
+    return HttpTransport(clock=clock)
+
+
+def _timeout(value: float | None) -> float | None:
     if value is None:
-        return DEFAULT_TIMEOUT
+        return None
     if not MIN_TIMEOUT <= value <= MAX_TIMEOUT:  # also rejects NaN
         raise setup.UsageError(
             f"--timeout must be between {MIN_TIMEOUT:g} and {MAX_TIMEOUT:g} seconds."
         )
     return value
+
+
+def _add_command(candidate: FoundDevice) -> str:
+    return (
+        "wled-mcp config add-device --config <CONFIG> "
+        f'--device-id {candidate.suggested_id} --device-name "{candidate.suggested_name}" '
+        f"--base-url {candidate.base_url}"
+    )
+
+
+def _candidate_json(candidate: FoundDevice) -> dict[str, Any]:
+    document = candidate.as_dict()
+    document["add_device_command"] = _add_command(candidate) if candidate.status == "new" else None
+    return document
+
+
+def _reason_text(coverage: dict[str, Any]) -> str:
+    """One sentence that says what was and was not looked at (never a bare 'nothing')."""
+    parts = []
+    for method in coverage["methods"]:
+        text = f"{method['method']} {method['status']}"
+        if method.get("reason"):
+            text += f" ({method['reason']})"
+        parts.append(text)
+    return "Methods: " + ", ".join(parts) + "."
 
 
 def run_discover(
@@ -645,76 +529,88 @@ def run_discover(
     opener: Callable[[], DatagramSocket] = open_multicast_socket,
     clock: Callable[[], float] = monotonic,
 ) -> setup.CommandResult:
+    from wled_mcp import discovery_engine
+
     command = "discover"
     timeout = _timeout(args.timeout)
-    hosts, ids = _configured(setup.option_path(args.config, setup.CONFIG_ENV, environ))
-    outcome = discover(timeout, opener, clock)
-    annotate(outcome.candidates, hosts, ids)
-    usable = [c for c in outcome.candidates if c.base_url is not None]
+    known = _configured(setup.option_path(args.config, setup.CONFIG_ENV, environ))
+    result = discovery_engine.run_discovery(
+        ranges=configured_ranges(known),
+        known=known,
+        timeout=timeout,
+        transport=build_transport(clock),
+        opener=opener,
+        clock=clock,
+    )
+    coverage = result.coverage
+    conclusion = result.conclusion
     problems: list[dict[str, str]] = []
-    if outcome.multicast_unavailable:
-        problems.append(
-            {
-                "code": "MULTICAST_UNAVAILABLE",
-                "message": "The mDNS query could not be sent. " + NETWORK_HINTS,
-            }
+    if not result.candidates:
+        mdns_failed = any(
+            m["method"] == "mdns" and m["status"] == "failed" for m in coverage["methods"]
         )
-    elif not usable:
+        if mdns_failed:
+            code, lead = "MULTICAST_UNAVAILABLE", "The mDNS query could not be sent. "
+        elif conclusion == "not_looked":
+            code, lead = "NOT_LOOKED", "No discovery method could run. "
+        else:
+            code, lead = "NO_CANDIDATES", "No WLED controller was found"
+            lead += (
+                " (the run was complete). "
+                if conclusion == "none_found_complete"
+                else " (the run was not exhaustive). "
+            )
         problems.append(
-            {
-                "code": "NO_CANDIDATES",
-                "message": f"No WLED controller answered within {timeout:g} s. " + NETWORK_HINTS,
-            }
+            {"code": code, "message": lead + _reason_text(coverage) + " " + NETWORK_HINTS}
         )
     data: dict[str, Any] = {
         "timeout_seconds": timeout,
-        "queries_sent": outcome.queries_sent,
-        "follow_up_sent": outcome.follow_up_sent,
-        "candidate_count": len(outcome.candidates),
-        "truncated": outcome.collector.truncated,
-        "malformed_responses": outcome.collector.malformed,
-        "dropped_datagrams": outcome.collector.dropped_sources,
-        "candidates": [candidate.as_json() for candidate in outcome.candidates],
+        "conclusion": conclusion,
+        "candidate_count": len(result.candidates),
+        "malformed_responses": result.malformed_responses,
+        "dropped_datagrams": result.dropped_datagrams,
+        "candidates": [_candidate_json(candidate) for candidate in result.candidates],
+        "coverage": coverage,
+        "warnings": result.warnings,
         "problems": problems,
     }
     return setup.CommandResult(
-        command, setup.EXIT_PROBLEM if problems else setup.EXIT_OK, _text(outcome, problems), data
+        command, setup.EXIT_PROBLEM if problems else setup.EXIT_OK, _text(result, problems), data
     )
 
 
-def _text(outcome: Outcome, problems: list[dict[str, str]]) -> list[str]:
-    lines: list[str] = []
-    for candidate in outcome.candidates:
-        lines.append(f"- {candidate.instance}")
-        if candidate.mac is not None:
-            lines.append(f"  MAC: {candidate.mac}")
-        if candidate.base_url is not None:
-            lines.append(f"  Suggested base URL: {candidate.base_url}")
-        else:
-            lines.append("  No IPv4 address or port was received; add it manually if needed.")
-        if candidate.local_url is not None:
+def _text(result: DiscoveryResult, problems: list[dict[str, str]]) -> list[str]:
+    lines = [f"Conclusion: {result.conclusion}"]
+    for candidate in result.candidates:
+        lines.append(f"- {candidate.suggested_name} [{candidate.status}]")
+        lines.append(f"  MAC: {candidate.mac}")
+        lines.append(f"  Suggested base URL: {candidate.base_url}")
+        lines.append(f"  Firmware: {candidate.firmware_version}")
+        lines.append(f"  Found by: {', '.join(candidate.found_by)}")
+        if candidate.alternate_addresses:
+            lines.append(f"  Other addresses: {', '.join(candidate.alternate_addresses)}")
+        if candidate.status == "known":
+            lines.append(f"  Already configured as {candidate.known_device_id}.")
+        elif candidate.status == "address_changed":
             lines.append(
-                f"  Alternative: {candidate.local_url} (needs a resolver for .local names; "
-                "the address can change with DHCP)"
+                f"  Configured as {candidate.known_device_id} at "
+                f"{candidate.configured_address}, but it answered at another address. "
+                "Nothing was rewritten; edit the configuration yourself."
             )
-        if len(candidate.addresses) > 1:
-            lines.append(f"  Other addresses: {', '.join(candidate.addresses[1:])}")
-        if candidate.already_configured:
-            lines.append("  Already configured.")
-        command = candidate.command()
-        if command is not None:
-            lines.append(f"  Add with: {command}")
-    if outcome.collector.truncated:
-        lines.append(f"Only the first {MAX_CANDIDATES} answering instances are listed.")
-    if outcome.candidates and any(c.command() for c in outcome.candidates):
+        else:
+            lines.append(f"  Add with: {_add_command(candidate)}")
+    lines.extend(result.warnings)
+    if any(c.status == "new" for c in result.candidates):
         lines.append(
             "Replace <CONFIG> with the absolute configuration path (or set "
             "WLED_MCP_CONFIG and omit --config). Nothing was written; review each "
             "suggestion before adding it, then restart the server."
         )
+    if result.candidates:
+        lines.append(_reason_text(result.coverage))
+    if not result.coverage["complete"]:
+        lines.append(result.coverage["limits"][-1])
     lines.extend(problem["message"] for problem in problems)
-    if not lines:
-        lines.append("No candidates.")
     return lines
 
 
@@ -726,7 +622,7 @@ def handler(args: argparse.Namespace, environ: Mapping[str, str]) -> setup.Comma
 def register(commands: Any) -> None:
     parser = commands.add_parser(
         "discover",
-        help="List WLED controllers that answer one mDNS query (writes nothing).",
+        help="List WLED controllers found by mDNS and verified over HTTP (writes nothing).",
         allow_abbrev=False,
     )
     parser.add_argument(
@@ -736,6 +632,9 @@ def register(commands: Any) -> None:
     parser.add_argument(
         "--timeout",
         type=float,
-        help=f"Listen window in seconds (default {DEFAULT_TIMEOUT:g}, at most {MAX_TIMEOUT:g}).",
+        help=(
+            f"Lower the overall deadline in seconds (from {MIN_TIMEOUT:g} to "
+            f"{MAX_TIMEOUT:g}; the default is the built-in limit)."
+        ),
     )
     setup.add_format_option(parser)
