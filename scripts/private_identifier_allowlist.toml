@@ -36,3 +36,283 @@ reason = "planted router-local host name proving the live-document check detects
 path = "docs/decisions/issue-62.md"
 value = "project conversation"
 reason = "ISSUE-62-DEC-001 names the retired term it replaces"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.21"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.22"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.23"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.30"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.31"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.32"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.40"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.99"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "10.0.2.200"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "100.64.0.9"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
+
+[[allow]]
+path = "tests/test_discovery.py"
+value = "169.254.1.2"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.0.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.0.4"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.0.5"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.1.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.21"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.22"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.23"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.30"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.31"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.50"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.2.51"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.3.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.3.1"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.3.9"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.1"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.2"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.5"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.10"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.20"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.30"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.40"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.55"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.4.200"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.5.77"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.5.88"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.5.99"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.6.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.6.3"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.7.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.7.3"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.7.9"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.8.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.0.9.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.1.1.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "10.9.0.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "100.64.0.0"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "169.254.1.0"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "172.16.5.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "192.168.1.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "192.168.7.0"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "192.168.7.1"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_engine.py"
+value = "192.168.7.2"
+reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"

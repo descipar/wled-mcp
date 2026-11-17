@@ -3,10 +3,11 @@
 No test sends a datagram: an autouse guard fails on any real socket construction, and
 every exchange goes through ``FakeNetwork``, which records each datagram and answers
 from a script on a simulated clock. Answers use synthetic documentation addresses
-(192.0.2.0/24) and invented MAC values.
+(10.0.2.0/24) and invented MAC values.
 """
 
 import ast
+import http.client
 import io
 import ipaddress
 import json
@@ -23,8 +24,9 @@ from typing import Any
 import pytest
 
 from scripts import check_coverage
-from wled_mcp import cli, discovery
+from wled_mcp import cli, discovery, discovery_engine
 from wled_mcp.discovery import MDNS_GROUP, MDNS_PORT, TYPE_A, TYPE_PTR, TYPE_SRV, TYPE_TXT
+from wled_mcp.discovery_engine import InfoResult
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = "_wled._tcp.local"
@@ -108,7 +110,7 @@ def questions(packet: bytes) -> list[tuple[tuple[str, ...], int, int]]:
 # ------------------------------------------------------------------ fake network
 
 Responder = Callable[[bytes, int], list[tuple[float, bytes]]]
-SOURCE = ("192.0.2.200", MDNS_PORT)
+SOURCE = ("10.0.2.200", MDNS_PORT)
 Sources = dict[bytes, Any]  # packet -> source address override
 
 
@@ -125,6 +127,7 @@ class FakeNetwork:
         self.fail_send = False
         self.recv_errors = 0
         self.sockets: list[FakeSocket] = []
+        self.transport = AutoTransport()
 
     def clock(self) -> float:
         return self.now
@@ -173,22 +176,50 @@ class FakeSocket:
         self.closed = True
 
 
+def derived_mac(address: str) -> str:
+    return "00005e00" + format(int(ipaddress.IPv4Address(address)) & 0xFFFF, "04x")
+
+
+class AutoTransport:
+    """``GET /json/info`` fake: every address is a WLED controller whose MAC derives from
+    the address, unless ``overrides`` says otherwise (``None`` means no answer)."""
+
+    def __init__(self, overrides: dict[str, InfoResult] | None = None) -> None:
+        self.overrides = overrides or {}
+        self.calls: list[tuple[str, int, float]] = []
+
+    def get_info(self, address: str, port: int, timeout: float) -> InfoResult:
+        self.calls.append((address, port, timeout))
+        if address in self.overrides:
+            return self.overrides[address]
+        return InfoResult("wled", derived_mac(address), "0.15.0", "FOSS", "WLED")
+
+
+def wled(mac: str, name: str = "WLED") -> InfoResult:
+    return InfoResult("wled", mac, "0.15.0", "FOSS", name)
+
+
 @pytest.fixture(autouse=True)
 def no_real_sockets(monkeypatch):
-    """Any real socket in this module is a test failure, multicast or not."""
+    """Any real socket or HTTP connection in this module is a test failure."""
 
     def refuse(*args: object, **kwargs: object) -> None:
         raise AssertionError("a real socket was opened")
 
     monkeypatch.setattr(socket, "socket", refuse)
+    monkeypatch.setattr(http.client.HTTPConnection, "connect", refuse)
     for env in list(os.environ):
         if env.startswith("WLED_MCP_"):
             monkeypatch.delenv(env)
 
 
-def install(monkeypatch, network: FakeNetwork) -> FakeNetwork:
+def install(
+    monkeypatch, network: FakeNetwork, transport: AutoTransport | None = None
+) -> FakeNetwork:
     monkeypatch.setattr(discovery, "open_multicast_socket", network.opener)
     monkeypatch.setattr(discovery, "monotonic", network.clock)
+    network.transport = transport or AutoTransport()
+    monkeypatch.setattr(discovery, "build_transport", lambda clock: network.transport)
     return network
 
 
@@ -220,54 +251,70 @@ def assert_only_multicast(network: FakeNetwork) -> None:
 # ------------------------------------------------------------------ query and limits
 
 
-def test_first_query_is_one_ptr_question_for_the_wled_service(monkeypatch, capsys):
+def test_first_query_asks_for_the_wled_service_and_the_http_fallback(monkeypatch, capsys):
     network = install(monkeypatch, FakeNetwork())
     run(capsys)
     packet, address = network.sent[0]
     assert address == ("224.0.0.251", 5353)
-    assert packet[:12] == struct.pack("!HHHHHH", 0, 0, 1, 0, 0, 0)
-    # One PTR question, class IN with the unicast-response (QU) bit cleared.
-    assert questions(packet) == [(("_wled", "_tcp", "local"), 12, 1)]
+    assert packet[:12] == struct.pack("!HHHHHH", 0, 0, 2, 0, 0, 0)
+    # PTR questions, class IN with the unicast-response (QU) bit cleared.
+    assert questions(packet) == [
+        (("_wled", "_tcp", "local"), 12, 1),
+        (("_http", "_tcp", "local"), 12, 1),
+    ]
 
 
 def test_candidate_with_suggested_url_and_add_device_command(monkeypatch, capsys, tmp_path):
-    network = install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "192.0.2.21"))))
+    network = install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21"))))
     before = sorted(tmp_path.rglob("*"))
     code, document = run_json(capsys)
     assert code == 0 and document["ok"] is True
     assert document["schema_version"] == 1 and document["command"] == "discover"
-    assert document["follow_up_sent"] is False and document["queries_sent"] == 1
+    assert document["conclusion"] == "candidates_found"
     (candidate,) = document["candidates"]
-    assert candidate["instance"] == "wled-a1b2c3"
-    assert candidate["mac"] == "00005e005301"
-    assert candidate["addresses"] == ["192.0.2.21"]
-    assert candidate["suggested_base_url"] == "http://192.0.2.21"
-    assert candidate["alternative_base_url"] == "http://" + mdns("wled-a1b2c3")
-    assert candidate["already_configured"] is False
+    assert candidate["mac"] == derived_mac("10.0.2.21")
+    assert candidate["address"] == "10.0.2.21"
+    assert candidate["base_url"] == "http://10.0.2.21"
+    assert candidate["status"] == "new" and candidate["found_by"] == ["mdns"]
+    assert candidate["firmware_version"] == "0.15.0" and candidate["product"] == "FOSS"
+    assert candidate["suggested_id"] == "wled-a1b2c3"
     assert candidate["add_device_command"] == (
         "wled-mcp config add-device --config <CONFIG> --device-id wled-a1b2c3 "
-        '--device-name "wled-a1b2c3" --base-url http://192.0.2.21'
+        '--device-name "wled-a1b2c3" --base-url http://10.0.2.21'
     )
-    assert_only_multicast(network)
+    # Exactly one HTTP read of the announced address, only multicast on UDP.
+    assert network.transport.calls == [("10.0.2.21", 80, 1.5)]
+    assert {address for _, address in network.sent} == {(MDNS_GROUP, MDNS_PORT)}
+    assert all(sock.closed for sock in network.sockets)
     assert sorted(tmp_path.rglob("*")) == before
 
 
 def test_text_output_lists_the_command_and_writes_nothing(monkeypatch, capsys):
-    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "192.0.2.21", port=8080))))
+    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21"))))
     code, out, err = run(capsys)
     assert code == 0 and err == ""
-    assert "Suggested base URL: http://192.0.2.21:8080" in out
-    assert "--base-url http://192.0.2.21:8080" in out
+    assert out.startswith("Conclusion: candidates_found\n")
+    assert "Suggested base URL: http://10.0.2.21" in out
+    assert "--base-url http://10.0.2.21" in out and "[new]" in out
     assert "Replace <CONFIG>" in out and "Nothing was written" in out
+    assert "unicast skipped (no_ranges_configured)" in out  # coverage is always shown
+    assert "not exhaustive" in out
 
 
-def test_default_window_is_three_seconds_and_timeout_is_bounded(monkeypatch, capsys):
+def test_default_window_is_six_seconds_with_three_rounds_and_timeout_only_lowers(
+    monkeypatch, capsys
+):
     network = install(monkeypatch, FakeNetwork())
     run(capsys)
-    assert network.now == pytest.approx(103.0)
+    assert network.now == pytest.approx(106.0)
+    assert len(network.sent) == 3  # rounds one second apart; nothing was missing
     network = install(monkeypatch, FakeNetwork())
-    run(capsys, "--timeout", "10")
-    assert network.now == pytest.approx(110.0)
+    run(capsys, "--timeout", "10")  # cannot raise the six-second window
+    assert network.now == pytest.approx(106.0)
+    network = install(monkeypatch, FakeNetwork())
+    run(capsys, "--timeout", "2")
+    assert network.now == pytest.approx(102.0)
+    assert len(network.sent) == 2
 
 
 @pytest.mark.parametrize("value", ["10.5", "0", "-1", "nan", "inf", "abc"])
@@ -279,74 +326,78 @@ def test_timeout_outside_the_bounds_is_a_usage_error(monkeypatch, capsys, value)
     assert err.startswith("Invalid command-line arguments")
 
 
-def test_follow_up_asks_once_for_missing_records(monkeypatch, capsys):
+def test_follow_up_asks_for_missing_records(monkeypatch, capsys):
     host = mdns("wled-a1b2c3")
 
     def responder(packet: bytes, number: int) -> list[tuple[float, bytes]]:
+        asked = {qtype for _, qtype, _ in questions(packet)}
         if number == 1:
             return [(0.05, response([ptr("wled-a1b2c3")]))]
-        asked = {qtype for _, qtype, _ in questions(packet)}
-        assert asked == {TYPE_SRV, TYPE_TXT}
-        return [
-            (
-                0.05,
-                response(
-                    [srv("wled-a1b2c3", host), txt("wled-a1b2c3", b"mac=00005e005301")],
-                    [a(host, "192.0.2.21")],
-                ),
-            )
-        ]
+        if asked == {TYPE_SRV, TYPE_TXT}:
+            return [
+                (
+                    0.05,
+                    response(
+                        [srv("wled-a1b2c3", host), txt("wled-a1b2c3", b"mac=00005e005301")],
+                        [a(host, "10.0.2.21")],
+                    ),
+                )
+            ]
+        return []
 
     network = install(monkeypatch, FakeNetwork(responder))
     code, document = run_json(capsys)
-    assert code == 0 and document["follow_up_sent"] is True
-    assert document["candidates"][0]["suggested_base_url"] == "http://192.0.2.21"
-    assert_only_multicast(network)
-    assert len(network.sent) == 2
+    assert code == 0
+    assert document["candidates"][0]["base_url"] == "http://10.0.2.21"
+    assert any(
+        {qtype for _, qtype, _ in questions(packet)} == {TYPE_SRV, TYPE_TXT}
+        for packet, _ in network.sent
+    )
+    assert {address for _, address in network.sent} == {(MDNS_GROUP, MDNS_PORT)}
 
 
-def test_never_more_than_one_follow_up_even_without_answers(monkeypatch, capsys):
+def test_at_most_one_follow_up_per_round_even_without_answers(monkeypatch, capsys):
     host = mdns("wled-a1b2c3")
-    # SRV without an A record: the follow-up asks for A, nobody answers, no third query.
+    # SRV without an A record: each later round asks for A, nobody answers.
     first = response([ptr("wled-a1b2c3")], [srv("wled-a1b2c3", host), txt("wled-a1b2c3")])
     network = install(monkeypatch, FakeNetwork(answer_first(first)))
-    code, document = run_json(capsys, "--timeout", "10")
-    assert len(network.sent) == 2
-    assert questions(network.sent[1][0]) == [(("wled-a1b2c3", "local"), TYPE_A, 1)]
-    assert_only_multicast(network)
-    (candidate,) = document["candidates"]
-    assert candidate["suggested_base_url"] is None and candidate["add_device_command"] is None
+    code, document = run_json(capsys)
+    follow_ups = [p for p, _ in network.sent if questions(p)[0][1] == TYPE_A]
+    assert len(network.sent) == 5 and len(follow_ups) == 2  # three PTR rounds, two follow-ups
+    assert questions(follow_ups[0]) == [(("wled-a1b2c3", "local"), TYPE_A, 1)]
     assert code == 1 and document["problems"][0]["code"] == "NO_CANDIDATES"
+    assert network.transport.calls == []  # an unaddressable answer is never probed
+    assert document["coverage"]["mdns"]["answers_rejected"] == 1
 
 
-def test_duplicates_are_merged_by_mac_then_by_address(monkeypatch, capsys):
+def test_duplicates_are_merged_by_the_verified_mac(monkeypatch, capsys):
     packets = [
-        device("wled-a1b2c3", "192.0.2.21", mac="00005e005301"),
-        device("living-room", "192.0.2.22", mac="00005E005301"),  # same controller
-        device("wled-noma", "192.0.2.30", mac=None),
-        device("wled-noma-2", "192.0.2.30", mac=None),  # same address, no MAC
-        device("wled-other", "192.0.2.40", mac="00005e005302"),
+        device("wled-a1b2c3", "10.0.2.21"),
+        device("living-room", "10.0.2.22"),  # same controller at another address
+        device("wled-noma", "10.0.2.30"),
+        device("wled-noma-2", "10.0.2.30"),  # same address announced twice
+        device("wled-other", "10.0.2.40"),
     ]
-    install(monkeypatch, FakeNetwork(answer_first(*packets)))
+    shared = wled("00005e005301")
+    transport = AutoTransport({"10.0.2.21": shared, "10.0.2.22": shared})
+    install(monkeypatch, FakeNetwork(answer_first(*packets)), transport)
     code, document = run_json(capsys)
     assert code == 0 and document["candidate_count"] == 3
     by_mac = {c["mac"]: c for c in document["candidates"]}
-    assert by_mac["00005e005301"]["addresses"] == ["192.0.2.21", "192.0.2.22"]
-    assert by_mac["00005e005301"]["suggested_base_url"] == "http://192.0.2.21"
-    assert by_mac[None]["addresses"] == ["192.0.2.30"]
-    assert by_mac["00005e005302"]["addresses"] == ["192.0.2.40"]
+    assert by_mac["00005e005301"]["address"] == "10.0.2.21"
+    assert by_mac["00005e005301"]["alternate_addresses"] == ["10.0.2.22"]
+    assert by_mac[derived_mac("10.0.2.30")]["address"] == "10.0.2.30"
+    assert by_mac[derived_mac("10.0.2.40")]["address"] == "10.0.2.40"
 
 
 def test_at_most_64_candidates(monkeypatch, capsys):
-    packets = [
-        device(f"wled-{index:06x}", f"192.0.2.{index + 1}", mac=f"00005e0053{index:02x}")
-        for index in range(70)
-    ]
+    packets = [device(f"wled-{index:06x}", f"10.0.2.{index + 1}") for index in range(70)]
     install(monkeypatch, FakeNetwork(answer_first(*packets, delay=0.001)))
     code, document = run_json(capsys)
     assert code == 0
-    assert document["candidate_count"] == 64 and document["truncated"] is True
-    ids = [c["suggested_device_id"] for c in document["candidates"]]
+    assert document["candidate_count"] == 64
+    assert document["warnings"]  # the examined-instance cap is reported
+    ids = [c["suggested_id"] for c in document["candidates"]]
     assert len(set(ids)) == 64
 
 
@@ -356,39 +407,46 @@ def test_configured_devices_are_marked_and_the_inventory_is_not_written(
     config = tmp_path / "devices.toml"
     config.write_bytes(
         b"schema_version = 1\n\n[[devices]]\n"
-        b'id = "wled-a1b2c3"\nname = "Desk"\nbase_url = "http://192.0.2.21"\n'
+        b'id = "wled-a1b2c3"\nname = "Desk"\nbase_url = "http://10.0.2.21"\n'
         + f'\n[[devices]]\nid = "shelf"\nname = "Shelf"\nbase_url = "http://{mdns("wled-0b0b0b")}"\n'.encode()
     )
     before = {p: p.read_bytes() for p in tmp_path.iterdir()}
     packets = [
-        device("wled-a1b2c3", "192.0.2.21", mac="00005e005301"),
-        device("wled-0b0b0b", "192.0.2.22", mac="00005e005303"),
-        device("wled-a1b2c3x", "192.0.2.23", mac="00005e005304"),
+        device("wled-a1b2c3", "10.0.2.21"),
+        device("wled-0b0b0b", "10.0.2.22"),
+        device("wled-a1b2c3x", "10.0.2.23"),
     ]
-    network = install(monkeypatch, FakeNetwork(answer_first(*packets)))
+    # The configured .local host answers with the MAC of the controller now at .22.
+    transport = AutoTransport({mdns("wled-0b0b0b"): wled(derived_mac("10.0.2.22"))})
+    network = install(monkeypatch, FakeNetwork(answer_first(*packets)), transport)
     code, document = run_json(capsys, "--config", str(config))
     assert code == 0
-    marked = {c["addresses"][0]: c for c in document["candidates"]}
-    assert marked["192.0.2.21"]["already_configured"] is True
-    assert marked["192.0.2.21"]["add_device_command"] is None
-    assert marked["192.0.2.22"]["already_configured"] is True  # matched by .local name
-    fresh = marked["192.0.2.23"]
-    assert fresh["already_configured"] is False
-    assert fresh["suggested_device_id"] == "wled-a1b2c3x"
+    marked = {c["address"]: c for c in document["candidates"]}
+    assert marked["10.0.2.21"]["status"] == "known"
+    assert marked["10.0.2.21"]["known_device_id"] == "wled-a1b2c3"
+    assert marked["10.0.2.21"]["add_device_command"] is None
+    assert marked["10.0.2.22"]["status"] == "address_changed"
+    assert marked["10.0.2.22"]["known_device_id"] == "shelf"
+    assert marked["10.0.2.22"]["configured_address"] == mdns("wled-0b0b0b")
+    fresh = marked["10.0.2.23"]
+    assert fresh["status"] == "new"
+    assert fresh["suggested_id"] == "wled-a1b2c3x"
+    assert document["coverage"]["known_devices_checked"] == 1
     assert {p: p.read_bytes() for p in tmp_path.iterdir()} == before
     assert str(tmp_path) not in json.dumps(document)
-    assert_only_multicast(network)
+    assert {address for _, address in network.sent} == {(MDNS_GROUP, MDNS_PORT)}
 
 
 def test_suggested_id_avoids_configured_ids(monkeypatch, capsys, tmp_path):
     config = tmp_path / "devices.toml"
     config.write_bytes(
         b'schema_version = 1\n\n[[devices]]\nid = "wled-a1b2c3"\nname = "Old"\n'
-        b'base_url = "http://192.0.2.99"\n'
+        b'base_url = "http://10.0.2.99"\n'
     )
-    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "192.0.2.21"))))
+    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21"))))
     _, document = run_json(capsys, "--config", str(config))
-    assert document["candidates"][0]["suggested_device_id"] == "wled-a1b2c3-2"
+    assert document["candidates"][0]["suggested_id"] == "wled-a1b2c3-2"
+    assert document["candidates"][0]["status"] == "new"  # the other MAC never claims a change
 
 
 @pytest.mark.parametrize(
@@ -430,18 +488,22 @@ def test_send_failure_reports_multicast_unavailable(monkeypatch, capsys):
     assert network.sockets[0].closed
 
 
-def test_no_answer_reports_no_candidates_with_hints(monkeypatch, capsys):
+def test_no_answer_reports_no_candidates_with_coverage_and_hints(monkeypatch, capsys):
     network = install(monkeypatch, FakeNetwork())
     code, document = run_json(capsys)
     assert code == 1 and document["candidates"] == []
+    assert document["conclusion"] == "none_found_incomplete"
+    assert document["coverage"]["complete"] is False
     (problem,) = document["problems"]
     assert problem["code"] == "NO_CANDIDATES"
     assert all(word in problem["message"] for word in HINT_WORDS)
-    assert len(network.sent) == 1  # nothing was missing, so no follow-up
+    assert "mdns completed (no_answers)" in problem["message"]
+    assert "unicast skipped (no_ranges_configured)" in problem["message"]
+    assert len(network.sent) == 3  # three rounds; nothing was missing, so no follow-up
 
 
 def test_receive_errors_are_bounded(monkeypatch, capsys):
-    network = FakeNetwork(answer_first(device("wled-a1b2c3", "192.0.2.21")))
+    network = FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21")))
     network.recv_errors = 3
     install(monkeypatch, network)
     code, document = run_json(capsys)
@@ -534,7 +596,7 @@ def test_malformed_answers_are_dropped(case):
 def test_malformed_answers_do_not_stop_valid_ones(monkeypatch, capsys):
     # The oversized datagram is left out: the receive buffer would cut it to a valid size.
     hostile = [p for key, p in MALFORMED.items() if key != "oversized datagram"]
-    packets = [*hostile, device("wled-a1b2c3", "192.0.2.21")]
+    packets = [*hostile, device("wled-a1b2c3", "10.0.2.21")]
     install(monkeypatch, FakeNetwork(answer_first(*packets, delay=0.001)))
     code, document = run_json(capsys)
     assert code == 0 and document["candidate_count"] == 1
@@ -542,7 +604,7 @@ def test_malformed_answers_do_not_stop_valid_ones(monkeypatch, capsys):
 
 
 def test_random_corruption_never_raises():
-    valid = device("wled-a1b2c3", "192.0.2.21")
+    valid = device("wled-a1b2c3", "10.0.2.21")
     generator = random.Random(16)
     for _ in range(3000):
         data = bytearray(valid)
@@ -552,7 +614,7 @@ def test_random_corruption_never_raises():
         collector = discovery.Collector()
         collector.feed(bytes(data))  # never raises
         collector.missing_questions()
-        discovery.assemble(collector)
+        discovery_engine._mdns_targets(collector)
 
 
 def test_compressed_names_are_followed():
@@ -572,13 +634,14 @@ def test_compressed_names_are_followed():
         + pointer
         + struct.pack("!HHIH", TYPE_TXT, 0x8001, 120, 17)
         + b"\x10mac=00005e005301"
-        + a(mdns("wled-a1b2c3"), "192.0.2.21")
+        + a(mdns("wled-a1b2c3"), "10.0.2.21")
     )
     collector = discovery.Collector()
     collector.feed(packet)
     assert collector.malformed == 0
-    (candidate,) = discovery.assemble(collector)
-    assert candidate.mac == "00005e005301" and candidate.base_url == "http://192.0.2.21"
+    (instance,) = collector.instances.values()
+    assert instance[0] == "wled-a1b2c3"
+    assert discovery_engine._mdns_targets(collector)[0] == [("wled-a1b2c3", "10.0.2.21", 80)]
 
 
 def test_untrusted_text_is_sanitized(monkeypatch, capsys):
@@ -591,7 +654,7 @@ def test_untrusted_text_is_sanitized(monkeypatch, capsys):
         [
             record(owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + label_name(host_labels)),
             record(owner, TYPE_TXT, b"\x0bmac=\x1b[2J;rm"),
-            record(label_name(host_labels), TYPE_A, bytes([192, 0, 2, 21])),
+            record(label_name(host_labels), TYPE_A, bytes([10, 0, 2, 21])),
         ],
     )
     install(monkeypatch, FakeNetwork(answer_first(packet)))
@@ -600,25 +663,38 @@ def test_untrusted_text_is_sanitized(monkeypatch, capsys):
     assert out.endswith("\n") and err == ""
     lines = out[:-1].split("\n")
     assert not any(CONTROL.search(line) for line in lines)
-    assert lines[0] == '- wled?[31m??desk"$(x)`'  # one line, control characters replaced
+    assert lines[1] == "- wled 31m desk x [new]"  # one line, only safe characters
     (command_line,) = [line for line in lines if "Add with:" in line]
     assert "$(" not in command_line and "`" not in command_line
     assert '--device-name "wled 31m desk x"' in command_line
-    assert "Alternative:" not in out  # not an LDH host name, so no .local URL
     install(monkeypatch, FakeNetwork(answer_first(packet)))
     _, document = run_json(capsys)
     (candidate,) = document["candidates"]
-    assert candidate["mac"] is None and candidate["alternative_base_url"] is None
-    for value in (candidate["instance"], candidate["host"], candidate["suggested_device_name"]):
-        assert not CONTROL.search(value)
-    assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_device_id"])
+    assert candidate["mac"] == derived_mac("10.0.2.21")
+    assert not CONTROL.search(candidate["suggested_name"])
+    assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_id"])
 
 
-@pytest.mark.parametrize("address", ["0.0.0.0", "127.0.0.1", "224.0.0.251", "255.255.255.255"])
-def test_unusable_addresses_are_not_suggested(monkeypatch, capsys, address):
-    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", address))))
+@pytest.mark.parametrize(
+    "address",
+    [
+        "0.0.0.0",
+        "127.0.0.1",
+        "224.0.0.251",
+        "255.255.255.255",
+        "0.1.2.3",
+        "240.0.0.1",
+        "169.254.1.2",
+        "100.64.0.9",
+        "93.184.216.34",
+    ],
+)
+def test_unusable_and_non_private_addresses_are_never_probed(monkeypatch, capsys, address):
+    network = install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", address))))
     code, document = run_json(capsys)
-    assert code == 1 and document["candidates"][0]["suggested_base_url"] is None
+    assert code == 1 and document["candidates"] == []
+    assert network.transport.calls == []  # an announced address outside RFC 1918 gets no probe
+    assert document["coverage"]["mdns"]["answers_rejected"] == 1
 
 
 # ------------------------------------------------------------------ boundaries
@@ -696,7 +772,7 @@ def test_discovery_is_never_used_outside_the_discover_command():
         for path in package.rglob("*.py")
         if path.name != "discovery.py" and references_discovery(path.read_text(encoding="utf-8"))
     )
-    assert users == ["cli.py"]
+    assert users == ["cli.py", "discovery_engine.py"]  # the engine reuses the parser
     source = (package / "cli.py").read_text(encoding="utf-8")
     assert source.count("discovery.") == 2  # register + the discover dispatch only
     assert "224.0.0.251" not in "".join(
@@ -743,7 +819,7 @@ def odd_responder_packets() -> list[bytes]:
         [
             record(bad_owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + bad_host),
             record(bad_owner, TYPE_TXT, b""),
-            record(bad_host, TYPE_A, bytes([192, 0, 2, 31])),
+            record(bad_host, TYPE_A, bytes([10, 0, 2, 31])),
         ],
     )
     emoji_owner = label_name(["wled-\U0001f4a1".encode(), b"_wled", b"_tcp", b"local"])
@@ -752,10 +828,10 @@ def odd_responder_packets() -> list[bytes]:
         [
             record(emoji_owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + name(mdns("wled-e"))),
             record(emoji_owner, TYPE_TXT, b""),
-            record(name(mdns("wled-e")), TYPE_A, bytes([192, 0, 2, 32])),
+            record(name(mdns("wled-e")), TYPE_A, bytes([10, 0, 2, 32])),
         ],
     )
-    return [invalid, emoji, device("wled-a1b2c3", "192.0.2.21")]
+    return [invalid, emoji, device("wled-a1b2c3", "10.0.2.21")]
 
 
 @pytest.mark.parametrize("fmt", ["text", "json"])
@@ -767,14 +843,14 @@ def test_non_encodable_answer_text_does_not_hide_other_candidates(monkeypatch, f
     code = cli.main(["discover", "--format", fmt])
     written = stdout.text()
     assert code == 0
-    assert "192.0.2.21" in written and "192.0.2.31" in written and "192.0.2.32" in written
+    assert "10.0.2.21" in written and "10.0.2.31" in written and "10.0.2.32" in written
     assert "wled-a1b2c3" in written
     if fmt == "json":
         document = json.loads(written)
         assert document["candidate_count"] == 3
-        assert all(c["instance"].isascii() for c in document["candidates"])
+        assert all(c["suggested_name"].isascii() for c in document["candidates"])
     else:
-        assert "wled-??-bad" in written and "wled-?" in written
+        assert written.isascii()
 
 
 def test_safe_text_is_ascii_printable_only():
@@ -785,8 +861,8 @@ def test_safe_text_is_ascii_printable_only():
 @pytest.mark.parametrize(
     "source",
     [
-        ("192.0.2.200", 5354),
-        ("192.0.2.200", 0),
+        ("10.0.2.200", 5354),
+        ("10.0.2.200", 0),
         ("2001:db8::1", 5353),
         ("not-an-address", 5353),
         None,
@@ -794,7 +870,7 @@ def test_safe_text_is_ascii_printable_only():
 )
 def test_answers_not_from_ipv4_port_5353_are_dropped(monkeypatch, capsys, source):
     """S2 (RFC 6762 section 6): the response source port must be 5353 on IPv4."""
-    packet = device("wled-a1b2c3", "192.0.2.21")
+    packet = device("wled-a1b2c3", "10.0.2.21")
     network = FakeNetwork(answer_first(packet))
     network.sources[packet] = source
     install(monkeypatch, network)
@@ -806,7 +882,7 @@ def test_answers_not_from_ipv4_port_5353_are_dropped(monkeypatch, capsys, source
 
 def test_other_source_address_with_port_5353_stays_accepted(monkeypatch, capsys):
     # On-link cannot be verified from user space; this is documented (cli.md).
-    packet = device("wled-a1b2c3", "192.0.2.21")
+    packet = device("wled-a1b2c3", "10.0.2.21")
     network = FakeNetwork(answer_first(packet))
     network.sources[packet] = ("198.51.100.7", MDNS_PORT)
     install(monkeypatch, network)
@@ -815,9 +891,9 @@ def test_other_source_address_with_port_5353_stays_accepted(monkeypatch, capsys)
 
 
 def test_dropped_datagrams_count_toward_the_datagram_bound(monkeypatch, capsys):
-    packet = device("wled-a1b2c3", "192.0.2.21")
+    packet = device("wled-a1b2c3", "10.0.2.21")
     network = FakeNetwork(lambda p, n: [(0.0001, packet)] * 600 if n == 1 else [])
-    network.sources[packet] = ("192.0.2.200", 1)
+    network.sources[packet] = ("10.0.2.200", 1)
     install(monkeypatch, network)
     _, document = run_json(capsys)
     assert document["dropped_datagrams"] == discovery.MAX_DATAGRAMS
@@ -852,30 +928,25 @@ def test_lower_timeout_bound_is_accepted_and_just_below_is_not(monkeypatch, caps
     assert code == 2 and network.sent == []
 
 
-def test_known_addresses_with_a_follow_up_send_nothing_to_candidates(monkeypatch, capsys):
+def test_follow_up_asks_only_for_the_missing_record(monkeypatch, capsys):
     host = mdns("wled-a1b2c3")
     # SRV and A are known, the TXT record is missing: the follow-up asks for TXT only.
-    first = response([ptr("wled-a1b2c3")], [srv("wled-a1b2c3", host), a(host, "192.0.2.21")])
+    first = response([ptr("wled-a1b2c3")], [srv("wled-a1b2c3", host), a(host, "10.0.2.21")])
 
     def responder(packet: bytes, number: int) -> list[tuple[float, bytes]]:
+        asked = [qtype for _, qtype, _ in questions(packet)]
         if number == 1:
             return [(0.05, first)]
-        assert [qtype for _, qtype, _ in questions(packet)] == [TYPE_TXT]
-        return [(0.05, response([txt("wled-a1b2c3", b"mac=00005e005301")]))]
+        if asked == [TYPE_TXT]:
+            return [(0.05, response([txt("wled-a1b2c3", b"mac=00005e005301")]))]
+        return []
 
     network = install(monkeypatch, FakeNetwork(responder))
     code, document = run_json(capsys)
-    assert code == 0 and document["follow_up_sent"] is True
-    assert document["candidates"][0]["mac"] == "00005e005301"
-    assert [address for _, address in network.sent] == [(MDNS_GROUP, MDNS_PORT)] * 2
-    assert_only_multicast(network)
-
-
-@pytest.mark.parametrize("address", ["0.1.2.3", "240.0.0.1", "250.1.1.1"])
-def test_this_network_and_reserved_ranges_are_not_suggested(monkeypatch, capsys, address):
-    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", address))))
-    code, document = run_json(capsys)
-    assert code == 1 and document["candidates"][0]["suggested_base_url"] is None
+    assert code == 0
+    assert document["candidates"][0]["mac"] == derived_mac("10.0.2.21")
+    assert [questions(p)[0][1] for p, _ in network.sent].count(TYPE_TXT) == 1
+    assert {address for _, address in network.sent} == {(MDNS_GROUP, MDNS_PORT)}
 
 
 def test_leading_dashes_in_a_name_cannot_become_an_option(monkeypatch, capsys):
@@ -885,12 +956,29 @@ def test_leading_dashes_in_a_name_cannot_become_an_option(monkeypatch, capsys):
         [
             record(owner, TYPE_SRV, struct.pack("!HHH", 0, 0, 80) + name(mdns("wled-d"))),
             record(owner, TYPE_TXT, b""),
-            record(name(mdns("wled-d")), TYPE_A, bytes([192, 0, 2, 41])),
+            record(name(mdns("wled-d")), TYPE_A, bytes([10, 0, 2, 41])),
         ],
     )
     install(monkeypatch, FakeNetwork(answer_first(packet)))
     _, document = run_json(capsys)
     (candidate,) = document["candidates"]
-    assert candidate["suggested_device_name"] == "x-y"
+    assert candidate["suggested_name"] == "x-y"
     assert '--device-name "x-y"' in candidate["add_device_command"]
-    assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_device_id"])
+    assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_id"])
+
+
+def test_version_1_json_fields_of_the_previous_output_are_kept_additively(monkeypatch, capsys):
+    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21"))))
+    code, document = run_json(capsys)
+    assert code == 0 and document["schema_version"] == 1
+    assert document["queries_sent"] == 3 and document["follow_up_sent"] is False
+    assert document["truncated"] is False
+    (candidate,) = document["candidates"]
+    assert candidate["instance"] == "wled-a1b2c3" and candidate["host"] is None
+    assert candidate["addresses"] == ["10.0.2.21"] and candidate["port"] == 80
+    assert candidate["suggested_base_url"] == "http://10.0.2.21"
+    assert candidate["alternative_base_url"] is None
+    assert candidate["already_configured"] is False
+    assert candidate["suggested_device_id"] == "wled-a1b2c3"
+    assert candidate["suggested_device_name"] == "wled-a1b2c3"
+    assert candidate["add_device_command"] is not None

@@ -214,19 +214,31 @@ fields, paths, credentials, message texts and raw device responses. The staged
 wled-mcp discover [--config <abs>] [--timeout SECONDS] [--format text|json]
 ```
 
-Lists WLED controllers that answer one mDNS query (S2-SETUP-02; ISSUE-16-DEC-001,
-TD-16-8). It runs only when this command is invoked: never at startup, in `doctor`, as
-a fallback or from an MCP tool. It never writes the inventory; it prints suggestions
-and the user runs `config add-device` explicitly.
+Lists WLED controllers found by the shared discovery engine (`wled_mcp.discovery_engine`,
+#199; DEC-035, which supersedes ISSUE-16-DEC-001 / TD-16-8 in part; contract in
+[discovery.md](discovery.md)). It runs only when this command is invoked: never at
+startup, in `doctor` or as a fallback. It never writes the inventory or a device; it
+prints suggestions and the user runs `config add-device` explicitly.
 
-- Network traffic: an IPv4 UDP socket on an ephemeral port sends one query with one
-  PTR question for `_wled._tcp.local` (class IN, unicast-response bit cleared) to
-  224.0.0.251:5353. At most one follow-up query follows, to the same group, for the
-  SRV, TXT or A records the answers left out. Nothing is sent to a candidate: no
-  unicast probe, no HTTP read, no address-range traffic. No IPv6.
-- Listen window: `--timeout` seconds, default 3, from 0.5 to 10 (outside: exit 2,
-  nothing sent). The follow-up is sent after at most 1 s (half the window when it is
-  shorter).
+- Network traffic: an IPv4 UDP socket on an ephemeral port sends up to 3 mDNS query
+  rounds, 1 s apart inside a 6 s window, to 224.0.0.251:5353. Each round has PTR questions
+  for `_wled._tcp.local` and the fallback `_http._tcp.local`; later rounds add at most one
+  follow-up datagram for the SRV, TXT or A records the answers left out. No IPv6.
+- Verification (new in #199, allowed by DEC-035): every addressable answer is verified with
+  one `GET /json/info` (TCP port 80 only, 1.5 s, at most 64 KiB, no redirects, no proxy, fixed
+  `User-Agent`) on the announced address, and only an address in RFC 1918 space is read. A
+  controller is listed only when the answer is a WLED `/json/info` (docs/SOURCES.md), never
+  because of a port or an mDNS name. An answer that fails is counted in
+  `coverage.mdns.answers_rejected`. When `--config` is given and a candidate is not matched
+  by address or stored MAC, the command reads `/json/info` of at most 16 configured entries
+  that have no stored MAC, to detect a changed address (only configured hosts).
+- Unicast probe: the engine also probes configured discovery ranges (`GET /json/info`
+  over RFC 1918 ranges within the hard caps of discovery.md). The `[discovery].ranges`
+  key is added by #202; until then the command passes no ranges and the report shows
+  `unicast` as `skipped` with `no_ranges_configured`. The command has no range option:
+  a scan never runs over ranges that were not configured.
+- Deadline: `--timeout` lowers the overall deadline (0.5 to 10 seconds, outside: exit 2,
+  nothing sent). Without it the engine limits apply (mDNS window 6 s, whole call 30 s).
 - Limits for untrusted answers: datagrams up to 9000 bytes, at most 512 datagrams
   (dropped ones included) and 128 records per datagram, names up to 255 bytes,
   compression pointers only backwards and at most 16 per name, at most 64 TXT strings.
@@ -236,52 +248,51 @@ and the user runs `config add-device` explicitly.
   address, works around it.
 - Source check (RFC 6762 section 6): only datagrams from an IPv4 address with source
   port 5353 are read; any other source is dropped and counted (`dropped_datagrams`).
-  Answers are unauthenticated: there is no check that the sender is on the local link
-  (no TTL or interface check; user space cannot verify it here), so a host that can send
-  to the ephemeral port can inject a candidate. Candidates are suggestions the user
-  reviews before running `config add-device`; nothing is enrolled or contacted. The
-  query leaves through the default multicast interface only, so on a multi-homed host
-  controllers on other interfaces are not found.
-- Candidates: at most 64 instances (`truncated` when more answered). Each candidate has
-  the instance name, the SRV host name, IPv4 addresses (`0.0.0.0/8`, `240.0.0.0/4`,
-  loopback and multicast addresses are ignored), the SRV port and the TXT `mac`
-  (12 hex digits, otherwise ignored). Candidates are merged by `mac`, else by the first
-  address, else by instance name.
-- Suggestion: `suggested_base_url` is `http://<IPv4>` (with `:<port>` when the port is
-  not 80), because container resolvers usually cannot resolve `.local` names. A URL
-  with the mDNS host name (in the `.local` domain) is shown as `alternative_base_url`
-  only for a plain letter-digit-hyphen host name; it needs a `.local` resolver, and the
-  address can change with DHCP. The `add_device_command` reads
-  `wled-mcp config add-device --config <CONFIG> --device-id ID --device-name "NAME" --base-url URL`
-  with a literal `<CONFIG>` placeholder (no path is printed). The ID is derived from
-  the instance name (`[a-z0-9-]`, unique against the configured IDs); the name keeps
-  only letters, digits, space, `.`, `_` and `-` (leading dashes removed, so it cannot be
-  read as an option), so the command is safe to paste into a
-  POSIX shell, PowerShell or cmd.exe.
-- `--config` (or `WLED_MCP_CONFIG`) is optional and only read: a candidate whose
-  address or `.local` name equals a configured `base_url` host is marked
-  `already_configured` and gets no command. An invalid or missing file is refused
-  (exit 1) before anything is sent.
-- Answer text (instance and host names) is printed as ASCII only, in text and JSON
-  alike: every character that is not printable ASCII (control, format and separator
-  characters, non-ASCII text, the replacement character of invalid UTF-8) becomes `?`.
-  The output therefore cannot fail on a non-UTF-8 stdout (a redirect on a legacy code
-  page), and one odd responder cannot suppress the other candidates.
-- JSON fields: `timeout_seconds`, `queries_sent`, `follow_up_sent`, `candidate_count`,
-  `truncated`, `malformed_responses`, `dropped_datagrams`, `candidates` (`instance`, `host`, `addresses`,
-  `port`, `mac`, `suggested_base_url`, `alternative_base_url`, `already_configured`,
-  `suggested_device_id`, `suggested_device_name`, `add_device_command`) and `problems`.
-  This is local output; it contains addresses and MAC values and is not an export.
-- Exit 0 when at least one candidate has a suggested URL. Exit 1 with
-  `MULTICAST_UNAVAILABLE` when the socket cannot be opened or the query cannot be sent,
-  and with `NO_CANDIDATES` when no usable answer arrived in the window; both messages
-  name the limits: multicast stays in the local network segment and does not cross
-  VLANs or routed subnets, a container on a bridge network usually cannot use it,
-  firewalls may block it, and a controller with an empty mDNS name does not announce
-  itself. Adding a controller by address with `config add-device` always works.
-- Answers arrive as unicast replies to the ephemeral port (RFC 6762 section 5.1); a
-  host firewall that drops unsolicited UDP may need to allow them. Discovery was not
-  observed against hardware for #16; the tests use a fake socket.
+  Answers are unauthenticated and there is no on-link check, so a host that can send to
+  the ephemeral port can inject an answer; the `/json/info` verification means an injected
+  address becomes a candidate only if a WLED controller answers there, and candidates are
+  suggestions the user reviews. The query leaves through the default multicast interface
+  only.
+- Candidates: at most 64, merged by the MAC of `/json/info` across methods and addresses.
+  Each has `address`, `base_url`, `suggested_id`, `suggested_name`, `mac`,
+  `firmware_version`, `product`, `found_by`, `status` (`new`, `known`, `address_changed`),
+  `known_device_id`, `configured_address` and `alternate_addresses`. The ID derives from the
+  mDNS instance name or the controller name (`[a-z0-9-]`, unique against the configured IDs
+  and the list); the name keeps only letters, digits, space, `.`, `_` and `-` (leading
+  dashes removed), so the `add_device_command`
+  (`wled-mcp config add-device --config <CONFIG> --device-id ID --device-name "NAME" --base-url URL`,
+  literal `<CONFIG>` placeholder, only for `new`) is safe to paste into a POSIX shell,
+  PowerShell or cmd.exe. A controller whose address changed is reported
+  (`address_changed`), never rewritten.
+- `--config` (or `WLED_MCP_CONFIG`) is optional and only read: it supplies the known-controller
+  snapshot (ID and host of each entry). An invalid or missing file is refused (exit 1) before
+  anything is sent.
+- Answer text (instance names, controller names) is printed as ASCII only, in text and JSON
+  alike: every character that is not printable ASCII becomes `?`. The output cannot fail on a
+  non-UTF-8 stdout, and one odd responder cannot suppress the other candidates.
+- Version-1 compatibility fields (kept additively, `schema_version` stays 1): top level
+  `queries_sent` (mDNS datagrams sent), `follow_up_sent` and `truncated`; per candidate
+  `instance` (mDNS name, null for a unicast-only find), `host` (always null now), `addresses`
+  (address plus alternates), `port` (80), `suggested_base_url` (= `base_url`),
+  `alternative_base_url` (always null now), `already_configured` (status is not `new`),
+  `suggested_device_id` and `suggested_device_name` (= `suggested_id`, `suggested_name`).
+- JSON fields: `timeout_seconds`, `conclusion`, `candidate_count`, `malformed_responses`,
+  `dropped_datagrams`, `candidates` (fields above plus `add_device_command`), `coverage`
+  (the report of discovery.md: methods, per-range counters, caps, limits), `warnings` and
+  `problems`. Text output starts with `Conclusion: <value>` and always names the methods
+  and their status. This is local output; it contains addresses and MAC values.
+- Exit 0 when at least one candidate was found. Exit 1 otherwise, never with a bare "no
+  candidates": `MULTICAST_UNAVAILABLE` when the socket cannot be opened or the query cannot
+  be sent, `NOT_LOOKED` when no method could run, `NO_CANDIDATES` when a method ran and
+  found nothing. The message gives the coverage (`none_found_complete` only when both
+  methods completed, otherwise the run was not exhaustive) and names the limits: multicast
+  stays in the local network segment and does not cross VLANs or routed subnets, a
+  container on a bridge network usually cannot use it, firewalls may block it, and a
+  controller with an empty mDNS name does not announce itself. Adding a controller by
+  address with `config add-device` always works.
+- Answers arrive as unicast replies to the ephemeral port (RFC 6762 section 5.1); a host
+  firewall that drops unsolicited UDP may need to allow them. The engine was not observed
+  against hardware for #199 (live evidence is #204); the tests use fakes.
 
 ## OPS-04 conditions
 
@@ -301,4 +312,4 @@ envelope and `examples/contracts/errors.json` are unchanged.
 No interactive wizard, no in-process or signal-triggered reload, no file watching, no
 `config migrate` (only schema 1 exists; the first schema 2 change adds a migrating
 writer, ISSUE-16-DEC-002), no device discovery outside `wled-mcp discover`, no MCP
-tool, no health route, no telemetry. (From M8, not yet released: MCP discovery on the shared engine of #199 and in-process reload for tool-made changes; [discovery.md](discovery.md).)
+tool (until #200), no health route, no telemetry. (From M8, not yet released: MCP discovery on the shared engine of #199 and in-process reload for tool-made changes; [discovery.md](discovery.md).)
