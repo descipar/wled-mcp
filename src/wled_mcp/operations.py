@@ -68,7 +68,9 @@ from wled_mcp.readmodels import (
     redact_info,
 )
 from wled_mcp.resources import OperationContext, PolledWrite, Resources, SequencePlan, Verdict
-from wled_mcp.scene_tools import build_scene_operations
+from wled_mcp.room_tools import build_room_operations
+from wled_mcp.rooms import room_index
+from wled_mcp.scene_tools import build_scene_operations, open_group_store
 from wled_mcp.server import Operation
 from wled_mcp.signal_tools import build_signal_operations
 from wled_mcp.status_tool import build_status_operation
@@ -1345,13 +1347,40 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
             async with anyio.create_task_group() as group:
                 for _ in range(min(8, len(entries))):
                     group.start_soon(worker)
+        data: dict[str, JsonValue] = {"devices": entries}
+        warnings: list[str] = []
+        try:
+            groups = open_group_store(resources.config.data_dir)
+            stored = (await anyio.to_thread.run_sync(groups.list_items)).items
+        except ClientFailure:
+            # The room assignment is a convenience of this listing: it never fails it.
+            warnings.append(
+                "The room assignment was unavailable: the groups directory is unusable."
+            )
+        else:
+            index = room_index(stored)
+            conflicts = 0
+            for entry in entries:
+                assert isinstance(entry, dict)
+                rooms = index.get(str(entry["id"]), [])
+                entry["room"] = rooms[0] if len(rooms) == 1 else None
+                if len(rooms) > 1:
+                    entry["room_conflict"] = [*rooms]
+                    conflicts += 1
+            if conflicts:
+                data["room_conflicts"] = conflicts
+                warnings.append(
+                    f"{conflicts} device(s) are in more than one room (see room_conflict); a room "
+                    "action on them is refused until each is in one room only."
+                )
         return Outcome(
             ok=True,
             operation="wled_list_devices",
             device_id=None,
             application="not_attempted",
             verification="not_requested",
-            data={"devices": entries},
+            data=data,
+            warnings=warnings,
         )
 
     return (
@@ -1359,7 +1388,8 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
             name="wled_list_devices",
             tool_class=ToolClass.READ,
             description=(
-                "List configured IDs/names without network by default. "
+                "List configured IDs/names without network by default, each with its room "
+                "(local groups; unreadable groups never fail the list). "
                 "Optional bounded read-only probes; no discovery or writes."
             ),
             request_model=ListDevicesRequest,
@@ -1380,6 +1410,7 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *build_preset_workflow_operations(resources),
         *build_scene_operations(resources),
         *build_zone_operations(resources),
+        *build_room_operations(resources),
         build_preview_operation(resources),
         *build_signal_operations(resources),
     )

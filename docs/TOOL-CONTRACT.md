@@ -29,6 +29,10 @@ issues merge.
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
+#183 adds rooms: a stored group with `kind` `room`, the control tool `wled_apply_room` (a master
+state or a stored scene to the members of a room, through the scene write path), an optional
+`room` on the zone tools and room fields in `wled_list_devices` and `wled_list_groups` (see
+[contract/rooms.md](contract/rooms.md)).
 #29 adds the read-only `wled_preview_layout`: a static, bounded SVG of the observed or of a
 proposed 1D segment layout, returned as `data.svg`, which sends no write (see
 [contract/layout-preview.md](contract/layout-preview.md)).
@@ -94,6 +98,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_list_zones` | read-only | Stored named zones with warnings; one zone's document by ID or name |
 | `wled_plan_zone` | read-only | Preview of a zone: exact device, segment IDs and LED ranges, or the refusal; optional segment-field plan |
 | `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone; no geometry, no master state |
+| `wled_apply_room` | write | A master state or a stored scene to the members of one room (a group with `kind=room`): strict preflight by default, one verified outcome per device; refused as a whole when anything lies outside the room; not atomic, no rollback |
 | `wled_preview_layout` | read-only | Static SVG (`data.svg`) of the observed or a proposed 1D segment layout with ranges, gaps, overlaps and approximate colours; no write |
 | `wled_start_signal` | write | A colour on chosen segments of one device for 1 to 300 seconds, then a conditional restore of the fields it changed; no preset, nothing persisted |
 | `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
@@ -125,7 +130,7 @@ barrier. The next section lists the essential inputs of each tool.
 
 | Tool | Essential inputs | Behavior | Priority |
 | --- | --- | --- | --- |
-| `wled_list_devices` | `probe=false` | Configured IDs/names; optional independent bounded reachability | Must |
+| `wled_list_devices` | `probe=false` | Configured IDs/names, each with its `room` (local groups; never fails the list); optional independent bounded reachability | Must; room fields in #183 ([contract/rooms.md](contract/rooms.md)) |
 | `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile and per-device ceilings, last observed outcome per device, call counters; never contacts a device | Launch (S2-ACCESS-03); implemented in #20 ([contract/diagnostics.md](contract/diagnostics.md)) |
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
 | `wled_get_live_snapshot` | `device_id`, optional `max_runs=512` | Sample-only per-segment RGB runs with global bounds, unavailable endpoints and unmapped matrix geometry | LIVE-01; implemented in #150 ([contract/live-snapshot.md](contract/live-snapshot.md)) |
@@ -134,8 +139,9 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_palettes` | `device_id`, `refresh=false` | Original IDs/names, freshness | Must |
 | `wled_search_effects` | `device_id`, optional `motion`, `flashing`, `colors_min`, `colors_max`, `uses_palette`, `strip_length`, `min_visibility`, `max_palette_saturation_need`, `strict=true`, `min_confidence`, `limit` | Curated property search intersected with the device's effect list; read-only | Stage 3 (S3-EFFECT-01, S3-EFFECT-02); implemented in #31 ([contract/effect-search.md](contract/effect-search.md)) |
 | `wled_list_zones` | optional `zone` (ID or name) | Zone summaries and cross-zone warnings, or one zone's stored document; local files only | Stage 3 (S3-ZONE-01); implemented in #27 ([contract/zones.md](contract/zones.md)) |
-| `wled_plan_zone` | `zone`, optional `segments` (one object of segment fields), `mode=strict` | Read-only resolution onto existing segments, per-device refusals, optional real segment plan | Stage 3 (S3-ZONE-01, S3-ZONE-02); #27 |
-| `wled_apply_zone` | `zone`, `segments` (one object of segment fields), `mode=strict`, `dry_run` | Verified write of those fields to the zone's segments only; `dry_run` equals the plan | Stage 3 (S3-ZONE-02); #27 |
+| `wled_plan_zone` | `zone`, optional `segments` (one object of segment fields), optional `room`, `mode=strict` | Read-only resolution onto existing segments, per-device refusals, optional real segment plan | Stage 3 (S3-ZONE-01, S3-ZONE-02); #27 |
+| `wled_apply_zone` | `zone`, `segments` (one object of segment fields), optional `room`, `mode=strict`, `dry_run` | Verified write of those fields to the zone's segments only; `dry_run` equals the plan | Stage 3 (S3-ZONE-02); #27 |
+| `wled_apply_room` | `room`, exactly one of `state` (`on`, `brightness`, `transition_ms`) and `scene_id`, `mode=strict`, `dry_run` | Verified master state or stored scene on the members of a room; refused as a whole before any write for a conflict, a partly assigned member with `state`, or a scene outside the room; `dry_run` returns the plan | Rooms (ROOM-03); #183 ([contract/rooms.md](contract/rooms.md)) |
 | `wled_preview_layout` | `device_id`, optional `segments` (a proposed complete layout), `allow_overlap=false`, `zone`, `live_samples=false` | Read-only SVG string `data.svg` plus a summary; observed without `segments`, proposed and planner-validated with them; 1D only, matrix refused | Stage 3 (S3-PREVIEW-01, S3-PREVIEW-02); implemented in #29 ([contract/layout-preview.md](contract/layout-preview.md)) |
 | `wled_start_signal` | `device_id`, `segment_ids`, `color` (RGB), `duration_seconds` (1-300), `dry_run` | Verified apply of slot-0 colour and the Solid effect on existing segments, operation ID and captured prior values; restore at expiry only if the owned fields are unchanged, else `skipped_conflict` | Stage 3 (S3-SIGNAL-01, S3-SIGNAL-02); implemented in #28 ([contract/signals.md](contract/signals.md)) |
 | `wled_get_signal_status` | optional `operation_id` | Active and recently ended signals with owned fields and restoration result; process memory only | S3-SIGNAL-01; #28 |
@@ -155,7 +161,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_export_presets` | `device_id`, optional `preset_ids`, `include_unwritable=false` | Versioned preset bundle without device data, returned inline | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_import_presets` | `device_id`, `bundle`, optional `id_map`, `effect_map`, `palette_map`, `overwrite_ids`, `dry_run` | Dry-run preview, explicit mappings, snapshots first, per-entry single writes, stop at the first unverified entry | Should; implemented in #18 ([contract/presets.md](contract/presets.md)) |
 | `wled_list_groups` | optional `group_id` | Stored groups with the exact member expansion; one group with its document; local files only | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
-| `wled_save_group` | `group_id`, `name`, `members` (`device`, optional `segments`), `overwrite=false`, `dry_run` | Create or replace a group of configured devices as a local file; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
+| `wled_save_group` | `group_id`, `name`, `members` (`device`, optional `segments`), `kind="group"` (or `room`), `overwrite=false`, `dry_run` | Create or replace a group of configured devices as a local file; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_delete_group` | `group_id`, `dry_run` | Delete one stored group file | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_list_scenes` | optional `scene_id`, `shareable=false`, `include_targets=false` | Stored scenes; one scene document; shareable export with placeholders; local files only | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
 | `wled_save_scene` | `scene` (JSON text or object), optional `target_map`, `overwrite=false`, `dry_run` | Validate and store a versioned scene as a local file; placeholders need `target_map`; no device I/O | Should; implemented in #17 ([contract/groups-scenes.md](contract/groups-scenes.md)) |
@@ -942,6 +948,8 @@ mock/protocol tests and actual firmware compatibility evidence.
   snapshot listing, playlist authoring and preset bundles (#18).
 - [contract/profiles.md](contract/profiles.md): tool classes, access profiles,
   per-device maximum class, guard layers and `ACCESS_DENIED` (#20).
+- [contract/rooms.md](contract/rooms.md): rooms (a group with `kind=room`), `wled_apply_room`,
+  the room argument of the zone tools and the room fields of the listings (#183).
 - [contract/segment-names.md](contract/segment-names.md): catalog names in segment patch
   and layout replacement tools (#149).
 - [contract/segments.md](contract/segments.md): capability model, WLED 16 segment fields,

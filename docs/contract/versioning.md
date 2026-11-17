@@ -237,6 +237,7 @@ change is listed here as well, with the tool column `-` and a pointer into that 
 | --- | --- | --- | --- | --- |
 | `0.1.0` | `-` | `/access` | Non-breaking addition: the optional `[access]` table (`profile`) of the inventory configuration (#20). First released in 0.1.0. | None needed. A build from before #20 (never released) rejects the unknown key at startup (exit 2); after a downgrade, use the configuration kept for that version ([profiles](profiles.md#upgrade-and-downgrade)). |
 | `0.1.0` | `-` | `/devices/max_class` | Non-breaking addition: the optional per-device `max_class` of the inventory configuration (#20). First released in 0.1.0. | None needed. Same downgrade behavior as `/access`. |
+| `0.5.0` | `-` | `/kind` | Non-breaking addition: the optional `kind` (`group` or `room`) of the group document (#183); `format_version` stays 1 and a plain group is written without the key. Provisional release number, corrected at the release. | None needed. A server from before rooms rejects a room file as an unknown key and counts it in `invalid_count` without touching it; plain-group files stay readable. Remove or convert room files before a downgrade if the older server must list them. |
 <!-- migration-notes:end -->
 
 No breaking change has been released yet.

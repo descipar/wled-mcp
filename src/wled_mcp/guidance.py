@@ -5,6 +5,10 @@ Use wled_patch_segments to patch selected existing segments; wled_replace_layout
 the complete layout and removes active segment IDs omitted from the request. Segment stop
 (and stop_y) is exclusive. Omitted fields preserve existing values; they are not resets.
 Effect and palette IDs are device-specific: read that device's catalogs rather than guess.
+A room (a group saved with kind=room) is where controllers are, at most one room per
+controller: use wled_apply_room for a state or scene across a whole room, a plain group for
+any other set of controllers, a zone for part of a controller and wled_set_state for one
+controller.
 Use dry_run=true to inspect a proposed write, then inspect the result's application and
 verification fields and read state when needed. A timed-out or uncertain write may already
 have applied: never retry it blindly. Overwriting a preset requires overwrite=true and a
@@ -15,7 +19,7 @@ and tool annotations do not add a confirmation mechanism or grant access.
 PROMPT_NAME = "change_lighting_safely"
 PROMPT_DESCRIPTION = "Plan a small lighting change, preview it, and verify the outcome."
 PROMPT_TEXT = """Help make the requested lighting change safely:
-1. Identify the configured device or stored zone/scene and read its current state.
+1. Identify the configured device or stored room/zone/scene and read its current state.
 2. Choose the smallest existing tool. Patch selected segments; replace the complete layout
    only when the request calls for it. stop and stop_y are exclusive; preserve omitted fields.
 3. Read the device's effect/palette catalogs when IDs are needed; IDs are device-specific.

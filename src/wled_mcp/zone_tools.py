@@ -27,21 +27,23 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 from wled_mcp.access import ToolClass
 from wled_mcp.client import ClientFailure
 from wled_mcp.formats import invalid
-from wled_mcp.groups import MAX_DOCUMENT_BYTES as MAX_GROUP_BYTES
-from wled_mcp.groups import Group, parse_group
+from wled_mcp.groups import Group
 from wled_mcp.models import Outcome
 from wled_mcp.preset_tools import READ_ONLY
 from wled_mcp.resources import Resources
+from wled_mcp.room_tools import load_room, room_refusal
+from wled_mcp.rooms import conflicts_of, member_of, outside_devices
 from wled_mcp.scene_store import DefinitionStore
 from wled_mcp.scene_tools import (
     APPLY_ANNOTATIONS,
-    MAX_GROUPS,
     DeviceApply,
     DevicePlan,
+    Identifier,
     _local_failed,
     _local_ok,
     apply_device,
     apply_outcome,
+    open_group_store,
     plan_device,
     plan_outcome,
     run_bounded,
@@ -102,6 +104,9 @@ class PlanZoneRequest(BaseModel):
         ),
         examples=[[{"colors": [[255, 96, 16]], "effect_name": "Solid"}]],
     )
+    room: Identifier | None = Field(
+        default=None, description="Stored room ID; the zone must lie inside it."
+    )
     mode: Literal["strict", "best_effort"] = Field(
         default="strict",
         description=(
@@ -123,6 +128,9 @@ class ApplyZoneRequest(BaseModel):
             "ranges or master fields; the zone mapping selects targets."
         ),
         examples=[[{"colors": [[255, 96, 16]], "effect_name": "Solid"}]],
+    )
+    room: Identifier | None = Field(
+        default=None, description="Stored room ID; the zone must lie inside it."
     )
     mode: Literal["strict", "best_effort"] = Field(
         default="strict",
@@ -148,14 +156,28 @@ def _topology_changed(device: str, previous: str) -> ZoneProblem:
     )
 
 
+def _outside_room(device: str, room: str, ids: Sequence[int]) -> ZoneProblem:
+    return ZoneProblem(
+        "outside_room",
+        f"The zone resolves to segment(s) {list(ids)} of device {device!r}, which room {room!r} "
+        "does not designate; nothing was sent.",
+        device=device,
+    )
+
+
 def make_binder(
-    zone: Zone, part: Part, fields: Mapping[str, JsonValue] | None
+    zone: Zone,
+    part: Part,
+    fields: Mapping[str, JsonValue] | None,
+    room: tuple[str, tuple[int, ...]] | None = None,
 ) -> Callable[..., LiveBinding]:
     """The ``bind`` hook of one part.
 
     The first call (the preflight read) records the resolution; a later call (the write
     step, after a fresh read under the device lock) must resolve identically, otherwise the
-    step fails ``topology_changed`` before anything is sent.
+    step fails ``topology_changed`` before anything is sent. ``room`` (a room ID and the
+    segments its member designates) additionally refuses a resolution that reaches a segment
+    the room does not designate (``outside_room``); it is checked on every call.
     """
     expected: list[Any] = []
 
@@ -176,6 +198,10 @@ def make_binder(
             expected.append(signature)
         elif expected[0] != signature:
             raise _topology_changed(part.device, "different segments or ranges")
+        if room is not None:
+            extra = sorted(set(resolved.segment_ids) - set(room[1]))
+            if extra:
+                raise _outside_room(part.device, room[0], extra)
         view = resolved.view()
         view["warnings"] = [*resolved.warnings]
         segments = (ResolvedSegments(resolved.segment_ids, fields),) if fields is not None else ()
@@ -184,8 +210,20 @@ def make_binder(
     return bind
 
 
-def expand_zone(zone: Zone, fields: Mapping[str, JsonValue] | None) -> tuple[ExpandedTarget, ...]:
-    """One target per zone part (one device each); segment IDs are bound from the live layout."""
+def expand_zone(
+    zone: Zone, fields: Mapping[str, JsonValue] | None, room: Group | None = None
+) -> tuple[ExpandedTarget, ...]:
+    """One target per zone part (one device each); segment IDs are bound from the live layout.
+
+    With a ``room``, a part on a member that designates segments may resolve to those only.
+    """
+
+    def designated(part: Part) -> tuple[str, tuple[int, ...]] | None:
+        member = member_of(room, part.device) if room is not None else None
+        if room is None or member is None or member.segments is None:
+            return None
+        return room.id, member.segments
+
     return tuple(
         ExpandedTarget(
             part.device,
@@ -193,7 +231,7 @@ def expand_zone(zone: Zone, fields: Mapping[str, JsonValue] | None) -> tuple[Exp
             number,
             None,  # master state would touch every LED of the device
             (ResolvedSegments((), fields),) if fields is not None else (),
-            bind=make_binder(zone, part, fields),
+            bind=make_binder(zone, part, fields, designated(part)),
         )
         for number, part in enumerate(zone.parts, start=1)
     )
@@ -249,9 +287,6 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
     def parse_zone_bytes(raw: bytes) -> Zone:
         return parse_zone(raw)
 
-    def parse_group_bytes(raw: bytes) -> Group:
-        return parse_group(raw)
-
     zones: DefinitionStore[Zone] = DefinitionStore(
         data_dir / "zones",
         "zone",
@@ -260,14 +295,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
         max_items=MAX_ZONES,
         max_bytes=MAX_DOCUMENT_BYTES,
     )
-    groups: DefinitionStore[Group] = DefinitionStore(
-        data_dir / "groups",
-        "group",
-        parse_group_bytes,
-        lambda item: item.id,
-        max_items=MAX_GROUPS,
-        max_bytes=MAX_GROUP_BYTES,
-    )
+    groups = open_group_store(data_dir)
 
     async def read_store(call: Callable[..., Any], *args: Any) -> Any:
         return await anyio.to_thread.run_sync(call, *args)
@@ -318,25 +346,53 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
 
     async def prepare(
         arguments: dict[str, Any],
-    ) -> tuple[Zone, Mapping[str, JsonValue] | None, tuple[ExpandedTarget, ...], list[str], Any]:
+    ) -> tuple[Zone, Group | None, tuple[ExpandedTarget, ...], list[str], Any]:
         listing = await read_store(zones.list_items)
         zone, warnings = find_zone(listing.items, arguments["zone"])
         fields = parse_fields(arguments["segments"])
-        return zone, fields, expand_zone(zone, fields), warnings, listing.items
+        room = None
+        if arguments["room"] is not None:
+            room, _stored = await read_store(load_room, groups, arguments["room"])
+        return zone, room, expand_zone(zone, fields, room), warnings, listing.items
+
+    async def room_check(
+        name: str, zone: Zone, room: Group | None, dry_run: bool
+    ) -> Outcome | None:
+        """Before any device I/O: every device of the zone is a member of the room and not in
+        another room; a refusal covers the whole request."""
+        if room is None:
+            return None
+        devices = [part.device for part in zone.parts]
+        stored = (await read_store(groups.list_items)).items
+        problems = [
+            *(item for item in conflicts_of(room, stored) if item.device_id in devices),
+            *outside_devices(room, devices),
+        ]
+        if not problems:
+            return None
+        lead = (
+            "The zone extends outside the room: "
+            if problems[0].reason == "device_outside_room"
+            else ""
+        )
+        return room_refusal(name, room, problems, dry_run=dry_run, lead=lead)
 
     async def extras(
-        zone: Zone, others: Sequence[Zone], plans: Sequence[DevicePlan]
+        zone: Zone, others: Sequence[Zone], plans: Sequence[DevicePlan], room: Group | None
     ) -> dict[str, JsonValue]:
         try:
             stored = (await read_store(groups.list_items)).items
         except ClientFailure:
             stored = ()
-        return {
+        found: dict[str, JsonValue] = {
             "zone_document": zone_document(zone),
             "overlaps_zones": overlapping_zones(zone, others),
             "overlaps_groups": _overlapping_groups(plans, stored),
             "layout_changes": False,
         }
+        if room is not None:
+            found["room"] = {"id": room.id, "name": room.name}
+        return found
 
     def with_warnings(outcome: Outcome, warnings: Sequence[str]) -> Outcome:
         if not warnings:
@@ -346,9 +402,12 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
     async def plan_zone(arguments: dict[str, Any]) -> Outcome:
         name = "wled_plan_zone"
         try:
-            zone, _fields, targets, warnings, stored = await prepare(arguments)
+            zone, room, targets, warnings, stored = await prepare(arguments)
+            refused = await room_check(name, zone, room, True)
         except ClientFailure as failure:
             return lookup_failed(name, failure, dry_run=True)
+        if refused is not None:
+            return refused
         plans = await run_bounded(targets, partial(plan_device, resources))
         outcome = plan_outcome(
             name,
@@ -356,7 +415,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
             arguments["mode"],
             plans,
             label="zone",
-            extra=await extras(zone, stored, plans),
+            extra=await extras(zone, stored, plans, room),
         )
         return with_warnings(outcome, warnings)
 
@@ -365,15 +424,18 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
         mode: str = arguments["mode"]
         dry_run: bool = arguments["dry_run"]
         try:
-            zone, _fields, targets, warnings, stored = await prepare(arguments)
+            zone, room, targets, warnings, stored = await prepare(arguments)
+            refused = await room_check(name, zone, room, dry_run)
         except ClientFailure as failure:
             return lookup_failed(name, failure, dry_run=dry_run)
+        if refused is not None:
+            return refused
         # Preflight of every part first (the plan's own code plus the per-device access
         # check of the class this tool has); nothing is written yet.
         plans = await run_bounded(
             targets, partial(plan_device, resources, tool_class=ToolClass.CONTROL)
         )
-        extra = await extras(zone, stored, plans)
+        extra = await extras(zone, stored, plans, room)
         if dry_run:
             return with_warnings(
                 plan_outcome(name, zone, mode, plans, label="zone", extra=extra), warnings
@@ -417,7 +479,8 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
                 "layout change (wled_replace_layout) is required. Optional segments (one "
                 "object of segment fields: on, brightness, colors, effect_id or effect_name, "
                 "palette_id or palette_name, speed, intensity, cct, custom1-3, check1-3) also "
-                "plans the change with the real segment planner. mode strict (default) blocks "
+                "plans the change with the real segment planner. Optional room: the zone must "
+                "lie inside that room, else refused. mode strict (default) blocks "
                 "every device when one fails. Sends no write and changes no lighting; not a "
                 "reservation. Read-only."
             ),
@@ -440,6 +503,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
                 "layout that changed since the preflight fails that device with "
                 "topology_changed and nothing sent. mode strict (default) writes nothing "
                 "anywhere when any device fails preflight; best_effort skips failing devices. "
+                "Optional room: refused before any write when the zone lies outside it. "
                 "Not atomic and not synchronized: no rollback or replay, an unverified write "
                 "is never retried. "
                 "dry_run returns exactly the plan of wled_plan_zone and sends no write."

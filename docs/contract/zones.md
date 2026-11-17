@@ -30,8 +30,12 @@ still previews a read-capped device. `dry_run` does not lower the class.
 | Tool | Fields |
 | --- | --- |
 | `wled_list_zones` | optional `zone` |
-| `wled_plan_zone` | `zone` (ID or name, 1-128 chars), optional `segments`, `mode` `strict` (default) or `best_effort` |
-| `wled_apply_zone` | `zone`, `segments`, `mode`, `dry_run` |
+| `wled_plan_zone` | `zone` (ID or name, 1-128 chars), optional `segments`, optional `room`, `mode` `strict` (default) or `best_effort` |
+| `wled_apply_zone` | `zone`, `segments`, optional `room`, `mode`, `dry_run` |
+
+The optional `room` (a stored room ID, [rooms.md](rooms.md)) restricts the call to that room:
+every device of the zone must be a member (otherwise `VALIDATION_ERROR` before any I/O), a member
+that designates segments admits only those (below), and `data.room` (`id`, `name`) is added. Without it nothing changes.
 
 `segments` is a list with **exactly one** object of segment fields: `on`, `brightness`,
 `colors`, `effect_id` or `effect_name`, `palette_id` or `palette_name`, `speed`, `intensity`,
@@ -108,6 +112,7 @@ After the fresh read, under the device lock, each part is resolved:
 | `segment_mismatch` | The `segment` hint names another segment than the range resolves to | false |
 | `topology_stale` | Live LED count differs from `led_count` | false |
 | `topology_changed` | The layout changed between preview and write (below) | false |
+| `outside_room` | With `room`: the zone resolved to a segment that the room's member does not designate; nothing is sent | false |
 | `matrix_unsupported`, `led_count_unknown` | See above | false |
 
 These are `VALIDATION_ERROR` with the reason in `data` (no new error code); the exceptions

@@ -22,6 +22,12 @@ ranges or master state: the stored zone selects the physical targets. For exampl
 {"zone": "shelf", "segments": [{"colors": [[255, 96, 16]], "effect_name": "Solid"}], "dry_run": true}
 ```
 
+The instructions also say when to use a room, a group, a zone or a single device: a room
+(a group saved with `kind=room`) is where controllers are, at most one room per controller,
+and `wled_apply_room` applies a state or a scene across a whole room; a plain group is any
+other set of controllers; a zone is part of a controller; `wled_set_state` is one controller
+([rooms.md](rooms.md)). The prompt's first step names the stored room as a target.
+
 Destructive tool descriptions state the discarded or replaced state and recommend
 `dry_run=true` when the requested replacement or deletion is unclear. Guidance adds
 no execution or confirmation mechanism: authorization remains with the MCP host,

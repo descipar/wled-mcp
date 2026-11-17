@@ -36,6 +36,16 @@ async def guidance(client):
         "overwrite=true",
     ):
         assert fact in instructions
+    # #183: when to use a room, a group, a zone or a single device.
+    for fact in (
+        "wled_apply_room",
+        "kind=room",
+        "one room per",
+        "plain group",
+        "a zone",
+        "wled_set_state",
+    ):
+        assert fact in instructions
     listing = await client.list_prompts()
     assert [p.name for p in listing.prompts] == ["change_lighting_safely"]
     assert not listing.prompts[0].arguments
@@ -44,6 +54,7 @@ async def guidance(client):
     assert prompt.messages[0].role == "user"
     assert prompt.messages[0].content.type == "text"
     assert "never blindly retry" in prompt.messages[0].content.text
+    assert "room/zone/scene" in prompt.messages[0].content.text
     with pytest.raises(MCPError) as caught:
         await client.get_prompt("missing")
     assert caught.value.code == -32602
