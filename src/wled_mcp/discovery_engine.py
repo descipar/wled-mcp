@@ -23,11 +23,11 @@ import http.client
 import ipaddress
 import json
 import math
+import queue
 import re
 import socket
 import threading
 from collections.abc import Callable, Iterable, Sequence
-from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from time import monotonic
 from typing import Any, Literal, Protocol
@@ -232,18 +232,23 @@ class HttpTransport:
     def get_info(self, address: str, port: int, timeout: float) -> InfoResult:
         deadline = self._clock() + timeout
         connection: Any = None
+        raw: list[Any] = []  # the socket, kept here: http.client drops it from the connection
+        lock = threading.Lock()  # for ``Connection: close`` answers
         aborted = threading.Event()
+
+        def shut(sock: Any) -> None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
 
         def abort() -> None:
             # A total per-request bound: socket timeouts apply per operation, so a
             # server that drips bytes could otherwise hold the request open.
-            aborted.set()
-            sock = getattr(connection, "sock", None)
-            try:
-                if sock is not None:
-                    sock.shutdown(socket.SHUT_RDWR)
-            except OSError:
-                pass
+            with lock:
+                aborted.set()
+                for sock in raw:
+                    shut(sock)
             try:
                 if connection is not None:
                     connection.close()
@@ -255,6 +260,15 @@ class HttpTransport:
         try:
             connection = self._factory(address, port, timeout=timeout)
             timer.start()
+            connection.connect()
+            sock = getattr(connection, "sock", None)
+            with lock:
+                if sock is not None:
+                    raw.append(sock)
+                if aborted.is_set():  # the timer fired during connect
+                    if sock is not None:
+                        shut(sock)
+                    return InfoResult("timeout")
             connection.request(
                 "GET",
                 "/json/info",
@@ -291,6 +305,11 @@ class HttpTransport:
             timer.cancel()
             if connection is not None:
                 connection.close()
+            for sock in raw:
+                try:
+                    sock.close()
+                except OSError:
+                    pass
         return identify(document) or InfoResult("other")
 
 
@@ -315,34 +334,39 @@ def probe_many(
     results: list[InfoResult | None] = [None] * len(targets)
     if not targets:
         return results
-    pending: dict[Future[InfoResult], int] = {}
+    finished: queue.Queue[tuple[int, InfoResult]] = queue.Queue()
+    inflight: set[int] = set()
 
-    def settle(done: set[Future[InfoResult]]) -> None:
-        for future in done:
-            results[pending.pop(future)] = future.result()
+    def work(index: int, address: str, port: int) -> None:
+        finished.put((index, _safe_get(transport, address, port, timeout)))
 
     def grace() -> float:
         # Real time a request may still run past the deadline: its own per-request bound.
         return max(0.0, deadline - clock()) + timeout
 
-    pool = ThreadPoolExecutor(max_workers=min(MAX_IN_FLIGHT, len(targets)))
-    try:
-        for index, (address, port) in enumerate(targets):
-            while len(pending) >= MAX_IN_FLIGHT:
-                done, _ = wait(pending, timeout=grace(), return_when=FIRST_COMPLETED)
-                if not done:
-                    break
-                settle(done)
-            if len(pending) >= MAX_IN_FLIGHT or clock() >= deadline:
+    def settle() -> bool:
+        try:
+            index, result = finished.get(timeout=grace())
+        except queue.Empty:
+            return False
+        inflight.discard(index)
+        results[index] = result
+        return True
+
+    # Daemon threads, not an executor: a hung probe must never keep the process alive or
+    # make this call wait; its target counts as timed out.
+    for index, (address, port) in enumerate(targets):
+        while len(inflight) >= MAX_IN_FLIGHT:
+            if not settle():
                 break
-            pending[pool.submit(_safe_get, transport, address, port, timeout)] = index
-        done, _ = wait(pending, timeout=grace())
-        settle(done)
-        for future, index in pending.items():  # stragglers: no usable answer in time
-            future.cancel()
-            results[index] = InfoResult("timeout")
-    finally:
-        pool.shutdown(wait=False, cancel_futures=True)
+        if len(inflight) >= MAX_IN_FLIGHT or clock() >= deadline:
+            break
+        inflight.add(index)
+        threading.Thread(target=work, args=(index, address, port), daemon=True).start()
+    while inflight and settle():
+        pass
+    for index in inflight:  # stragglers: no usable answer in time
+        results[index] = InfoResult("timeout")
     return results
 
 

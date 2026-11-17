@@ -38,6 +38,9 @@ from wled_mcp.discovery_engine import (
     validate_ranges,
 )
 
+_REAL_SOCKET = socket.socket  # for the loopback regression tests only
+_REAL_CONNECT = http.client.HTTPConnection.connect
+
 MAC_A = "00005e005301"
 MAC_B = "00005e005302"
 MAC_C = "00005e005303"
@@ -154,6 +157,11 @@ class FakeConnection:
         self.requests: list[tuple[str, str, dict[str, str]]] = []
         self.closed = False
         FakeConnection.instances.append(self)
+
+    sock: Any = None
+
+    def connect(self) -> None:
+        pass
 
     def request(self, method: str, path: str, headers: dict[str, str]) -> None:
         self.requests.append((method, path, headers))
@@ -766,14 +774,38 @@ def test_result_dictionary_is_json_serializable_and_complete():
 # ------------------------------------------------------------------ slow responders
 
 
+class FakeSocket:
+    def __init__(self, released: threading.Event) -> None:
+        self.released = released
+        self.shutdowns = 0
+
+    def shutdown(self, how: int) -> None:
+        self.shutdowns += 1
+        self.released.set()
+
+    def close(self) -> None:
+        pass
+
+
 class BlockingConnection(FakeConnection):
-    """``getresponse`` or ``read`` blocks until the transport closes the connection."""
+    """``getresponse`` or ``read`` blocks until the socket is shut down.
+
+    Like the real class with ``Connection: close``, the connection forgets its socket once
+    the request is sent, and ``close()`` alone does not wake a blocked reader.
+    """
 
     where = "headers"
 
     def __init__(self, host: str, port: int, timeout: float) -> None:
         super().__init__(host, port, timeout)
         self.released = threading.Event()
+
+    def connect(self) -> None:
+        self.sock = FakeSocket(self.released)
+
+    def request(self, method: str, path: str, headers: dict[str, str]) -> None:
+        super().request(method, path, headers)
+        self.sock = None  # handed to the response
 
     def getresponse(self) -> Any:
         if self.where == "headers":
@@ -788,10 +820,6 @@ class BlockingConnection(FakeConnection):
 
         return Drip(200, b"")
 
-    def close(self) -> None:
-        super().close()
-        self.released.set()
-
 
 @pytest.mark.parametrize("where", ["headers", "body"])
 def test_a_responder_that_never_finishes_is_cut_off_at_the_per_request_bound(where):
@@ -801,6 +829,16 @@ def test_a_responder_that_never_finishes_is_cut_off_at_the_per_request_bound(whe
     result = transport.get_info("10.0.0.5", 80, 0.1)
     assert result.kind == "timeout"
     assert time.monotonic() - started < 3
+
+
+def test_the_timer_firing_during_connect_is_handled():
+    class SlowConnect(BlockingConnection):
+        def connect(self) -> None:
+            time.sleep(0.3)  # longer than the total bound
+            super().connect()
+
+    result = HttpTransport(connection_factory=SlowConnect).get_info("10.0.0.5", 80, 0.1)
+    assert result.kind == "timeout"
 
 
 def test_stragglers_count_as_timed_out_and_the_run_does_not_wait_for_them():
@@ -825,3 +863,57 @@ def test_stragglers_count_as_timed_out_and_the_run_does_not_wait_for_them():
     row = result.coverage["unicast"]["ranges"][0]
     assert (row["hosts_probed"], row["timed_out"], row["not_probed"]) == (2, 2, 0)
     assert result.conclusion == "none_found_incomplete"
+    # Probe workers are daemon threads: a hung probe cannot keep the process alive.
+    assert all(t.daemon for t in threading.enumerate() if t is not threading.main_thread())
+
+
+# ------------------------------------------------------------------ loopback regression
+
+
+def drip_server(head: bytes) -> tuple[int, threading.Event]:
+    """A 127.0.0.1 server inside the test that sends ``head`` and then drips bytes."""
+    server = _REAL_SOCKET()
+    server.bind(("127.0.0.1", 0))
+    server.listen(1)
+    stop = threading.Event()
+
+    def serve() -> None:
+        connection, _ = server.accept()
+        try:
+            connection.recv(4096)
+            connection.sendall(head)
+            for _ in range(100):
+                if stop.is_set():
+                    break
+                connection.send(b"{")
+                time.sleep(0.1)
+        except OSError:
+            pass
+        finally:
+            connection.close()
+            server.close()
+
+    threading.Thread(target=serve, daemon=True).start()
+    return server.getsockname()[1], stop
+
+
+@pytest.mark.parametrize(
+    "head",
+    [
+        b"HTTP/1.1 200 OK\r\nContent-Length: 100000\r\nConnection: close\r\n\r\n",
+        b"HTTP/1.0 200 OK\r\n\r\n",
+        b"HTTP/1.1 200 OK\r\nX-Slow: " + b"a" * 5,  # a header that never ends
+    ],
+)
+def test_a_dripping_real_response_ends_within_the_total_bound(monkeypatch, head):
+    port, stop = drip_server(head)
+    # Narrow bypass of the guard: real sockets, loopback only, in this test only.
+    monkeypatch.setattr(socket, "socket", _REAL_SOCKET)
+    monkeypatch.setattr(http.client.HTTPConnection, "connect", _REAL_CONNECT)
+    started = time.monotonic()
+    try:
+        result = HttpTransport().get_info("127.0.0.1", port, 0.5)
+    finally:
+        stop.set()
+    assert result.kind == "timeout"
+    assert time.monotonic() - started < 0.5 + 1.5
