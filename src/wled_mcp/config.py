@@ -1,5 +1,6 @@
 """Validated, immutable inventory; startup never probes configured controllers."""
 
+import hashlib
 import ipaddress
 import os
 import re
@@ -145,6 +146,9 @@ class StartupConfig:
     http: HTTPSettings = HTTPSettings()
     backups: BackupSettings = BackupSettings()
     access: AccessPolicy = AccessPolicy()
+    # SHA-256 of the file bytes loaded at startup: the inventory writer's baseline for
+    # detecting a hand edit (issue #201, TP-201-3). None: no baseline, always a conflict.
+    config_sha256: str | None = None
 
 
 def access_policy(inventory: InventoryConfig, profile: ProfileName | None = None) -> AccessPolicy:
@@ -251,6 +255,7 @@ def load_config(
         validated.http,
         validated.backups,
         access_policy(validated, profile),
+        hashlib.sha256(content).hexdigest(),
     )
 
 

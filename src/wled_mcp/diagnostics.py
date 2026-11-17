@@ -230,6 +230,10 @@ class LastControlStore:
             operation, self._now(), application, verification, code
         )
 
+    def extend_ids(self, device_ids: Iterable[str]) -> None:
+        """Accept more configured IDs after an inventory reload; never removes one."""
+        self._device_ids = self._device_ids | frozenset(device_ids)
+
     def latest(self, device_id: str) -> LastControl | None:
         return self._latest.get(device_id)
 
@@ -270,6 +274,12 @@ class ServiceMonitor:
         self._errors: Counter[str] = Counter()
 
     # -- device observations --------------------------------------------------------
+
+    def extend_ids(self, device_ids: Iterable[str]) -> None:
+        """Add IDs after an inventory reload (one reference swap; order kept, none removed)."""
+        known = self.device_ids
+        self.device_ids = known + tuple(i for i in device_ids if i not in known)
+        self.last_control.extend_ids(self.device_ids)
 
     def is_configured(self, device_id: object) -> bool:
         return isinstance(device_id, str) and device_id in self.device_ids

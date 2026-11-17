@@ -72,6 +72,10 @@ wled-mcp config init --config <abs> [--device-id ID --device-name NAME --base-ur
   written (`PARENT_INACCESSIBLE`). `--force` keeps the replaced file's mode.
 - Creates no data or backups directory, generates or stores no credential and contacts
   nothing.
+- Takes the inventory lock (sibling `.<filename>.lock`, shared with a running server and
+  waited on for 5 s, then `CONFIG_LOCKED`) around the replace; with `--force` the replaced
+  file is kept as `<filename>.bak` (one generation). Both files are created only by a write
+  attempt (issue #201, [discovery.md](discovery.md#reload-semantics)).
 
 ## `config add-device`
 
@@ -98,6 +102,10 @@ wled-mcp config add-device --config <abs> --device-id ID --device-name NAME --ba
   `[[devices]]` table; the refusal is `INLINE_DEVICES_ARRAY` with the hint to rewrite
   the entries as `[[devices]]` tables first.
 - Keeps the existing file mode. The change takes effect after a restart.
+- Takes the same lock as `config init` and the server's inventory writer (`CONFIG_LOCKED`
+  when it stays held for 5 s) and keeps the previous file as `<filename>.bak` (one
+  generation, replaced by each successful add) before the replace. Refusals before the write
+  create neither file.
 
 ## `config validate`
 

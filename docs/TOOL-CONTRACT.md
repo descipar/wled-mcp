@@ -820,7 +820,9 @@ suggestion. Safe reconciliation means read/inspect and decide explicitly.
 Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `INVALID_RESPONSE`, `VALIDATION_ERROR`, `UNSUPPORTED_CAPABILITY`, `AMBIGUOUS_NAME`,
 `PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `STORAGE_FAILED`,
-`WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`, `ACCESS_DENIED` (a tool profile or a
+`WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`, `INVENTORY_CONFLICT` and
+`INVENTORY_RELOAD_FAILED` (inventory writes, [discovery](contract/discovery.md#reload-semantics)),
+`ACCESS_DENIED` (a tool profile or a
 device's maximum class does not allow the call; `not_attempted`, nothing was sent;
 [profiles](contract/profiles.md#enforcement)). A pre-dispatch timeout is distinct from possible write
 application. Offline entries in successful inventory probes are per-device data.

@@ -89,7 +89,8 @@ def test_init_writes_only_the_selected_file_and_validates(tmp_path, capsys):
         "http://192.0.2.10",
     )
     assert code == 0 and err == ""
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["devices.toml"]  # no data/backups dir
+    # no data/backups dir; the lock file is the writer's (issue #201), no backup for a new file
+    assert sorted(p.name for p in tmp_path.iterdir()) == [".devices.toml.lock", "devices.toml"]
     assert "192.0.2.10" not in out
     loaded = load_config(str(config), str(tmp_path), {})
     assert [(d.id, d.name, d.base_url) for d in loaded.devices] == [
@@ -125,7 +126,12 @@ def test_init_refuses_existing_target_without_force(tmp_path, capsys):
     code, _, _ = init(capsys, config, "--force")
     assert code == 0
     assert b"keep me" not in config.read_bytes()
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["devices.toml"]
+    assert (tmp_path / "devices.toml.bak").read_bytes() == before["devices.toml"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        ".devices.toml.lock",
+        "devices.toml",
+        "devices.toml.bak",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -191,7 +197,12 @@ def test_add_device_appends_and_keeps_every_original_byte(tmp_path, capsys):
     assert updated.startswith(original)
     devices = load_config(str(config), str(tmp_path), {}).devices
     assert [d.id for d in devices] == ["desk", "shelf", "lamp"]
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["config.toml"]  # no temp file left
+    assert (tmp_path / "config.toml.bak").read_bytes() == original  # issue #201 backup
+    assert sorted(p.name for p in tmp_path.iterdir()) == [  # no temp file left
+        ".config.toml.lock",
+        "config.toml",
+        "config.toml.bak",
+    ]
 
 
 def test_add_device_after_empty_init_replaces_the_empty_array(tmp_path, capsys):
@@ -262,7 +273,7 @@ def test_add_device_aborts_when_the_file_changes_before_replace(tmp_path, capsys
     code, out, _ = add(capsys, config, "lamp", "Example lamp", "http://192.0.2.20")
     assert code == 1 and "changed" in out
     assert config.read_bytes() == RETAINED.read_bytes() + b"# edited concurrently\n"
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["config.toml"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == [".config.toml.lock", "config.toml"]
 
 
 def test_failed_replace_leaves_target_and_no_temporary_file(tmp_path, capsys, monkeypatch):
@@ -275,7 +286,9 @@ def test_failed_replace_leaves_target_and_no_temporary_file(tmp_path, capsys, mo
     monkeypatch.setattr(setup.os, "replace", failing_replace)
     code, out, err = add(capsys, config, "lamp", "Example lamp", "http://192.0.2.20")
     assert code == 1 and "left unchanged" in out and "synthetic" not in out + err
-    assert snapshot(tmp_path) == before
+    after = snapshot(tmp_path)
+    assert after.pop(".config.toml.lock") == b""  # the lock file is the writer's
+    assert after == before
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits")
@@ -526,7 +539,11 @@ def test_fresh_user_setup_validate_serve_both_transports_and_doctor(tmp_path):
             assert "ENDPOINT_OK" in endpoint.stdout
             process.terminate()
         assert wled.posts == []
-        assert sorted(p.name for p in tmp_path.iterdir()) == ["data", "devices.toml"]
+        assert sorted(p.name for p in tmp_path.iterdir()) == [
+            ".devices.toml.lock",
+            "data",
+            "devices.toml",
+        ]
         assert list(data.iterdir()) == []
     finally:
         wled.close()

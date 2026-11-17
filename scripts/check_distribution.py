@@ -422,7 +422,10 @@ def setup_smoke(console: Path, directory: Path, env: dict[str, str]) -> None:
     report = json_run("doctor", *paths, "--data-dir", str(data), "--offline")
     assert report["command"] == "doctor", report
     leftovers = sorted(path.name for path in directory.rglob("*"))
-    assert leftovers == ["data", "devices.toml"], f"setup commands left files: {leftovers}"
+    # The writer keeps a sibling lock file next to the configuration (#201).
+    assert leftovers == [".devices.toml.lock", "data", "devices.toml"], (
+        f"setup commands left files: {leftovers}"
+    )
 
 
 def uv_location(path: Path) -> str:
