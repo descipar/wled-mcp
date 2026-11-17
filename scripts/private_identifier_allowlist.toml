@@ -90,12 +90,12 @@ reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine on
 [[allow]]
 path = "tests/test_discovery.py"
 value = "100.64.0.9"
-reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
 
 [[allow]]
 path = "tests/test_discovery.py"
 value = "169.254.1.2"
-reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
 
 [[allow]]
 path = "tests/test_discovery_engine.py"
@@ -285,12 +285,12 @@ reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine on
 [[allow]]
 path = "tests/test_discovery_engine.py"
 value = "100.64.0.0"
-reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
 
 [[allow]]
 path = "tests/test_discovery_engine.py"
 value = "169.254.1.0"
-reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+reason = "synthetic non-RFC 1918 private-range address proving that the discovery engine never probes it"
 
 [[allow]]
 path = "tests/test_discovery_engine.py"

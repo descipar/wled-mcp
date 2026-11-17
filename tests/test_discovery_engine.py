@@ -761,3 +761,67 @@ def test_result_dictionary_is_json_serializable_and_complete():
     assert {"methods", "mdns", "unicast", "known_devices_checked", "caps", "limits"} <= set(
         coverage
     )
+
+
+# ------------------------------------------------------------------ slow responders
+
+
+class BlockingConnection(FakeConnection):
+    """``getresponse`` or ``read`` blocks until the transport closes the connection."""
+
+    where = "headers"
+
+    def __init__(self, host: str, port: int, timeout: float) -> None:
+        super().__init__(host, port, timeout)
+        self.released = threading.Event()
+
+    def getresponse(self) -> Any:
+        if self.where == "headers":
+            self.released.wait(10)
+            raise OSError("closed")
+        connection = self
+
+        class Drip(FakeResponse):
+            def read(self, size: int) -> bytes:
+                connection.released.wait(10)
+                raise OSError("closed")
+
+        return Drip(200, b"")
+
+    def close(self) -> None:
+        super().close()
+        self.released.set()
+
+
+@pytest.mark.parametrize("where", ["headers", "body"])
+def test_a_responder_that_never_finishes_is_cut_off_at_the_per_request_bound(where):
+    BlockingConnection.where = where
+    transport = HttpTransport(connection_factory=BlockingConnection)
+    started = time.monotonic()
+    result = transport.get_info("10.0.0.5", 80, 0.1)
+    assert result.kind == "timeout"
+    assert time.monotonic() - started < 3
+
+
+def test_stragglers_count_as_timed_out_and_the_run_does_not_wait_for_them():
+    release = threading.Event()
+
+    class Hung:
+        def get_info(self, address: str, port: int, timeout: float) -> InfoResult:
+            release.wait(30)
+            return InfoResult("refused")
+
+    started = time.monotonic()
+    try:
+        result = run_discovery(
+            methods=("unicast",),
+            ranges=["10.0.0.0/30"],
+            transport=Hung(),
+            timeout=0.2,
+        )
+        assert time.monotonic() - started < 5
+    finally:
+        release.set()
+    row = result.coverage["unicast"]["ranges"][0]
+    assert (row["hosts_probed"], row["timed_out"], row["not_probed"]) == (2, 2, 0)
+    assert result.conclusion == "none_found_incomplete"

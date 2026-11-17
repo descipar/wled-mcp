@@ -262,6 +262,12 @@ prints suggestions and the user runs `config add-device` explicitly.
 - Answer text (instance names, controller names) is printed as ASCII only, in text and JSON
   alike: every character that is not printable ASCII becomes `?`. The output cannot fail on a
   non-UTF-8 stdout, and one odd responder cannot suppress the other candidates.
+- Version-1 compatibility fields (kept additively, `schema_version` stays 1): top level
+  `queries_sent` (mDNS datagrams sent), `follow_up_sent` and `truncated`; per candidate
+  `instance` (mDNS name, null for a unicast-only find), `host` (always null now), `addresses`
+  (address plus alternates), `port` (80), `suggested_base_url` (= `base_url`),
+  `alternative_base_url` (always null now), `already_configured` (status is not `new`),
+  `suggested_device_id` and `suggested_device_name` (= `suggested_id`, `suggested_name`).
 - JSON fields: `timeout_seconds`, `conclusion`, `candidate_count`, `malformed_responses`,
   `dropped_datagrams`, `candidates` (fields above plus `add_device_command`), `coverage`
   (the report of discovery.md: methods, per-range counters, caps, limits), `warnings` and

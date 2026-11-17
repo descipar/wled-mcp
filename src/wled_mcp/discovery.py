@@ -509,6 +509,20 @@ def _add_command(candidate: FoundDevice) -> str:
 def _candidate_json(candidate: FoundDevice) -> dict[str, Any]:
     document = candidate.as_dict()
     document["add_device_command"] = _add_command(candidate) if candidate.status == "new" else None
+    # Version-1 compatibility fields of the pre-engine output, kept additively.
+    document.update(
+        {
+            "instance": candidate.instance,
+            "host": None,
+            "addresses": [candidate.address, *candidate.alternate_addresses],
+            "port": 80,
+            "suggested_base_url": candidate.base_url,
+            "alternative_base_url": None,
+            "already_configured": candidate.status != "new",
+            "suggested_device_id": candidate.suggested_id,
+            "suggested_device_name": candidate.suggested_name,
+        }
+    )
     return document
 
 
@@ -565,6 +579,9 @@ def run_discover(
         )
     data: dict[str, Any] = {
         "timeout_seconds": timeout,
+        "queries_sent": result.queries_sent,  # v1 compatibility: mDNS datagrams sent
+        "follow_up_sent": result.follow_up_sent,  # v1 compatibility
+        "truncated": result.truncated,  # v1 compatibility
         "conclusion": conclusion,
         "candidate_count": len(result.candidates),
         "malformed_responses": result.malformed_responses,

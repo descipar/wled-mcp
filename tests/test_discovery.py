@@ -965,3 +965,20 @@ def test_leading_dashes_in_a_name_cannot_become_an_option(monkeypatch, capsys):
     assert candidate["suggested_name"] == "x-y"
     assert '--device-name "x-y"' in candidate["add_device_command"]
     assert re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", candidate["suggested_id"])
+
+
+def test_version_1_json_fields_of_the_previous_output_are_kept_additively(monkeypatch, capsys):
+    install(monkeypatch, FakeNetwork(answer_first(device("wled-a1b2c3", "10.0.2.21"))))
+    code, document = run_json(capsys)
+    assert code == 0 and document["schema_version"] == 1
+    assert document["queries_sent"] == 3 and document["follow_up_sent"] is False
+    assert document["truncated"] is False
+    (candidate,) = document["candidates"]
+    assert candidate["instance"] == "wled-a1b2c3" and candidate["host"] is None
+    assert candidate["addresses"] == ["10.0.2.21"] and candidate["port"] == 80
+    assert candidate["suggested_base_url"] == "http://10.0.2.21"
+    assert candidate["alternative_base_url"] is None
+    assert candidate["already_configured"] is False
+    assert candidate["suggested_device_id"] == "wled-a1b2c3"
+    assert candidate["suggested_device_name"] == "wled-a1b2c3"
+    assert candidate["add_device_command"] is not None

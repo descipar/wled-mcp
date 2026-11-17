@@ -7,6 +7,19 @@ this file. Fixes are made for the latest release only. See
 
 ## Unreleased
 
+### Changed
+
+- **`wled-mcp discover` runs on the shared discovery engine (#199).** It now sends up to 3 mDNS
+  rounds in a 6 s window (also asking `_http._tcp`), verifies every answer with one
+  `GET /json/info` (RFC 1918 addresses, port 80) before listing it, merges by MAC, marks each
+  candidate `new`, `known` or `address_changed` and prints a coverage report; a run that could
+  not look never says nothing was found. This is a behavior change: the command now makes HTTP
+  reads, a controller announced on a port other than 80 or outside RFC 1918 space is not listed,
+  and `--timeout` only lowers the overall deadline. The JSON keeps its version-1 fields and
+  adds `conclusion`, `coverage`, `warnings` and per-candidate `address`, `base_url`,
+  `suggested_id`, `suggested_name`, `firmware_version`, `product`, `found_by`, `status`.
+  Unicast probing of configured ranges arrives with `[discovery].ranges` (#202).
+
 ### Added
 
 - **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of

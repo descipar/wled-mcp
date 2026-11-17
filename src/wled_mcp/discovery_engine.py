@@ -24,6 +24,8 @@ import ipaddress
 import json
 import math
 import re
+import socket
+import threading
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
@@ -229,9 +231,30 @@ class HttpTransport:
 
     def get_info(self, address: str, port: int, timeout: float) -> InfoResult:
         deadline = self._clock() + timeout
-        connection = None
+        connection: Any = None
+        aborted = threading.Event()
+
+        def abort() -> None:
+            # A total per-request bound: socket timeouts apply per operation, so a
+            # server that drips bytes could otherwise hold the request open.
+            aborted.set()
+            sock = getattr(connection, "sock", None)
+            try:
+                if sock is not None:
+                    sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            try:
+                if connection is not None:
+                    connection.close()
+            except OSError:
+                pass
+
+        timer = threading.Timer(timeout, abort)
+        timer.daemon = True
         try:
             connection = self._factory(address, port, timeout=timeout)
+            timer.start()
             connection.request(
                 "GET",
                 "/json/info",
@@ -246,12 +269,14 @@ class HttpTransport:
                 return InfoResult("other")
             body = bytearray()
             while len(body) <= MAX_BODY_BYTES:
-                if self._clock() > deadline:
+                if self._clock() > deadline or aborted.is_set():
                     return InfoResult("timeout")
                 chunk = response.read(min(4096, MAX_BODY_BYTES + 1 - len(body)))
                 if not chunk:
                     break
                 body += chunk
+            if aborted.is_set():
+                return InfoResult("timeout")
             if len(body) > MAX_BODY_BYTES:
                 return InfoResult("other")
             document = json.loads(bytes(body))
@@ -261,8 +286,9 @@ class HttpTransport:
         except (TimeoutError, OSError):
             return InfoResult("timeout")
         except (http.client.HTTPException, ValueError, RecursionError):
-            return InfoResult("other")
+            return InfoResult("timeout" if aborted.is_set() else "other")
         finally:
+            timer.cancel()
             if connection is not None:
                 connection.close()
         return identify(document) or InfoResult("other")
@@ -290,18 +316,33 @@ def probe_many(
     if not targets:
         return results
     pending: dict[Future[InfoResult], int] = {}
-    with ThreadPoolExecutor(max_workers=min(MAX_IN_FLIGHT, len(targets))) as pool:
+
+    def settle(done: set[Future[InfoResult]]) -> None:
+        for future in done:
+            results[pending.pop(future)] = future.result()
+
+    def grace() -> float:
+        # Real time a request may still run past the deadline: its own per-request bound.
+        return max(0.0, deadline - clock()) + timeout
+
+    pool = ThreadPoolExecutor(max_workers=min(MAX_IN_FLIGHT, len(targets)))
+    try:
         for index, (address, port) in enumerate(targets):
             while len(pending) >= MAX_IN_FLIGHT:
-                done, _ = wait(pending, return_when=FIRST_COMPLETED)
-                for future in done:
-                    results[pending.pop(future)] = future.result()
-            if clock() >= deadline:
+                done, _ = wait(pending, timeout=grace(), return_when=FIRST_COMPLETED)
+                if not done:
+                    break
+                settle(done)
+            if len(pending) >= MAX_IN_FLIGHT or clock() >= deadline:
                 break
             pending[pool.submit(_safe_get, transport, address, port, timeout)] = index
-        done, _ = wait(pending)
-        for future in done:
-            results[pending[future]] = future.result()
+        done, _ = wait(pending, timeout=grace())
+        settle(done)
+        for future, index in pending.items():  # stragglers: no usable answer in time
+            future.cancel()
+            results[index] = InfoResult("timeout")
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
     return results
 
 
@@ -332,6 +373,7 @@ class FoundDevice:
     known_device_id: str | None = None
     configured_address: str | None = None
     alternate_addresses: list[str] = field(default_factory=list)
+    instance: str | None = None  # mDNS instance name; not part of ``as_dict``
 
     def as_dict(self) -> dict[str, Any]:
         document: dict[str, Any] = {
@@ -361,6 +403,9 @@ class DiscoveryResult:
     warnings: list[str] = field(default_factory=list)
     malformed_responses: int = 0
     dropped_datagrams: int = 0
+    queries_sent: int = 0  # mDNS datagrams sent (rounds plus follow-ups)
+    follow_up_sent: bool = False
+    truncated: bool = False  # more mDNS instances answered than were examined
 
     @property
     def conclusion(self) -> str:
@@ -417,18 +462,18 @@ def _mdns_phase(
     clock: Callable[[], float],
     collector: Collector,
     window: float,
-) -> int | None:
+) -> tuple[int, int] | None:
     """Up to ``MDNS_ROUNDS`` rounds ``MDNS_ROUND_GAP`` apart inside ``window``.
 
-    Returns the number of rounds sent, or ``None`` when the socket could not be opened or
-    the first query could not be sent.
+    Returns the rounds and follow-up datagrams sent, or ``None`` when the socket could not
+    be opened or the first query could not be sent.
     """
     destination = (MDNS_GROUP, MDNS_PORT)
     try:
         sock = opener()
     except OSError:
         return None
-    sent = 0
+    sent = follow_ups = 0
     try:
         start = clock()
         query = build_query([(service, TYPE_PTR) for service in SERVICES])
@@ -449,12 +494,13 @@ def _mdns_phase(
             if follow_up is not None:
                 try:
                     sock.sendto(follow_up, destination)
+                    follow_ups += 1
                 except OSError:
                     pass  # best effort; the next round asks again
         discovery.listen(sock, start + window, clock, collector)
     finally:
         sock.close()
-    return sent
+    return sent, follow_ups
 
 
 def _mdns_targets(
@@ -521,16 +567,18 @@ def run_discovery(
     internal_error = {"mdns": False, "unicast": False}
     collector = Collector()
     mdns_report: dict[str, Any] | None = None
+    follow_ups_sent = 0
     unicast_report: dict[str, Any] | None = None
     not_probed_total = 0
 
     if "mdns" in requested:
         state = states["mdns"]
         window = min(MDNS_WINDOW, call_timeout)
-        rounds = _mdns_phase(opener, clock, collector, window)
-        if rounds is None:
+        phase = _mdns_phase(opener, clock, collector, window)
+        if phase is None:
             state.status, state.reason = "failed", "multicast_unavailable"
         else:
+            rounds, follow_ups_sent = phase
             targets, responders, rejected = _mdns_targets(collector)
             results = probe_many(
                 [(address, port) for _, address, port in targets],
@@ -678,8 +726,16 @@ def run_discovery(
             "limits": [*LIMITS, *([] if coverage["complete"] else [LIMIT_NOT_EXHAUSTIVE])],
         }
     )
+    queries_sent = (mdns_report["rounds_sent"] + follow_ups_sent) if mdns_report else 0
     return DiscoveryResult(
-        candidates, coverage, warnings, collector.malformed, collector.dropped_sources
+        candidates,
+        coverage,
+        warnings,
+        collector.malformed,
+        collector.dropped_sources,
+        queries_sent,
+        follow_ups_sent > 0,
+        collector.truncated,
     )
 
 
@@ -706,6 +762,7 @@ def _merge(sightings: list[_Sighting]) -> list[FoundDevice]:
                 product=info.product,
                 found_by=[m for m in METHODS if any(s.method == m for s in group)],
                 alternate_addresses=addresses[1 : 1 + MAX_ALTERNATE_ADDRESSES],
+                instance=next((s.instance for s in group if s.instance), None),
             )
         )
     return sorted(devices, key=lambda d: int(ipaddress.IPv4Address(d.address)))
@@ -738,7 +795,7 @@ def _mark_known(
     if pending and unread:
         reads = unread[:MAX_KNOWN_READS]
         results = probe_many([(d.host, d.port) for d in reads], transport, timeout, deadline, clock)
-        checked = len(reads)
+        checked = sum(1 for result in results if result is not None)
         for entry, result in zip(reads, results, strict=True):
             if result is None or result.kind != "wled" or result.mac is None:
                 unmatched += 1
