@@ -1,13 +1,21 @@
 version: 2
 updates:
   # Update the real manifest AND uv.lock; pip-only updates could leave the lock stale.
+  # One grouped PR per month keeps review and CI noise low. Groups apply to
+  # version updates only; security updates still arrive as separate PRs.
   - package-ecosystem: uv
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
+    groups:
+      uv-dependencies:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 3
+    groups:
+      github-actions:
+        patterns: ["*"]

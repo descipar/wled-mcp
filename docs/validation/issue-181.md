@@ -39,7 +39,7 @@ private channel, advisory process, guaranteed fix or response commitment.
   only this analysis job has `security-events: write`. It has no publishing credentials.
   CodeQL complements syntax-level lint with data-flow queries; neither proves absence
   of defects. No docs-only skip applies.
-- **Dependabot:** weekly `uv` and `github-actions` updates are configured with bounded
+- **Dependabot:** monthly grouped `uv` and `github-actions` updates are configured with bounded
   open PRs. `uv` covers the manifest and lock together; Actions covers immutable pins.
   This is update handling, not auto-merge, deployment or a promise to triage alerts.
   No repository alert/security-support setting was changed. Configuration becomes
