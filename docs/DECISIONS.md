@@ -86,6 +86,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-036 | Project / roadmap | Milestone M5 is closed without its own minor release: the owner waives DEC-030 item 1 for M5 (confirmed explicitly after the coordinator read the instruction to close M5 as a waiver). Its merged work (#128, validation evidence and one mock test) needs no release; the README already states the result. Applies to M5 only. | Confirmed owner statements, coordinator session, 2026-11-12; see [DEC-036](#dec-036--m5-closes-without-its-own-release) |
 | DEC-037 | Project / operations | A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and never part of a project test, rollback or release step; the MCPHub fresh-install test stays waived (ISSUE-24-DEC-005). Changes to the wled-mcp service on a deployed target do not imply a hub reinstall. | Confirmed owner statement, coordinator session, 2026-11-13 (paraphrased in English, no verbatim quote); see [DEC-037](#dec-037--no-mcphub-reinstall-in-project-steps) |
 | DEC-038 | Project / roadmap | Milestone M7 is closed without its own minor release: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships with the next minor release and stays under Unreleased in the changelog until then; the README marks it "not yet released". Applies to M7 only. | Confirmed owner statement, coordinator session, 2026-11-16; see [DEC-038](#dec-038--m7-closes-without-its-own-release) |
+| DEC-039 | Workflow / branches | No long-lived milestone branch: short-lived feature branches merge into `main` one PR at a time; `main` is the integration line (green, not necessarily release-ready) and users receive a release tag on a reviewed `main` commit. Non-standalone changes are split or kept behind an off-by-default option. | Confirmed owner statement, main session, 2026-11-18; see [DEC-039](#dec-039--main-is-the-integration-line-releases-are-tags) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -949,6 +950,31 @@ can explicitly amend them.
   and it does not extend DEC-032. A later milestone needs its own answer.
 - Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
 - Affected: docs/ROADMAP.md (M4 row).
+
+### DEC-039 — `main` is the integration line, releases are tags
+
+- Status: active workflow decision, global.
+- Authority/source: owner statements in the main session on 2026-11-18 (no permalink). The
+  owner asked whether all features of a milestone should be built on one branch that is merged
+  into `main` only at the end, the stated aim being that `main` always runs correctly and holds
+  nothing half-finished; after the coordinator advised against it, the owner answered: "man kann
+  auch einfach das release nehmen dann" (English: "one can simply use the release instead").
+- Owner decision (the wording of the items is the coordinator's, from that statement):
+  1. No long-lived milestone branch. Issues are implemented on short-lived feature branches that
+     are merged into `main` one PR at a time, as before.
+  2. `main` is the integration line and needs no release-ready state at every commit; it must
+     still be green (CI and a current-head review PASS before every merge; the DEC-022 sync rule applies).
+  3. What users receive is a release: a tag `v<version>` on a reviewed `main` commit
+     (docs/PUBLISHING.md), staged per DEC-026. The release moment is chosen deliberately and
+     stays owner-gated (DEC-023, DEC-030).
+  4. A change that is not usable on its own is split so each issue works by itself, or kept
+     behind an off-by-default option until the rest has merged.
+- Scope: workflow, all milestones. A tightly coupled pair or triple of issues may use stacked
+  PRs (retarget to `main` before deleting the base); a change that would break `main`
+  incompatibly needs a short-lived integration branch and an owner decision first.
+- Not changed: DEC-021 (branch sync by merging `main`), DEC-022, DEC-023, DEC-026, DEC-030 and
+  the human merge gate.
+- Affected: docs/AGENT-WORKFLOW.md, agents/coordinator.md and generated adapters.
 
 ### DEC-038 — M7 closes without its own release
 
