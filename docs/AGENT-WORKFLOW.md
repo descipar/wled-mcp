@@ -206,6 +206,14 @@ owner, at most two implementation tracks run in isolated worktrees with one
 coordinator per issue, branches are kept current by merging `main` (no force-push),
 and "Starte Stage 2 parallel" starts or resumes the plan (see
 [coordinator.md](../agents/coordinator.md)).
+Branch model ([DEC-039](DECISIONS.md#dec-039--main-is-the-integration-line-releases-are-tags)):
+there is no long-lived milestone branch. Each issue is a short-lived feature branch merged
+into `main` one PR at a time. `main` is the integration line: green (CI plus a current-head
+review PASS) but not necessarily release-ready at every commit. Users receive a release, a
+`v<version>` tag on a reviewed `main` commit ([PUBLISHING.md](PUBLISHING.md)), staged on the
+target machine (DEC-026) and owner-gated. A change that is not usable on its own is split so
+each issue works by itself or stays behind an off-by-default option; tightly coupled issues
+may use stacked PRs. An incompatible change needing an integration branch goes to the owner first.
 [DEC-028](DECISIONS.md#dec-028--pragmatic-delivery) asks for good enough instead of 100%: scope, evidence
 and review depth are fixed up front, evidence is one or two runs instead of matrices, optional polish
 and nits go to the next PR, and small follow-ups are folded into the open PR; the safety gates stay.

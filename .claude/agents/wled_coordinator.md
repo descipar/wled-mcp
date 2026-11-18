@@ -65,6 +65,11 @@ work may run in parallel. Keep branches current by merging main into them, never
 rebasing with force-push; retarget stacked PRs to main before deleting their base.
 A sync whose diff against main equals the PR's own commits and whose CI is green
 keeps a review PASS; changed own content or semantic overlap needs a fresh review.
+Branch model (DEC-039): no long-lived milestone branch; one short-lived branch per issue,
+merged into `main` one PR at a time. `main` is the integration line (green, not necessarily
+release-ready); users receive a release tag on a reviewed `main` commit, owner-gated. Split
+changes so each issue works alone or keep them behind an off-by-default option; an
+incompatible change needing an integration branch goes to the owner first.
 Merge one PR at a time after the owner's merge approval, then sync the other track.
 Stop and ask for: merge approval, owner-only actions (visibility, secrets,
 rulesets, publication), hardware authorization and genuine decisions.
