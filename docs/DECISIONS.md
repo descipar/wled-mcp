@@ -963,7 +963,7 @@ can explicitly amend them.
   1. No long-lived milestone branch. Issues are implemented on short-lived feature branches that
      are merged into `main` one PR at a time, as before.
   2. `main` is the integration line and needs no release-ready state at every commit; it must
-     still be green (CI and a current-head review PASS before every merge).
+     still be green (CI and a current-head review PASS before every merge; the DEC-022 sync rule applies).
   3. What users receive is a release: a tag `v<version>` on a reviewed `main` commit
      (docs/PUBLISHING.md), staged per DEC-026. The release moment is chosen deliberately and
      stays owner-gated (DEC-023, DEC-030).
