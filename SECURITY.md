@@ -48,6 +48,6 @@ areas, not an exhaustive audit or a security guarantee.
 
 Ruff security rules and CodeQL supplement review; a green workflow does not mean zero
 findings. The bounded review retains one open medium CodeQL finding for discovery
-interface binding ([record](docs/validation/issue-181.md)). Dependabot proposes weekly
+interface binding ([record](docs/validation/issue-181.md)). Dependabot proposes monthly grouped
 dependency and action updates for review; updates are not automatically merged or deployed. These
 checks do not create security support or a commitment to triage or respond.

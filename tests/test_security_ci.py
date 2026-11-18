@@ -49,4 +49,4 @@ def test_dependency_updates_cover_lock_and_action_pins_without_auto_merge():
         "uv",
         "github-actions",
     }
-    assert all(update["schedule"]["interval"] == "weekly" for update in config["updates"])
+    assert all(update["schedule"]["interval"] == "monthly" for update in config["updates"])

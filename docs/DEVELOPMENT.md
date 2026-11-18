@@ -45,7 +45,7 @@ dev dependency); the same command is an optional local speed-up, and the plain s
 The independent security-lint job always runs Ruff S rules over `src`; S101 is excluded
 for type/invariant assertions, and individual false positives carry site-specific reasons.
 The separate CodeQL workflow analyzes Python with security-extended queries on PRs, main
-and weekly without building project code. Weekly Dependabot PRs cover uv and Actions;
+and weekly without building project code. Monthly grouped Dependabot PRs cover uv and Actions;
 updates require review and are not automatically merged. See the
 [bounded review record](validation/issue-181.md) for scope and limits.
 
