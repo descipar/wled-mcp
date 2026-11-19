@@ -56,6 +56,9 @@ class InventoryWriteError(Exception):
         self.application: WriteApplication = application
 
 
+_PARENT_CODES = frozenset({"PARENT_MISSING", "PARENT_INACCESSIBLE"})
+
+
 def _storage(reason: str, message: str) -> InventoryWriteError:
     return InventoryWriteError("STORAGE_FAILED", message, {"reason": reason})
 
@@ -98,16 +101,25 @@ class InventoryWriter:
             ) from None
         except LockUnavailable:
             raise _storage(
-                "not_writable", "The inventory directory is not writable; nothing was changed."
+                "not_writable",
+                "The inventory lock file could not be created in the configuration directory; "
+                "nothing was changed.",
             ) from None
 
     def _update_locked(self, edit: Callable[[bytes], bytes | None]) -> WriteResult:
         try:
             _check_parent(self._path.parent)
             current, info = _read_regular(self._path)
-        except Refusal:
+        except Refusal as refusal:
+            if refusal.code in _PARENT_CODES:
+                raise _storage(
+                    "not_writable",
+                    "The inventory directory is missing or not writable; nothing was changed.",
+                ) from None
             raise _storage(
-                "unreadable", "The inventory file could not be read; nothing was changed."
+                "unreadable",
+                "The inventory file is missing, not a regular file or could not be read; "
+                "nothing was changed.",
             ) from None
         digest = hashlib.sha256(current).hexdigest()
         if self._baseline is None or digest != self._baseline:

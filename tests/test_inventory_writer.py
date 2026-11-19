@@ -202,7 +202,8 @@ def test_a_directory_that_is_not_writable_is_a_storage_failure(tmp_path, monkeyp
     rig = Rig(tmp_path)
     monkeypatch.setattr(os, "access", lambda *a, **k: False)
     error = error_of(lambda: rig.writer.update(appender(block("lamp", "192.0.2.20"))))
-    assert (error.code, error.data["reason"]) == ("STORAGE_FAILED", "unreadable")
+    assert (error.code, error.data["reason"]) == ("STORAGE_FAILED", "not_writable")
+    assert "directory" in error.message
     assert rig.applied == [] and not config_backup_path(rig.path).exists()
 
 
@@ -210,7 +211,58 @@ def test_a_missing_file_is_a_storage_failure(tmp_path):
     rig = Rig(tmp_path)
     rig.path.unlink()
     error = error_of(lambda: rig.writer.update(appender("x")))
-    assert error.code == "STORAGE_FAILED"
+    assert (error.code, error.data["reason"]) == ("STORAGE_FAILED", "unreadable")
+
+
+def test_a_lock_file_that_cannot_be_created_is_not_writable(tmp_path, monkeypatch):
+    rig = Rig(tmp_path)
+
+    def unavailable(*args, **kwargs):
+        raise filelock.LockUnavailable
+
+    monkeypatch.setattr(filelock, "_try_lock", unavailable)
+    error = error_of(lambda: rig.writer.update(appender("x")))
+    assert (error.code, error.data["reason"]) == ("STORAGE_FAILED", "not_writable")
+    assert "lock file" in error.message
+
+
+def test_a_lock_held_on_one_file_does_not_block_a_writer_of_another_file(tmp_path):
+    first, second = tmp_path / "a", tmp_path / "b"
+    first.mkdir()
+    second.mkdir()
+    held, release = threading.Event(), threading.Event()
+
+    def hold() -> None:
+        with exclusive_lock(first / ".a.lock", 1):
+            held.set()
+            release.wait(5)
+
+    holder = threading.Thread(target=hold)
+    holder.start()
+    assert held.wait(5)
+    try:
+        with exclusive_lock(second / ".b.lock", 0.2):
+            pass  # a process-wide lock would time out here
+        with pytest.raises(LockTimeout):
+            with exclusive_lock(first / ".a.lock", 0.1):
+                pass  # the same file still serializes
+    finally:
+        release.set()
+        holder.join(5)
+
+
+def test_an_oserror_while_preparing_the_windows_lock_byte_is_lock_unavailable(monkeypatch):
+    def broken(*args, **kwargs):
+        raise PermissionError(SECRET)
+
+    monkeypatch.setattr(os, "fstat", broken)
+    with pytest.raises(filelock.LockUnavailable):
+        filelock._ensure_lock_byte(0)
+    monkeypatch.undo()
+    monkeypatch.setattr(os, "write", broken)
+    monkeypatch.setattr(os, "fstat", lambda fd: os.stat_result((0,) * 10))
+    with pytest.raises(filelock.LockUnavailable):
+        filelock._ensure_lock_byte(0)
 
 
 # -- conflict ---------------------------------------------------------------------
