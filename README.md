@@ -21,8 +21,8 @@ on WLED 16.0.1. No support is promised
 ## What it does
 
 - Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a
-  named inventory in a TOML file; nothing is discovered unless you run the opt-in
-  `wled-mcp discover`.
+  named inventory in a TOML file; nothing is discovered unless you run `wled-mcp discover` or
+  (unreleased) call the read tool [`wled_discover_devices`](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md).
 - State and catalogs: normalized state, capabilities and each device's own effect and
   palette catalogs; effects can be filtered by firmware metadata and searched by curated
   properties (motion, flashing, colour slots; the catalog is small).

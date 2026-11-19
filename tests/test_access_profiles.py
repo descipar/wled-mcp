@@ -303,7 +303,17 @@ async def run_tool(resources: Resources, name: str, **arguments: Any) -> Outcome
         CURRENT_TOOL_CLASS.reset(token)
 
 
+@pytest.fixture(autouse=True)
+def fake_discovery_engine(monkeypatch):
+    """The read-tool sweeps call ``wled_discover_devices``; its engine is a fake (no socket)."""
+    from tests.discovery_support import FakeEngine
+    from wled_mcp import discovery_tools
+
+    monkeypatch.setattr(discovery_tools, "run_engine", FakeEngine())
+
+
 READ_CALLS: dict[str, dict[str, Any]] = {
+    "wled_discover_devices": {"methods": ["mdns"]},
     "wled_list_devices": {"probe": True},
     "wled_get_service_status": {},
     "wled_get_state": {"device_id": "desk"},

@@ -1,13 +1,13 @@
 # Discovery and enrollment (DISC-01 to DISC-14, #198 to #204)
 
 Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`, #199), the
-CLI `discover` on top of it, the inventory writer and in-process reload (#201), and from #202
-the tool `wled_set_discovery_ranges`, the `[discovery].ranges` key and the shared hard caps
-are implemented (mocked evidence only; live evidence is #204). `wled_discover_devices` (#200)
-and `wled_add_device` with `devices[].mac` (#203) are not implemented yet: they describe the
-target behavior, and every statement about current behavior elsewhere in the documentation
-stays true until the owning implementation PR changes it. The tools below are not registered
-in the released server.
+CLI `discover` on top of it, the inventory writer and in-process reload (#201), the tool
+`wled_discover_devices` (#200), and from #202 the tool `wled_set_discovery_ranges`, the
+`[discovery].ranges` key and the shared hard caps are implemented (mocked evidence only; live
+evidence is #204). `wled_add_device` with `devices[].mac` (#203) is not implemented yet: it
+describes the target behavior, and every statement about current behavior elsewhere in the
+documentation stays true until the owning implementation PR changes it. `wled_add_device` is
+not registered; none of the tools is in a released server yet.
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
@@ -101,7 +101,9 @@ Result `data` (envelope `device_id` null, `application` `not_attempted`, `verifi
 - `proposed_ranges[]`: each `{cidr, derived_from_device_ids}` (see
   [Range proposals](#range-proposals)). It is a list, not an executable call: the client's
   confirmation of `wled_set_discovery_ranges` shows the exact ranges.
-- `warnings[]`.
+
+Warnings of the run (for example a reached candidate cap) are the envelope field `warnings`;
+`data` has no `warnings` key (ISSUE-200-DEC-001). `conclusion` is the first key of `data`.
 
 A candidate is listed only after `GET /json/info` returned a JSON object that passes the
 WLED identity check (the fields and values read in the pinned WLED source, recorded in
@@ -293,7 +295,8 @@ Rule (DISC-04), evaluated in this order:
    `none_found_complete`; a host left unprobed because a deadline or cap ended the run does
    block it. Any other combination is `none_found_incomplete`.
 
-The text `content` block of the tool result repeats `conclusion` first. The rule that a run
+The tool result carries `conclusion` as the first key of `data` (and in `coverage`), so a
+client that reads only the start of the text block sees it first (ISSUE-200-DEC-001). The rule that a run
 which could not look never reports that nothing was found is an owner requirement stated with
 the M8 issue text on 2026-11-12 and recorded in DEC-035.
 
@@ -404,6 +407,20 @@ the contract above:
   controller at the configured address does not block `known` (the address wins).
 - Process-level single flight and the gap between probe phases (`DISCOVERY_BUSY`) are
   not in the engine; the #200 wrapper owns them.
+
+## Tool wrapper (#200)
+
+`wled_mcp.discovery_tools` registers `wled_discover_devices` (class `read`, every profile). It
+reads `Resources.discovery_ranges` and the inventory per call, hands the
+engine only the configured ranges (never a proposal), runs it in a worker thread and adds
+`proposed_ranges`, `coverage.proposed_ranges_omitted` and `coverage.unproposed_devices` (a
+list of `{reason, count}`). A process-wide guard allows one run at a time and a 5 s gap
+between probe-phase starts (only when `unicast` is requested and ranges are stored); a refused
+call is `DISCOVERY_BUSY` with `data.retry_after_seconds` (whole seconds, 1 to 30) and
+`read_retryable` true. A cancelled client call does not stop the worker before its own deadline
+(at most 30 s); the guard stays held until it ends. Until #202 stores ranges, `Resources.discovery_ranges`
+returns none, so the tool runs mDNS plus the known-device reads only. Evidence:
+[validation/issue-200.md](../validation/issue-200.md).
 
 ## Related
 

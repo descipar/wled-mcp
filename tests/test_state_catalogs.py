@@ -25,6 +25,7 @@ from tests.test_inventory_client import config, device
 from tests.test_version_source import canonical_version
 from tests.tool_contract import (
     IDEMPOTENT_CONTROL_TOOLS,
+    OPEN_WORLD_TOOLS,
     ToolClass,
     destructive_names,
     expected_names,
@@ -810,14 +811,14 @@ async def test_real_stdio_lists_four_tools_with_strict_schemas_and_envelope_pari
                     assert tool.annotations.read_only_hint is True
                     assert tool.annotations.destructive_hint is False
                     assert tool.annotations.idempotent_hint is True
-                    assert tool.annotations.open_world_hint is False
+                    assert tool.annotations.open_world_hint is (tool.name in OPEN_WORLD_TOOLS)
                 else:
                     assert tool.annotations.read_only_hint is False
                     assert tool.annotations.destructive_hint is (tool.name in destructive)
                     assert tool.annotations.idempotent_hint is (
                         tool.name in IDEMPOTENT_CONTROL_TOOLS
                     )
-                    assert tool.annotations.open_world_hint is False
+                    assert tool.annotations.open_world_hint is (tool.name in OPEN_WORLD_TOOLS)
                 assert tool.output_schema["additionalProperties"] is True  # tolerant output, #130
             schema = {t.name: t.input_schema for t in listed}
             assert schema["wled_get_effects"]["properties"]["refresh"]["type"] == "boolean"

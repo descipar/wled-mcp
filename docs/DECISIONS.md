@@ -1079,6 +1079,10 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-200-DEC-001](decisions/issue-200.md) (coordinator, technical proposal,
+  2026-11-19, issue #200 / M8 only): discovery tool wrapper defaults D1, D2, D4 and D5
+  (envelope warnings only, `conclusion` first key of `data`, ranges seam read per call,
+  `OPEN_WORLD_TOOLS` exception set); not a human decision.
 - [ISSUE-202-DEC-001](decisions/issue-202.md) (coordinator, technical proposal,
   2026-11-19, issue #202 / M8 only): `wled_set_discovery_ranges` defaults TP-202-1 to TP-202-6
   (shared hard-caps module, strict CIDR syntax, `[discovery]` table text edit, success

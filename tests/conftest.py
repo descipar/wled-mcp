@@ -16,3 +16,15 @@ def no_network(monkeypatch):
     attempts = install_no_network(monkeypatch)
     yield attempts
     assert attempts == []
+
+
+@pytest.fixture(autouse=True)
+def no_real_discovery(monkeypatch):
+    """No test reaches the real discovery engine: its mDNS socket sends UDP datagrams,
+    which the connect-based offline guard does not see. A test opts in with a ``FakeEngine``
+    (tests/discovery_support.py). The process-wide run guard starts fresh for every test."""
+    from tests.discovery_support import refusing_engine
+    from wled_mcp import discovery_tools
+
+    monkeypatch.setattr(discovery_tools, "run_engine", refusing_engine)
+    discovery_tools.GUARD.reset()

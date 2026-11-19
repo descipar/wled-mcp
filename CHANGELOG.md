@@ -22,6 +22,13 @@ this file. Fixes are made for the latest release only. See
 
 ### Added
 
+- **`wled_discover_devices` (#200, not yet released).** A read tool, served in every profile,
+  that runs the shared discovery engine on request (mDNS plus the known-device reads, and the stored
+  ranges since #202) and returns candidates (`new`, `known`, `address_changed`), a
+  coverage report that never claims nothing was found when it could not look, and proposed
+  ranges derived from inventory addresses that are never probed. It writes nothing. A second
+  concurrent call, or a probe run within 5 s of the previous one, returns the new error code
+  `DISCOVERY_BUSY` with `retry_after_seconds`.
 - **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
   stored discovery ranges: `ranges` is the complete new list (RFC 1918, /24 to /30, at most 4,
   no overlap; `[]` clears it; `dry_run` shows the final list). Rejections list every bad entry
