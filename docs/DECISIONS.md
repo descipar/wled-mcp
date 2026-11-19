@@ -1079,6 +1079,11 @@ can explicitly amend them.
 
 ## Issue-specific decisions (pointers)
 
+- [ISSUE-202-DEC-001](decisions/issue-202.md) (coordinator, technical proposal,
+  2026-11-19, issue #202 / M8 only): `wled_set_discovery_ranges` defaults TP-202-1 to TP-202-6
+  (shared hard-caps module, strict CIDR syntax, `[discovery]` table text edit, success
+  envelope, snapshot dry run, shared writer and `Resources.discovery_ranges`); not a human
+  decision.
 - [ISSUE-201-DEC-001](decisions/issue-201.md) (coordinator, technical proposal,
   2026-11-17, issue #201 / M8 only): inventory writer defaults TP-201-1 to TP-201-5 (one
   `<config>.bak` backup, sibling OS lock file, SHA-256 baseline for `file_changed`, error
