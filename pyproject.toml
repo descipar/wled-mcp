@@ -44,7 +44,7 @@ dev = [
     "hatchling==1.33.0",
     "pytest>=8.4,<10",
     "ruff>=0.11,<1",
-    "mypy>=1.15,<2",
+    "mypy>=1.15,<3",
     "pyyaml>=6.0.2,<7",
     "pytest-xdist>=3.8,<4",
 ]

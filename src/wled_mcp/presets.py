@@ -322,7 +322,7 @@ class CaptureReference:
 
 
 def capture_reference(state: dict[str, JsonValue]) -> CaptureReference:
-    master = {key: state[key] for key in MASTER_KEYS if key in state}
+    master: dict[str, JsonValue] = {key: state[key] for key in MASTER_KEYS if key in state}
     segments: dict[int, dict[str, JsonValue]] = {}
     raw_segments = state.get("seg")
     for segment in raw_segments if isinstance(raw_segments, list) else []:
