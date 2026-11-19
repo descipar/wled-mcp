@@ -24,9 +24,10 @@ file holds only the technical defaults for the `wled_discover_devices` wrapper.
     starts with `ok`. `conclusion` is therefore the first key of `data` (it also stays in
     `coverage.conclusion`); the contract sentence "the text content block repeats `conclusion`
     first" is amended to this. No change to `server.py`.
-  - D4 Ranges seam: the tool calls `discovery.configured_ranges(resources.config)` once per call
-    and never caches it, so #202 can fill the body, or change the argument to follow a reload,
-    without a #200 edit. The result of the seam is the only source of ranges handed to the
+  - D4 Ranges seam: the tool reads the property `Resources.discovery_ranges` (a placeholder
+    returning `()` until #202, which replaces its body) once per call and never caches it, so
+    #202 needs no edit of the tool. The original packet seam
+    `discovery.configured_ranges(config)` stays for the CLI. The result of the seam is the only source of ranges handed to the
     engine; `proposed_ranges` is computed separately and never reaches the engine.
   - D5 Open-world tools: `openWorldHint` is true for `wled_discover_devices`; the contract tests
     take the exception from one set, `OPEN_WORLD_TOOLS` in `tests/tool_contract.py`, instead of

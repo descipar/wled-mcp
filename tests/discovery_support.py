@@ -9,7 +9,6 @@ events to test single flight and cancellation.
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -70,7 +69,3 @@ def make_resources(
         access=AccessPolicy(profile, {}),  # type: ignore[arg-type]
     )
     return Resources(config, WriteRouter().transport(), FakeClock().clock())
-
-
-def with_ranges(ranges: tuple[str, ...]) -> Callable[[object], tuple[str, ...]]:
-    return lambda config: ranges

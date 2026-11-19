@@ -379,14 +379,14 @@ the contract above:
 ## Tool wrapper (#200)
 
 `wled_mcp.discovery_tools` registers `wled_discover_devices` (class `read`, every profile). It
-reads `discovery.configured_ranges(resources.config)` and the inventory per call, hands the
+reads `Resources.discovery_ranges` and the inventory per call, hands the
 engine only the configured ranges (never a proposal), runs it in a worker thread and adds
 `proposed_ranges`, `coverage.proposed_ranges_omitted` and `coverage.unproposed_devices` (a
 list of `{reason, count}`). A process-wide guard allows one run at a time and a 5 s gap
 between probe-phase starts (only when `unicast` is requested and ranges are stored); a refused
 call is `DISCOVERY_BUSY` with `data.retry_after_seconds` (whole seconds, 1 to 30) and
 `read_retryable` true. A cancelled client call does not stop the worker before its own deadline
-(at most 30 s); the guard stays held until it ends. Until #202 stores ranges, `configured_ranges`
+(at most 30 s); the guard stays held until it ends. Until #202 stores ranges, `Resources.discovery_ranges`
 returns none, so the tool runs mDNS plus the known-device reads only. Evidence:
 [validation/issue-200.md](../validation/issue-200.md).
 

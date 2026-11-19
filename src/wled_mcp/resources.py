@@ -193,6 +193,15 @@ class Resources:
         return self._view.devices
 
     @property
+    def discovery_ranges(self) -> tuple[str, ...]:
+        """The stored discovery ranges now in effect (read per request, never cached).
+
+        Placeholder until #202, which replaces this body with the configured and reloaded
+        ``[discovery].ranges``; a scan never runs over ranges that were not configured.
+        """
+        return ()
+
+    @property
     def locks(self) -> dict[str, anyio.Lock]:
         return self._view.locks
 

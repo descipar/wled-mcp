@@ -17,16 +17,17 @@ import anyio
 import pytest
 from mcp.client import Client
 
-from tests.discovery_support import FakeEngine, make_resources, with_ranges
+from tests.discovery_support import FakeEngine, make_resources
 from tests.http_support import running_service, sdk_client
 from tests.test_discovery import FakeNetwork, answer_first, device
 from tests.test_discovery_engine import MAC_A, MAC_B, FakeTransport, wled
 from tests.tool_contract import EXPECTED_TOOLS, OPEN_WORLD_TOOLS
-from wled_mcp import discovery, discovery_tools
+from wled_mcp import discovery_tools
 from wled_mcp.config import Device
 from wled_mcp.discovery_engine import DiscoveryRangeError
 from wled_mcp.discovery_tools import PROBE_GAP_SECONDS, propose_ranges
 from wled_mcp.operations import build_operations
+from wled_mcp.resources import Resources
 from wled_mcp.server import create_server
 
 TOOL = "wled_discover_devices"
@@ -58,7 +59,7 @@ def install(monkeypatch, engine: FakeEngine) -> FakeEngine:
 
 
 def set_ranges(monkeypatch, *ranges: str) -> None:
-    monkeypatch.setattr(discovery, "configured_ranges", with_ranges(ranges))
+    monkeypatch.setattr(Resources, "discovery_ranges", property(lambda self: ranges))
 
 
 def devices_of(*pairs: tuple[str, str]) -> list[Device]:
@@ -482,7 +483,7 @@ async def test_the_call_log_names_no_address_mac_or_range(tmp_path, monkeypatch,
     install(monkeypatch, FakeEngine(network, FakeTransport({"10.0.2.21": wled(MAC_A, "Living")})))
     set_ranges(monkeypatch, "10.0.2.0/29")
     server, _ = served(tmp_path, (("desk", "http://10.0.2.99"),))
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.DEBUG, logger="wled_mcp"):
         async with Client(server) as client:
             await call(client, {})
     text = "\n".join(r.getMessage() + repr(getattr(r, "call_fields", "")) for r in caplog.records)

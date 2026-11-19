@@ -26,7 +26,7 @@ import anyio.to_thread
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 
-from wled_mcp import discovery, discovery_engine, setup
+from wled_mcp import discovery_engine, setup
 from wled_mcp.access import ToolClass
 from wled_mcp.config import Device
 from wled_mcp.discovery_engine import (
@@ -208,8 +208,8 @@ def _failure(code: Literal["DISCOVERY_BUSY", "CONFIG_ERROR"], **fields: Any) -> 
 def build_discovery_operation(resources: Resources) -> Operation:
     async def discover(arguments: dict[str, Any]) -> Outcome:
         methods: Sequence[str] = arguments["methods"] or ("mdns", "unicast")
-        # Per call, never cached: #202 owns the body and may follow a reload (ISSUE-200-DEC-001).
-        ranges = tuple(discovery.configured_ranges(resources.config))
+        # Per call, never cached: #202 replaces the body of the property (ISSUE-200-DEC-001).
+        ranges = tuple(resources.discovery_ranges)
         inventory = resources.inventory
         probing = "unicast" in methods and bool(ranges)
         timeout = arguments["timeout_seconds"]
