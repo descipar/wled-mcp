@@ -22,7 +22,7 @@ on WLED 16.0.1. No support is promised
 
 - Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a
   named inventory in a TOML file; nothing is discovered unless you run `wled-mcp discover` or
-  (unreleased) call [`wled_discover_devices`](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md); `wled_add_device` enrolls one by IPv4 address.
+  (unreleased) call [`wled_discover_devices`](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md); `wled_add_device` (unreleased) enrolls one by IPv4 address.
 - State and catalogs: normalized state, capabilities and each device's own effect and
   palette catalogs; effects can be filtered by firmware metadata and searched by curated
   properties (motion, flashing, colour slots; the catalog is small).
@@ -68,7 +68,7 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
   playlist saves change the live output before they store, and the previous lighting is not
   restored.
 - **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
-  caller-supplied hosts (bar `wled_add_device`: one RFC 1918 IPv4, one read-only `GET /json/info`), no silent preset overwrite (`overwrite=true` is required).
+  caller-supplied hosts (bar `wled_add_device`, unreleased: one RFC 1918 IPv4, one read-only `GET /json/info`), no silent preset overwrite (`overwrite=true` is required).
 - **Authorization.** The MCP host authorizes people; annotations are hints only. HTTP
   requires its own token and Host/Origin allowlists even behind a hub: hub authentication
   alone does not protect direct access. Keep it off the internet; see the
