@@ -25,7 +25,7 @@ file holds only the technical defaults for the `wled_discover_devices` wrapper.
     `coverage.conclusion`); the contract sentence "the text content block repeats `conclusion`
     first" is amended to this. No change to `server.py`.
   - D4 Ranges seam: the tool reads the property `Resources.discovery_ranges` (a placeholder
-    returning `()` until #202, which replaces its body) once per call and never caches it, so
+    returning `()` until #202, which replaced its body; merged) once per call and never caches it, so
     #202 needs no edit of the tool. The original packet seam
     `discovery.configured_ranges(config)` stays for the CLI. The result of the seam is the only source of ranges handed to the
     engine; `proposed_ranges` is computed separately and never reaches the engine.
@@ -47,6 +47,33 @@ file holds only the technical defaults for the `wled_discover_devices` wrapper.
   `tests/test_discovery_tools.py`, `tests/tool_contract.py`, `tests/conftest.py`.
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: packet for #200; #202 and #203 packets cite D4 and D5.
-- Revalidation needed / next action: none before #202. A live read-only run needs a separate
-  owner authorization (recorded as ISSUE-200-DEC-002 when given); see
-  [validation/issue-200.md](../validation/issue-200.md).
+- Revalidation needed / next action: none. The live read-only run is recorded as
+  ISSUE-200-DEC-002; see [validation/issue-200.md](../validation/issue-200.md).
+
+## ISSUE-200-DEC-002 — One read-only live discovery run
+
+- ID: ISSUE-200-DEC-002
+- Recorded date: 2026-11-19
+- Status: used and expired (the run was executed once; never a standing approval)
+- Authority: confirmed owner authorization (operation approval, not a design decision).
+- Source: owner message in the session on 2026-11-19 ("read only lauf auf <selected test
+  controller>"; English: "read-only run on <selected test controller>"; the controller name is
+  omitted here and stays in the local-only inventory).
+- Scope: one run, one controller (the selected test controller), read-only, over stdio, for
+  the `wled_discover_devices` evidence of #200. No writes, no other device, no unicast ranges,
+  no container run.
+- Decision: the run was authorized and executed as described in
+  [validation/issue-200.md](../validation/issue-200.md#live-run-executed-2026-11-19-partial-evidence).
+- Applicability / conditions / expiry: expired when the run finished. A further run needs a
+  new authorization.
+- Rationale supplied: none beyond the instruction.
+- Note: the authorization named one controller, but the tool's mDNS method verifies every
+  announced private address with a read-only `GET /json/info` (DISC-02). The run therefore
+  also sent single read-only requests to other LAN hosts, including a second WLED controller
+  outside the named one. The request did not state this; the procedure now does. Nothing was
+  written. Future authorizations for discovery should name this reach.
+- Affected requirement IDs, files, issues and tests: DISC-02, DISC-T08 (first half, partial);
+  `docs/validation/issue-200.md`.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: #200 validation record.
+- Revalidation needed / next action: none for this run; #204 needs its own authorization.

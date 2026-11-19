@@ -2,9 +2,9 @@
 
 Requirements: DISC-01, DISC-03, DISC-04, DISC-05 (re-check at probe time is in the engine),
 DISC-06, DISC-11 to DISC-13; scenarios DISC-T02 and DISC-T04 through the tool, DISC-T05,
-DISC-T07, DISC-T08 (live part, first half). Contract:
+DISC-T07, DISC-T08 (live part, first half: partial, see the live run). Contract:
 [contract/discovery.md](../contract/discovery.md). Decisions:
-[ISSUE-200-DEC-001](../decisions/issue-200.md).
+[ISSUE-200-DEC-001 and ISSUE-200-DEC-002](../decisions/issue-200.md).
 
 ## Mocked evidence
 
@@ -28,29 +28,70 @@ test opens a multicast socket. Evidence per behavior:
 
 The tool-count budget measurement is in [issue-235.md](issue-235.md#discovery-tool-200).
 
-## Live run: pending owner authorization
+## Live run: executed 2026-11-19 (partial evidence)
 
-Not run. It needs a separate owner authorization for one explicitly selected controller of
-the local-only test inventory (ISSUE-200-DEC-002 once given): read-only, mDNS plus at most the
-bounded `GET /json/info` of the configured known devices (up to 16), no ranges stored, no
-unicast sweep, no write, no other target. The unicast path of the tool is mock-tested only
-until #202 (ranges key) and #204 (live proof).
+One owner-authorized, read-only run against the selected test controller of the local-only
+inventory, over stdio, from the merged tool (#200 and #202 on `main`). Authorization and scope:
+[ISSUE-200-DEC-002](../decisions/issue-200.md) (one run, one controller, read-only, used and
+expired). The raw output stays local and untracked; this section holds counts and statuses only
+(DEC-005).
 
-Procedure (do not execute without that authorization):
+Setup: one server over stdio with a temporary inventory outside the repository, one device, no
+`[discovery]` table. Only `tools/list` (39 tools) and `wled_discover_devices` were called. All
+requests the run caused were GET; nothing was written to any device.
 
-1. Preconditions: the authorization is recorded; build from the PR head; a local-only inventory
-   file outside git with exactly the selected device and no `[discovery]` table; output only
-   under an ignored directory.
+| Check | Expected | Result |
+| --- | --- | --- |
+| `tools/list` | tool present, 39 tools | pass |
+| Call 1 `{}` (8.2 s) | `ok` true | pass |
+| Call 1 mDNS | `completed`, `no_answers` or `multicast_unavailable`, stated honestly | pass: `completed` (23 responders, 2 verified, 19 rejected) |
+| Call 1 unicast | `skipped`, `no_ranges_configured` | pass |
+| Call 1 `complete` and conclusion | `complete` false; `candidates_found` or `none_found_incomplete`, never `none_found_complete` | pass: false, `candidates_found` |
+| Selected controller listed as `known` | `known` when it answers | fail (expectation did not hold): `address_changed`, matched by MAC, see deviation 2 |
+| `proposed_ranges` holds the /24 of its address | one /24 | fail (expectation did not hold): empty, reason `host_not_ipv4_literal`, see deviation 2 |
+| Call 2 `{"methods":["mdns"]}` right after | allowed, no `DISCOVERY_BUSY` | pass: `ok` true, same coverage, unicast `skipped` with `not_requested` |
+| Inventory hash unchanged, no backup or lock file, empty data directory | unchanged, none | pass |
+| stderr free of address, MAC and range | empty | pass (0 bytes) |
+
+Deviations and limits, stated plainly:
+
+1. mDNS verifies every announced private address with a read-only `GET /json/info`
+   ([DISC-02](../contract/discovery.md); every announced RFC 1918 address on port 80). Call 1
+   saw 23 responders, 2 verified and 19 rejected, so many LAN hosts received one read-only
+   request, among them a second WLED controller outside the authorization, which was returned
+   as a `new` candidate. The authorization text and the earlier procedure wording ("at most the
+   bounded `GET` of the configured known devices") under-described this; the procedure below is
+   corrected. No address, MAC or firmware detail of any controller is recorded here.
+2. The selected controller's configured `base_url` is a host name, not an IPv4 literal. It was
+   therefore reported `address_changed` (MAC match) instead of `known`, and `proposed_ranges`
+   was empty (`host_not_ipv4_literal`). The expectations above assumed an IPv4-literal
+   inventory. This is a limit of the evidence, not a fix; a follow-up candidate is to compare a
+   resolved host name before reporting `address_changed`.
+3. A run limited to one device is not achievable with the current tool (mDNS reaches the whole
+   announcing LAN). The unicast path and the container deployment remain unproved live (#204).
+
+Result for DISC-T08: the first half (read-only discovery over stdio, inventory unchanged) is
+partially met. Unicast, container mode and the single enrollment (#203, #204) are not covered.
+This run does not satisfy a hardware acceptance criterion by itself.
+
+Procedure for a later run (needs its own authorization):
+
+1. Preconditions: the authorization is recorded and names the LAN-wide mDNS verification
+   (deviation 1); build from the merged head; a local-only inventory file outside the
+   repository with the selected device and no `[discovery]` table, preferably with an
+   IPv4-literal `base_url`; output only under an ignored directory.
 2. Offline checks first: `uv run pytest tests/test_discovery_tools.py tests/test_tool_contract.py
    tests/test_access_profiles.py tests/test_tool_budget.py`, `ruff`, `mypy`.
 3. Start the server over stdio with the local configuration (as `scripts/hw_read_only_probe.py`
    does) and call only `tools/list` and `wled_discover_devices`; assert that no tool of another
    class is called.
 4. Call 1 with `{}`. Expected: `ok` true; mDNS `completed`, `no_answers` or
-   `multicast_unavailable`, stated honestly; unicast `skipped` with `no_ranges_configured`;
-   the selected controller listed as `known` when it answers (`address_changed` is never claimed
-   without a MAC match); `proposed_ranges` holds the /24 of its address; `complete` false;
-   conclusion `candidates_found` or `none_found_incomplete`, never `none_found_complete`.
+   `multicast_unavailable`, stated honestly; every announced private address gets one
+   read-only `GET /json/info` and other WLED controllers on the LAN may be returned as `new`;
+   unicast `skipped` with `no_ranges_configured`; the selected controller is `known` (IPv4
+   literal) or `address_changed` (host name, MAC match); `proposed_ranges` holds the /24 of an
+   IPv4-literal address; `complete` false; conclusion `candidates_found` or
+   `none_found_incomplete`, never `none_found_complete`.
 5. Call 2 within 5 s with `{"methods":["mdns"]}`: allowed (no probe gap for mDNS only).
 6. Afterwards verify the inventory file hash is unchanged, no backup or lock file appeared and
    stderr holds no address, MAC or range.
