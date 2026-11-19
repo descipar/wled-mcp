@@ -28,3 +28,13 @@ def no_real_discovery(monkeypatch):
 
     monkeypatch.setattr(discovery_tools, "run_engine", refusing_engine)
     discovery_tools.GUARD.reset()
+
+
+@pytest.fixture(autouse=True)
+def no_real_enrollment_read(monkeypatch):
+    """No test reaches the network through ``wled_add_device``: a test opts in with the
+    scripted fake of tests/enroll_support.py."""
+    from tests.enroll_support import refusing_fetch
+    from wled_mcp import enroll_tools
+
+    monkeypatch.setattr(enroll_tools, "fetch_info", refusing_fetch)

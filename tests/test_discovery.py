@@ -778,7 +778,9 @@ def test_discovery_is_never_used_outside_the_discover_command():
         for path in package.rglob("*.py")
         if path.name != "discovery.py" and references_discovery(path.read_text(encoding="utf-8"))
     )
-    assert users == ["cli.py", "discovery_engine.py"]  # the engine reuses the parser
+    # The engine reuses the parser; wled_add_device (#203) reuses only the pure ID and name
+    # suggestion helpers (no socket, no network).
+    assert users == ["cli.py", "discovery_engine.py", "enroll_tools.py"]
     source = (package / "cli.py").read_text(encoding="utf-8")
     assert source.count("discovery.") == 2  # register + the discover dispatch only
     assert "224.0.0.251" not in "".join(

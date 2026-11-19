@@ -101,7 +101,7 @@ async def test_the_tool_is_served_in_every_profile_as_a_read_tool(tmp_path, prof
         hints.idempotent_hint,
         hints.open_world_hint,
     ) == (True, False, True, True)
-    assert OPEN_WORLD_TOOLS == {TOOL}
+    assert OPEN_WORLD_TOOLS == {TOOL, "wled_add_device"}
     assert TOOL in [t.name for t in EXPECTED_TOOLS]
     assert set(tool.input_schema["properties"]) == {"methods", "timeout_seconds", "max_candidates"}
     assert tool.input_schema["additionalProperties"] is False

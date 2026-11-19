@@ -25,8 +25,10 @@ atomic and not synchronized across devices (see
 properties (see [contract/effect-search.md](contract/effect-search.md)).
 M8 specifies `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device`
 (see [contract/discovery.md](contract/discovery.md)). `wled_discover_devices` is implemented
-(#200: a read tool, writes nothing, error `DISCOVERY_BUSY`); `wled_set_discovery_ranges` and
-`wled_add_device` are not implemented until their issues merge.
+(#200: a read tool, writes nothing, error `DISCOVERY_BUSY`), as are `wled_set_discovery_ranges`
+(#202) and `wled_add_device` (#203: a client-confirmed `manage` call, one read-only
+`GET /json/info` of an explicit RFC 1918 IPv4 address, one inventory entry, error `NOT_WLED`;
+the live enrollment is pending).
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
@@ -106,6 +108,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
 | `wled_discover_devices` | read-only | Candidate controllers (new, known, address_changed) from mDNS and stored ranges, a coverage report and proposed ranges; writes nothing ([contract/discovery.md](contract/discovery.md)) |
 | `wled_set_discovery_ranges` | destructive | Replace the stored discovery ranges (RFC 1918, at most four, /24 to /30); writes only the local inventory file; no device contact |
+| `wled_add_device` | write | Add one controller to the inventory after one read-only `GET /json/info` of an explicit RFC 1918 IPv4 address; refuses duplicate ID, address or MAC; no device write |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -151,6 +154,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_cancel_signal` | `operation_id` | The same conditional restore now; result `restored`, `skipped_conflict` or `uncertain` | S3-SIGNAL-02; #28 |
 | `wled_discover_devices` | optional `methods` (`mdns`, `unicast`), `timeout_seconds` (1-30), `max_candidates` (1-64); no range, host or cap field | `candidates`, `coverage`, `proposed_ranges`; one run at a time | DISC-01 to DISC-06; #200 |
 | `wled_set_discovery_ranges` | `ranges` (the complete new list, `[]` clears), `dry_run` | Validated against the hard caps (all rejections in `data.rejected[]` with `index` and `reason`), written to `[discovery].ranges` of the inventory file through the shared writer and applied without restart; result `ranges_before`, `ranges_after`, `changed`, `written`, `reloaded`, `backup`, `caps`; writes no device | DISC-07; #202 ([contract/discovery.md](contract/discovery.md)) |
+| `wled_add_device` | `base_url` (`http://<RFC 1918 IPv4>[:port]`), optional `device_id`, `name`, `expected_mac`, `dry_run`; no candidate, range, host or timeout field | One read-only `GET /json/info`, then one `[[devices]]` entry (with `mac`) written through the shared writer and applied without restart; result `entry`, `verified`, `inventory_size`, `reloaded`, `written`; refuses duplicate ID, address or MAC (`INVENTORY_CONFLICT`), a non-WLED answer is `NOT_WLED`; writes no device | DISC-08; #203 ([contract/discovery.md](contract/discovery.md)) |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -828,6 +832,7 @@ Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`, `INVENTORY_CONFLICT` and
 `INVENTORY_RELOAD_FAILED` (inventory writes, [discovery](contract/discovery.md#reload-semantics)),
 `DISCOVERY_BUSY` (a discovery run is active or the probe gap has not passed; `not_attempted`, `retry_after_seconds`),
+`NOT_WLED` (`wled_add_device`: the address answered but not as a WLED `/json/info`; nothing written),
 `ACCESS_DENIED` (a tool profile or a
 device's maximum class does not allow the call; `not_attempted`, nothing was sent;
 [profiles](contract/profiles.md#enforcement)). A pre-dispatch timeout is distinct from possible write

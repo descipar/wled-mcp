@@ -150,13 +150,14 @@ def toml_string(value: str) -> str:
     return rendered
 
 
-def device_block(device_id: str, name: str, base_url: str) -> str:
-    return (
+def device_block(device_id: str, name: str, base_url: str, mac: str | None = None) -> str:
+    block = (
         "\n[[devices]]\n"
         f"id = {toml_string(device_id)}\n"
         f"name = {toml_string(name)}\n"
         f"base_url = {toml_string(base_url)}\n"
     )
+    return block if mac is None else block + f"mac = {toml_string(mac)}\n"
 
 
 def initial_document(device: tuple[str, str, str] | None) -> str:

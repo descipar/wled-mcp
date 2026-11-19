@@ -4,10 +4,10 @@ Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`
 CLI `discover` on top of it, the inventory writer and in-process reload (#201), the tool
 `wled_discover_devices` (#200), and from #202 the tool `wled_set_discovery_ranges`, the
 `[discovery].ranges` key and the shared hard caps are implemented (mocked evidence only; live
-evidence is #204). `wled_add_device` with `devices[].mac` (#203) is not implemented yet: it
-describes the target behavior, and every statement about current behavior elsewhere in the
-documentation stays true until the owning implementation PR changes it. `wled_add_device` is
-not registered; none of the tools is in a released server yet.
+evidence is #204). `wled_add_device` with `devices[].mac` is implemented in #203 (mocked
+evidence in `tests/test_add_device.py`; the live enrollment is pending, see
+[validation/issue-203.md](../validation/issue-203.md)). None of the tools is in a released
+server yet.
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
@@ -168,6 +168,7 @@ reload; the previous file is restored and the working inventory kept, `applicati
   that cannot be created are `not_writable`; a missing, non-regular or unreadable file is
   `unreadable`; `locked`, `backup_failed` and `write_failed` are unchanged.
 - Evidence (mocked): `tests/test_discovery_ranges.py` (DISC-T03, DISC-T06, DISC-T07),
+  `tests/test_add_device.py` (DISC-08, `wled_add_device` and `devices[].mac`),
   `tests/test_inventory_writer.py`, `tests/test_discovery.py` (CLI) and
   `tests/test_discovery_engine.py` (probe-time re-check).
 
@@ -188,6 +189,24 @@ exactly what was written), `verified` (`firmware_version`, `product`), `inventor
 `reloaded` and `written`. The envelope `device_id` is the new ID on success and null on
 failure (**TP-6**). The tool never POSTs, never touches the device beyond the one read and
 never sets `max_class`.
+
+**Implementation status (#203, [ISSUE-203-DEC-001](../decisions/issue-203.md)).** The stored
+`base_url` is canonical: `http://<ip>` (port 80 omitted, no trailing slash) or
+`http://<ip>:<port>`; a bad address is `VALIDATION_ERROR` with `data.field` `base_url` and a
+fixed `data.reason` (`invalid_url`, `not_ipv4_literal`, `not_private`), never the value, and no
+name is ever resolved (**TP-203-1**). The read maps `other` (not WLED, redirect, non-200,
+oversize, malformed) to `NOT_WLED`, `refused` to `UNREACHABLE`, `timeout` to `TIMEOUT` and an
+unexpected transport error to `INVALID_RESPONSE` (**TP-203-2**). Duplicate ID and address are
+refused before any request; the MAC after the read; all three are rechecked in the writer's
+locked edit, in the order `id`, `base_url`, `mac` (**TP-203-3**). The success envelope has
+`application` `not_attempted` (no device write) and `verification` `not_requested`; failures
+after the read are `not_applied`, request validation and pre-read conflicts `not_attempted`
+(**TP-203-4**). Without `device_id` and `name` the entry uses the controller's reported name
+(not the generic `WLED`), else `wled-<last 6 of MAC>`, made unique against the current IDs
+(**TP-203-5**). `dry_run` reads once, checks the same conflicts, returns the would-be entry with
+`written` and `reloaded` false and touches no file. Host names are added by hand; an entry added
+by host name and the same controller added later by IP is caught only when the earlier entry
+stores a `mac` (backlog #264, #265).
 
 Errors: `VALIDATION_ERROR` (bad fields, `mac_mismatch`, address outside the policy),
 `UNREACHABLE`, `TIMEOUT`, `INVALID_RESPONSE`, `NOT_WLED` (**TP-3**: the answer is not a WLED
@@ -308,7 +327,7 @@ the M8 issue text on 2026-11-12 and recorded in DEC-035.
 echo). Root keys and `[discovery]` come before the first `[[devices]]`, as for `[access]`
 (profiles.md), and the writer emits them in that order. A device gains the optional `mac`
 (12 lowercase hex digits, no separators; a colon-separated form is normalized when read). It
-is written by `wled_add_device`, used only to match a controller whose address changed and
+is written by `wled_add_device` (implemented), used only to match a controller whose address changed and
 never to route a request. An older build rejects the unknown keys at startup with exit code 2;
 a downgrade uses the configuration kept for that version. The migration-notes rows in
 versioning.md for `/discovery` and `/devices/mac` are added at the M8 release preparation

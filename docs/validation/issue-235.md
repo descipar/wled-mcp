@@ -213,3 +213,19 @@ servers only. Before values are `main` at `ffe87ed` (with `wled_discover_devices
 | `wled_set_discovery_ranges` | 765 | 800 | `ranges`, `dry_run` and the description (replace semantics, RFC 1918, /24 to /30, at most four, no device contact) |
 
 Checks: `uv run pytest tests/test_tool_budget.py` passes with these numbers.
+
+## Enrollment tool (#203)
+
+`wled_add_device` is a `manage` tool and so is served in the `full` profile only; only that
+profile limit was raised, by about its size. Same method; mocks and in-memory servers only.
+Before values are `main` at `a901b2a` (with `wled_set_discovery_ranges`).
+
+| Profile | Tools before | Tools after | Before (chars) | After (chars) | Growth | New limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| `full` | 40 | 41 | 65404 | 66561 | 1157 | 68000 |
+
+| Tool | Measured (chars) | Limit | What it costs |
+| --- | --- | --- | --- |
+| `wled_add_device` | 1157 | 1200 | `base_url`, `device_id`, `name`, `expected_mac`, `dry_run` and the description (one read-only `GET /json/info`, RFC 1918 IPv4 only, duplicates refused, no device write) |
+
+Checks: `uv run pytest tests/test_tool_budget.py` passes with these numbers.

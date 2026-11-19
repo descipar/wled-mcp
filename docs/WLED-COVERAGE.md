@@ -273,6 +273,9 @@ counted.
   segment features it sets, see the rows above).
 - `wled_set_discovery_ranges`: replaces the server's own stored discovery ranges in the local
   inventory file (#202); no device is contacted and no WLED feature is involved.
+- `wled_add_device`: adds one controller to the server's own inventory file (#203) after one
+  read-only `GET /json/info` of an explicit address; no device is written and no WLED feature
+  is delivered.
 
 ## Maintenance
 

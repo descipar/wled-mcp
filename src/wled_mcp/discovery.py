@@ -473,7 +473,7 @@ def _configured(raw: str | None) -> _Configured:
     known: list[KnownDevice] = []
     for device in inventory.devices:
         _, host, port = setup.url_identity(device.base_url)
-        known.append(KnownDevice(device.id, host.rstrip("."), None, port))
+        known.append(KnownDevice(device.id, host.rstrip("."), device.mac, port))
     # The command has no range option: a scan never runs over ranges that were not stored.
     return _Configured(known, tuple(inventory.discovery.ranges))
 
