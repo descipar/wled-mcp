@@ -23,3 +23,41 @@ Read with DECISIONS.md. Recorded 2026-11-19. Owner decision: DEC-035 (items 1, 2
 - Supersedes / superseded by: none.
 - Propagated to roles / packet references: packet for #203; #204 adds the migration-notes rows.
 - Revalidation needed / next action: none before review; the live enrollment needs its own owner authorization naming its reach.
+
+## ISSUE-203-DEC-002 — Live enrollment run (two attempts)
+
+- ID: ISSUE-203-DEC-002
+- Recorded date: 2026-11-19
+- Status: used and expired (both attempts finished; never a standing approval)
+- Authority: confirmed owner authorization (operation approval, not a design decision).
+- Source: owner messages in the session on 2026-11-19: the first authorization for one live
+  enrollment of the selected test controller, and, after the first attempt failed, the answer
+  "ja" to the proposal to rerun with the address resolved at run time. The controller name and
+  address are omitted here and stay in the local-only inventory.
+- Scope, attempt 1: one run over stdio, one `GET /json/info` to one explicit address of the
+  selected test controller, one inventory write to a temporary inventory outside git, no
+  mDNS, no scan, no other host, no device write.
+- Scope, attempt 2: exactly one run with exactly this reach: one `GET /json/info` to the one
+  IPv4 address that the host name of the selected test controller resolves to at run time
+  (a DNS lookup, not a device request); one inventory write to a temporary inventory that
+  started as `schema_version = 1` plus `devices = []`, never the real inventory; no mDNS, no
+  scan, no other host, no device write, stdio only; one call to `wled_add_device`, not
+  repeated or retried after a failure; a second call with the same arguments only after a
+  success (refused before any read); no `dry_run` call and no read-only-tool read of the new
+  ID.
+- Decision: both attempts were authorized and executed as described in
+  [validation/issue-203.md](../validation/issue-203.md#live-enrollment-2026-11-19-two-attempts).
+- Applicability / conditions / expiry: expired when attempt 2 finished. Further live runs
+  need a new authorization that names calls, requests and reach.
+- Rationale supplied: none beyond the instruction.
+- Notes:
+  - Attempt 1 used a stale remembered address, so the probe went to another host and the
+    tool answered `NOT_WLED` (nothing written). The agent then sent a second call, which made
+    a second read-only `GET /json/info` to that same wrong host: one request beyond the
+    authorized reach. It changed no state and no request reached the selected controller.
+  - Attempt 2 stayed within its reach as far as the run could observe (no packet capture).
+- Affected requirement IDs, files, issues and tests: DISC-08, DISC-T08 (second half);
+  docs/validation/issue-203.md, docs/contract/discovery.md.
+- Supersedes / superseded by: none.
+- Propagated to roles / packet references: #203 validation record.
+- Revalidation needed / next action: none for these runs; #204 needs its own authorization.
