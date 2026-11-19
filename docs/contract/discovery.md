@@ -418,8 +418,9 @@ list of `{reason, count}`). A process-wide guard allows one run at a time and a 
 between probe-phase starts (only when `unicast` is requested and ranges are stored); a refused
 call is `DISCOVERY_BUSY` with `data.retry_after_seconds` (whole seconds, 1 to 30) and
 `read_retryable` true. A cancelled client call does not stop the worker before its own deadline
-(at most 30 s); the guard stays held until it ends. Until #202 stores ranges, `Resources.discovery_ranges`
-returns none, so the tool runs mDNS plus the known-device reads only. Evidence:
+(at most 30 s); the guard stays held until it ends. The stored ranges (set by `wled_set_discovery_ranges` or by hand) are read once per
+call from `Resources.discovery_ranges`; without stored ranges the tool runs mDNS plus the
+known-device reads only. Evidence:
 [validation/issue-200.md](../validation/issue-200.md).
 
 ## Related

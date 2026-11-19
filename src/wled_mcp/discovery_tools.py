@@ -208,7 +208,7 @@ def _failure(code: Literal["DISCOVERY_BUSY", "CONFIG_ERROR"], **fields: Any) -> 
 def build_discovery_operation(resources: Resources) -> Operation:
     async def discover(arguments: dict[str, Any]) -> Outcome:
         methods: Sequence[str] = arguments["methods"] or ("mdns", "unicast")
-        # Per call, never cached: #202 replaces the body of the property (ISSUE-200-DEC-001).
+        # Per call, never cached (ISSUE-200-DEC-001).
         ranges = tuple(resources.discovery_ranges)
         inventory = resources.inventory
         probing = "unicast" in methods and bool(ranges)
