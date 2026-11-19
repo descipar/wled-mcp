@@ -5,7 +5,7 @@ CLI `discover` on top of it, the inventory writer and in-process reload (#201), 
 `wled_discover_devices` (#200), and from #202 the tool `wled_set_discovery_ranges`, the
 `[discovery].ranges` key and the shared hard caps are implemented (mocked evidence only; live
 evidence is #204). `wled_add_device` with `devices[].mac` is implemented in #203 (mocked
-evidence in `tests/test_add_device.py`; the live enrollment is pending, see
+evidence in `tests/test_add_device.py`; the live enrollment was run once on 2026-11-19, see
 [validation/issue-203.md](../validation/issue-203.md)). None of the tools is in a released
 server yet.
 
