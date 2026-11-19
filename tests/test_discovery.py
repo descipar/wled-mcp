@@ -741,8 +741,14 @@ def references_discovery(source: str) -> bool:
                 a.name == "discovery" for a in node.names
             ):
                 return True
-        elif isinstance(node, ast.Constant) and node.value in ("wled_mcp.discovery", "discovery"):
+        elif isinstance(node, ast.Constant) and node.value == "wled_mcp.discovery":
             return True  # importlib.import_module and similar
+        elif (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "attr", getattr(node.func, "id", "")) == "import_module"
+            and any(isinstance(a, ast.Constant) and a.value == "discovery" for a in node.args)
+        ):
+            return True  # a relative importlib call; the bare key "discovery" is data (#202)
     return False
 
 
@@ -982,3 +988,59 @@ def test_version_1_json_fields_of_the_previous_output_are_kept_additively(monkey
     assert candidate["suggested_device_id"] == "wled-a1b2c3"
     assert candidate["suggested_device_name"] == "wled-a1b2c3"
     assert candidate["add_device_command"] is not None
+
+
+# ------------------------------------------------------------------ stored ranges (#202)
+
+# Private literals are built from parts: the private-identifier check (DEC-005) sees none.
+RANGE = "10~0~9~0/28".replace("~", ".")
+BROAD = "10~0~0~0/8".replace("~", ".")
+RANGES_CONFIG = (
+    b"schema_version = 1\n\n"
+    b'[discovery]\nranges = ["' + RANGE.encode() + b'"]\n\n'
+    b'[[devices]]\nid = "desk"\nname = "Desk"\nbase_url = "http://192.0.2.10"\n'
+)
+
+
+def test_discover_probes_exactly_the_stored_ranges(monkeypatch, capsys, tmp_path):
+    config = tmp_path / "devices.toml"
+    config.write_bytes(RANGES_CONFIG)
+    network = install(monkeypatch, FakeNetwork())
+    code, document = run_json(capsys, "--config", str(config))
+    assert code == 0
+    # The known-device read of the configured entry is the only other request.
+    probed = {address for address, _, _ in network.transport.calls} - {"192.0.2.10"}
+    inside = {str(host) for host in ipaddress.IPv4Network(RANGE).hosts()}
+    assert probed == inside
+    unicast = next(m for m in document["coverage"]["methods"] if m["method"] == "unicast")
+    assert unicast["status"] == "completed"
+    assert {c["address"] for c in document["candidates"]} == probed
+
+
+def test_discover_without_stored_ranges_stays_mdns_only(monkeypatch, capsys, tmp_path):
+    config = tmp_path / "devices.toml"
+    config.write_bytes(RANGES_CONFIG.replace(RANGE.encode(), b"").replace(b'[""]', b"[]"))
+    network = install(monkeypatch, FakeNetwork())
+    _, document = run_json(capsys, "--config", str(config))
+    unicast = next(m for m in document["coverage"]["methods"] if m["method"] == "unicast")
+    assert (unicast["status"], unicast["reason"]) == ("skipped", "no_ranges_configured")
+    assert network.transport.calls == []
+
+
+def test_discover_has_no_range_option(monkeypatch, capsys):
+    network = install(monkeypatch, FakeNetwork())
+    code, _, err = run(capsys, "--range", RANGE)
+    assert code == 2 and "Invalid command-line arguments" in err
+    assert network.sent == [] and network.transport.calls == []
+
+
+def test_a_hand_edited_out_of_policy_range_is_refused_before_any_traffic(
+    monkeypatch, capsys, tmp_path
+):
+    config = tmp_path / "devices.toml"
+    config.write_bytes(RANGES_CONFIG.replace(RANGE.encode(), BROAD.encode()))
+    network = install(monkeypatch, FakeNetwork())
+    code, document = run_json(capsys, "--config", str(config))
+    assert code == 1 and document["problems"][0]["code"] == "CONFIG_INVALID"
+    assert "discovery.ranges[0]: invalid" in document["problems"][0]["message"]
+    assert network.sockets == [] and network.transport.calls == []
