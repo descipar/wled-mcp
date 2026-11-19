@@ -555,7 +555,9 @@ def expected_entry(
     """What the readback must show: the sent object minus the firmware-removed keys (state)
     or its playlist fields (playlist), with the firmware's default name when none is sent."""
     if route == "playlist":
-        expected = {key: entry[key] for key in ("playlist", "n", "ql") if key in entry}
+        expected: dict[str, JsonValue] = {
+            key: entry[key] for key in ("playlist", "n", "ql") if key in entry
+        }
     else:
         expected = {k: v for k, v in entry.items() if k not in FIRMWARE_REMOVED_KEYS}
     if expected.get("n") is None:
