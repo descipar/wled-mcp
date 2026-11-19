@@ -32,6 +32,7 @@ ErrorCode = Literal[
     "ACCESS_DENIED",
     "INVENTORY_CONFLICT",
     "INVENTORY_RELOAD_FAILED",
+    "DISCOVERY_BUSY",
 ]
 
 

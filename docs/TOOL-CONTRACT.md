@@ -24,8 +24,9 @@ atomic and not synchronized across devices (see
 #31 adds the read-only `wled_search_effects`: a search of one device's effects by curated
 properties (see [contract/effect-search.md](contract/effect-search.md)).
 M8 specifies `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device`
-(see [contract/discovery.md](contract/discovery.md)); they are not implemented until their
-issues merge.
+(see [contract/discovery.md](contract/discovery.md)). `wled_discover_devices` is implemented
+(#200: a read tool, writes nothing, error `DISCOVERY_BUSY`); `wled_set_discovery_ranges` and
+`wled_add_device` are not implemented until their issues merge.
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
@@ -103,6 +104,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_start_signal` | write | A colour on chosen segments of one device for 1 to 300 seconds, then a conditional restore of the fields it changed; no preset, nothing persisted |
 | `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
 | `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
+| `wled_discover_devices` | read-only | Candidate controllers (new, known, address_changed) from mDNS and stored ranges, a coverage report and proposed ranges; writes nothing ([contract/discovery.md](contract/discovery.md)) |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -146,6 +148,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_start_signal` | `device_id`, `segment_ids`, `color` (RGB), `duration_seconds` (1-300), `dry_run` | Verified apply of slot-0 colour and the Solid effect on existing segments, operation ID and captured prior values; restore at expiry only if the owned fields are unchanged, else `skipped_conflict` | Stage 3 (S3-SIGNAL-01, S3-SIGNAL-02); implemented in #28 ([contract/signals.md](contract/signals.md)) |
 | `wled_get_signal_status` | optional `operation_id` | Active and recently ended signals with owned fields and restoration result; process memory only | S3-SIGNAL-01; #28 |
 | `wled_cancel_signal` | `operation_id` | The same conditional restore now; result `restored`, `skipped_conflict` or `uncertain` | S3-SIGNAL-02; #28 |
+| `wled_discover_devices` | optional `methods` (`mdns`, `unicast`), `timeout_seconds` (1-30), `max_candidates` (1-64); no range, host or cap field | `candidates`, `coverage`, `proposed_ranges`; one run at a time | DISC-01 to DISC-06; #200 |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |
@@ -822,6 +825,7 @@ Stable codes: `CONFIG_ERROR`, `UNKNOWN_DEVICE`, `UNREACHABLE`, `TIMEOUT`,
 `PRESET_NOT_FOUND`, `PRESET_CONFLICT`, `BACKUP_FAILED`, `STORAGE_FAILED`,
 `WRITE_OUTCOME_UNKNOWN`, `VERIFICATION_MISMATCH`, `INVENTORY_CONFLICT` and
 `INVENTORY_RELOAD_FAILED` (inventory writes, [discovery](contract/discovery.md#reload-semantics)),
+`DISCOVERY_BUSY` (a discovery run is active or the probe gap has not passed; `not_attempted`, `retry_after_seconds`),
 `ACCESS_DENIED` (a tool profile or a
 device's maximum class does not allow the call; `not_attempted`, nothing was sent;
 [profiles](contract/profiles.md#enforcement)). A pre-dispatch timeout is distinct from possible write

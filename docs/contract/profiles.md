@@ -17,7 +17,7 @@ concurrent sessions of one process.
 
 ## Classes and profiles
 
-From M8 (not yet implemented) `wled_discover_devices` is `read`; `wled_set_discovery_ranges` and `wled_add_device` are `manage` ([discovery.md](discovery.md)). The tables below list the registered tools only.
+`wled_discover_devices` is `read` (#200, listed below); from M8 (not yet implemented) `wled_set_discovery_ranges` and `wled_add_device` are `manage` ([discovery.md](discovery.md)). The tables below list the registered tools only.
 
 Every tool has exactly one class, set on its `Operation` (`tool_class`, required, no
 default). The class of a tool is the maximum over all its argument combinations:
@@ -27,7 +27,7 @@ exists.
 
 | Class | Meaning | Tools |
 | --- | --- | --- |
-| `read` | No live, storage or local file mutation | `wled_list_devices`, `wled_get_state`, `wled_get_effects`, `wled_get_palettes`, `wled_search_effects`, `wled_list_presets`, `wled_get_preset`, `wled_list_snapshots`, `wled_export_presets`, `wled_list_groups`, `wled_list_scenes`, `wled_plan_scene`, `wled_list_zones`, `wled_plan_zone`, `wled_preview_layout`, `wled_get_signal_status` |
+| `read` | No live, storage or local file mutation | `wled_list_devices`, `wled_get_state`, `wled_get_effects`, `wled_get_palettes`, `wled_search_effects`, `wled_list_presets`, `wled_get_preset`, `wled_list_snapshots`, `wled_export_presets`, `wled_list_groups`, `wled_list_scenes`, `wled_plan_scene`, `wled_list_zones`, `wled_plan_zone`, `wled_preview_layout`, `wled_get_signal_status`, `wled_discover_devices` |
 | `control` | Live device output only; never device storage or a local persistent artifact | `wled_set_state`, `wled_patch_segments`, `wled_replace_layout`, `wled_activate_preset`, `wled_apply_scene`, `wled_apply_zone`, `wled_apply_room`, `wled_start_signal`, `wled_cancel_signal` |
 | `manage` | Device storage or local persistent artifacts | `wled_save_preset`, `wled_delete_preset`, `wled_restore_preset`, `wled_store_preset`, `wled_save_playlist`, `wled_import_presets`, `wled_save_group`, `wled_delete_group`, `wled_save_scene`, `wled_delete_scene` |
 

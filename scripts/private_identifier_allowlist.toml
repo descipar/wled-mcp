@@ -316,3 +316,103 @@ reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine on
 path = "tests/test_discovery_engine.py"
 value = "192.168.7.2"
 reason = "synthetic RFC 1918 address of a mocked discovery answer; the engine only probes RFC 1918 space"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.0.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.1.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.1.5"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.21"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.22"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.23"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.3"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.5"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.6"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.2.99"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.3.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.3.5"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.5.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "10.0.5.5"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "169.254.1.1"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "172.16.9.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "172.16.9.4"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "192.168.50.0"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"
+
+[[allow]]
+path = "tests/test_discovery_tools.py"
+value = "192.168.50.7"
+reason = "synthetic RFC 1918 or link-local address of a mocked discovery tool test; nothing is contacted"

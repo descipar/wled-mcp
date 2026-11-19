@@ -22,6 +22,13 @@ this file. Fixes are made for the latest release only. See
 
 ### Added
 
+- **`wled_discover_devices` (#200, not yet released).** A read tool, served in every profile,
+  that runs the shared discovery engine on request (mDNS plus the known-device reads; stored
+  ranges follow with #202) and returns candidates (`new`, `known`, `address_changed`), a
+  coverage report that never claims nothing was found when it could not look, and proposed
+  ranges derived from inventory addresses that are never probed. It writes nothing. A second
+  concurrent call, or a probe run within 5 s of the previous one, returns the new error code
+  `DISCOVERY_BUSY` with `retry_after_seconds`.
 - **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of
   `wled_save_group`; the group format stays version 1 and a plain group is saved byte-identical
   to before). A controller is in at most one room: saving a room that lists a device of another

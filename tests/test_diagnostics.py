@@ -899,6 +899,11 @@ async def test_a_full_tool_pass_opens_no_connection_besides_the_configured_devic
     monkeypatch.setattr(socket.socket, "connect_ex", refuse)
     monkeypatch.setattr(socket, "getaddrinfo", refuse)
     monkeypatch.setattr(socket, "create_connection", refuse)
+    # The discovery tool opens an mDNS socket by design (#200); its engine is a fake here.
+    from tests.discovery_support import FakeEngine
+    from wled_mcp import discovery_tools
+
+    monkeypatch.setattr(discovery_tools, "run_engine", FakeEngine())
     harness = Harness(tmp_path)
     async with harness.resources, Client(harness.server) as client:
         for tool in (await client.list_tools()).tools:
