@@ -179,3 +179,21 @@ work of M9 (#236) or the segment schema simplification (#246) merge, the limits 
 
 Checks: `uv run pytest tests/test_tool_budget.py` (per-tool and per-profile limits, the guidance
 resolution test) passes with the numbers above.
+
+## Discovery tool (#200)
+
+`wled_discover_devices` is a read tool and so is served in every profile; the three profile
+limits were raised by about its size on purpose. Same method as above; mocks and in-memory
+servers only. Before values are `main` at `40bf74b`.
+
+| Profile | Tools before | Tools after | Before (chars) | After (chars) | Growth | New limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| `full` | 38 | 39 | 63676 | 64639 | 963 | 66000 |
+| `control` | 28 | 29 | 46782 | 47745 | 963 | 48800 |
+| `read-only` | 19 | 20 | 21415 | 22378 | 963 | 22400 |
+
+| Tool | Measured (chars) | Limit | What it costs |
+| --- | --- | --- | --- |
+| `wled_discover_devices` | 963 | 1000 | `methods`, `timeout_seconds`, `max_candidates` and the description (what is searched, the three candidate states, coverage, proposals never probed, the "nothing found" rule) |
+
+Checks: `uv run pytest tests/test_tool_budget.py` passes with these numbers.

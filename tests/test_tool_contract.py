@@ -20,6 +20,7 @@ from tests.tool_contract import (
     DEFAULT_PROFILE,
     EXPECTED_TOOLS,
     IDEMPOTENT_CONTROL_TOOLS,
+    OPEN_WORLD_TOOLS,
     PROFILE_CLASSES,
     ToolClass,
     contract_invariant_problems,
@@ -163,7 +164,7 @@ def test_registry_annotations_follow_the_contract_classes(tmp_path):
         assert hints.idempotent_hint is (is_read or operation.name in IDEMPOTENT_CONTROL_TOOLS), (
             operation.name
         )
-        assert hints.open_world_hint is False, operation.name
+        assert hints.open_world_hint is (operation.name in OPEN_WORLD_TOOLS), operation.name
 
 
 # ------------------------------------------------------- T98-05 distribution check
