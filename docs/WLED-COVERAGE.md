@@ -271,6 +271,8 @@ counted.
 - `wled_plan_scene`: reads state and catalogs of the target devices to plan a scene; it
   writes nothing and delivers no WLED feature (`wled_apply_scene` delivers the master and
   segment features it sets, see the rows above).
+- `wled_set_discovery_ranges`: replaces the server's own stored discovery ranges in the local
+  inventory file (#202); no device is contacted and no WLED feature is involved.
 
 ## Maintenance
 

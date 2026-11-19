@@ -18,10 +18,24 @@ this file. Fixes are made for the latest release only. See
   and `--timeout` only lowers the overall deadline. The JSON keeps its version-1 fields and
   adds `conclusion`, `coverage`, `warnings` and per-candidate `address`, `base_url`,
   `suggested_id`, `suggested_name`, `firmware_version`, `product`, `found_by`, `status`.
-  Unicast probing of configured ranges arrives with `[discovery].ranges` (#202).
+  Unicast probing of the configured ranges comes with `[discovery].ranges` (#202, below).
 
 ### Added
 
+- **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
+  stored discovery ranges: `ranges` is the complete new list (RFC 1918, /24 to /30, at most 4,
+  no overlap; `[]` clears it; `dry_run` shows the final list). Rejections list every bad entry
+  as `data.rejected[]` with `index` and a fixed `reason`, never the value. The list is written
+  as `[discovery] ranges = [...]` to the inventory file through the shared writer (lock,
+  backup, atomic replace, rollback) and applied without a restart; no device is contacted.
+  `wled-mcp discover --config` now probes the stored ranges (no range option exists). A
+  hand-edited out-of-policy range stops startup with `discovery.ranges[i]: invalid`. Additive;
+  an older server rejects the `[discovery]` table at startup. The hard caps now live in one
+  module for the startup validator, the tool and the probe; no number changed. Fixes in the
+  inventory writer: the storage failure reason names the real cause (missing or unwritable
+  directory is `not_writable`), the in-process write lock is per file, and a Windows lock-byte
+  failure is a storage failure. Contract: [docs/contract/discovery.md](docs/contract/discovery.md).
+  Mocked tests only; live evidence and the release README text follow with #204.
 - **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of
   `wled_save_group`; the group format stays version 1 and a plain group is saved byte-identical
   to before). A controller is in at most one room: saving a room that lists a device of another

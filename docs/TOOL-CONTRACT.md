@@ -103,6 +103,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_start_signal` | write | A colour on chosen segments of one device for 1 to 300 seconds, then a conditional restore of the fields it changed; no preset, nothing persisted |
 | `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
 | `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
+| `wled_set_discovery_ranges` | destructive | Replace the stored discovery ranges (RFC 1918, at most four, /24 to /30); writes only the local inventory file; no device contact |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -146,6 +147,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_start_signal` | `device_id`, `segment_ids`, `color` (RGB), `duration_seconds` (1-300), `dry_run` | Verified apply of slot-0 colour and the Solid effect on existing segments, operation ID and captured prior values; restore at expiry only if the owned fields are unchanged, else `skipped_conflict` | Stage 3 (S3-SIGNAL-01, S3-SIGNAL-02); implemented in #28 ([contract/signals.md](contract/signals.md)) |
 | `wled_get_signal_status` | optional `operation_id` | Active and recently ended signals with owned fields and restoration result; process memory only | S3-SIGNAL-01; #28 |
 | `wled_cancel_signal` | `operation_id` | The same conditional restore now; result `restored`, `skipped_conflict` or `uncertain` | S3-SIGNAL-02; #28 |
+| `wled_set_discovery_ranges` | `ranges` (the complete new list, `[]` clears), `dry_run` | Validated against the hard caps (all rejections in `data.rejected[]` with `index` and `reason`), written to `[discovery].ranges` of the inventory file through the shared writer and applied without restart; result `ranges_before`, `ranges_after`, `changed`, `written`, `reloaded`, `backup`, `caps`; writes no device | DISC-07; #202 ([contract/discovery.md](contract/discovery.md)) |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |

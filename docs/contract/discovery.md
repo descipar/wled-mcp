@@ -1,11 +1,13 @@
 # Discovery and enrollment (DISC-01 to DISC-14, #198 to #204)
 
-Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`, #199) and
-the CLI `discover` on top of it are implemented (mocked evidence only; live evidence is
-#204). The tools, ranges key, enrollment, writer and reload below are not implemented yet:
-they describe the target behavior of #200 to #204, and every statement about current
-behavior elsewhere in the documentation stays true until the owning implementation PR
-changes it. The tools below are not registered in the released server.
+Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`, #199), the
+CLI `discover` on top of it, the inventory writer and in-process reload (#201), and from #202
+the tool `wled_set_discovery_ranges`, the `[discovery].ranges` key and the shared hard caps
+are implemented (mocked evidence only; live evidence is #204). `wled_discover_devices` (#200)
+and `wled_add_device` with `devices[].mac` (#203) are not implemented yet: they describe the
+target behavior, and every statement about current behavior elsewhere in the documentation
+stays true until the owning implementation PR changes it. The tools below are not registered
+in the released server.
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
@@ -136,6 +138,36 @@ writable, writer failure; nothing changed, `application` `not_applied`) and
 `INVENTORY_RELOAD_FAILED` (**TP-3**: the written candidate failed the startup validator or the
 reload; the previous file is restored and the working inventory kept, `application`
 `not_applied`, or `unknown` if the restore also failed).
+
+### Implementation status (#202)
+
+- The hard caps and the range checker live in `src/wled_mcp/discovery_caps.py` (standard
+  library only), used by the startup validator, the tool and the probe; the engine re-exports
+  the old names. Syntax is strict dotted-quad `a.b.c.d/p` in ASCII: netmask or hostmask
+  notation, whitespace, zero-padded octets or prefix and non-ASCII digits are `not_ipv4_cidr`
+  (ISSUE-202-DEC-001, TP-202-2). Each entry gets one reason, the first failing in the order
+  above; `duplicate` and `overlap` compare with earlier entries that passed.
+- The tool returns every rejection in `data.rejected[]` in ascending index order. A
+  `dry_run` is snapshot based (TP-202-5): it compares with the ranges in effect
+  (`Resources.discovery_ranges`), takes no lock and reads no file, so it is not conflict
+  aware; a real call may still answer `INVENTORY_CONFLICT`.
+- A real call writes through the one shared `InventoryWriter` of the process
+  (`Resources.inventory_writer()`). The `[discovery]` table is replaced as a whole (comments
+  inside that table are dropped), inserted before the first `[[devices]]` when absent, or
+  appended when there is no device table; all other bytes and the line ending are kept. The
+  edit refuses with `INVENTORY_RELOAD_FAILED` stage `validation` and writes nothing when the
+  parsed result differs from the request (for example a hand-written dotted key or inline
+  table for `discovery`).
+- Success is `application` `not_attempted`, `verification` `not_requested`, `device_id` null
+  (a local file artifact, like `wled_save_group`); failures carry `not_applied` or `unknown`.
+- Startup locators: `discovery.ranges[i]: invalid` (position), `discovery.ranges: invalid`
+  (not an array or more than 4 entries), `discovery: unsupported field`, `discovery: invalid`.
+- Storage failure reasons follow the cause: a missing or unwritable directory and a lock file
+  that cannot be created are `not_writable`; a missing, non-regular or unreadable file is
+  `unreadable`; `locked`, `backup_failed` and `write_failed` are unchanged.
+- Evidence (mocked): `tests/test_discovery_ranges.py` (DISC-T03, DISC-T06, DISC-T07),
+  `tests/test_inventory_writer.py`, `tests/test_discovery.py` (CLI) and
+  `tests/test_discovery_engine.py` (probe-time re-check).
 
 ## `wled_add_device`
 
@@ -276,8 +308,9 @@ echo). Root keys and `[discovery]` come before the first `[[devices]]`, as for `
 is written by `wled_add_device`, used only to match a controller whose address changed and
 never to route a request. An older build rejects the unknown keys at startup with exit code 2;
 a downgrade uses the configuration kept for that version. The migration-notes rows in
-versioning.md for `/discovery` and `/devices/mac` are added by #202 and #203 when the release
-version is known.
+versioning.md for `/discovery` and `/devices/mac` are added at the M8 release preparation
+(#204), because no release number is known yet (the rooms row uses a provisional release
+number).
 
 ## Reload semantics
 
