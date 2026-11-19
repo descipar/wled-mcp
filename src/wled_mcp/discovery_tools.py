@@ -29,8 +29,8 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 from wled_mcp import discovery_engine, setup
 from wled_mcp.access import ToolClass
 from wled_mcp.config import Device
+from wled_mcp.discovery_caps import PRIVATE_NETWORKS  # RFC 1918, the shared hard-cap definition
 from wled_mcp.discovery_engine import (
-    _PRIVATE,  # RFC 1918, the engine's own definition of the probe address space
     CALL_DEADLINE,
     MAX_RANGES,
     DiscoveryRangeError,
@@ -159,7 +159,7 @@ def propose_ranges(
         except ValueError:
             unproposed["host_not_ipv4_literal"] += 1
             continue
-        if not any(address in network for network in _PRIVATE):
+        if not any(address in network for network in PRIVATE_NETWORKS):
             unproposed["not_private"] += 1
             continue
         network = ipaddress.IPv4Network((address, 24), strict=False)
@@ -208,7 +208,7 @@ def _failure(code: Literal["DISCOVERY_BUSY", "CONFIG_ERROR"], **fields: Any) -> 
 def build_discovery_operation(resources: Resources) -> Operation:
     async def discover(arguments: dict[str, Any]) -> Outcome:
         methods: Sequence[str] = arguments["methods"] or ("mdns", "unicast")
-        # Per call, never cached: #202 replaces the body of the property (ISSUE-200-DEC-001).
+        # Per call, never cached (ISSUE-200-DEC-001).
         ranges = tuple(resources.discovery_ranges)
         inventory = resources.inventory
         probing = "unicast" in methods and bool(ranges)

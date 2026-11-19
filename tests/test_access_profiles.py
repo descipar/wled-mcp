@@ -269,11 +269,19 @@ MANAGE_TOOLS = frozenset(
         "wled_delete_group",
         "wled_save_scene",
         "wled_delete_scene",
+        # A configuration write (inventory file), not a device write.
+        "wled_set_discovery_ranges",
     }
 )
 # Manage tools without a top-level device_id: only the registration filter applies to them.
 LOCAL_FILE_TOOLS = frozenset(
-    {"wled_save_group", "wled_delete_group", "wled_save_scene", "wled_delete_scene"}
+    {
+        "wled_save_group",
+        "wled_delete_group",
+        "wled_save_scene",
+        "wled_delete_scene",
+        "wled_set_discovery_ranges",
+    }
 )
 
 

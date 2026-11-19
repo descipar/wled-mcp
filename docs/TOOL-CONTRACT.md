@@ -105,6 +105,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
 | `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
 | `wled_discover_devices` | read-only | Candidate controllers (new, known, address_changed) from mDNS and stored ranges, a coverage report and proposed ranges; writes nothing ([contract/discovery.md](contract/discovery.md)) |
+| `wled_set_discovery_ranges` | destructive | Replace the stored discovery ranges (RFC 1918, at most four, /24 to /30); writes only the local inventory file; no device contact |
 | `wled_set_state` | write | Master power, brightness and one-call transition |
 | `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
 | `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
@@ -149,6 +150,7 @@ barrier. The next section lists the essential inputs of each tool.
 | `wled_get_signal_status` | optional `operation_id` | Active and recently ended signals with owned fields and restoration result; process memory only | S3-SIGNAL-01; #28 |
 | `wled_cancel_signal` | `operation_id` | The same conditional restore now; result `restored`, `skipped_conflict` or `uncertain` | S3-SIGNAL-02; #28 |
 | `wled_discover_devices` | optional `methods` (`mdns`, `unicast`), `timeout_seconds` (1-30), `max_candidates` (1-64); no range, host or cap field | `candidates`, `coverage`, `proposed_ranges`; one run at a time | DISC-01 to DISC-06; #200 |
+| `wled_set_discovery_ranges` | `ranges` (the complete new list, `[]` clears), `dry_run` | Validated against the hard caps (all rejections in `data.rejected[]` with `index` and `reason`), written to `[discovery].ranges` of the inventory file through the shared writer and applied without restart; result `ranges_before`, `ranges_after`, `changed`, `written`, `reloaded`, `backup`, `caps`; writes no device | DISC-07; #202 ([contract/discovery.md](contract/discovery.md)) |
 | `wled_set_state` | `device_id`, optional `on`, `brightness`, `transition_ms`, `dry_run` | Master patch, at least on or brightness | Must |
 | `wled_patch_segments` | `device_id`, nonempty `segments`, `dry_run` | Patch explicit existing active IDs, no removal | Must |
 | `wled_replace_layout` | `device_id`, nonempty complete `segments`, `dry_run` | Exactly desired active IDs/ranges; remove stale IDs | Must |

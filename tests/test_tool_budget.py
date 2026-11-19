@@ -62,9 +62,10 @@ TOOL_BUDGET = {
     "wled_get_signal_status": 800,
     "wled_cancel_signal": 800,
     "wled_discover_devices": 1000,
+    "wled_set_discovery_ranges": 800,
 }
 # The same measure summed over the tools a profile serves.
-PROFILE_BUDGET = {"full": 66000, "control": 48800, "read-only": 22400}
+PROFILE_BUDGET = {"full": 66800, "control": 48800, "read-only": 22400}
 
 GROW = (
     "The served tool list grew past its budget. If the growth is deliberate, raise the limit in "

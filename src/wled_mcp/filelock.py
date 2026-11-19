@@ -16,7 +16,18 @@ from pathlib import Path
 
 DEFAULT_TIMEOUT_SECONDS = 5.0
 _POLL_SECONDS = 0.02
-_thread_lock = threading.Lock()
+_guard = threading.Lock()
+_thread_locks: dict[str, threading.Lock] = {}
+
+
+def _thread_lock_for(path: Path) -> threading.Lock:
+    """One in-process lock per lock file, so a held file never blocks another file.
+
+    Entries are never removed: the set of configuration paths of a process is tiny.
+    """
+    key = os.path.normcase(os.path.abspath(path))
+    with _guard:
+        return _thread_locks.setdefault(key, threading.Lock())
 
 
 def config_lock_path(config_path: Path) -> Path:
@@ -35,6 +46,15 @@ class LockTimeout(Exception):
 
 class LockUnavailable(Exception):
     """The lock file could not be opened (for example a read-only directory)."""
+
+
+def _ensure_lock_byte(fd: int) -> None:
+    """Windows only: a byte range must exist to be locked."""
+    try:
+        if os.fstat(fd).st_size == 0:
+            os.write(fd, b"\0")
+    except OSError:
+        raise LockUnavailable from None
 
 
 def _try_lock(fd: int) -> bool:
@@ -76,7 +96,8 @@ def exclusive_lock(path: Path, timeout: float) -> Iterator[None]:
     ignored: the OS drops the lock when the descriptor closes, and the guarded work is done.
     """
     deadline = time.monotonic() + timeout
-    if not _thread_lock.acquire(timeout=max(0.0, timeout)):
+    thread_lock = _thread_lock_for(path)
+    if not thread_lock.acquire(timeout=max(0.0, timeout)):
         raise LockTimeout
     try:
         try:
@@ -84,8 +105,8 @@ def exclusive_lock(path: Path, timeout: float) -> Iterator[None]:
         except OSError:
             raise LockUnavailable from None
         try:
-            if os.name == "nt" and os.fstat(fd).st_size == 0:
-                os.write(fd, b"\0")  # a byte range must exist to be locked
+            if os.name == "nt":
+                _ensure_lock_byte(fd)
             while not _try_lock(fd):
                 if time.monotonic() >= deadline:
                     raise LockTimeout
@@ -99,4 +120,4 @@ def exclusive_lock(path: Path, timeout: float) -> Iterator[None]:
             with contextlib.suppress(OSError):
                 os.close(fd)
     finally:
-        _thread_lock.release()
+        thread_lock.release()

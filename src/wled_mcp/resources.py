@@ -17,6 +17,7 @@ from wled_mcp.catalogs import CatalogCache, Clock
 from wled_mcp.client import ClientFailure, Deadline, Endpoint, WLEDClient
 from wled_mcp.config import Device, InventoryConfig, StartupConfig
 from wled_mcp.diagnostics import LastControlStore, ServiceMonitor
+from wled_mcp.inventory_writer import InventoryWriter
 from wled_mcp.models import DomainError, Outcome
 from wled_mcp.signal_manager import SignalManager
 
@@ -133,6 +134,7 @@ class _InventoryView:
     devices: tuple[Device, ...]
     by_id: Mapping[str, Device]
     locks: dict[str, anyio.Lock]
+    ranges: tuple[str, ...] = ()
 
 
 class Resources:
@@ -148,7 +150,9 @@ class Resources:
             config.devices,
             {device.id: device for device in config.devices},
             {device.id: anyio.Lock() for device in config.devices},
+            tuple(config.discovery_ranges),
         )
+        self._writer: InventoryWriter | None = None
         # Profile and per-device ceilings (issue #20); the write engines enforce them (G3).
         self.access: AccessPolicy = config.access
         # Last observed outcome per device and call counters (issue #20, TD-20-11); fed by
@@ -194,12 +198,19 @@ class Resources:
 
     @property
     def discovery_ranges(self) -> tuple[str, ...]:
-        """The stored discovery ranges now in effect (read per request, never cached).
+        """The stored discovery ranges now in effect (immutable snapshot, replaced by reload)."""
+        return self._view.ranges
 
-        Placeholder until #202, which replaces this body with the configured and reloaded
-        ``[discovery].ranges``; a scan never runs over ranges that were not configured.
-        """
-        return ()
+    def inventory_writer(self) -> InventoryWriter:
+        """The one inventory writer of this process (its baseline advances per own write)."""
+        if self._writer is None:
+            self._writer = InventoryWriter(
+                self.config.config_path,
+                self.config.config_sha256,
+                self.access,
+                self.apply_inventory,
+            )
+        return self._writer
 
     @property
     def locks(self) -> dict[str, anyio.Lock]:
@@ -220,7 +231,9 @@ class Resources:
             for device in devices
         }
         self.monitor.extend_ids(device.id for device in devices)
-        self._view = _InventoryView(devices, {d.id: d for d in devices}, locks)
+        self._view = _InventoryView(
+            devices, {d.id: d for d in devices}, locks, tuple(config.discovery.ranges)
+        )
 
     def resolve(self, device_id: str) -> Device:
         try:

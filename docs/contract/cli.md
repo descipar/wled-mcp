@@ -233,10 +233,12 @@ prints suggestions and the user runs `config add-device` explicitly.
   by address or stored MAC, the command reads `/json/info` of at most 16 configured entries
   that have no stored MAC, to detect a changed address (only configured hosts).
 - Unicast probe: the engine also probes configured discovery ranges (`GET /json/info`
-  over RFC 1918 ranges within the hard caps of discovery.md). The `[discovery].ranges`
-  key is added by #202; until then the command passes no ranges and the report shows
-  `unicast` as `skipped` with `no_ranges_configured`. The command has no range option:
-  a scan never runs over ranges that were not configured.
+  over RFC 1918 ranges within the hard caps of discovery.md). The ranges come from the
+  `[discovery].ranges` key of the `--config` file (set by `wled_set_discovery_ranges`, #202,
+  or by hand; an out-of-policy value is a `CONFIG_INVALID` refusal before any traffic). Without
+  `--config` or without ranges the report shows `unicast` as `skipped` with
+  `no_ranges_configured`. The command has no range option: a scan never runs over ranges that
+  were not configured.
 - Deadline: `--timeout` lowers the overall deadline (0.5 to 10 seconds, outside: exit 2,
   nothing sent). Without it the engine limits apply (mDNS window 6 s, whole call 30 s).
 - Limits for untrusted answers: datagrams up to 9000 bytes, at most 512 datagrams

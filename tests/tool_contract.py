@@ -76,11 +76,15 @@ EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
     ExpectedTool("wled_get_signal_status", READ, destructive=False),
     ExpectedTool("wled_cancel_signal", CONTROL, destructive=False),
     ExpectedTool("wled_discover_devices", READ, destructive=False),
+    ExpectedTool("wled_set_discovery_ranges", MANAGE, destructive=True),
 )
 
 # A non-read tool whose repeated call changes nothing more (ISSUE-28-DEC-002): cancelling an
 # ended signal is a no-op, so it hints idempotent although it is not read-only.
-IDEMPOTENT_CONTROL_TOOLS: frozenset[str] = frozenset({"wled_cancel_signal"})
+# Replacing the discovery range list with the same list changes nothing more (#202).
+IDEMPOTENT_CONTROL_TOOLS: frozenset[str] = frozenset(
+    {"wled_cancel_signal", "wled_set_discovery_ranges"}
+)
 # The only tools that reach beyond the inventory (openWorldHint true; ISSUE-200-DEC-001).
 OPEN_WORLD_TOOLS: frozenset[str] = frozenset({"wled_discover_devices"})
 

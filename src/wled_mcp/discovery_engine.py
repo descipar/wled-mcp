@@ -33,6 +33,7 @@ from time import monotonic
 from typing import Any, Literal, Protocol
 
 from wled_mcp import discovery
+from wled_mcp import discovery_caps as caps
 from wled_mcp.client import validate_json
 from wled_mcp.discovery import (
     MDNS_GROUP,
@@ -50,48 +51,29 @@ from wled_mcp.discovery import (
     suggest_name,
 )
 
-# -- hard caps (TP-4); no parameter, configuration key or environment variable raises them
-
-MAX_RANGES = 4
-MIN_PREFIX = 24
-MAX_PREFIX = 30
-PROBE_PORT = 80
-HOST_TIMEOUT = 1.5
-MAX_BODY_BYTES = 64 * 1024
-MAX_IN_FLIGHT = 32
-PROBE_DEADLINE = 20.0
-CALL_DEADLINE = 30.0
-MDNS_ROUNDS = 3
+# -- hard caps (TP-4) live in discovery_caps (shared with the startup validator and the
+# tool); no parameter, configuration key or environment variable raises them
+MAX_RANGES = caps.MAX_RANGES
+MIN_PREFIX = caps.MIN_PREFIX
+MAX_PREFIX = caps.MAX_PREFIX
+PROBE_PORT = caps.PROBE_PORT
+HOST_TIMEOUT = caps.HOST_TIMEOUT
+MAX_BODY_BYTES = caps.MAX_BODY_BYTES
+MAX_IN_FLIGHT = caps.MAX_IN_FLIGHT
+PROBE_DEADLINE = caps.PROBE_DEADLINE
+CALL_DEADLINE = caps.CALL_DEADLINE
+MDNS_ROUNDS = caps.MDNS_ROUNDS
 MDNS_ROUND_GAP = 1.0
-MDNS_WINDOW = 6.0
-MAX_CANDIDATES = 64
-MAX_KNOWN_READS = 16
+MDNS_WINDOW = caps.MDNS_WINDOW
+MAX_CANDIDATES = caps.MAX_CANDIDATES
+MAX_KNOWN_READS = caps.MAX_KNOWN_READS
 MAX_ALTERNATE_ADDRESSES = 4
 USER_AGENT = "wled-mcp-discovery"
 
-# RFC 1918, built from integers so that no private address literal sits in the source.
-_PRIVATE = (
-    ipaddress.IPv4Network((10 << 24, 8)),
-    ipaddress.IPv4Network(((172 << 24) | (16 << 16), 12)),
-    ipaddress.IPv4Network(((192 << 24) | (168 << 16), 16)),
-)
-
-CAPS: dict[str, Any] = {
-    "ranges": MAX_RANGES,
-    "min_prefix": MIN_PREFIX,
-    "max_prefix": MAX_PREFIX,
-    "address_space": [str(network) for network in _PRIVATE],
-    "probe_port": PROBE_PORT,
-    "host_timeout_seconds": HOST_TIMEOUT,
-    "response_bytes": MAX_BODY_BYTES,
-    "in_flight": MAX_IN_FLIGHT,
-    "probe_deadline_seconds": PROBE_DEADLINE,
-    "call_deadline_seconds": CALL_DEADLINE,
-    "mdns_rounds": MDNS_ROUNDS,
-    "mdns_window_seconds": MDNS_WINDOW,
-    "candidates": MAX_CANDIDATES,
-    "known_device_reads": MAX_KNOWN_READS,
-}
+CAPS = caps.CAPS
+DiscoveryRangeError = caps.DiscoveryRangeError
+validate_ranges = caps.validate_ranges
+_address_allowed = caps.address_allowed
 
 LIMITS = (
     "Multicast stays in the local network segment and does not cross VLANs or routed "
@@ -110,64 +92,6 @@ _VERSION = re.compile(r"[ -~]{1,32}")
 
 Method = Literal["mdns", "unicast"]
 METHODS: tuple[Method, ...] = ("mdns", "unicast")
-
-
-class DiscoveryRangeError(ValueError):
-    """A range violates a hard cap; nothing was probed. The value is never echoed."""
-
-    def __init__(self, reason: str, index: int | None = None) -> None:
-        super().__init__(f"discovery range rejected: {reason}")
-        self.reason = reason
-        self.index = index
-
-
-# -- range validation (defence in depth at probe time)
-
-
-def _address_allowed(address: ipaddress.IPv4Address) -> bool:
-    return any(address in network for network in _PRIVATE)
-
-
-def validate_ranges(ranges: Iterable[str | ipaddress.IPv4Network]) -> list[ipaddress.IPv4Network]:
-    """Parsed networks, or ``DiscoveryRangeError`` before anything is probed."""
-    items = list(ranges)
-    if len(items) > MAX_RANGES:
-        raise DiscoveryRangeError("too_many_ranges")
-    parsed: list[ipaddress.IPv4Network] = []
-    for index, item in enumerate(items):
-        if isinstance(item, ipaddress.IPv4Network):
-            network = item
-        else:
-            text = item if isinstance(item, str) else ""
-            if not text or text != text.strip() or "/" not in text:
-                raise DiscoveryRangeError("not_ipv4_cidr", index)
-            try:
-                network = ipaddress.IPv4Network(text, strict=True)
-            except ipaddress.NetmaskValueError:
-                raise DiscoveryRangeError("not_ipv4_cidr", index) from None
-            except ValueError:
-                try:
-                    ipaddress.IPv4Network(text, strict=False)
-                except ValueError:
-                    raise DiscoveryRangeError("not_ipv4_cidr", index) from None
-                raise DiscoveryRangeError("not_network_address", index) from None
-        if network.network_address.is_loopback:
-            raise DiscoveryRangeError("loopback", index)
-        if network.network_address.is_link_local:
-            raise DiscoveryRangeError("link_local", index)
-        if not any(network.subnet_of(private) for private in _PRIVATE):
-            raise DiscoveryRangeError("not_private", index)
-        if network.prefixlen < MIN_PREFIX:
-            raise DiscoveryRangeError("too_broad", index)
-        if network.prefixlen > MAX_PREFIX:
-            raise DiscoveryRangeError("prefix_too_long", index)
-        for earlier in parsed:
-            if earlier == network:
-                raise DiscoveryRangeError("duplicate", index)
-            if earlier.overlaps(network):
-                raise DiscoveryRangeError("overlap", index)
-        parsed.append(network)
-    return parsed
 
 
 # -- the HTTP probe

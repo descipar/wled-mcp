@@ -197,3 +197,19 @@ servers only. Before values are `main` at `40bf74b`.
 | `wled_discover_devices` | 963 | 1000 | `methods`, `timeout_seconds`, `max_candidates` and the description (what is searched, the three candidate states, coverage, proposals never probed, the "nothing found" rule) |
 
 Checks: `uv run pytest tests/test_tool_budget.py` passes with these numbers.
+
+## Discovery ranges tool (#202)
+
+`wled_set_discovery_ranges` is a `manage` tool and so is served in the `full` profile only;
+only that profile limit was raised, by about its size. Same method; mocks and in-memory
+servers only. Before values are `main` at `ffe87ed` (with `wled_discover_devices`).
+
+| Profile | Tools before | Tools after | Before (chars) | After (chars) | Growth | New limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| `full` | 39 | 40 | 64639 | 65404 | 765 | 66800 |
+
+| Tool | Measured (chars) | Limit | What it costs |
+| --- | --- | --- | --- |
+| `wled_set_discovery_ranges` | 765 | 800 | `ranges`, `dry_run` and the description (replace semantics, RFC 1918, /24 to /30, at most four, no device contact) |
+
+Checks: `uv run pytest tests/test_tool_budget.py` passes with these numbers.
