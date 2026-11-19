@@ -126,11 +126,11 @@ GUARD = DiscoveryGuard()
 
 
 def known_devices(inventory: Iterable[Device]) -> list[KnownDevice]:
-    """The inventory snapshot for the engine (MAC unknown until devices[].mac exists)."""
+    """The inventory snapshot for the engine (with the stored MAC, when the entry has one)."""
     known: list[KnownDevice] = []
     for device in inventory:
         _, host, port = setup.url_identity(device.base_url)
-        known.append(KnownDevice(device.id, host.rstrip("."), None, port))
+        known.append(KnownDevice(device.id, host.rstrip("."), device.mac, port))
     return known
 
 

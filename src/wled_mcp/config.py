@@ -23,16 +23,28 @@ _HOST_LABEL = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9])?")
 # canonical dotted quad; resolvers would otherwise map 1.2.3, 0x7f.1 or 2130706433 to a
 # different address (ISSUE-74-DEC-002).
 _NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9a-fA-F]*")
-_DEVICE_FIELDS = ("id", "name", "base_url", "max_class")
+_DEVICE_FIELDS = ("id", "name", "base_url", "mac", "max_class")
 _MAX_LOCATORS = 5
 _ACCESS_ORDER = 1_000_000  # access locators sort after every device entry
 _RANGE_MARK = "ranges rejected at "
 _DISCOVERY_ORDER = 2_000_000  # discovery locators sort after the access locators
+_MAC_PLAIN = re.compile(r"[0-9A-Fa-f]{12}", re.ASCII)
+_MAC_COLONS = re.compile(r"[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}", re.ASCII)
 SCHEMA_VERSION = 1
 
 
 class ConfigurationError(ValueError):
     """A safe message suitable for startup diagnostics."""
+
+
+def normalize_mac(value: object) -> str:
+    """12 lowercase hex digits from the plain or the colon-separated form (any case).
+
+    The value is never echoed in the error (it is an identifier of a device).
+    """
+    if isinstance(value, str) and (_MAC_PLAIN.fullmatch(value) or _MAC_COLONS.fullmatch(value)):
+        return value.replace(":", "").lower()
+    raise ValueError("Invalid MAC address")
 
 
 class StrictModel(BaseModel):
@@ -43,8 +55,16 @@ class Device(StrictModel):
     id: str = Field(pattern=r"^[a-z0-9][a-z0-9_-]{0,63}$")
     name: str = Field(min_length=1, max_length=128)
     base_url: str
+    # Optional controller MAC (12 lowercase hex), written by wled_add_device (#203); used
+    # to recognize a known controller at a new address. Not unique-checked at startup.
+    mac: str | None = Field(default=None, pattern=r"^[0-9a-f]{12}$")
     # Optional ceiling for what may be done to this device (issue #20); absent = no cap.
     max_class: ClassName | None = None
+
+    @field_validator("mac", mode="before")
+    @classmethod
+    def normalized_mac(cls, value: object) -> object:
+        return None if value is None else normalize_mac(value)
 
     @field_validator("name")
     @classmethod

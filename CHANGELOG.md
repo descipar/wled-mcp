@@ -29,6 +29,17 @@ this file. Fixes are made for the latest release only. See
   ranges derived from inventory addresses that are never probed. It writes nothing. A second
   concurrent call, or a probe run within 5 s of the previous one, returns the new error code
   `DISCOVERY_BUSY` with `retry_after_seconds`.
+- **`wled_add_device` (#203).** A `manage` tool (profile `full` only) adds one controller:
+  `base_url` is an explicit `http://<RFC 1918 IPv4>[:port]` (no host name), optional `device_id`,
+  `name`, `expected_mac` and `dry_run`. It makes one read-only `GET /json/info` (the discovery
+  hard caps apply), refuses a non-WLED answer (new error code `NOT_WLED`) and a duplicate ID,
+  address or MAC (`INVENTORY_CONFLICT`, an entry is never overwritten), then appends one
+  `[[devices]]` entry through the shared writer and applies it without a restart. It never
+  writes to the device and never sets `max_class`. Additive: devices gain the optional `mac`
+  key (12 lowercase hex; an older server rejects the unknown key at startup; the migration-notes
+  rows come with #204), and `wled_discover_devices` and `wled-mcp discover` use a stored `mac` to
+  recognize a moved controller without an extra read. Mocked evidence only; the live enrollment
+  is pending.
 - **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
   stored discovery ranges: `ranges` is the complete new list (RFC 1918, /24 to /30, at most 4,
   no overlap; `[]` clears it; `dry_run` shows the final list). Rejections list every bad entry

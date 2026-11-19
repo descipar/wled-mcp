@@ -33,6 +33,7 @@ ErrorCode = Literal[
     "INVENTORY_CONFLICT",
     "INVENTORY_RELOAD_FAILED",
     "DISCOVERY_BUSY",
+    "NOT_WLED",
 ]
 
 

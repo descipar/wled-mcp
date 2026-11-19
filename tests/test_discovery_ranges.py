@@ -589,5 +589,5 @@ async def test_only_the_full_profile_serves_the_tool(tmp_path, profile):
 def test_the_tool_registers_once_and_caps_are_plain_data(tmp_path):
     resources, _ = make(tmp_path)
     names = [op.name for op in build_operations(resources)]
-    assert names.count(TOOL) == 1 and names[-1] == TOOL
+    assert names.count(TOOL) == 1 and names[-2:] == [TOOL, "wled_add_device"]
     assert json.loads(json.dumps(CAPS)) == CAPS

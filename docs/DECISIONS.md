@@ -1088,6 +1088,11 @@ can explicitly amend them.
   (shared hard-caps module, strict CIDR syntax, `[discovery]` table text edit, success
   envelope, snapshot dry run, shared writer and `Resources.discovery_ranges`); not a human
   decision.
+- [ISSUE-203-DEC-001](decisions/issue-203.md) (coordinator, technical proposal,
+  2026-11-19, issue #203 / M8 only): `wled_add_device` defaults TP-203-1 to TP-203-8
+  (RFC 1918 IPv4 literal only with a canonical stored URL, probe result mapping with the new
+  `NOT_WLED`, conflict order and pre-read checks, envelope, default ID and name, `devices[].mac`,
+  self-checked append through the shared writer, test seams); not a human decision.
 - [ISSUE-201-DEC-001](decisions/issue-201.md) (coordinator, technical proposal,
   2026-11-17, issue #201 / M8 only): inventory writer defaults TP-201-1 to TP-201-5 (one
   `<config>.bak` backup, sibling OS lock file, SHA-256 baseline for `file_changed`, error

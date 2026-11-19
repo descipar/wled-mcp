@@ -24,6 +24,7 @@ from wled_mcp.client import ClientFailure, Deadline, Endpoint
 from wled_mcp.discovery_config_tools import build_discovery_config_operations
 from wled_mcp.discovery_tools import build_discovery_operation
 from wled_mcp.effect_search import SearchEffectsRequest, search, shipped_catalog
+from wled_mcp.enroll_tools import build_enroll_operations
 from wled_mcp.explain import build_explain_operation
 from wled_mcp.layouts import LayoutPlan, ReplaceLayoutRequest, build_layout_plan
 from wled_mcp.live_snapshot import build_live_operation
@@ -1417,4 +1418,5 @@ def build_operations(resources: Resources) -> tuple[Operation, ...]:
         *build_signal_operations(resources),
         build_discovery_operation(resources),
         *build_discovery_config_operations(resources),
+        *build_enroll_operations(resources),
     )
