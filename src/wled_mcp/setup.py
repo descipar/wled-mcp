@@ -15,7 +15,7 @@ import stat
 import sys
 import tempfile
 import tomllib
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -182,6 +182,40 @@ def append_device(original: str, block: str) -> str:
     if text and not text.endswith("\n"):
         text += "\n"
     return text + block
+
+
+_DISCOVERY_HEADER = re.compile(r"[ \t]*\[[ \t]*discovery[ \t]*\][ \t]*(#[^\n]*)?\r?\n?")
+_DEVICES_HEADER = re.compile(r"[ \t]*\[\[[ \t]*devices[ \t]*\]\]")
+
+
+def set_discovery_ranges(original: str, ranges: Sequence[str]) -> str:
+    """Text of ``original`` with ``[discovery] ranges = [...]`` set; other bytes kept (#202).
+
+    An existing ``[discovery]`` table is replaced as a whole (comments inside it are
+    dropped); otherwise the table is inserted before the first ``[[devices]]`` header, or
+    appended when there is none. One-line array; the caller verifies the parsed result
+    (dotted-key or inline-table forms of ``discovery`` are not edited here).
+    """
+    eol = "\r\n" if "\r\n" in original else "\n"
+    table = (
+        "[discovery]" + eol + "ranges = [" + ", ".join(toml_string(r) for r in ranges) + "]" + eol
+    )
+    lines = original.splitlines(keepends=True)
+    headers = [i for i, line in enumerate(lines) if _TABLE_HEADER.match(line)]
+    existing = next((i for i in headers if _DISCOVERY_HEADER.fullmatch(lines[i])), None)
+    if existing is not None:
+        following = next((i for i in headers if i > existing), len(lines))
+        end = following
+        while end > existing + 1 and not lines[end - 1].strip():
+            end -= 1  # blank lines after the table stay where they are
+        return "".join(lines[:existing]) + table + "".join(lines[end:])
+    first = next((i for i in headers if _DEVICES_HEADER.match(lines[i])), None)
+    if first is None:
+        text = original if not original or original.endswith("\n") else original + eol
+        return text + (eol if text else "") + table
+    before = "".join(lines[:first])
+    separator = "" if not before or not before.strip() or before.endswith(eol + eol) else eol
+    return before + separator + table + eol + "".join(lines[first:])
 
 
 def url_identity(url: str) -> tuple[str, str, int]:

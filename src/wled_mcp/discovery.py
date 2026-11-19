@@ -23,7 +23,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from time import monotonic
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
 
 from wled_mcp import setup
 from wled_mcp.config import ConfigurationError, validate_document
@@ -451,12 +451,17 @@ def listen(
 # -- the command -------------------------------------------------------------------------
 
 
-def _configured(raw: str | None) -> list[KnownDevice]:
-    """Known controllers of the configuration given with ``--config`` (read-only)."""
+class _Configured(NamedTuple):
+    known: list[KnownDevice]
+    ranges: tuple[str, ...]
+
+
+def _configured(raw: str | None) -> _Configured:
+    """Known controllers and stored ranges of the ``--config`` file (read-only)."""
     from wled_mcp.discovery_engine import KnownDevice
 
     if raw is None:
-        return []
+        return _Configured([], ())
     path = Path(raw)
     if not path.is_absolute():
         raise setup.Refusal("PATH_NOT_ABSOLUTE", "The --config path must be absolute.")
@@ -469,17 +474,8 @@ def _configured(raw: str | None) -> list[KnownDevice]:
     for device in inventory.devices:
         _, host, port = setup.url_identity(device.base_url)
         known.append(KnownDevice(device.id, host.rstrip("."), None, port))
-    return known
-
-
-def configured_ranges(config: object | None) -> tuple[str, ...]:
-    """The discovery ranges of the stored configuration.
-
-    A seam: the ``[discovery].ranges`` key does not exist yet (#202 adds it to the
-    validator and fills this in). The command has no range option: a scan never runs over
-    ranges that were not configured, so until then only mDNS runs.
-    """
-    return ()
+    # The command has no range option: a scan never runs over ranges that were not stored.
+    return _Configured(known, tuple(inventory.discovery.ranges))
 
 
 def build_transport(clock: Callable[[], float]) -> Any:
@@ -547,10 +543,10 @@ def run_discover(
 
     command = "discover"
     timeout = _timeout(args.timeout)
-    known = _configured(setup.option_path(args.config, setup.CONFIG_ENV, environ))
+    configured = _configured(setup.option_path(args.config, setup.CONFIG_ENV, environ))
     result = discovery_engine.run_discovery(
-        ranges=configured_ranges(known),
-        known=known,
+        ranges=configured.ranges,
+        known=configured.known,
         timeout=timeout,
         transport=build_transport(clock),
         opener=opener,
@@ -644,7 +640,10 @@ def register(commands: Any) -> None:
     )
     parser.add_argument(
         "--config",
-        help="Absolute configuration path (WLED_MCP_CONFIG); marks configured devices.",
+        help=(
+            "Absolute configuration path (WLED_MCP_CONFIG); marks configured devices and "
+            "supplies the configured ranges."
+        ),
     )
     parser.add_argument(
         "--timeout",

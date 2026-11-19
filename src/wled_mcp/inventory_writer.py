@@ -37,6 +37,7 @@ class WriteResult:
     backup: bool  # the previous file was kept in <config>.bak
     devices: tuple[Device, ...]  # inventory now in effect
     sha256: str
+    discovery_ranges: tuple[str, ...] = ()  # stored ranges now in effect
 
 
 class InventoryWriteError(Exception):
@@ -131,7 +132,15 @@ class InventoryWriter:
             )
         candidate = edit(current)
         if candidate is None or candidate == current:
-            return WriteResult(False, False, False, self._devices_of(current), digest)
+            unchanged = self._parse(current)
+            return WriteResult(
+                False,
+                False,
+                False,
+                tuple(unchanged.devices) if unchanged else (),
+                digest,
+                tuple(unchanged.discovery.ranges) if unchanged else (),
+            )
         validated = self._validate(current, candidate)
         mode = stat.S_IMODE(info.st_mode)
         try:
@@ -151,14 +160,21 @@ class InventoryWriter:
         except Exception:
             raise self._restore(current, mode) from None
         self._baseline = hashlib.sha256(candidate).hexdigest()
-        return WriteResult(True, True, True, tuple(validated.devices), self._baseline)
+        return WriteResult(
+            True,
+            True,
+            True,
+            tuple(validated.devices),
+            self._baseline,
+            tuple(validated.discovery.ranges),
+        )
 
     @staticmethod
-    def _devices_of(content: bytes) -> tuple[Device, ...]:
+    def _parse(content: bytes) -> InventoryConfig | None:
         try:
-            return tuple(validate_document(content).devices)
+            return validate_document(content)
         except ConfigurationError:  # not reachable for bytes equal to the loaded baseline
-            return ()
+            return None
 
     def _validate(self, current: bytes, candidate: bytes) -> InventoryConfig:
         """The candidate must validate, keep the access settings and keep every device ID."""

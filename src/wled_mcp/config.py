@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from wled_mcp.access import AccessPolicy, ClassName, ProfileName, ToolClass
+from wled_mcp.discovery_caps import MAX_RANGES, check_ranges
 
 # ASCII DNS names; labels may contain interior "_" (DHCP-derived names) or "-", but each
 # label is 1-63 characters and starts and ends with a letter or digit (ISSUE-61-DEC-002).
@@ -25,6 +26,8 @@ _NUMERIC_LABEL = re.compile(r"[0-9]+|0[xX][0-9a-fA-F]*")
 _DEVICE_FIELDS = ("id", "name", "base_url", "max_class")
 _MAX_LOCATORS = 5
 _ACCESS_ORDER = 1_000_000  # access locators sort after every device entry
+_RANGE_MARK = "ranges rejected at "
+_DISCOVERY_ORDER = 2_000_000  # discovery locators sort after the access locators
 SCHEMA_VERSION = 1
 
 
@@ -115,6 +118,21 @@ class AccessSettings(StrictModel):
     profile: ProfileName = "full"
 
 
+class DiscoverySettings(StrictModel):
+    """Stored discovery ranges (#202): checked against the shared hard caps at startup."""
+
+    ranges: list[str] = Field(default=[], max_length=MAX_RANGES)
+
+    @field_validator("ranges")
+    @classmethod
+    def within_caps(cls, ranges: list[str]) -> list[str]:
+        rejected = check_ranges(ranges)
+        if rejected:
+            # Positions only, never values; _locators turns them into locators.
+            raise ValueError(_RANGE_MARK + ",".join(str(index) for index, _ in rejected))
+        return ranges
+
+
 class InventoryConfig(StrictModel):
     schema_version: int
     devices: list[Device] = Field(max_length=256)
@@ -122,6 +140,7 @@ class InventoryConfig(StrictModel):
     backups: BackupSettings = BackupSettings()
     features: FeatureSettings = FeatureSettings()
     access: AccessSettings = AccessSettings()
+    discovery: DiscoverySettings = DiscoverySettings()
 
     @field_validator("schema_version")
     @classmethod
@@ -149,6 +168,9 @@ class StartupConfig:
     # SHA-256 of the file bytes loaded at startup: the inventory writer's baseline for
     # detecting a hand edit (issue #201, TP-201-3). None: no baseline, always a conflict.
     config_sha256: str | None = None
+    # Stored ``[discovery].ranges`` (validated against the shared hard caps); the live
+    # value is ``Resources.discovery_ranges``.
+    discovery_ranges: tuple[str, ...] = ()
 
 
 def access_policy(inventory: InventoryConfig, profile: ProfileName | None = None) -> AccessPolicy:
@@ -256,6 +278,7 @@ def load_config(
         validated.backups,
         access_policy(validated, profile),
         hashlib.sha256(content).hexdigest(),
+        tuple(validated.discovery.ranges),
     )
 
 
@@ -284,11 +307,30 @@ def _locators(exc: ValidationError) -> str:
     """Name offending entries from error locations only, never from values or text.
 
     Device indexes follow the ``[[devices]]`` order; ``access`` entries follow the device
-    entries. Unknown keys are reported without their name because keys are file content.
+    entries and ``discovery`` entries follow those (range indexes are positions).
+    Unknown keys are reported without their name because keys are file content.
     """
     found: set[tuple[int, int, str]] = set()
     for error in exc.errors(include_url=False, include_context=False, include_input=False):
         loc = error["loc"]
+        if loc and loc[0] == "discovery":
+            if len(loc) == 1:
+                text, position = "discovery: invalid", 0
+            elif loc[1] != "ranges":
+                text, position = "discovery: unsupported field", 0
+            elif len(loc) > 2 and type(loc[2]) is int:  # a non-string entry
+                found.add((_DISCOVERY_ORDER, 1 + loc[2], f"discovery.ranges[{loc[2]}]: invalid"))
+                continue
+            elif _RANGE_MARK in error["msg"]:
+                for mark in error["msg"].split(_RANGE_MARK, 1)[1].split(","):
+                    if mark.isdigit():
+                        text = f"discovery.ranges[{mark}]: invalid"
+                        found.add((_DISCOVERY_ORDER, 1 + int(mark), text))
+                continue
+            else:
+                text, position = "discovery.ranges: invalid", 0
+            found.add((_DISCOVERY_ORDER, position, text))
+            continue
         if loc and loc[0] == "access":
             if len(loc) == 1:
                 text = "access: invalid"
