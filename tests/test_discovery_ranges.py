@@ -52,11 +52,6 @@ BASE = (
 TOOL = "wled_set_discovery_ranges"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def make(tmp_path: Path, content: str | bytes = BASE, **options: Any) -> tuple[Resources, Path]:
     path = tmp_path / "inventory.toml"
     path.write_bytes(content if isinstance(content, bytes) else content.encode())

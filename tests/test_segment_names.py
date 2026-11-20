@@ -12,11 +12,6 @@ from wled_mcp.patches import SegmentPatch
 from wled_mcp.resources import Resources
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 async def call(resources, tool, segments, *, dry_run=False):
     op = {o.name: o for o in build_operations(resources)}[tool]
     args = {"device_id": "desk", "segments": segments, "dry_run": dry_run}

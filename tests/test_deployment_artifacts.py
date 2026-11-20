@@ -53,11 +53,6 @@ CONSTRAINTS = "requirements-runtime.txt"
 HTTP_ONLY_FLAGS = {"--host", "--port", "--allowed-host", "--allowed-origin", "--http-token-file"}
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 # ------------------------------------------------------------------------------ helpers
 
 

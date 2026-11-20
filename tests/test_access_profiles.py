@@ -68,11 +68,6 @@ HOSTS = {"desk": "desk.invalid", "shelf": "shelf.invalid", "lamp": "lamp.invalid
 PROFILES = ("read-only", "control", "full")
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 # ---------------------------------------------------------------------------- helpers
 
 

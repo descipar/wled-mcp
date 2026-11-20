@@ -25,11 +25,6 @@ DESK = "desk.invalid"
 BLUE = [[0, 0, 255]]
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def fixture_segments():
     """The synthetic case of examples/contracts/replace.json."""
     return [

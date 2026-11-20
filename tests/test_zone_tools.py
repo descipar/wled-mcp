@@ -42,11 +42,6 @@ from wled_mcp.server import create_server
 pytestmark = pytest.mark.anyio
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def quarters() -> SceneDevice:
     return strip(
         led_count=100,

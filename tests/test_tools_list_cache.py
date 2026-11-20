@@ -19,11 +19,6 @@ from wled_mcp.operations import build_operations
 from wled_mcp.schema_slim import slim_schema
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 @pytest.mark.anyio
 async def test_schemas_are_built_once_per_server(tmp_path, monkeypatch):
     server, _resources, _router = served(tmp_path)

@@ -59,11 +59,6 @@ WLED_16_0_1_EFFECTS = {
 }
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def prop(value, confidence="recommended", basis="author_judgement", evidence="synthetic"):
     return {"value": value, "confidence": confidence, "basis": basis, "evidence": evidence}
 

@@ -39,11 +39,6 @@ START = {"device_id": "desk", "segment_ids": [0], "color": [255, 0, 0], "duratio
 SIGNAL_TOOLS = ("wled_start_signal", "wled_get_signal_status", "wled_cancel_signal")
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 # ------------------------------------------------------------------ T28-14 contract surface
 
 

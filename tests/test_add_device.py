@@ -61,11 +61,6 @@ WITH_OLD = BASE + f'\n[[devices]]\nid = "old"\nname = "Old"\nbase_url = "{URL2}"
 
 
 @pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
-@pytest.fixture
 def fetch(monkeypatch) -> FakeFetch:
     fake = FakeFetch(default=wled(MAC_A, "Kitchen Strip"))
     monkeypatch.setattr(enroll_tools, "fetch_info", fake)

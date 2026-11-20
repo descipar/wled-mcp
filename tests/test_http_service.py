@@ -40,11 +40,6 @@ from wled_mcp.server import Operation
 SYNTHETIC_SECRET = "synthetic-secret-never-return"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def state_gets(router: Any, host: str = DESK) -> int:
     return router.count("GET", host, "/json/state")
 

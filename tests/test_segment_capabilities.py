@@ -40,11 +40,6 @@ RGB, RGBW, WHITE_ONLY = CAP_RGB, CAP_RGB | CAP_WHITE, CAP_WHITE
 RGB_CCT, RGBW_CCT = CAP_RGB | CAP_CCT, CAP_RGB | CAP_WHITE | CAP_CCT
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def v16_segment(seg_id: int, start: int, stop: int, lc: Any, **overrides: Any) -> dict[str, Any]:
     return make_segment(seg_id, start, stop, lc=lc, **overrides)
 
