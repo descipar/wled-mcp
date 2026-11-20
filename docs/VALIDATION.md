@@ -152,7 +152,7 @@ Use an explicitly authorized device and test ranges/slots; record the pre-test s
 
 ## Software evidence by issue (#4 to #53)
 
-Historical per-candidate records (mock/loopback only; no LAN device; hardware pending unless stated). Executed claims per candidate are in the PR; the per-test mappings were condensed in #260 and live in the test modules and [TRACEABILITY.md](TRACEABILITY.md).
+Historical per-candidate records (mock/loopback only; no LAN device; hardware pending unless stated). Executed claims per candidate are in the PR; the per-criterion test tables (C4/C5/C11/C14/AC-10/AC-48/AC-52 IDs) were condensed in #260 and survive only in history (`git show 7d2328d:docs/VALIDATION.md`); the tests themselves and [TRACEABILITY.md](TRACEABILITY.md) carry the current mapping.
 
 | Issue | Candidate result recorded | Scenarios / criteria | Limits |
 | --- | --- | --- | --- |
@@ -160,7 +160,7 @@ Historical per-candidate records (mock/loopback only; no LAN device; hardware pe
 | #5 state and catalogs | 2026-11-04, same platform: 194 passed (3 runs); ruff, mypy 12 files, lock, distribution passed | C5-01 to C5-10; T02, T03, T14, T15 | Firmware facts from pinned source, not a controller; H01/H02 not run; OPS-04 partial |
 | #6 segment patch | 2026-11-04: 219 passed (flaky deadline test deselected); mypy 13 files | C2-01, C2-03 to C2-06, C2-10; T04, T06-T10 | H04/H05 not run; mock POST handlers model profile 0 of the pinned source; the off-master brightness payload is superseded by #52 |
 | #7 layout replace | 2026-11-05, macOS/Python 3.13: 316 passed (70 new); distribution PASS | C2-02 to C2-06, C2-10; T05-T10 | H05 not run; source-derived fake; the name, 255-bound and `bri` limits are superseded by #48 (ISSUE-7-DEC-003 to -007) |
-| #8 snapshots, #9 presets | mock/tmp_path only | T12 (format, atomic durable write, retention, backup-failure gives zero POSTs); T11-T13 (list/read, activation, allocation/save, delete, verification, uncertainty); `examples/contracts/*.json` are real tool output reproduced by tests | H06 not run; real flash-write timing, post-delete layout, active-preset marker and playlist behavior not established by mocks; restore tool added by #18 |
+| #8 snapshots, #9 presets | mock/tmp_path only | T12 (format, atomic durable write, retention, backup-failure gives zero POSTs); T11-T13 (list/read, activation, allocation/save, delete, verification, uncertainty); only `examples/contracts/presets.json` and the `backup_failure` case are actual tool output (the other contract examples are illustrations, see [their README](../examples/contracts/README.md)) | H06 not run; real flash-write timing, post-delete layout, active-preset marker and playlist behavior not established by mocks; restore tool added by #18 |
 | #48 shared segment limits | 2026-11-05, Windows 11: 540 passed, 9 skipped, 1 failed (the Windows socket-guard test, identical on the base commit, fixed by #53) | AC-48-01 to AC-48-12 (32 UTF-8 byte names, grouping/spacing 255, `brightness=0` rule, power compensation, patch/replace parity); the new tests fail on the base commit | Per-build name buffer, `grp`/`spc` overflow and a visible blip on `{bri, on:false}` unverified (#12) |
 | #52 master power | 2026-11-05: 563 passed, 9 skipped, 1 failed (same Windows test); 168 in patch/layout modules | AC-52-01 to AC-52-12 (off master + positive brightness sends `on:false`; every master write verifies resolved `on`); 12 new tests fail on the base `patches.py` | Visible blip, `tt` consumption, `ps` change unverified; external power change between read and POST is a residual risk |
 | #14 HTTP service | 2026-11-05, macOS/Python 3.13: 246 passed (27 new HTTP tests); distribution PASS (29 runtime versions) | C14-01 to C14-11; T16, T18-T21 (SDK client list/call, stdio/HTTP parity, shared lock/cache, 60-case access matrix, 48 startup failures, disconnect/drain/forced shutdown, listener-free stdio) | No deployment, resource measurement or hardware; Windows signal delivery, TLS, rate limiting, per-user authorization, multi-worker coordination not covered |
@@ -231,7 +231,7 @@ Moved to #12 per ISSUE-11-DEC-008: graceful drain of an in-flight call on the ta
 peak connections, largest body), tracked by [#12](https://github.com/descipar/wled-mcp/issues/12); the automated drain
 coverage (T21) remains the #11 evidence for the drain behavior.
 
-Not exercised and still pending: any other device, preset or segment writes, and H01/H04-H07 (#12).
+Not exercised and still pending in this run: H02 reads from the server's own execution context and a comparison of capability interpretation with the WLED UI (both covered later by #12 run 1), any other device, preset or segment writes, and H01/H04-H07 (#12).
 
 ## Issue #12 hardware acceptance (2026-11-06)
 
