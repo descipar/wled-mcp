@@ -2,7 +2,7 @@
 
 The `wled-mcp` console commands for setup and diagnostics, introduced by
 [#16](https://github.com/descipar/wled-mcp/issues/16) (S2-SETUP-01 to S2-SETUP-03, DEV-03, OPS-04). Technical defaults:
-ISSUE-16-DEC-002 ([decision log](../decisions/issue-16.md)); `config validate` plus restart instead of an in-process
+ISSUE-16-DEC-002 ([decision log](../decisions/stage-2.md)); `config validate` plus restart instead of an in-process
 reload: ISSUE-16-DEC-001. These commands are not MCP tools. Discovery and enrollment are also MCP tools on the shared
 engine (#199; see [discovery.md](discovery.md) and DEC-035, which supersedes ISSUE-16-DEC-001 in part).
 

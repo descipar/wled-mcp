@@ -23,7 +23,7 @@ this file. Fixes are made for the latest release only. See
   device. Additive: devices gain the optional `mac` key (12 lowercase hex; an older server rejects
   the unknown key at startup, see [versioning](docs/contract/versioning.md)); a stored `mac` lets
   discovery recognize a moved controller. The live enrollment ran twice on 2026-11-19 (first
-  attempt `NOT_WLED`, second succeeded; [record](docs/validation/issue-203.md)).
+  attempt `NOT_WLED`, second succeeded; [record](docs/validation/m7-m8.md)).
 - **`wled_set_discovery_ranges` (#202).** `manage` tool (profile `full` only): replaces the stored
   discovery ranges (RFC 1918, /24 to /30, at most 4, no overlap; `[]` clears; `dry_run`). Rejections
   list each bad entry as `data.rejected[]` (`index`, fixed `reason`, never the value). Stored as
@@ -33,7 +33,7 @@ this file. Fixes are made for the latest release only. See
   `[discovery]` table. Writer fixes: the storage failure reason names the real cause, the write lock
   is per file, a Windows lock-byte failure is a storage failure. Contract:
   [discovery](docs/contract/discovery.md); live discovery runs of #204 on 2026-11-20
-  ([record](docs/validation/issue-204.md)).
+  ([record](docs/validation/m7-m8.md)).
 - **Rooms (#183).** A stored group can be a room (`kind` `room` on `wled_save_group`; format stays
   version 1). A controller is in at most one room; conflicts are refused on save, reported by
   `wled_list_groups` and `wled_list_devices`, and refused by room actions before any write. New
@@ -41,10 +41,10 @@ this file. Fixes are made for the latest release only. See
   the scene write path (dry run, strict by default, per-device outcomes, uncertain writes never
   retried). `wled_plan_zone` and `wled_apply_zone` take an optional `room` (`outside_room`). The
   tool list grows from 37 to 38 and the `full` profile from 60572 to 63676 characters
-  ([measurements](docs/validation/issue-235.md)). All additive; an older server counts a room file as
+  ([measurements](docs/validation/m7-m8.md)). All additive; an older server counts a room file as
   invalid and leaves it untouched ([migration note](docs/contract/versioning.md#migration-notes)).
   Contract: [rooms](docs/contract/rooms.md); one live run in
-  [validation/issue-183.md](docs/validation/issue-183.md), not yet released.
+  [validation/m7-m8.md](docs/validation/m7-m8.md), not yet released.
 
 ### Changed
 
@@ -63,9 +63,9 @@ this file. Fixes are made for the latest release only. See
   the longest descriptions are tighter. On the 37-tool `full` profile name, description and input
   schemas shrink from 70926 to 60572 characters (14.6 %), output schemas from 67118 to 53095.
   No tool, name, annotation, field, validation rule or result changed; a test guards a size budget
-  per tool and profile ([measurements](docs/validation/issue-235.md)).
+  per tool and profile ([measurements](docs/validation/m7-m8.md)).
 - Documentation: M8 closing documentation (#204: README, deployment guide, quickstart, tool
-  contract, coverage table, migration rows, [validation plan](docs/validation/issue-204.md)); the
+  contract, coverage table, migration rows, [validation plan](docs/validation/m7-m8.md)); the
   version is unchanged and no release is made. Decision, roadmap and workflow documents do not
   affect the package.
 
@@ -120,7 +120,7 @@ backlog and tooling changes; M3, M4 and M5 close without a release of their own
   telemetry is collected. Troubleshooting guide and current architecture description
   ([#23](https://github.com/descipar/wled-mcp/issues/23)).
 - Security and supply-chain checks in CI ([#181](https://github.com/descipar/wled-mcp/issues/181),
-  [record](docs/validation/issue-181.md)): Ruff security rules, CodeQL `security-extended`, weekly
+  [record](docs/validation/m3-m6.md)): Ruff security rules, CodeQL `security-extended`, weekly
   Dependabot, SHA-pinned actions. One open medium CodeQL finding: the explicit CLI mDNS discovery
   binds its reply socket to all IPv4 interfaces ([#222](https://github.com/descipar/wled-mcp/issues/222),
   [SECURITY.md](SECURITY.md#practical-limits)).
@@ -140,13 +140,13 @@ backlog and tooling changes; M3, M4 and M5 close without a release of their own
 ### Tested and not tested
 
 - New tools have mocked and loopback tests with stdio/HTTP parity. Temporary signals ran twice on
-  the one test controller (WLED 16.0.1, stdio only; [record](docs/validation/issue-28.md)). The
+  the one test controller (WLED 16.0.1, stdio only; [record](docs/validation/stage-3.md)). The
   layout preview has no hardware run. The MCPB bundle was never started in Claude Desktop. The
   security review gives no security support ([DEC-013](docs/DECISIONS.md)).
 - Validation records without code change: PIN and OTA locks
-  ([#128](https://github.com/descipar/wled-mcp/issues/128), [record](docs/validation/issue-128.md))
+  ([#128](https://github.com/descipar/wled-mcp/issues/128), [record](docs/validation/hardware-checks.md))
   and the launch report with the live rollback from 0.3.0 to 0.2.0
-  ([#25](https://github.com/descipar/wled-mcp/issues/25), [report](docs/validation/launch-report.md)).
+  ([#25](https://github.com/descipar/wled-mcp/issues/25), [report](docs/validation/releases.md)).
 
 ## 0.3.0 - M2: observe and explain
 
@@ -165,8 +165,8 @@ notes; tool list 31 to 33.
   conclusion, unknowns and next checks. Never writes, proves a cause or names an actor.
 - Tested: mocked and loopback tests with parity. One read-only live check each on the test
   controller (WLED 16.0.1): the snapshot call reported the live endpoint unavailable (HTTP 501), so
-  no positive colour result was observed ([#150 record](docs/validation/issue-150.md)); one
-  explanation returned an observed blocker (master power off) ([#30 record](docs/validation/issue-30.md)).
+  no positive colour result was observed ([#150 record](docs/validation/m3-m6.md)); one
+  explanation returned an observed blocker (master power off) ([#30 record](docs/validation/stage-3.md)).
   No write path ran on hardware.
 
 ## 0.2.0 - M1: agent guidance, effect metadata and search, names, zones and the registry marker
@@ -203,7 +203,7 @@ never tagged or published.
   PyPI upload record, dependency/licence inventory and vulnerability review.
 - Tested: mocked and loopback tests. One read-only stdio run on the test controller (WLED 16.0.1)
   covered `wled_get_effects` with metadata and one `wled_search_effects` call
-  ([#148 record](docs/validation/issue-148.md)); two of 216 effects were only partly parsed and are
+  ([#148 record](docs/validation/m3-m6.md)); two of 216 effects were only partly parsed and are
   still returned. No hardware run covers zones, name resolution or any new write path. Registry
   metadata was validated locally against the schema only.
 
@@ -234,7 +234,7 @@ changes below and first hardware evidence for several of them.
 ### Tested and not tested
 
 - Hardware ([#134](https://github.com/descipar/wled-mcp/issues/134),
-  [record](docs/validation/issue-134.md)): one run through the deployed HTTP service on one RGB
+  [record](docs/validation/hardware-checks.md)): one run through the deployed HTTP service on one RGB
   controller (WLED 16.0.1) covered a one-device group and scene, preset store, export, import and
   restore with snapshots, and a one-entry playlist; every write was verified and state restored.
 - Still without hardware run: multi-device scenes, tool profiles, `discover`, restore onto an

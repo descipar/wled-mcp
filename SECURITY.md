@@ -17,7 +17,7 @@ at your own risk.
 ## Practical limits
 
 A bounded source review and automated static checks are recorded in
-[issue #181 validation](docs/validation/issue-181.md). This was one pass over selected
+[issue #181 validation](docs/validation/m3-m6.md). This was one pass over selected
 areas, not an exhaustive audit or a security guarantee.
 
 - Hub authentication does not protect the service's direct endpoint. The service's
@@ -48,6 +48,6 @@ areas, not an exhaustive audit or a security guarantee.
 
 Ruff security rules and CodeQL supplement review; a green workflow does not mean zero
 findings. The bounded review retains one open medium CodeQL finding for discovery
-interface binding ([record](docs/validation/issue-181.md)). Dependabot proposes monthly grouped
+interface binding ([record](docs/validation/m3-m6.md)). Dependabot proposes monthly grouped
 dependency and action updates for review; updates are not automatically merged or deployed. These
 checks do not create security support or a commitment to triage or respond.

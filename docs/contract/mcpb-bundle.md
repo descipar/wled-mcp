@@ -1,8 +1,8 @@
 # Claude Desktop MCPB bundle
 
 Issue [#151](https://github.com/descipar/wled-mcp/issues/151), requirement DIST-04, decisions
-ISSUE-151-DEC-001 and ISSUE-151-DEC-002 in [decisions/issue-151.md](../decisions/issue-151.md).
-Evidence: [validation/issue-151.md](../validation/issue-151.md). User install and verification:
+ISSUE-151-DEC-001 and ISSUE-151-DEC-002 in [decisions/m3-m6.md](../decisions/m3-m6.md).
+Evidence: [validation/stage-2-release.md](../validation/stage-2-release.md). User install and verification:
 [MARKETPLACE.md](../MARKETPLACE.md#claude-desktop-mcpb-bundle). Release workflow:
 [PUBLISHING.md](../PUBLISHING.md#mcpb-bundle-151).
 
@@ -35,7 +35,7 @@ started in Claude Desktop or uploaded and no device is contacted.
 | D151-10 | The checksum hand-over and the upload are executed with a shell: the tested file is accepted, a modified, extra or missing file and a hostile tag are rejected; the upload never uses `--clobber`, accepts an identical existing asset, fails on a different one and replaces nothing | `tests/test_publish_workflow.py` (needs bash, GNU tools; stubbed `gh`) |
 | D151-11 | README, MARKETPLACE.md and PUBLISHING.md state "built along with each release, not tested by the project, no warranty"; the README link resolves | `tests/test_mcpb_bundle.py` |
 | D151-12 | The manifest template names the version only by `REPLACE_WITH_VERSION`, the author only by `REPLACE_WITH_AUTHOR` | `tests/test_mcpb_bundle.py` |
-| D151-13 | The release job is first executed with the next release the owner publishes; until then it is verified by review, the static and shell tests and a local dry run | `docs/validation/issue-151.md` (first release run recorded afterwards, not blocking) |
+| D151-13 | The release job is first executed with the next release the owner publishes; until then it is verified by review, the static and shell tests and a local dry run | `docs/validation/stage-2-release.md` (first release run recorded afterwards, not blocking) |
 | D151-14 | The command line writes one file, prints one checksum line, never replaces an existing bundle, and writes nothing on a version mismatch, a validation failure or an unusable location | `tests/test_mcpb_bundle.py` |
 
 ## Manifest design
@@ -86,7 +86,7 @@ operating system is non-release evidence).
 
 The Node `mcpb` tool is not part of the release path (ISSUE-151-DEC-002 item 2). One local
 cross-check with the pinned `@anthropic-ai/mcpb` 2.1.2 CLI is in
-[validation/issue-151.md](../validation/issue-151.md); repeat it when the vendored schema changes.
+[validation/stage-2-release.md](../validation/stage-2-release.md); repeat it when the vendored schema changes.
 
 ### Vendored schema
 

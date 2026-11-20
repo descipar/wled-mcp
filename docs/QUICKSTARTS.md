@@ -109,7 +109,7 @@ base_url = "http://wled-desk.example.invalid"
 
 ### Agent-driven path (milestone M8, not yet released)
 
-An agent can find and add controllers through the MCP client. The tools are merged but not in a released version; live evidence was recorded on 2026-11-20 ([validation/issue-204.md](validation/issue-204.md)). Each step is an explicit call; nothing runs at startup ([contract](contract/discovery.md)):
+An agent can find and add controllers through the MCP client. The tools are merged but not in a released version; live evidence was recorded on 2026-11-20 ([validation/m7-m8.md](validation/m7-m8.md)). Each step is an explicit call; nothing runs at startup ([contract](contract/discovery.md)):
 
 1. `wled_discover_devices` runs mDNS and, when ranges are stored, a bounded read-only `GET /json/info` probe of those RFC 1918 ranges (at most a /24 each). It lists candidates as `new`, `known` or `address_changed` plus a coverage report and writes nothing. From a container mDNS usually finds nothing, which the report states.
 2. Optional: `wled_set_discovery_ranges` stores the private ranges to probe (the complete new list; `dry_run` shows the result). It writes only the inventory file and contacts no device. Without stored ranges only mDNS runs and proposed ranges are returned, never probed.

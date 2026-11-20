@@ -4,11 +4,11 @@ Contract for [issue #19](https://github.com/descipar/wled-mcp/issues/19). It ext
 [`wled_get_state`](../TOOL-CONTRACT.md#read-tools-state-and-catalogs-implemented-in-5) and the [segment
 tools](../TOOL-CONTRACT.md#segments-schema-and-omissions) `wled_patch_segments` and `wled_replace_layout`; everything
 stated there applies unless this file says otherwise. Decisions:
-[ISSUE-19-DEC-001](../decisions/issue-19.md#issue-19-dec-001--overlapping-segments) (human: overlap only with
-`allow_overlap`), [ISSUE-19-DEC-002](../decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) (human:
+[ISSUE-19-DEC-001](../decisions/stage-2.md#issue-19-dec-001--overlapping-segments) (human: overlap only with
+`allow_overlap`), [ISSUE-19-DEC-002](../decisions/stage-2.md#issue-19-dec-002--segment-features-not-exposed) (human:
 `rpt`, `fxdef`, matrix/panel configuration and `i` not exposed) and
-[ISSUE-19-DEC-003](../decisions/issue-19.md#issue-19-dec-003--technical-defaults-for-the-capability-model-and-segment-fields)
-(coordinator, technical defaults). Evidence: [validation/issue-19.md](../validation/issue-19.md) (mock and source only).
+[ISSUE-19-DEC-003](../decisions/stage-2.md#issue-19-dec-003--technical-defaults-for-the-capability-model-and-segment-fields)
+(coordinator, technical defaults). Evidence: [validation/stage-2-core.md](../validation/stage-2-core.md) (mock and source only).
 `wled_store_preset` takes the same fields under their wire keys
 ([presets.md](presets.md#supplied-state-wled_store_preset)); bundle import and export are unchanged (TD-19-10).
 
@@ -28,7 +28,7 @@ TD-21-6); the firmware tier of #21 is not an input.
 Capability bits (FX.h `SEG_CAPABILITY_*`): RGB `0x01`, white `0x02`, CCT `0x04`. A `seg[].lc` value counts only when it
 is an integer 0-255 (booleans rejected); otherwise it is ignored with a warning and the next source applies. An
 `info.leds.seglc` list counts only when every entry is in the same range. The bundle 2D rule of
-[ISSUE-18-DEC-003](../decisions/issue-18.md#issue-18-dec-003--technical-defaults-for-restore-supplied-state-save-and-bundles)
+[ISSUE-18-DEC-003](../decisions/stage-2.md#issue-18-dec-003--technical-defaults-for-restore-supplied-state-save-and-bundles)
 (startY/stopY entries blocked unless source and target matrix are both reported and equal) and the `cct` warning use
 `parse_matrix` from this module; the bundle format is unchanged.
 

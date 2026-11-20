@@ -1,10 +1,10 @@
 # Static layout preview (`wled_preview_layout`, #29)
 
 Requirements S3-PREVIEW-01 and S3-PREVIEW-02 ([STAGE-3.md](../STAGE-3.md)). Decisions:
-[ISSUE-29-DEC-001](../decisions/issue-29.md) (agent technical proposals accepted by the
+[ISSUE-29-DEC-001](../decisions/stage-3.md) (agent technical proposals accepted by the
 coordinator, not human decisions) and, for the 1D-only scope,
-[ISSUE-27-DEC-001](../decisions/issue-27.md). Evidence:
-[validation/issue-29.md](../validation/issue-29.md). Examples use synthetic IDs.
+[ISSUE-27-DEC-001](../decisions/stage-3.md). Evidence:
+[validation/stage-3.md](../validation/stage-3.md). Examples use synthetic IDs.
 
 `wled_preview_layout` draws the segment layout of one configured 1D device as a static SVG to show
 boundaries, IDs, ranges, gaps and overlaps. It is read-class, idempotent and non-destructive in

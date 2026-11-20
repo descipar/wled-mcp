@@ -1,7 +1,7 @@
 """Signal manager behaviour (issue #28, S3-T02): lifecycle, conflicts, failures, shutdown.
 
 Mock controllers and a controlled clock only; nothing waits in real time and nothing contacts a
-LAN device. Scenario IDs T28-xx are those of docs/validation/issue-28.md.
+LAN device. Scenario IDs T28-xx are those of docs/validation/stage-3.md.
 """
 
 from __future__ import annotations

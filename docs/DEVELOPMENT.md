@@ -25,7 +25,7 @@ The Ruff file lists repeat those of the `checks` job in `.github/workflows/ci.ym
 
 CI runs the suite with `uv run --frozen pytest -n auto` (pytest-xdist, dev dependency); the same command is an optional local speed-up and plain `uv run --frozen pytest` stays supported. Each worker uses its own subdirectory of `.artifacts/pytest-temp`.
 
-The security-lint job always runs Ruff S rules over `src` (S101 excluded for type/invariant assertions; false positives carry site-specific reasons). The CodeQL workflow analyzes Python with security-extended queries on PRs, main and weekly without building project code. Monthly grouped Dependabot PRs cover uv and Actions; they need review and are not auto-merged ([bounded review record](validation/issue-181.md)).
+The security-lint job always runs Ruff S rules over `src` (S101 excluded for type/invariant assertions; false positives carry site-specific reasons). The CodeQL workflow analyzes Python with security-extended queries on PRs, main and weekly without building project code. Monthly grouped Dependabot PRs cover uv and Actions; they need review and are not auto-merged ([bounded review record](validation/m3-m6.md)).
 
 ### Documentation-only pull requests
 

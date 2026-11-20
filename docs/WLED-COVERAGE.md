@@ -58,7 +58,7 @@ Method:
 | supported | The server reads and, where WLED allows it, sets the feature. `Delivered by` names the tools or CLI commands. | 1 |
 | partial | Only part of the feature is delivered, for example read but not write. `Delivered by` names the tools; Notes say what is missing. | 0.5 |
 | planned | An open roadmap issue owns the feature. Link: that issue. | 0 |
-| unplanned | No owning issue and no exclusion decision ([ISSUE-94-DEC-001](decisions/issue-94.md#issue-94-dec-001--unplanned-features-and-upload-exclusion-scope)). The status decides nothing about future scope. | 0 |
+| unplanned | No owning issue and no exclusion decision ([ISSUE-94-DEC-001](decisions/hardening.md#issue-94-dec-001--unplanned-features-and-upload-exclusion-scope)). The status decides nothing about future scope. | 0 |
 | excluded | A recorded decision keeps the feature out. Link: that decision. Excluded rows leave the planned-scope denominator only. | 0 |
 
 ## Granularity rules
@@ -69,7 +69,7 @@ Method:
    hex/Kelvin/object color forms into segment colors, the `lx`/`ly` build option and the
    `"t"` toggle value into their base features, `/json/si` into the state and
    information reads, and the legacy `/win` HTTP API is an interface, not a feature
-   ([ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed)).
+   ([ISSUE-19-DEC-002](decisions/stage-2.md#issue-19-dec-002--segment-features-not-exposed)).
 3. Web UI pages and assets, and this server's own features (inventory, snapshots,
    dry run, transports, diagnostics), are not rows.
 4. Raw passthrough counts only for read-only information: `raw.info` fields returned
@@ -134,9 +134,9 @@ owning issue for planned rows and the decision for excluded rows.
 | W-SEG-20 | 2D segment bounds | `startY`, `stopY` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Only with `info.leds.matrix`; creating or moving a trailing 1D strip after the matrix is refused. |
 | W-SEG-21 | 2D orientation | `rY`, `mY`, `tp` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | Only with `info.leds.matrix`. |
 | W-SEG-22 | 1D effect mapping on 2D | `m12` | supported | `wled_patch_segments`, `wled_replace_layout`, `wled_get_state` | - | 0-4, where the readback carries the key. |
-| W-SEG-23 | Individual LED colors | `i` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "Pixel art"; restated in ISSUE-19-DEC-002. |
-| W-SEG-24 | Segment repetition | `rpt` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
-| W-SEG-25 | Effect defaults | `fxdef` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
+| W-SEG-23 | Individual LED colors | `i` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "Pixel art"; restated in ISSUE-19-DEC-002. |
+| W-SEG-24 | Segment repetition | `rpt` | excluded | - | [ISSUE-19-DEC-002](decisions/stage-2.md#issue-19-dec-002--segment-features-not-exposed) | - |
+| W-SEG-25 | Effect defaults | `fxdef` | excluded | - | [ISSUE-19-DEC-002](decisions/stage-2.md#issue-19-dec-002--segment-features-not-exposed) | - |
 
 ## Effects and palettes
 
@@ -146,7 +146,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-CAT-02 | Effect metadata | `/json/fxdata` | supported | `wled_get_effects` | - | Raw and leniently parsed labels, palette selector, flags and defaults; ID-preserving filters. One read-only live probe on one controller (#148). |
 | W-CAT-03 | Palette list | `/json/pal` | supported | `wled_get_palettes` | - | Built-in and gradient palettes; WLED does not list custom palettes there. |
 | W-CAT-04 | Palette color data | `/json/palx` | unplanned | - | - | - |
-| W-CAT-05 | Custom palette upload | `/upload` (`palette<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to palette files by ISSUE-94-DEC-001. |
+| W-CAT-05 | Custom palette upload | `/upload` (`palette<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to palette files by ISSUE-94-DEC-001. |
 | W-CAT-06 | Custom palette removal | `rmcpal` | unplanned | - | - | - |
 
 ## Presets and playlists
@@ -162,7 +162,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-PRESET-07 | API-command presets | `win` in a preset | partial | `wled_list_presets`, `wled_get_preset`, `wled_export_presets` | - | Readable and backed up; activation is refused; exported for inspection only with `include_unwritable`, never imported or restored. |
 | W-PRESET-08 | Write a supplied preset object | `psave` with a supplied state object | supported | `wled_store_preset`, `wled_restore_preset`, `wled_import_presets` | - | Applied live, then stored (ISSUE-18-DEC-001); storing without a live change is unsupported on WLED 16; control keys are refused. |
 | W-PRESET-09 | Create and edit playlists | `playlist` (`ps`, `dur`, `transition`, `repeat`, `end`, `r`) | supported | `wled_save_playlist`, `wled_import_presets`, `wled_restore_preset` | - | Saving starts the playlist (ISSUE-18-DEC-001); refused while a playlist runs; `end=255` (refused for activation too) and negative `repeat` refused. |
-| W-PRESET-10 | Upload the whole preset file | `/upload` (`presets.json`) | excluded | - | [ISSUE-18-DEC-001](decisions/issue-18.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects) | - |
+| W-PRESET-10 | Upload the whole preset file | `/upload` (`presets.json`) | excluded | - | [ISSUE-18-DEC-001](decisions/stage-2.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects) | - |
 | W-PRESET-11 | Quick-load labels | `ql` | unplanned | - | - | Preserved in stored presets; not settable. |
 | W-PRESET-12 | Preset cycling and random selection | `ps` (`"a~b~"`, `"r"`) | unplanned | - | - | - |
 | W-PRESET-13 | Boot preset and power-on defaults | `/json/cfg` (`def`: `ps`, `on`, `bri`) | unplanned | - | - | - |
@@ -179,17 +179,17 @@ owning issue for planned rows and the decision for excluded rows.
 | W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |
 | W-INFO-07 | Wi-Fi network scan | `/json/net` | unplanned | - | - | - |
 | W-INFO-08 | Pin usage | `/json/pins` | unplanned | - | - | - |
-| W-INFO-09 | mDNS discovery | mDNS announcement | supported | `wled_discover_devices`, `cli: wled-mcp discover` | - | CLI: one-shot IPv4 mDNS query on explicit invocation; candidates only (ISSUE-16-DEC-001, superseded in part by DEC-035). Tool `wled_discover_devices` (#200, read-only, mDNS plus known-device reads and the unicast probe of the ranges stored with `wled_set_discovery_ranges`, #202); enrollment `wled_add_device` (#203). All merged, not yet released; live evidence of #204 recorded 2026-11-20 ([record](validation/issue-204.md)). [contract](contract/discovery.md). |
+| W-INFO-09 | mDNS discovery | mDNS announcement | supported | `wled_discover_devices`, `cli: wled-mcp discover` | - | CLI: one-shot IPv4 mDNS query on explicit invocation; candidates only (ISSUE-16-DEC-001, superseded in part by DEC-035). Tool `wled_discover_devices` (#200, read-only, mDNS plus known-device reads and the unicast probe of the ranges stored with `wled_set_discovery_ranges`, #202); enrollment `wled_add_device` (#203). All merged, not yet released; live evidence of #204 recorded 2026-11-20 ([record](validation/m7-m8.md)). [contract](contract/discovery.md). |
 
 ## Configuration
 
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | W-CFG-01 | Read the configuration | `/json/cfg` | unplanned | - | - | - |
-| W-CFG-02 | Hardware pin and bus configuration | `/json/cfg` (`hw.led` except `matrix`, `hw.btn` pins and pull-up, `hw.ir.pin`, `hw.relay`, `hw.if`, `hw.baud`, `eth`), `/settings/leds` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "hardware pin/bus configuration": LED buses, button, IR and relay pins, I2C/SPI pins, serial speed and the Ethernet board type with its pins. Button actions and IR remote behavior are W-CFG-08. |
-| W-CFG-03 | Wi-Fi and access point settings | `/json/cfg` (`nw`, `ap`, `wifi`), `/settings/wifi`, state `wifi` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Wi-Fi changes"; includes the address and DNS fields of the Wi-Fi network entries. |
-| W-CFG-04 | Timers and schedules | `/json/cfg` (`timers`), timer fields of `/settings/time` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Timer editing": scheduled presets and the countdown target. NTP and time zone are W-CFG-09. |
-| W-CFG-05 | 2D matrix and panel configuration | `/json/cfg` (`hw.led.matrix`), `/settings/2D` | excluded | - | [ISSUE-19-DEC-002](decisions/issue-19.md#issue-19-dec-002--segment-features-not-exposed) | - |
+| W-CFG-02 | Hardware pin and bus configuration | `/json/cfg` (`hw.led` except `matrix`, `hw.btn` pins and pull-up, `hw.ir.pin`, `hw.relay`, `hw.if`, `hw.baud`, `eth`), `/settings/leds` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "hardware pin/bus configuration": LED buses, button, IR and relay pins, I2C/SPI pins, serial speed and the Ethernet board type with its pins. Button actions and IR remote behavior are W-CFG-08. |
+| W-CFG-03 | Wi-Fi and access point settings | `/json/cfg` (`nw`, `ap`, `wifi`), `/settings/wifi`, state `wifi` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Wi-Fi changes"; includes the address and DNS fields of the Wi-Fi network entries. |
+| W-CFG-04 | Timers and schedules | `/json/cfg` (`timers`), timer fields of `/settings/time` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "Timer editing": scheduled presets and the countdown target. NTP and time zone are W-CFG-09. |
+| W-CFG-05 | 2D matrix and panel configuration | `/json/cfg` (`hw.led.matrix`), `/settings/2D` | excluded | - | [ISSUE-19-DEC-002](decisions/stage-2.md#issue-19-dec-002--segment-features-not-exposed) | - |
 | W-CFG-06 | Sync and integration settings | `/json/cfg` (`if.sync`, `if.nodes`, `if.live`, `if.va`, `if.mqtt`, `if.hue`, `dmx`), `/settings/sync`, `/settings/dmx` | unplanned | - | - | UDP sync, node list, realtime receive options, Alexa, MQTT, Hue and DMX output; one row. |
 | W-CFG-07 | Security settings | `/json/cfg` (`ota`), settings `pin`, `/settings/sec` | unplanned | - | - | Settings PIN and OTA lock. |
 | W-CFG-08 | Button and IR remote behavior | `/json/cfg` (`hw.btn.ins` `type` and `macros`, `hw.btn.tt`, `hw.btn.mqtt`, `hw.ir.type`, `hw.ir.sel`) | unplanned | - | - | Button types, press-to-preset actions and the IR remote type; not pin settings, so not read as ADV-02. |
@@ -202,20 +202,20 @@ owning issue for planned rows and the decision for excluded rows.
 
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| W-SYS-01 | Reboot | `rb`, `/reset` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "reboot". |
-| W-SYS-02 | Firmware update | `/update`, `/updatebootloader` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "firmware updates". |
-| W-SYS-03 | Factory reset | `/settings/sec` (`RS`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "factory reset". |
-| W-SYS-04 | File upload and editing | `/upload`, `/edit` | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads": `/edit` also lists, downloads and deletes files; it is the file manager around uploads and is read as part of that exclusion. Preset and palette files have their own rows. |
-| W-SYS-05 | Ledmap file upload | `/upload` (`ledmap.json`, `ledmap<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to ledmap files by ISSUE-94-DEC-001. |
+| W-SYS-01 | Reboot | `rb`, `/reset` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "reboot". |
+| W-SYS-02 | Firmware update | `/update`, `/updatebootloader` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "firmware updates". |
+| W-SYS-03 | Factory reset | `/settings/sec` (`RS`) | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "factory reset". |
+| W-SYS-04 | File upload and editing | `/upload`, `/edit` | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads": `/edit` also lists, downloads and deletes files; it is the file manager around uploads and is read as part of that exclusion. Preset and palette files have their own rows. |
+| W-SYS-05 | Ledmap file upload | `/upload` (`ledmap.json`, `ledmap<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to ledmap files by ISSUE-94-DEC-001. |
 
 ## Realtime and streaming
 
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| W-RT-01 | Realtime pixel input over UDP or serial | UDP realtime (WARLS, DRGB, DRGBW, DNRGB, tpm2.net), Adalight serial | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
-| W-RT-02 | E1.31 and Art-Net input | E1.31, Art-Net | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
-| W-RT-03 | DDP | DDP | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "DDP". |
-| W-RT-04 | Audio input | AudioReactive usermod | excluded | - | [ISSUE-13-DEC-001](decisions/issue-13.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "audio capture". |
+| W-RT-01 | Realtime pixel input over UDP or serial | UDP realtime (WARLS, DRGB, DRGBW, DNRGB, tpm2.net), Adalight serial | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
+| W-RT-02 | E1.31 and Art-Net input | E1.31, Art-Net | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "custom realtime animation streaming". |
+| W-RT-03 | DDP | DDP | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "DDP". |
+| W-RT-04 | Audio input | AudioReactive usermod | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | SEG-06 "audio capture". |
 | W-RT-05 | WebSocket state push | `/ws` | unplanned | - | - | - |
 
 ## Usermods

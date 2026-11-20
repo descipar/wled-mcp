@@ -1,10 +1,24 @@
 # Issue-specific decisions
 
-Create `issue-<number>.md` when an actual decision applies only to that issue.
+Issue-specific decisions are grouped by milestone or topic, one `## Issue #<n> decisions`
+section per issue with its `### ISSUE-<n>-DEC-xxx` (or `-OPEN-xxx`) entries. Record a decision
+that applies only to one issue in the file of its group, appended after the existing sections;
+a milestone or topic without a file gets a new `<group>.md` listed below. Do not recreate
+per-issue files.
+
+| File | Issues |
+| --- | --- |
+| [stage-1.md](stage-1.md) | #1 to #14 (stage 1 core) |
+| [stage-2.md](stage-2.md) | #16 to #25 |
+| [stage-3.md](stage-3.md) | #27 to #31 |
+| [hardening.md](hardening.md) | #48, #52, #53, #55, #61, #62, #66, #74, #94, #98 |
+| [m3-m6.md](m3-m6.md) | #128, #130, #134, #147, #150, #151 |
+| [m7-m8.md](m7-m8.md) | #183, #198, #200 to #204 |
+
 Use [the decision template](../agent-workflow/decision.template.md) and stable
-IDs such as `ISSUE-10-DEC-001`. Keep entries chronological and mark superseded
-entries instead of deleting them. Do not create fictional examples that look
-like real human decisions.
+IDs such as `ISSUE-10-DEC-001`. Keep entries chronological within a section and mark
+superseded entries instead of deleting them. IDs and heading text are stable anchors; do not
+rename them. Do not create fictional examples that look like real human decisions.
 
 The coordinator reads relevant files alongside [the shared log](../DECISIONS.md)
 at startup/resume and before questions. Include applicable decision IDs and file

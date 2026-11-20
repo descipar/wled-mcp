@@ -1,9 +1,9 @@
 # Temporary signals (`wled_start_signal`, `wled_get_signal_status`, `wled_cancel_signal`, #28)
 
 Requirements S3-SIGNAL-01 and S3-SIGNAL-02 ([STAGE-3.md](../STAGE-3.md)). Decisions:
-[ISSUE-28-DEC-002](../decisions/issue-28.md) (design defaults, a technical proposal accepted by
-the coordinator, not a human decision) and [ISSUE-28-DEC-001](../decisions/issue-28.md) (hardware
-authorization for the evidence). Evidence: [validation/issue-28.md](../validation/issue-28.md).
+[ISSUE-28-DEC-002](../decisions/stage-3.md) (design defaults, a technical proposal accepted by
+the coordinator, not a human decision) and [ISSUE-28-DEC-001](../decisions/stage-3.md) (hardware
+authorization for the evidence). Evidence: [validation/stage-3.md](../validation/stage-3.md).
 Examples use synthetic IDs.
 
 A **signal** shows one RGB colour on explicitly listed existing segments of **one** configured

@@ -3,11 +3,11 @@
 Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`), the CLI `discover`, the inventory
 writer with in-process reload, `wled_discover_devices`, `wled_set_discovery_ranges` (with `[discovery].ranges` and the
 hard caps) and `wled_add_device` (with `devices[].mac`) are implemented and merged but not yet released. Evidence:
-mocked tests plus the live runs of [validation/issue-203.md](../validation/issue-203.md) and
-[validation/issue-204.md](../validation/issue-204.md).
+mocked tests plus the live runs of [validation/m7-m8.md](../validation/m7-m8.md) and
+[validation/m7-m8.md](../validation/m7-m8.md).
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the owner decision (confirmed
-part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the technical proposals; every value or rule marked
+part). [ISSUE-198-DEC-001](../decisions/m7-m8.md) records the technical proposals; every value or rule marked
 **TP-n** is such a proposal, not a human decision, and the owner can override it. Both transports share these operations
 and schemas. The contract names no concrete addresses (DEC-005); examples use `<private-network>/24`.
 
@@ -144,7 +144,7 @@ no redirects, no proxy, GET only); conflict checks; build the entry; write; relo
 `reloaded` and `written`. The envelope `device_id` is the new ID on success and null on failure (**TP-6**). The tool
 never POSTs, never touches the device beyond the one read and never sets `max_class`.
 
-Rules ([ISSUE-203-DEC-001](../decisions/issue-203.md)):
+Rules ([ISSUE-203-DEC-001](../decisions/m7-m8.md)):
 
 - The stored `base_url` is canonical: `http://<ip>` (port 80 omitted, no trailing slash) or `http://<ip>:<port>`. A bad
   address is `VALIDATION_ERROR` with `data.field` `base_url` and a fixed `data.reason` (`invalid_url`,
@@ -330,8 +330,8 @@ downgrade uses the configuration kept for that version. The migration-notes rows
   (only with `unicast` requested and ranges stored); a refused call is `DISCOVERY_BUSY` with `data.retry_after_seconds`
   (whole seconds, 1 to 30) and `read_retryable` true. A cancelled client call does not stop the worker before its own
   deadline (at most 30 s); the guard stays held until it ends. Evidence:
-  [validation/issue-200.md](../validation/issue-200.md).
+  [validation/m7-m8.md](../validation/m7-m8.md).
 
 Related: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment),
-[ISSUE-198-DEC-001](../decisions/issue-198.md), [cli.md](cli.md), [profiles.md](profiles.md),
+[ISSUE-198-DEC-001](../decisions/m7-m8.md), [cli.md](cli.md), [profiles.md](profiles.md),
 [DEPLOYMENT.md](../DEPLOYMENT.md).

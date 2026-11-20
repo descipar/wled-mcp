@@ -3,8 +3,8 @@
 Contract for the runtime dependencies the package declares and the tested set a release was checked
 with. Introduced by [#22](https://github.com/descipar/wled-mcp/issues/22) (acceptance item 4,
 S2-DIST-03); decisions ISSUE-22-DEC-003 (owner: loosen the exact pins) and ISSUE-22-DEC-004
-(technical defaults: the ranges below), in the [decision log](../decisions/issue-22.md). Evidence:
-[validation record](../validation/issue-22.md#runtime-dependency-ranges).
+(technical defaults: the ranges below), in the [decision log](../decisions/stage-2.md). Evidence:
+[validation record](../validation/stage-2-release.md#runtime-dependency-ranges).
 
 ## Declared ranges
 

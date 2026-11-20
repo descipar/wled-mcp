@@ -3,10 +3,10 @@
 Contract for milestone M7. A room is a stored group with `kind` `room`: it says where controllers
 are, and one explicit tool applies a master state or a stored scene to the members of a room. Rooms
 belong to the next release (marked "not yet released" in the README until then). Decisions:
-[ISSUE-183-DEC-002](../decisions/issue-183.md) records the design defaults (technical proposals,
+[ISSUE-183-DEC-002](../decisions/m7-m8.md) records the design defaults (technical proposals,
 not human decisions; the owner can change any at the merge decision);
-[ISSUE-183-DEC-001](../decisions/issue-183.md) is the bounded live-run authorization. Evidence:
-[validation/issue-183.md](../validation/issue-183.md). Both transports share these operations.
+[ISSUE-183-DEC-001](../decisions/m7-m8.md) is the bounded live-run authorization. Evidence:
+[validation/m7-m8.md](../validation/m7-m8.md). Both transports share these operations.
 Examples are synthetic.
 
 Shared mechanics are those of [groups-scenes.md](groups-scenes.md): storage, bounds,

@@ -3,10 +3,10 @@
 Contract for [issue #20](https://github.com/descipar/wled-mcp/issues/20) (S2-ACCESS-01 and
 S2-ACCESS-02; scenario S2-T02). Enforcement is described here, diagnostics (correlation ID, logs,
 status tool) in [diagnostics.md](diagnostics.md).
-Decisions: [ISSUE-20-DEC-001](../decisions/issue-20.md#issue-20-dec-001--default-profile-device-restrictions-status-surface-classes)
+Decisions: [ISSUE-20-DEC-001](../decisions/stage-2.md#issue-20-dec-001--default-profile-device-restrictions-status-surface-classes)
 (human: default `full`, per-device maximum class, vocabulary) and
-[ISSUE-20-DEC-002](../decisions/issue-20.md#issue-20-dec-002--technical-defaults-td-20-1-to-td-20-15)
-(coordinator, technical defaults). Evidence: [validation/issue-20.md](../validation/issue-20.md)
+[ISSUE-20-DEC-002](../decisions/stage-2.md#issue-20-dec-002--technical-defaults-td-20-1-to-td-20-15)
+(coordinator, technical defaults). Evidence: [validation/stage-2-core.md](../validation/stage-2-core.md)
 (mock and loopback only; no hardware claim).
 
 The deployment, not the MCP host, selects what the server will do. Tool annotations stay hints;

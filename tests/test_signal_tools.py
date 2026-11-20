@@ -1,7 +1,7 @@
 """Signal tools (issue #28): schemas, dry run, access context, both transports.
 
 Mock controllers, a controlled clock and loopback only; nothing contacts a LAN device. Scenario
-IDs T28-xx are those of docs/validation/issue-28.md.
+IDs T28-xx are those of docs/validation/stage-3.md.
 """
 
 from __future__ import annotations

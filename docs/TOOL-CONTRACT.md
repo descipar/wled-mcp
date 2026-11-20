@@ -1,7 +1,7 @@
 # V1 MCP tool contract
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2) plus the tools added since. Technical
-choices and their authority are in [the issue decisions](decisions/issue-2.md); requirement IDs refer to
+choices and their authority are in [the issue decisions](decisions/stage-1.md); requirement IDs refer to
 [REQUIREMENTS.md](REQUIREMENTS.md); synthetic cases are in [examples/contracts](../examples/contracts/README.md).
 Contract text added from stage 2 on lives in per-area files under `docs/contract/`, linked from the [list at the
 end](#stage-2-and-later-files); see [where new documentation goes](AGENT-WORKFLOW.md#where-new-documentation-goes).
@@ -10,8 +10,8 @@ Inventory and client foundations: [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md).
 Status: every tool in the tables below is implemented; the "V1 tools" table names the owning issue and file. The
 discovery tools of M8 (`wled_discover_devices`, `wled_set_discovery_ranges`, `wled_add_device`) are merged but not yet
 released. The live enrollment of #203 ran twice on 2026-11-19 (first attempt `NOT_WLED`, second succeeded; see
-[validation/issue-203.md](validation/issue-203.md)); the discovery runs per deployment mode passed on 2026-11-20
-([validation/issue-204.md](validation/issue-204.md)). `wled_patch_raw_state` remains a design requirement, not
+[validation/m7-m8.md](validation/m7-m8.md)); the discovery runs per deployment mode passed on 2026-11-20
+([validation/m7-m8.md](validation/m7-m8.md)). `wled_patch_raw_state` remains a design requirement, not
 executable behavior (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on
 WLED 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06); activating a preset saved by WLED
 16 was refused there ([#66](https://github.com/descipar/wled-mcp/issues/66)) and, with the fix, verified in
@@ -33,7 +33,7 @@ WLED 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-1
   verification. Different devices progress concurrently; external clients stay outside this lock.
 - The served schemas are slimmed (#235): generated `title` keys and `default: null` on nullable optional fields are not
   served; validation, field names, bounds and non-null defaults are unchanged. `tests/test_tool_budget.py` enforces a
-  size budget per tool and per profile ([measurements](validation/issue-235.md)); growth is a deliberate decision.
+  size budget per tool and per profile ([measurements](validation/m7-m8.md)); growth is a deliberate decision.
 - Validate the entire request and planned sequence before the first write. Report interference; never repeatedly
   overwrite to make verification pass.
 - User authorization belongs to the MCP host; no interactive approval mechanism is added inside the server. Precise
@@ -143,7 +143,7 @@ or implicit playlist editing.
 
 ## Read tools: state and catalogs (implemented in #5)
 
-Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions [ISSUE-5-DEC-001–008](decisions/issue-5.md).
+Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions [ISSUE-5-DEC-001–008](decisions/stage-1.md).
 Inputs are strict (unknown fields and non-boolean `refresh` rejected). All three are read-only, idempotent, closed-world
 and return `application=not_attempted`, `verification=not_requested`, `dry_run=false`. Failures use existing error codes
 only, with `ok=false` and empty `data`; messages name the fixed resource label and numeric HTTP status, never a body,
@@ -220,7 +220,7 @@ readback as failed off. Effects and unrelated transient frames are not equality 
 
 ### Master power rules (`wled_set_state`)
 
-Issue #52, [ISSUE-52-DEC-001](decisions/issue-52.md). The pinned v0.15.1 firmware couples master power to brightness
+Issue #52, [ISSUE-52-DEC-001](decisions/hardening.md). The pinned v0.15.1 firmware couples master power to brightness
 (`on = root["on"] | (bri > 0)`), so a positive `bri` alone turns an off master on. The planner applies these rules
 before any write and identically in a dry run (evidence: [SOURCES.md](SOURCES.md); hardware confirmation stays with
 #12).
@@ -262,7 +262,7 @@ in target catalogs. Should fields: `grouping`, `spacing`, `offset`, `reverse`, `
 
 ### Shared segment limits (`wled_patch_segments` and `wled_replace_layout`)
 
-Issue #48, [ISSUE-48-DEC-001](decisions/issue-48.md) (human decision; supersedes the #7-only name, 255-bound and `bri`
+Issue #48, [ISSUE-48-DEC-001](decisions/hardening.md) (human decision; supersedes the #7-only name, 255-bound and `bri`
 sending points of ISSUE-7-DEC-006). Both tools apply one rule set, implemented once (`src/wled_mcp/segment_rules.py`),
 before any write and identically in a dry run. Evidence is the pinned v0.15.1 source
 ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware confirmation stays with #12.
@@ -340,7 +340,7 @@ noncontiguous layout and a rejected sparse-new-ID request (acceptance targets, n
 ## Layout replacement (implemented in #7)
 
 Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus REL-01/02 and the MCP-02 envelope); decisions
-[ISSUE-7-DEC-001–007](decisions/issue-7.md) and [ISSUE-48-DEC-001](decisions/issue-48.md). Evidence is mock-only and
+[ISSUE-7-DEC-001–007](decisions/stage-1.md) and [ISSUE-48-DEC-001](decisions/hardening.md). Evidence is mock-only and
 source-derived ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 is recorded for one controller in
 [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06), without stale-ID removal by this tool on
 hardware.
@@ -439,7 +439,7 @@ execution of stored commands.
 
 ### Persistent presets, implemented in #9
 
-Decisions: [ISSUE-9-DEC-001](decisions/issue-9.md), ISSUE-8-DEC-001 to -003. Evidence: mock-only (T11-T13); firmware
+Decisions: [ISSUE-9-DEC-001](decisions/stage-1.md), ISSUE-8-DEC-001 to -003. Evidence: mock-only (T11-T13); firmware
 facts are pinned in [SOURCES.md](SOURCES.md#issue-9-preset-evidence) and are not hardware evidence.
 
 Inputs are strict (`extra=forbid`, booleans are not integers). `preset_id` is an integer 1-250. `wled_save_preset(name,
@@ -649,7 +649,7 @@ background jobs or server-initiated streams. Accepted notifications get 202; req
 method (GET, DELETE, PUT, PATCH, OPTIONS, HEAD) returns 405 with `Allow: POST` after the access checks. A stale
 `Mcp-Session-Id` is ignored and none is issued. Request bodies are limited to 256 KiB (413, SDK); the unauthenticated
 peer's body is never read. Invalid protocol versions, media types/methods use SDK transport/protocol errors rather than
-tool envelopes. #3 locks a compatible SDK; #14 proves actual SDK client behavior ([decisions](decisions/issue-14.md)).
+tool envelopes. #3 locks a compatible SDK; #14 proves actual SDK client behavior ([decisions](decisions/stage-1.md)).
 
 All clients share inventory, one async WLED client, caches, snapshot store and per-device locks for process lifetime.
 Disconnect is not cancellation: bounded verification continues after dispatch where possible, locks are released

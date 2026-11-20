@@ -381,13 +381,13 @@
           "value": "low",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/hardware-checks.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/hardware-checks.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         }
       }
     },
@@ -426,13 +426,13 @@
           "value": "low",
           "confidence": "recommended",
           "basis": "author_judgement",
-          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/live-check-2026-11-08.md) but the owner remark did not name it."
+          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/hardware-checks.md) but the owner remark did not name it."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
           "basis": "author_judgement",
-          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/live-check-2026-11-08.md) but the owner remark did not name it."
+          "evidence": "Curated judgement, by analogy with Noise 3 and Blends; Sine was in the 2026-11-08 live run (docs/validation/hardware-checks.md) but the owner remark did not name it."
         }
       }
     },
@@ -477,13 +477,13 @@
           "value": "low",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/hardware-checks.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         },
         "palette_saturation_need": {
           "value": "high",
           "confidence": "recommended",
           "basis": "observed_run",
-          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/live-check-2026-11-08.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
+          "evidence": "Owner comment on issue #31 (2026-11-08) and the owner remark in docs/validation/hardware-checks.md: soft effects were barely visible with pale palettes at low brightness; curated judgement, not measured."
         }
       }
     }

@@ -2,7 +2,7 @@
 
 In-process tests use the mock fleet only. Console tests start the installed ``wled-mcp``
 against synthetic loopback devices on ``127.0.0.1``; nothing contacts a LAN device.
-Scenario IDs T20-14 to T20-17 are those of docs/validation/issue-20.md.
+Scenario IDs T20-14 to T20-17 are those of docs/validation/stage-2-core.md.
 """
 
 from __future__ import annotations
@@ -952,5 +952,5 @@ def test_the_documents_link_the_diagnostics_contract_and_the_validation_file():
     tool_contract = read_text("docs/TOOL-CONTRACT.md")
     assert "contract/diagnostics.md" in tool_contract
     assert "wled_get_service_status" in tool_contract and "correlation_id" in tool_contract
-    assert "validation/issue-20.md" in read_text("docs/VALIDATION.md")
+    assert "validation/stage-2-core.md" in read_text("docs/VALIDATION.md")
     assert "wled_get_service_status" in read_text("docs/WLED-COVERAGE.md")

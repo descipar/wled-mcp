@@ -408,7 +408,7 @@ def decision_entries(docs: Path) -> dict[str, str]:
     entries = {match: "active" for match in re.findall(r"^\| (DEC-\d{3}) \|", log, flags=re.M)}
     for decision, status in section_statuses(log, re.compile(r"^#+ (DEC-\d{3})\b")).items():
         entries[decision] = status or entries.get(decision, "active")
-    for path in sorted((docs / "decisions").glob("issue-*.md")):
+    for path in sorted((docs / "decisions").glob("*.md")):
         text = path.read_text(encoding="utf-8")
         entries.update(section_statuses(text, re.compile(r"^#+ (ISSUE-\d+-DEC-\d{3})\b")))
     return entries

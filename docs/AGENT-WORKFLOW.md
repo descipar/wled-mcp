@@ -87,8 +87,8 @@ New documentation goes into new files so parallel tracks do not edit the same la
 | Content | Location | Linked from |
 | --- | --- | --- |
 | New tool or transport contract | `docs/contract/<area>.md` | [TOOL-CONTRACT.md](TOOL-CONTRACT.md) |
-| New validation or acceptance evidence | `docs/validation/issue-<n>.md` | [VALIDATION.md](VALIDATION.md) |
-| Issue-specific decisions | `docs/decisions/issue-<n>.md` | [DECISIONS.md](DECISIONS.md) |
+| New validation or acceptance evidence | `docs/validation/<group>.md` (one section per issue, see [its README](validation/README.md)) | [VALIDATION.md](VALIDATION.md) |
+| Issue-specific decisions | `docs/decisions/<group>.md` (one section per issue, see [its README](decisions/README.md)) | [DECISIONS.md](DECISIONS.md) |
 
 The creating PR adds one link line, in sorted position, to the "Stage 2 and later files" list of the contract or validation document; decision files get the usual pointer in DECISIONS.md. Existing sections stay in place and small corrections are made there.
 

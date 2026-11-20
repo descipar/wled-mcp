@@ -1,8 +1,8 @@
 # Publishing to PyPI
 
-How the package `wled-mcp` gets to PyPI: the workflow [`.github/workflows/publish.yml`](../.github/workflows/publish.yml), the owner's one-time setup and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-002 ([decisions/issue-22.md](decisions/issue-22.md)); for the MCPB bundle ISSUE-151-DEC-001 and ISSUE-151-DEC-002 ([decisions/issue-151.md](decisions/issue-151.md)). Evidence: [validation/issue-22.md](validation/issue-22.md), [validation/issue-151.md](validation/issue-151.md).
+How the package `wled-mcp` gets to PyPI: the workflow [`.github/workflows/publish.yml`](../.github/workflows/publish.yml), the owner's one-time setup and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-002 ([decisions/stage-2.md](decisions/stage-2.md)); for the MCPB bundle ISSUE-151-DEC-001 and ISSUE-151-DEC-002 ([decisions/m3-m6.md](decisions/m3-m6.md)). Evidence: [validation/stage-2-release.md](validation/stage-2-release.md), [validation/stage-2-release.md](validation/stage-2-release.md).
 
-Status: the workflow has published releases. Merging a change to it publishes nothing. Registering the publisher, changing the environment, creating a tag or release and approving an upload each need the owner's explicit instruction at that time ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs ran for the first time with the release of 2026-11-13 ([validation/issue-151.md](validation/issue-151.md#first-release-run)).
+Status: the workflow has published releases. Merging a change to it publishes nothing. Registering the publisher, changing the environment, creating a tag or release and approving an upload each need the owner's explicit instruction at that time ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs ran for the first time with the release of 2026-11-13 ([validation/stage-2-release.md](validation/stage-2-release.md#first-release-run)).
 
 ## What the workflow does
 
@@ -46,7 +46,7 @@ A release marked pre-release also fires `release: published` and would publish `
 
 ## First release
 
-Each step needs the owner's instruction at that time. Done for the first PyPI release on 2026-11-09 ([validation/issue-22.md](validation/issue-22.md#first-upload-2026-11-09)).
+Each step needs the owner's instruction at that time. Done for the first PyPI release on 2026-11-09 ([validation/stage-2-release.md](validation/stage-2-release.md#first-upload-2026-11-09)).
 
 1. The workflow PR is merged into `main`.
 2. The release commit on `main` carries `project.version`, the changelog entry and a README suitable for PyPI (it cannot be changed for an uploaded version; relative links do not resolve on PyPI, and it must not say the package is unpublished).
@@ -75,7 +75,7 @@ With Trusted Publishing the publish action creates PEP 740 attestations by defau
 
 ## MCPB bundle (#151)
 
-Each run also builds a Claude Desktop bundle (`wled-mcp-<version>.mcpb`) and attaches it to the GitHub release. **The bundle is built along with each release, not tested by the project, no warranty** ([ISSUE-151-DEC-001](decisions/issue-151.md)). It contains no server code: its manifest starts the released PyPI package through `uvx`. Format and limits: [contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view: [MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made; the bundle jobs ran first with the release of 2026-11-13 (DEC-023; recorded in [validation/issue-151.md](validation/issue-151.md#first-release-run)). Submitting the bundle to any directory is an owner action and not planned.
+Each run also builds a Claude Desktop bundle (`wled-mcp-<version>.mcpb`) and attaches it to the GitHub release. **The bundle is built along with each release, not tested by the project, no warranty** ([ISSUE-151-DEC-001](decisions/m3-m6.md)). It contains no server code: its manifest starts the released PyPI package through `uvx`. Format and limits: [contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view: [MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made; the bundle jobs ran first with the release of 2026-11-13 (DEC-023; recorded in [validation/stage-2-release.md](validation/stage-2-release.md#first-release-run)). Submitting the bundle to any directory is an owner action and not planned.
 
 Both jobs are outside the PyPI path (`publish` needs only `build`; a failure of either never changes the PyPI upload; ISSUE-151-DEC-002 item 4):
 
@@ -102,9 +102,9 @@ All are permissive and compatible with the project's Apache-2.0 licence; none is
 
 ## Registry listing after the PyPI release
 
-Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README marker `mcp-name: io.github.descipar/wled-mcp` (inside the package description, required by `scripts/check_distribution.py`) and the root [`server.json`](../server.json) (see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/issue-24.md](validation/issue-24.md)). The goal is findability in the MCPHub registry, which is the official MCP Registry ([ISSUE-24-DEC-003](decisions/issue-24.md); the MCPM and hosted-directory routes are not planned). The workflow does not touch the registry, and no registry automation is wired.
+Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README marker `mcp-name: io.github.descipar/wled-mcp` (inside the package description, required by `scripts/check_distribution.py`) and the root [`server.json`](../server.json) (see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/stage-2-release.md](validation/stage-2-release.md)). The goal is findability in the MCPHub registry, which is the official MCP Registry ([ISSUE-24-DEC-003](decisions/stage-2.md); the MCPM and hosted-directory routes are not planned). The workflow does not touch the registry, and no registry automation is wired.
 
-**Release chain for a milestone release (`<version>` from `pyproject.toml`).** Done for M1 on 2026-11-09 on the owner's instructions ([ISSUE-24-DEC-004](decisions/issue-24.md); facts in [validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)) and for the M2 minor release on 2026-11-11 ([DEC-031](DECISIONS.md#dec-031--release-scope-for-milestone-m2), [record](validation/release-m2.md#release-and-registry-publication-2026-11-11)). For every later release each step needs the owner's explicit instruction at that time; completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release), [DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
+**Release chain for a milestone release (`<version>` from `pyproject.toml`).** Done for M1 on 2026-11-09 on the owner's instructions ([ISSUE-24-DEC-004](decisions/stage-2.md); facts in [validation/stage-2-release.md](validation/stage-2-release.md#release-and-registry-publication-2026-11-09)) and for the M2 minor release on 2026-11-11 ([DEC-031](DECISIONS.md#dec-031--release-scope-for-milestone-m2), [record](validation/releases.md#release-and-registry-publication-2026-11-11)). For every later release each step needs the owner's explicit instruction at that time; completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release), [DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
 
 1. After the release PR is merged: create the tag `v<version>` on that `main` commit and publish the GitHub release (see "First release").
 2. `publish.yml` builds, smoke-tests and, after the `pypi` review, uploads.
