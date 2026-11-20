@@ -8,11 +8,6 @@ from wled_mcp.operations import build_operations
 from wled_mcp.resources import Resources
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 @pytest.mark.anyio
 async def test_probe_worker_bound_and_independent_failures(tmp_path):
     active = maximum = calls = 0

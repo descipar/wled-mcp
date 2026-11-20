@@ -44,11 +44,6 @@ from wled_mcp.scene_tools import MAX_GROUPS
 NAMES = ("strip_a", "strip_b", "strip_c")
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def fleet3() -> SceneFleet:
     return SceneFleet(**{name: strip() for name in NAMES})
 

@@ -101,20 +101,11 @@ docker image inspect --format '{{.Id}}' wled-mcp:<image-tag>
 
 The Dockerfile pins `python:3.13.18-slim-trixie` by tag and multi-architecture index digest, requires exactly one wheel, requires `SHA256SUMS` to list that wheel and `requirements-runtime.txt` once each and both to match (otherwise the build fails), installs only the copied wheel with `--constraint requirements-runtime.txt` and creates `/app/data/wled-mcp` for the non-root user. The allowlist `.dockerignore` keeps everything but those three files out of the context, so inventories, data, backups, `.env` files and secrets cannot enter an image layer. To move to a newer Python 3.13 patch image, change tag and digest together, rebuild and re-run the checks.
 
-Prepare a dedicated deployment directory (placeholder `/srv/wled-mcp-http/`). Replace `REPLACE_WITH_HUB_NETWORK` with the hub's existing Docker network and `REPLACE_WITH_IMAGE_TAG` with the built `<image-tag>`; do not edit the hub's Compose file:
+Prepare the deployment directory (placeholder `/srv/wled-mcp-http/`) as in the [HTTP quickstart](QUICKSTARTS.md#quickstart-streamable-http-service) (steps 2 and 3: Compose file, inventory, generated credential, ownership; do not edit the hub's Compose file), then validate and start only this project:
 
 ```text
-cd /srv/wled-mcp-http
-cp <checkout>/examples/compose.http.example.yaml compose.yaml
-mkdir -p data/wled-mcp/config secrets
-cp <local inventory> data/wled-mcp/config/devices.toml
-(umask 077; python3 -c "import secrets; print(secrets.token_urlsafe(48))" > secrets/wled_mcp_http_token)
-sudo chown -R 10001:10001 data/wled-mcp secrets/wled_mcp_http_token
-sudo chmod 0400 secrets/wled_mcp_http_token
 docker compose -p wled-mcp-http -f compose.yaml config --quiet
 docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps wled-mcp
-docker compose -p wled-mcp-http -f compose.yaml ps
-docker compose -p wled-mcp-http -f compose.yaml logs --tail 50 wled-mcp
 ```
 
 The data directory must support hard links (snapshots fail closed with `BACKUP_FAILED` otherwise) and be writable by the container UID; the credential file must be readable by UID 10001. Never print or commit the credential; `secrets/` and `data/` are git-ignored.

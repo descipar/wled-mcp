@@ -36,11 +36,6 @@ STORED = {
 }
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def wled16(store: dict[str, Any] | None = None, version: str = FIRMWARE) -> PresetDevice:
     return PresetDevice(
         store={"0": {}, **(store or {})},

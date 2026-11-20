@@ -27,11 +27,6 @@ from tests.signal_support import (
 from wled_mcp.access import CURRENT_TOOL_CLASS, ToolClass
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 async def paused(env: Any, identifier: str) -> None:
     """Wait until the first restore attempt failed and the retry pause is the pending wait."""
     await env.until(

@@ -74,11 +74,6 @@ GROW = (
 )
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def size(value: object) -> int:
     return len(json.dumps(value, separators=(",", ":"), ensure_ascii=False))
 

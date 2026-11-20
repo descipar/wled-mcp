@@ -32,11 +32,6 @@ NAME = "wled_preview_layout"
 STATE_INFO = [(DESK, "/json/state"), (DESK, "/json/info")]
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def three_segments(**kwargs: Any):
     return fleet(
         state=make_state(

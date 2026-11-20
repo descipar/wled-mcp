@@ -37,11 +37,6 @@ POSIX_ONLY = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def clean_env(**extra: str) -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if not k.startswith("WLED_MCP_")}
     env.update(extra)

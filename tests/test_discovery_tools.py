@@ -33,11 +33,6 @@ from wled_mcp.server import create_server
 TOOL = "wled_discover_devices"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 class StepClock:
     def __init__(self) -> None:
         self.now = 5000.0

@@ -40,11 +40,6 @@ DESK = "desk.invalid"
 LAMP = "lamp.invalid"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def fleet_of(desk: PresetDevice | None = None, **others: PresetDevice) -> PresetFleet:
     fleet = PresetFleet()
     fleet.add(DESK, desk if desk is not None else PresetDevice())

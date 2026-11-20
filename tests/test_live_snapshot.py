@@ -15,11 +15,6 @@ from wled_mcp.operations import build_operations
 from wled_mcp.server import create_server
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def test_sample_runs_use_only_actual_indices_and_report_gaps_overlaps_missing():
     segments = [make_segment(2, 1, 5), make_segment(9, 4, 7), make_segment(12, 1, 2)]
     result = map_snapshot(segments, {"leds": ["ff0000", "ff0000", "00ff00"], "n": 2}, 9, 10)

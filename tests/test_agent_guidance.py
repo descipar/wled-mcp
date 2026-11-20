@@ -15,11 +15,6 @@ from wled_mcp.scenes import parse_scene
 from wled_mcp.zone_tools import parse_fields
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 async def guidance(client):
     instructions = client.instructions
     assert instructions

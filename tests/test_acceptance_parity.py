@@ -425,11 +425,6 @@ def test_parity_cases_never_use_a_non_loopback_device(tmp_path):
 # ============================================================ documented commands (T16)
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 ROOT = Path(__file__).resolve().parents[1]
 FLAG = re.compile(r"--[a-z][a-z-]*")
 

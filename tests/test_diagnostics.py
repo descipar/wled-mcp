@@ -83,11 +83,6 @@ PLANTED = (
 )
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 class Harness:
     """A server wired like the service: one monitor shared by the status tool and the server."""
 

@@ -20,11 +20,6 @@ from wled_mcp.patches import PatchSegmentsRequest, SetStateRequest
 from wled_mcp.resources import Resources
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 class TransientWLED(FakeWLED):
     """Adds master fields that advance on every read, like a running controller."""
 

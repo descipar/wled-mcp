@@ -25,11 +25,6 @@ SECRET = "synthetic-secret-marker"
 DESK, SHELF = "desk.invalid", "shelf.invalid"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 @pytest.fixture(autouse=True)
 def clean_environment(monkeypatch):
     for name in list(os.environ):
