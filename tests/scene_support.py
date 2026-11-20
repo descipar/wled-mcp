@@ -9,6 +9,7 @@ an in-flight gauge. The firmware model, bus capability bits and matrix shapes ar
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 import json
 from pathlib import Path
@@ -20,7 +21,7 @@ import httpx2 as httpx
 from tests.layout_support import FakeWLED
 from tests.state_catalog_support import FakeClock
 from tests.test_inventory_client import config, device
-from wled_mcp.access import CURRENT_TOOL_CLASS, AccessPolicy
+from wled_mcp.access import CURRENT_TOOL_CLASS, AccessPolicy, ToolClass
 from wled_mcp.operations import build_operations
 from wled_mcp.resources import Resources
 
@@ -254,3 +255,26 @@ def canonical_scene() -> dict[str, Any]:
             },
         ],
     }
+
+
+def entry(outcome: Any, device_id: str) -> dict[str, Any]:
+    (found,) = [d for d in outcome.data["devices"] if d["device_id"] == device_id]
+    return found
+
+
+def target_of(outcome: Any, device_id: str) -> dict[str, Any]:
+    (found,) = [t for t in outcome.data["targets"] if t["device_id"] == device_id]
+    return found
+
+
+def error_of(outcome: Any) -> dict[str, Any]:
+    assert outcome.ok is False and outcome.error is not None
+    return outcome.error.model_dump()
+
+
+def snapshot(fleet: SceneFleet) -> dict[str, Any]:
+    return {host: copy.deepcopy(fake.state()) for host, fake in fleet.devices.items()}
+
+
+def policy(profile: str = "control", **caps: str) -> AccessPolicy:
+    return AccessPolicy(profile, {d: ToolClass(v) for d, v in caps.items()})  # type: ignore[arg-type]

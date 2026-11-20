@@ -21,16 +21,21 @@ from tests.scene_support import (
     SceneDevice,
     SceneFleet,
     call,
+    error_of,
     group_arguments,
     open_fleet,
+    policy,
     segments_of,
     strip,
+    target_of,
     write_raw,
+)
+from tests.scene_support import (
+    entry as device_entry,
 )
 from tests.state_catalog_support import make_segment
 from tests.tool_contract import CONTROL, READ, expected_tool
 from wled_mcp import zone_tools
-from wled_mcp.access import AccessPolicy, ToolClass
 from wled_mcp.operations import build_operations
 from wled_mcp.server import create_server
 
@@ -101,21 +106,6 @@ def shelf_left(tmp_path: Path) -> None:
             name="Shelf, left side",
         ),
     )
-
-
-def error_of(outcome: Any) -> dict[str, Any]:
-    assert outcome.ok is False and outcome.error is not None
-    return outcome.error.model_dump()
-
-
-def target_of(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [t for t in outcome.data["targets"] if t["device_id"] == device_id]
-    return found
-
-
-def device_entry(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [d for d in outcome.data["devices"] if d["device_id"] == device_id]
-    return found
 
 
 def bodies(fleet: SceneFleet, device_id: str) -> list[Any]:
@@ -531,10 +521,6 @@ async def test_a_resolution_that_still_works_but_differs_also_fails_the_write(
 
 
 # =============================================================== access (AC-27-12)
-
-
-def policy(profile: str = "control", **caps: str) -> AccessPolicy:
-    return AccessPolicy(profile, {d: ToolClass(v) for d, v in caps.items()})  # type: ignore[arg-type]
 
 
 async def test_a_read_capped_device_of_a_zone_is_refused_before_any_read_but_still_previews(

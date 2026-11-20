@@ -7,474 +7,295 @@ this file. Fixes are made for the latest release only. See
 
 ## Unreleased
 
-### Changed
-
-- **`wled-mcp discover` runs on the shared discovery engine (#199).** It now sends up to 3 mDNS
-  rounds in a 6 s window (also asking `_http._tcp`), verifies every answer with one
-  `GET /json/info` (RFC 1918 addresses, port 80) before listing it, merges by MAC, marks each
-  candidate `new`, `known` or `address_changed` and prints a coverage report; a run that could
-  not look never says nothing was found. This is a behavior change: the command now makes HTTP
-  reads, a controller announced on a port other than 80 or outside RFC 1918 space is not listed,
-  and `--timeout` only lowers the overall deadline. The JSON keeps its version-1 fields and
-  adds `conclusion`, `coverage`, `warnings` and per-candidate `address`, `base_url`,
-  `suggested_id`, `suggested_name`, `firmware_version`, `product`, `found_by`, `status`.
-  Unicast probing of the configured ranges comes with `[discovery].ranges` (#202, below).
-
 ### Added
 
-- **`wled_discover_devices` (#200, not yet released).** A read tool, served in every profile,
-  that runs the shared discovery engine on request (mDNS plus the known-device reads, and the stored
-  ranges since #202) and returns candidates (`new`, `known`, `address_changed`), a
-  coverage report that never claims nothing was found when it could not look, and proposed
-  ranges derived from inventory addresses that are never probed. It writes nothing. A second
-  concurrent call, or a probe run within 5 s of the previous one, returns the new error code
-  `DISCOVERY_BUSY` with `retry_after_seconds`.
-- **`wled_add_device` (#203).** A `manage` tool (profile `full` only) adds one controller:
-  `base_url` is an explicit `http://<RFC 1918 IPv4>[:port]` (no host name), optional `device_id`,
-  `name`, `expected_mac` and `dry_run`. It makes one read-only `GET /json/info` (the discovery
-  hard caps apply), refuses a non-WLED answer (new error code `NOT_WLED`) and a duplicate ID,
-  address or MAC (`INVENTORY_CONFLICT`, an entry is never overwritten), then appends one
-  `[[devices]]` entry through the shared writer and applies it without a restart. It never
-  writes to the device and never sets `max_class`. Additive: devices gain the optional `mac`
-  key (12 lowercase hex; an older server rejects the unknown key at startup; migration-notes
-  rows for `/devices/mac` and `/discovery` under the provisional 0.5.0 in
-  [versioning](docs/contract/versioning.md)), and `wled_discover_devices` and `wled-mcp discover` use a stored `mac` to
-  recognize a moved controller without an extra read. The live enrollment ran once on 2026-11-19
-  ([record](docs/validation/issue-203.md)).
-- **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
-  stored discovery ranges: `ranges` is the complete new list (RFC 1918, /24 to /30, at most 4,
-  no overlap; `[]` clears it; `dry_run` shows the final list). Rejections list every bad entry
-  as `data.rejected[]` with `index` and a fixed `reason`, never the value. The list is written
-  as `[discovery] ranges = [...]` to the inventory file through the shared writer (lock,
-  backup, atomic replace, rollback) and applied without a restart; no device is contacted.
-  `wled-mcp discover --config` now probes the stored ranges (no range option exists). A
-  hand-edited out-of-policy range stops startup with `discovery.ranges[i]: invalid`. Additive;
-  an older server rejects the `[discovery]` table at startup. The hard caps now live in one
-  module for the startup validator, the tool and the probe; no number changed. Fixes in the
-  inventory writer: the storage failure reason names the real cause (missing or unwritable
-  directory is `not_writable`), the in-process write lock is per file, and a Windows lock-byte
-  failure is a storage failure. Contract: [docs/contract/discovery.md](docs/contract/discovery.md).
-  Mocked tests plus the live discovery runs of #204 (2026-11-20, [record](docs/validation/issue-204.md)).
-- **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of
-  `wled_save_group`; the group format stays version 1 and a plain group is saved byte-identical
-  to before). A controller is in at most one room: saving a room that lists a device of another
-  room is refused, a hand-edited conflict is reported by `wled_list_groups` (`kind`,
-  `room_conflicts`) and `wled_list_devices` (`room`, `room_conflict`), and the room actions refuse
-  it before any write. The new control tool `wled_apply_room` applies a master state or a stored
-  scene to the members of a room through the scene write path (dry run, strict by default,
-  per-device outcomes, uncertain writes never retried, partial failure never overall success);
-  it is refused as a whole when a scene touches a controller or segment outside the room or a
-  state meets a member that designates segments. `wled_plan_zone` and `wled_apply_zone` take an
-  optional `room` (a zone outside the room is refused, `outside_room`). The tool list grows from
-  37 to 38 tools and the `full` profile from 60572 to 63676 characters (see
-  [validation/issue-235.md](docs/validation/issue-235.md)). All changes are additive. Downgrade:
-  an older server counts a room file as invalid and leaves it untouched
-  ([migration note](docs/contract/versioning.md#migration-notes), provisional release number).
-  Contract: [docs/contract/rooms.md](docs/contract/rooms.md). Mocked tests; the one authorized
-  live run on a single controller is recorded in
+- **`wled_discover_devices` (#200).** Read tool, served in every profile: runs the shared discovery
+  engine on request (mDNS, known-device reads, stored ranges since #202) and returns candidates
+  (`new`, `known`, `address_changed`), a coverage report that never claims nothing was found when it
+  could not look, and proposed ranges that are never probed. Writes nothing. A concurrent call, or a
+  probe run within 5 s of the previous one, returns the new error code `DISCOVERY_BUSY` with
+  `retry_after_seconds`.
+- **`wled_add_device` (#203).** `manage` tool (profile `full` only): adds one controller from an
+  explicit `http://<RFC 1918 IPv4>[:port]` (optional `device_id`, `name`, `expected_mac`,
+  `dry_run`). One read-only `GET /json/info` (discovery hard caps apply); refuses a non-WLED answer
+  (`NOT_WLED`) and a duplicate ID, address or MAC (`INVENTORY_CONFLICT`); appends one
+  `[[devices]]` entry through the shared writer and applies it without a restart. Never writes to a
+  device. Additive: devices gain the optional `mac` key (12 lowercase hex; an older server rejects
+  the unknown key at startup, see [versioning](docs/contract/versioning.md)); a stored `mac` lets
+  discovery recognize a moved controller. The live enrollment ran twice on 2026-11-19 (first
+  attempt `NOT_WLED`, second succeeded; [record](docs/validation/issue-203.md)).
+- **`wled_set_discovery_ranges` (#202).** `manage` tool (profile `full` only): replaces the stored
+  discovery ranges (RFC 1918, /24 to /30, at most 4, no overlap; `[]` clears; `dry_run`). Rejections
+  list each bad entry as `data.rejected[]` (`index`, fixed `reason`, never the value). Stored as
+  `[discovery] ranges` through the shared writer (lock, backup, atomic replace, rollback), applied
+  without a restart; no device is contacted. `wled-mcp discover --config` probes the stored ranges;
+  an out-of-policy hand-edited range stops startup. Additive; an older server rejects the
+  `[discovery]` table. Writer fixes: the storage failure reason names the real cause, the write lock
+  is per file, a Windows lock-byte failure is a storage failure. Contract:
+  [discovery](docs/contract/discovery.md); live discovery runs of #204 on 2026-11-20
+  ([record](docs/validation/issue-204.md)).
+- **Rooms (#183).** A stored group can be a room (`kind` `room` on `wled_save_group`; format stays
+  version 1). A controller is in at most one room; conflicts are refused on save, reported by
+  `wled_list_groups` and `wled_list_devices`, and refused by room actions before any write. New
+  control tool `wled_apply_room` applies a master state or stored scene to a room's members through
+  the scene write path (dry run, strict by default, per-device outcomes, uncertain writes never
+  retried). `wled_plan_zone` and `wled_apply_zone` take an optional `room` (`outside_room`). The
+  tool list grows from 37 to 38 and the `full` profile from 60572 to 63676 characters
+  ([measurements](docs/validation/issue-235.md)). All additive; an older server counts a room file as
+  invalid and leaves it untouched ([migration note](docs/contract/versioning.md#migration-notes)).
+  Contract: [rooms](docs/contract/rooms.md); one live run in
   [validation/issue-183.md](docs/validation/issue-183.md), not yet released.
 
 ### Changed
 
-- **Inventory writes keep a backup and take a lock (#201).** `wled-mcp config add-device` and
-  `config init --force` now keep the previous file as `<config>.bak` next to the configuration
-  and take the lock file `.<config>.lock` there, so they cannot interleave with another writer
-  (new refusal `CONFIG_LOCKED`). A reusable inventory writer with in-process reload (no new tool;
-  the discovery tools of milestone M8 use it) and the error codes `INVENTORY_CONFLICT` and
-  `INVENTORY_RELOAD_FAILED` are added. The configuration directory must be writable.
-- **Smaller served tool list (#235).** The served input and output schemas no longer carry the
-  generated `title` keys or `"default": null` on optional nullable fields, and the longest tool
-  descriptions are tighter (for example the signal tools, and the repeated overwrite sentence of
-  the preset tools). On the 37-tool `full` profile the name, description and input schemas
-  shrink from 70926 to 60572 characters (14.6 %, about 2600 tokens), and the output schemas from
-  67118 to 53095. No tool, name, annotation, field name, validation rule or result changed;
-  every safety statement of the descriptions stays. A test now guards a size budget per tool and
-  per profile. Measurements: [validation/issue-235.md](docs/validation/issue-235.md).
+- **`wled-mcp discover` uses the shared discovery engine (#199).** Up to 3 mDNS rounds in a 6 s
+  window (also `_http._tcp`), each answer verified with one `GET /json/info` (RFC 1918, port 80),
+  merged by MAC, marked `new`, `known` or `address_changed`, with a coverage report. Behavior
+  change: the command now makes HTTP reads, a controller on another port or outside RFC 1918 space is
+  not listed, and `--timeout` only lowers the deadline. The JSON keeps its version-1 fields and adds
+  `conclusion`, `coverage`, `warnings` and per-candidate fields.
+- **Inventory writes keep a backup and take a lock (#201).** `config add-device` and
+  `config init --force` keep the previous file as `<config>.bak` and take `.<config>.lock`
+  (new refusal `CONFIG_LOCKED`). A reusable inventory writer with in-process reload and the error
+  codes `INVENTORY_CONFLICT` and `INVENTORY_RELOAD_FAILED` are added. The configuration directory
+  must be writable.
+- **Smaller served tool list (#235).** Schemas drop generated `title` keys and `"default": null`;
+  the longest descriptions are tighter. On the 37-tool `full` profile name, description and input
+  schemas shrink from 70926 to 60572 characters (14.6 %), output schemas from 67118 to 53095.
+  No tool, name, annotation, field, validation rule or result changed; a test guards a size budget
+  per tool and profile ([measurements](docs/validation/issue-235.md)).
+- Documentation: M8 closing documentation (#204: README, deployment guide, quickstart, tool
+  contract, coverage table, migration rows, [validation plan](docs/validation/issue-204.md)); the
+  version is unchanged and no release is made. Decision, roadmap and workflow documents do not
+  affect the package.
 
 ## 0.4.0 - M3 to M6: layout preview, signals, security review and the MCPB bundle
 
-The minor release that carries all work merged since 0.3.0: milestones M3 (layout preview), M4
-(temporary signals), M5 (validation with locked controllers) and M6 (public distribution
-and the bounded security review), plus the backlog and tooling changes listed below. M3, M4 and
-M5 close without a release of their own
+The minor release that carries all work merged since 0.3.0: M3 (layout preview), M4 (temporary
+signals), M5 (locked controllers) and M6 (public distribution, bounded security review) plus
+backlog and tooling changes; M3, M4 and M5 close without a release of their own
 ([DEC-032](docs/DECISIONS.md#dec-032--m3-closes-without-its-own-release),
 [DEC-034](docs/DECISIONS.md#dec-034--m4-closes-without-its-own-release),
-[DEC-036](docs/DECISIONS.md#dec-036--m5-closes-without-its-own-release)). A minor release under the
-`0.x` policy ([versioning](docs/contract/versioning.md), DEC-020). The served tool list grows from
-33 to 37 tools; the tool changes are additive and no tool or field was removed or renamed.
-Four behaviors changed and carry migration notes below: the snapshot directory, the HTTP
-protocol error bodies, the HTTP startup line and the definition-directory scan cap.
+[DEC-036](docs/DECISIONS.md#dec-036--m5-closes-without-its-own-release)). Tool list grows from 33 to
+37; changes are additive. Four behaviors changed and carry migration notes
+([versioning](docs/contract/versioning.md), DEC-020).
 
 ### Migration
 
-- **Snapshot directory (#181).** A symlinked `<data_dir>/backups` is no longer followed; see the
-  symlink entry under "Changed" below.
-- **HTTP error bodies (#181).** Transport-level HTTP errors (status 400 and above, such as a
-  malformed request) now carry a fixed message and no SDK text that could quote the request. The
-  status, the JSON-RPC code and request ID and the server's own fixed messages are unchanged; a
-  client that parsed the SDK's validation text of such an error sees "HTTP request rejected."
-  instead. Successful responses are unchanged.
-- **HTTP startup line (#181).** The stderr notice at startup is `listening on configured address
-  path /mcp` and no longer names the host and port; a bind failure prints a fixed message with the
-  OS error number. A script that waited for or parsed `listening on <host>:<port>` must match
-  the new line.
+- **Snapshot directory (#181).** A symlinked `<data_dir>/backups` is no longer followed. The
+  snapshot listing shows no snapshots (with a warning), load or restore reports `PRESET_NOT_FOUND`
+  and creating a snapshot fails with `BACKUP_FAILED`, so overwrites and deletes needing one are
+  refused. Snapshots are not lost; point `data_dir` at the real directory or replace the link
+  with a real directory containing them.
+- **HTTP error bodies (#181).** Transport-level errors (status 400 and above) carry a fixed message
+  and no SDK text that could quote the request; a client that parsed that text sees "HTTP request
+  rejected." Status, JSON-RPC code, request ID and the server's own messages are unchanged.
+- **HTTP startup line (#181).** The stderr notice is `listening on configured address path /mcp`
+  and no longer names host and port; a bind failure prints a fixed message with the OS error
+  number. A script that parsed `listening on <host>:<port>` must match the new line.
 - **Definition directories (#181).** A group, scene or zone directory with more files than the scan
-  cap now refuses to store a new definition instead of using an incomplete count.
+  cap refuses to store a new definition instead of using an incomplete count.
 
 ### Added
 
 - Temporary light signals ([#28](https://github.com/descipar/wled-mcp/issues/28),
-  [contract](docs/contract/signals.md)): `wled_start_signal` shows an RGB colour on chosen
-  existing segments of one controller for 1 to 300 seconds and `wled_cancel_signal` ends it
-  early; `wled_get_signal_status` reads the state. The server restores only the fields it changed
-  (slot-0 colour, the Solid effect, and segment or master power it turned on), and only if they
-  still hold the signal value; otherwise the result is `skipped_conflict` and nothing is
-  overwritten. One signal per device, no queue, no scheduler, no preset touched. Timing is best
-  effort and nothing is persisted: a crash or kill can leave a signal applied, an orderly
-  shutdown makes one bounded restore attempt, and a write whose outcome is unknown is never
-  replayed.
+  [contract](docs/contract/signals.md)): `wled_start_signal` shows an RGB colour on existing
+  segments of one controller for 1 to 300 seconds, `wled_cancel_signal` ends it early and
+  `wled_get_signal_status` reads the state. Only the fields the server changed are restored, and
+  only if they still hold the signal value; otherwise `skipped_conflict` and nothing is
+  overwritten. One signal per device, no queue, scheduler or preset. Timing is best effort and
+  nothing is persisted: a crash can leave a signal applied, an orderly shutdown makes one bounded
+  restore attempt, an unknown write outcome is never replayed.
 - Static layout preview ([#29](https://github.com/descipar/wled-mcp/issues/29),
-  [contract](docs/contract/layout-preview.md)): the read-only `wled_preview_layout` returns a
-  bounded, script-free SVG string (`data.svg`) of one device's observed 1D segment layout or of a
-  proposed complete layout validated by the existing layout planner, with ranges (exclusive
-  stops), a scale, gaps, overlaps and approximate colours, optional zone bands and optional live
-  colour samples. It sends no write, never simulates effects, and refuses matrix devices.
-
+  [contract](docs/contract/layout-preview.md)): read-only `wled_preview_layout` returns a bounded,
+  script-free SVG of a device's observed 1D layout or a proposed layout validated by the layout
+  planner (ranges with exclusive stops, scale, gaps, overlaps, approximate colours, optional zone
+  bands and live samples). No writes, no effect simulation, matrix devices refused.
 - Claude Desktop MCPB bundle ([#151](https://github.com/descipar/wled-mcp/issues/151),
-  [contract](docs/contract/mcpb-bundle.md)): the release workflow builds
-  `wled-mcp-<version>.mcpb` in its own job and, after the PyPI upload succeeded, a separate job
-  attaches it with a SHA-256 file to the GitHub release; a failure of either job does not affect the
-  PyPI upload. The bundle only makes Claude Desktop start the released package through `uvx`
-  (it needs uv on the PATH of Claude Desktop). It is built along with each release, not tested
-  by the project and comes without warranty. The jobs have not run yet; the first bundle is
-  expected to be attached to the release that carries this entry.
-
-- Usage feedback issue template
-  ([#193](https://github.com/descipar/wled-mcp/issues/193)): the server collects no telemetry,
-  and a voluntary template and a README note ask how people use it (no secrets or addresses).
-- Troubleshooting guide and current architecture description
-  ([#23](https://github.com/descipar/wled-mcp/issues/23),
-  [troubleshooting](docs/TROUBLESHOOTING.md)); stale statements in the public documents were
-  corrected.
+  [contract](docs/contract/mcpb-bundle.md)): the release workflow builds `wled-mcp-<version>.mcpb`
+  and, after the PyPI upload succeeded, attaches it with a SHA-256 file to the GitHub release;
+  a failure of either job does not affect PyPI. It only makes Claude Desktop start the released
+  package through `uvx` (uv required), is untested by the project and comes without warranty.
+- Usage feedback issue template ([#193](https://github.com/descipar/wled-mcp/issues/193)); no
+  telemetry is collected. Troubleshooting guide and current architecture description
+  ([#23](https://github.com/descipar/wled-mcp/issues/23)).
 - Security and supply-chain checks in CI ([#181](https://github.com/descipar/wled-mcp/issues/181),
-  [record](docs/validation/issue-181.md)): Ruff security rules over `src`, CodeQL Python
-  `security-extended` analysis, weekly Dependabot updates and SHA-pinned CI actions with
-  discarded checkout credentials. CodeQL reports one open medium finding: the explicit CLI mDNS
-  discovery binds its ephemeral reply socket to all IPv4 interfaces
-  ([#222](https://github.com/descipar/wled-mcp/issues/222)); see
-  [SECURITY.md](SECURITY.md#practical-limits).
+  [record](docs/validation/issue-181.md)): Ruff security rules, CodeQL `security-extended`, weekly
+  Dependabot, SHA-pinned actions. One open medium CodeQL finding: the explicit CLI mDNS discovery
+  binds its reply socket to all IPv4 interfaces ([#222](https://github.com/descipar/wled-mcp/issues/222),
+  [SECURITY.md](SECURITY.md#practical-limits)).
 
 ### Changed
 
-- Bounded source security review fixes ([#181](https://github.com/descipar/wled-mcp/issues/181)):
-  unknown keys in rejected definitions, bundles and segment inputs are no longer echoed in error
-  text, and the startup and bind-error diagnostics of the HTTP service no longer name the
-  listener (see the migration notes). One pass over five areas, not an audit; remaining local
-  directory-replacement risk is [#220](https://github.com/descipar/wled-mcp/issues/220).
-- Layout preview `colour_basis` states `mixed` when only some lanes use live samples and
-  `state_slot_0` when none does ([#187](https://github.com/descipar/wled-mcp/pull/187),
-  [#189](https://github.com/descipar/wled-mcp/pull/189)); an additive value of a tolerant schema.
-- The README is shorter and links to the documents that own the detail
-  ([#194](https://github.com/descipar/wled-mcp/pull/194)).
-- The test suite passes on a Windows checkout
-  ([#191](https://github.com/descipar/wled-mcp/issues/191), [DEC-033](docs/DECISIONS.md#dec-033--windows-is-a-supported-development-platform));
-  the user-facing Windows tier stays experimental.
-- CI runs the complete test suite in parallel with pytest-xdist (`pytest -n auto`); a plain
-  `pytest` run stays serial ([#154](https://github.com/descipar/wled-mcp/issues/154)).
-- Snapshot storage no longer follows a symlinked `<data_dir>/backups` directory
-  ([#181](https://github.com/descipar/wled-mcp/issues/181)). Earlier versions followed it as an
-  operator choice. **Migration:** if `backups/` is a symlink, the snapshot listing shows no
-  snapshots (with a warning) and load or restore reports `PRESET_NOT_FOUND`, and creating a
-  snapshot fails with `BACKUP_FAILED` (so overwrites and deletes that need a snapshot are
-  refused). The snapshots are not lost; they remain in the link target. Point `data_dir` at
-  the real directory or replace the link with a real directory containing the snapshots.
+- Bounded security review fixes ([#181](https://github.com/descipar/wled-mcp/issues/181)): unknown
+  keys are no longer echoed in error text and HTTP diagnostics no longer name the listener. One
+  pass over five areas, not an audit; remaining directory-replacement risk is
+  [#220](https://github.com/descipar/wled-mcp/issues/220).
+- Layout preview `colour_basis` is `mixed` when only some lanes use live samples and
+  `state_slot_0` when none does (additive value).
+- README is shorter; the test suite passes on Windows
+  ([DEC-033](docs/DECISIONS.md#dec-033--windows-is-a-supported-development-platform), user-facing
+  Windows tier stays experimental); CI runs the suite in parallel (`pytest -n auto`, #154).
 
 ### Tested and not tested
 
-- All new tools have mocked and loopback tests, including parity over stdio and protected HTTP.
-  Temporary signals ran twice on the one test controller (WLED 16.0.1, stdio only;
-  [record](docs/validation/issue-28.md)). The layout preview has no hardware run. The MCPB bundle
-  was never started in Claude Desktop and its release jobs have not run on GitHub. The security
-  review is one bounded pass, not an audit, and gives no security support
-  ([DEC-013](docs/DECISIONS.md)).
-
-### Documentation and evidence
-
-- Validation records without code change: behavior with a settings PIN and an OTA lock
-  ([#128](https://github.com/descipar/wled-mcp/issues/128),
-  [record](docs/validation/issue-128.md)) and the launch report with the live rollback from 0.3.0
-  to 0.2.0 on the deployed service ([#25](https://github.com/descipar/wled-mcp/issues/25),
-  [report](docs/validation/launch-report.md)).
-- Contract text for agent-driven discovery and enrollment
-  ([#198](https://github.com/descipar/wled-mcp/issues/198), [contract](docs/contract/discovery.md)).
-  Its tools `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device` are
-  listed under Added above and are not in any released version yet.
-- Milestone M8 closing documentation ([#204](https://github.com/descipar/wled-mcp/issues/204)):
-  README, deployment guide (in-process reload by the M8 tools, discovery from a container,
-  writable config directory), quickstart (agent-driven path), tool contract, coverage table,
-  migration-notes rows and the [validation plan](docs/validation/issue-204.md) with the
-  release-preparation checklist. The three live discovery runs were recorded on 2026-11-20
-  (all passed their main criterion); no release is made and the version is unchanged.
-- Decision records, roadmap and agent-workflow documents changed; they do not affect the package.
+- New tools have mocked and loopback tests with stdio/HTTP parity. Temporary signals ran twice on
+  the one test controller (WLED 16.0.1, stdio only; [record](docs/validation/issue-28.md)). The
+  layout preview has no hardware run. The MCPB bundle was never started in Claude Desktop. The
+  security review gives no security support ([DEC-013](docs/DECISIONS.md)).
+- Validation records without code change: PIN and OTA locks
+  ([#128](https://github.com/descipar/wled-mcp/issues/128), [record](docs/validation/issue-128.md))
+  and the launch report with the live rollback from 0.3.0 to 0.2.0
+  ([#25](https://github.com/descipar/wled-mcp/issues/25), [report](docs/validation/launch-report.md)).
 
 ## 0.3.0 - M2: observe and explain
 
-The release that closes milestone M2 once it is published
-([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release),
-[DEC-031](docs/DECISIONS.md#dec-031--release-scope-for-milestone-m2)). A minor release under the
-`0.x` policy ([versioning](docs/contract/versioning.md), DEC-020): the changes are additive and
-no tool or field was removed or renamed, so it carries no migration notes. The served tool list
-grows from 31 to 33 tools.
-
-### Added
+Closes M2 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release),
+[DEC-031](docs/DECISIONS.md#dec-031--release-scope-for-milestone-m2)). Additive, no migration
+notes; tool list 31 to 33.
 
 - Live LED colour snapshot ([#150](https://github.com/descipar/wled-mcp/issues/150),
-  [contract](docs/contract/live-snapshot.md)): the read-only `wled_get_live_snapshot` returns
-  bounded, sampled LED colours per segment with explicit missing data and mapping limits. The
-  colours are sampled values from the controller's live endpoint, not a claim of colour
-  accuracy, and matrix geometry that cannot be mapped is reported as such.
+  [contract](docs/contract/live-snapshot.md)): read-only `wled_get_live_snapshot` returns bounded
+  sampled colours per segment with explicit missing data and mapping limits; sampled values, no
+  claim of colour accuracy.
 - Lighting explanation ([#30](https://github.com/descipar/wled-mcp/issues/30),
-  [contract](docs/contract/explain.md)): the read-only `wled_explain_lighting` explains why a
-  light change seems ineffective for one device. It reads the controller state and info once
-  each, combines them with process-local evidence of the last control call and returns
-  observations, causes with a confidence (inferred causes never above medium; only a directly
-  observed blocker may be high), a conclusion, unknowns and next checks. It never writes and
-  does not prove a cause or name an actor.
-
-### Tested and not tested
-
-- Both tools have mocked and loopback tests, including parity over stdio and protected HTTP.
-  The live evidence is one read-only check each on the one test controller (WLED 16.0.1):
-  the snapshot call reported the live endpoint as unavailable (HTTP 501), so no positive colour
-  result was observed on hardware ([#150 record](docs/validation/issue-150.md)); one
-  explanation call read state and info once each and returned an observed blocker (master
-  power off) with a low-confidence sync possibility ([#30 record](docs/validation/issue-30.md)).
-  No write, other device, stale-evidence or playback/realtime-override path ran on hardware.
-- The registry metadata is updated for 0.3.0 and validated locally only; nothing is tagged,
-  released, uploaded or published by this change.
+  [contract](docs/contract/explain.md)): read-only `wled_explain_lighting` explains why a change
+  seems ineffective: one state and one info read plus process-local evidence of the last control
+  call, returning observations, causes with a confidence (inferred never above medium), a
+  conclusion, unknowns and next checks. Never writes, proves a cause or names an actor.
+- Tested: mocked and loopback tests with parity. One read-only live check each on the test
+  controller (WLED 16.0.1): the snapshot call reported the live endpoint unavailable (HTTP 501), so
+  no positive colour result was observed ([#150 record](docs/validation/issue-150.md)); one
+  explanation returned an observed blocker (master power off) ([#30 record](docs/validation/issue-30.md)).
+  No write path ran on hardware.
 
 ## 0.2.0 - M1: agent guidance, effect metadata and search, names, zones and the registry marker
 
-The release that closes milestone M1 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).
-A minor release under the `0.x` policy ([versioning](docs/contract/versioning.md), DEC-020): the
-changes are additive and no tool or field was removed or renamed, so it carries no migration
-notes. The served tool list grows from 27 to 31 tools. An earlier preparation of this content as a
-patch release was never tagged or published.
-
-### Added
+Closes M1 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).
+Additive, no migration notes; tool list 27 to 31. An earlier preparation as a patch release was
+never tagged or published.
 
 - Named physical lighting zones ([#27](https://github.com/descipar/wled-mcp/issues/27),
-  [contract](docs/contract/zones.md)): `wled_list_zones` and `wled_plan_zone` (read) and
-  `wled_apply_zone` (control). A reviewed zone file maps a name to configured devices and
-  explicit LED ranges; a zone applies only onto existing active segments that lie inside it and
-  tile it exactly, otherwise the call is refused before any write. No geometry or master state
-  is written; zone targets inside scenes and groups are not part of this release.
+  [contract](docs/contract/zones.md)): `wled_list_zones`, `wled_plan_zone` (read) and
+  `wled_apply_zone` (control). A zone applies only onto existing active segments inside it that
+  tile it exactly, otherwise it is refused before any write; no geometry or master state is
+  written.
 - Effect search ([#31](https://github.com/descipar/wled-mcp/issues/31),
-  [contract](docs/contract/effect-search.md)): the read-only `wled_search_effects` finds the
-  effects of one configured device by curated properties (motion, flashing, colour slots,
-  palette use, strip length, visibility) and returns the device's own IDs and names. The
-  catalog is deliberately small; an effect it does not list is not searchable.
+  [contract](docs/contract/effect-search.md)): read-only `wled_search_effects` finds a device's
+  effects by curated properties and returns the device's own IDs and names; an effect the small
+  catalog does not list is not searchable.
 - Agent guidance ([#147](https://github.com/descipar/wled-mcp/issues/147),
-  [contract](docs/contract/agent-guidance.md)): the server serves the same safe-lighting
-  `instructions` over stdio and HTTP, the prompt `change_lighting_safely`, and precise
-  descriptions for segment, layout, scene and zone inputs and for destructive tools. Whether a
-  client forwards them to its agent is up to the client. A local stdio client check is recorded
-  ([ISSUE-147-DEC-001](docs/decisions/issue-147.md)); whether MCPHub forwards them was not
-  observed.
+  [contract](docs/contract/agent-guidance.md)): the same safe-lighting `instructions` over stdio and
+  HTTP, the prompt `change_lighting_safely` and precise input descriptions; forwarding is up to the
+  client (local stdio check recorded, ISSUE-147-DEC-001; MCPHub forwarding not observed).
 - Effect metadata ([#148](https://github.com/descipar/wled-mcp/issues/148),
-  [contract](docs/contract/effect-metadata.md)): `wled_get_effects` parses the firmware's
-  effect metadata leniently and accepts the optional filters `query`, `two_d` and `audio_reactive`. Original effect IDs are kept.
+  [contract](docs/contract/effect-metadata.md)): `wled_get_effects` parses firmware metadata
+  leniently with optional filters `query`, `two_d`, `audio_reactive`; original IDs are kept and the
+  reserved `RSVD` placeholders are no longer returned (`count` is the number returned).
 - Effect and palette names in segment tools ([#149](https://github.com/descipar/wled-mcp/issues/149),
-  [contract](docs/contract/segment-names.md)): `wled_patch_segments` and `wled_replace_layout`
-  accept `effect_name` and `palette_name` as alternatives to `effect_id` and `palette_id`.
-  Names resolve against the selected device's own catalog before any write (exact, then
-  case-folded match); an ambiguous or unknown name is refused with bounded candidates, and
-  supplying both a name and its ID is a validation error.
-- The README carries the ownership marker the official MCP Registry checks on the PyPI
-  description, the repository holds the registry metadata `server.json`, and
-  `scripts/check_distribution.py` requires the marker in the built wheel
-  ([#24](https://github.com/descipar/wled-mcp/issues/24)). Nothing is listed in the registry
-  yet; that needs the owner's separate action after this release is on PyPI.
-
-### Changed
-
-- `wled_get_effects` no longer returns the reserved placeholder effects (`RSVD`), also without
-  filters; effect IDs are not renumbered and `count` is the number of returned effects
-  ([#148](https://github.com/descipar/wled-mcp/issues/148)).
-- Documentation-only pull requests run a reduced CI check set; every other change still runs
-  the complete suite ([#159](https://github.com/descipar/wled-mcp/issues/159)).
-- Documentation: roadmap by milestones ([DEC-029](docs/DECISIONS.md#dec-029--milestones-instead-of-stages)),
-  the first PyPI upload record, the dependency and licence inventory with a vulnerability review
-  for the PyPI release, an architecture review after the zones merge, and the records of the
-  read-only effect-metadata probe and the local stdio check of the guidance, and the rule
-  that closing a milestone includes a minor release and a README update
-  ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)).
-
-### Tested and not tested
-
-- The new tools and the guidance have mocked and loopback tests. A single read-only run on the
-  one test controller (WLED 16.0.1, over stdio, no write) covered `wled_get_effects` with the
-  effect metadata and one `wled_search_effects` call ([#148 record](docs/validation/issue-148.md));
-  two of the 216 effects were only partially parsed and are still returned. No hardware run
-  covers zones, the segment-name resolution or any write path of the new features. The guidance
-  was checked with a local stdio client; MCPHub forwarding of it was not observed. Hardware acceptance of the stage-2
-  features is unchanged (see 0.1.2).
-- The registry metadata was validated locally against the published schema only; the
-  registry's own publisher checks were not run.
+  [contract](docs/contract/segment-names.md)): `effect_name` and `palette_name` as alternatives to
+  the IDs, resolved against the device's catalog before any write; ambiguous or unknown names are
+  refused with bounded candidates; name plus ID is a validation error.
+- README carries the registry ownership marker, the repository holds the registry `server.json`,
+  and `scripts/check_distribution.py` requires the marker in the wheel
+  ([#24](https://github.com/descipar/wled-mcp/issues/24)); nothing is listed yet.
+- Documentation-only PRs run a reduced CI set (#159); documentation: milestone roadmap (DEC-029),
+  PyPI upload record, dependency/licence inventory and vulnerability review.
+- Tested: mocked and loopback tests. One read-only stdio run on the test controller (WLED 16.0.1)
+  covered `wled_get_effects` with metadata and one `wled_search_effects` call
+  ([#148 record](docs/validation/issue-148.md)); two of 216 effects were only partly parsed and are
+  still returned. No hardware run covers zones, name resolution or any new write path. Registry
+  metadata was validated locally against the schema only.
 
 ## 0.1.2 - stage-2 close-out
 
-Closes stage 2. A patch release: it contains no breaking change (the owner chose 0.1.2
-over 0.2.0; [versioning](docs/contract/versioning.md), DEC-020). The stage-2
-features #16 to #21 (setup and `doctor` commands, groups and scenes, preset restore, bundles
-and playlists, advanced segments, tool profiles and the status tool, firmware tiers and the
-compatibility policy) and #70 (non-release build identity) are already part of 0.1.0 and 0.1.1;
-this release adds the changes below and the first hardware evidence for several of them.
+A patch release without breaking change ([versioning](docs/contract/versioning.md), DEC-020). The
+stage-2 features #16 to #21 and #70 are already part of 0.1.0 and 0.1.1; this release adds the
+changes below and first hardware evidence for several of them.
 
 ### Changed
 
-- `tools/list` builds the tool schemas once per server instead of on every request. The served
-  listing is unchanged. Measured on a single-board ARM host with the 27 tools: about 23 ms of
-  CPU per call instead of about 270 ms ([#67](https://github.com/descipar/wled-mcp/issues/67)).
-- The served output schema of every tool (the result envelope and its error object) now
-  allows additional properties, so a later additive field no longer makes a client that
-  cached the schema reject the response ([#130](https://github.com/descipar/wled-mcp/issues/130)).
-  Required fields and the `data` object are unchanged.
-- Packaged text files (`LICENSE`, `NOTICE`, the Dockerfile, its ignore file and `*.txt`) are
-  checked out with LF line endings on every platform, so a wheel or staged release built from
-  a Windows checkout no longer differs from the Linux build
-  ([#131](https://github.com/descipar/wled-mcp/issues/131)).
-- Documentation: README and limitations updated with the hardware evidence below and the
-  device-authentication limit; releases are staged on the machine that runs them
-  ([DEC-026](docs/DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
-- The package metadata declares version ranges with a lower and an upper bound instead of
-  the exact pins `mcp==2.3.0`, `starlette==1.10.0` and `uvicorn==0.54.0`, and declares
-  `anyio`, which the server imports directly
-  ([#22](https://github.com/descipar/wled-mcp/issues/22),
-  [dependency policy](docs/contract/dependencies.md)). The change is install-compatible:
-  every environment that satisfied the earlier exact pins satisfies the new ranges. The
-  staged release directory, the container image and the stdio hub example still install
-  the exact tested set through `requirements-runtime.txt`; a package user gets that set
-  by adding the release's constraints. The lowest and the highest combination of the
-  ranges passed the test suite.
-- The README is usable as the PyPI project page: all links are absolute, and the
-  installation path uses the PyPI package, with the Git tag as the alternative for a
-  release that is not listed there.
+- `tools/list` builds the tool schemas once per server: about 23 ms CPU per call instead of 270 ms
+  on a single-board ARM host with 27 tools ([#67](https://github.com/descipar/wled-mcp/issues/67)).
+- The served output schema of every tool allows additional properties, so a later additive field no
+  longer makes a client with a cached schema reject the response
+  ([#130](https://github.com/descipar/wled-mcp/issues/130)).
+- Packaged text files are checked out with LF on every platform, so builds from a Windows checkout
+  match Linux ([#131](https://github.com/descipar/wled-mcp/issues/131)).
+- Package metadata declares lower and upper version ranges instead of exact pins and declares
+  `anyio` ([#22](https://github.com/descipar/wled-mcp/issues/22),
+  [dependency policy](docs/contract/dependencies.md)); install-compatible. The staged release, the
+  image and the stdio hub example still install the exact tested set through
+  `requirements-runtime.txt`.
+- README usable as the PyPI project page (absolute links, PyPI installation path); releases are
+  staged on the machine that runs them ([DEC-026](docs/DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
 
 ### Tested and not tested
 
 - Hardware ([#134](https://github.com/descipar/wled-mcp/issues/134),
-  [record](docs/validation/issue-134.md)): one run through the deployed HTTP service on the same
-  RGB controller (WLED 16.0.1, one segment) covered a one-device group and scene (plan, apply,
-  readback, delete), preset store, export, import and restore with snapshots, and a one-entry
-  playlist. Every write was verified and state, segment and preset list were restored; four
-  snapshots remain in the service data directory.
-- Still without a hardware run: multi-device scenes, tool profiles, `discover`, restore onto an
-  occupied slot, playlist import, restoring a playlist preset, CCT, RGBW and 2D, and the live
-  offline-controller check (H07). A live rollback has not been checked.
-- Automated tests and CI as for 0.1.0, plus new tests for the schema cache and the line-ending
-  rules. Platform and firmware support are unchanged.
+  [record](docs/validation/issue-134.md)): one run through the deployed HTTP service on one RGB
+  controller (WLED 16.0.1) covered a one-device group and scene, preset store, export, import and
+  restore with snapshots, and a one-entry playlist; every write was verified and state restored.
+- Still without hardware run: multi-device scenes, tool profiles, `discover`, restore onto an
+  occupied slot, playlist import, CCT, RGBW, 2D and the live offline check (H07). No live rollback
+  yet.
 
-### Known limitations
+### Known limitations and migration
 
-Unchanged from 0.1.0, except that `tools/list` is no longer CPU-heavy. Still: no image on
-GHCR and no registry entry, and PyPI distribution starts with this release at the earliest
-(the Git tag remains the installation route for a release not listed on PyPI); saving a
-playlist starts it and a preset cannot
-be stored without changing the live output; one writer per controller (locks are per process);
-no inventory reload; no tool deletes a snapshot.
-
-### Migration
-
-None needed. No tool, input schema, error code, configuration key or file format changed.
-The tagged releases 0.1.0 and 0.1.1 already serve `correlation_id` (#119), so upgrading from
-them needs no refresh. A client that cached the schema of a build from before #119 (as the
-hub did after an update from such a build) rejects every envelope with "data must NOT have
-additional properties" until it refreshes `tools/list`: reload the hub entry once. About a
-minute was observed once with the hub; other clients may cache longer. Clients that cached
-the schema of 0.1.0 or 0.1.1 would reject a future additive field the same way once;
-schemas served from 0.1.2 on tolerate additive fields.
+As in 0.1.0 except that `tools/list` is no longer CPU-heavy: no GHCR image or registry entry
+(the Git tag stays the route for releases not on PyPI), saving a playlist starts it, one writer
+per controller (locks are per process), no inventory reload, no snapshot deletion tool.
+Migration: none. A client that cached the schema of a build from before #119 rejects every
+envelope ("data must NOT have additional properties") until it refreshes `tools/list`; reload the
+hub entry once. Schemas served from 0.1.2 on tolerate additive fields.
 
 ## 0.1.1 - documentation release
 
-No change to the server, its tools or its configuration: the package behaves exactly as in
-0.1.0. This release carries the restructured documentation, so that the README at the
-release tag is the short one.
-
-### Changed
-
-- The README is about 175 lines instead of 419: a short summary, the status, a three-step
-  "Try it" path (installation check, `wled-mcp config init`, host registration), the safety
-  model, the support matrix and the limits.
-- The release-directory, stdio and HTTP quickstarts and the inventory format moved to
-  [docs/QUICKSTARTS.md](docs/QUICKSTARTS.md); the tool table moved to
-  [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md#tools-at-a-glance); the full list of known
-  limitations moved to [docs/VALIDATION.md](docs/VALIDATION.md#known-limitations).
-- The Git installation route now creates its inventory with `wled-mcp config init` instead
-  of pointing at a container-path step.
-
-### Tested and not tested, limitations, migration
-
-Unchanged from 0.1.0. Migration: none.
+No change to the server, tools or configuration. The README at the tag is the short one (about 175
+lines): summary, status, a three-step "Try it" path, safety model, support matrix and limits.
+Quickstarts and the inventory format moved to [docs/QUICKSTARTS.md](docs/QUICKSTARTS.md), the tool
+table to [docs/TOOL-CONTRACT.md](docs/TOOL-CONTRACT.md#tools-at-a-glance), the known limitations to
+[docs/VALIDATION.md](docs/VALIDATION.md#known-limitations). The Git route creates its inventory with
+`wled-mcp config init`. Testing, limitations and migration as in 0.1.0 (none).
 
 ## 0.1.0 - first source release
 
-The first release is a Git tag with a GitHub release. It is not published to PyPI or GHCR;
-install it from Git as described in the [README](README.md#try-it).
+A Git tag with a GitHub release; not published to PyPI or GHCR, install it from Git as described in
+the [README](README.md#try-it).
 
-### What it provides
+- An MCP server for WLED controllers as a client-managed stdio subprocess (`uvx`) or an independent
+  Streamable HTTP service with its own bearer credential and Host/Origin allowlists; both expose
+  the same tools.
+- Named inventory; normalized state, capabilities and per-firmware effect and palette catalogs.
+- Typed changes: master power, brightness, transition; a patch of selected segments; a replacement of
+  the complete layout. Omitted fields stay unchanged; every write has `dry_run` and read-back
+  verification, and uncertain outcomes are reported, not retried.
+- Persistent presets (list, inspect, activate, save, delete with durable snapshots), snapshot
+  restore, supplied-state saves, native playlist authoring and portable bundles (export/import with
+  dry-run preview and explicit mapping).
+- Named groups and multi-device scenes with a dry-run plan and strict or best-effort apply (not
+  atomic, no rollback).
+- Advanced segment fields (grouping, spacing, offset, mirror, several colors, CCT, 2D) where the
+  device reports them, with an opt-in for overlapping segments.
+- Server-enforced tool profiles (`read-only`, `control`, `full`), a status tool, bounded logs with a
+  correlation ID, and `config init`, `config add-device`, `config validate`, `doctor` and
+  opt-in mDNS `discover`.
+- A tool contract with schema versions, a contract snapshot test, firmware tiers and a version and
+  migration policy.
 
-- An MCP server for WLED controllers, as a client-managed stdio subprocess (`uvx`) or an
-  independent Streamable HTTP service with its own bearer credential and Host/Origin
-  allowlists. Both transports expose the same tools.
-- Named inventory of controllers; normalized state, capabilities and per-firmware effect
-  and palette catalogs.
-- Typed changes: master power, brightness and transition; a patch of selected segments; a
-  replacement of the complete layout. Omitted fields stay unchanged. Every write has
-  `dry_run` and read-back verification, and uncertain outcomes are reported, not retried.
-- Persistent presets: list, inspect, activate, save and delete with durable snapshots;
-  snapshot restore, supplied-state saves, native playlist authoring, and portable preset
-  bundles (export and import with a dry-run preview and explicit mapping).
-- Named device groups and multi-device scenes with a dry-run plan and a strict or
-  best-effort apply that reports one verified outcome per device (not atomic, no rollback).
-- Advanced segment fields (grouping, spacing, offset, mirror, several colors, CCT, 2D
-  coordinates) where the device reports them, and an explicit opt-in for overlapping
-  segments.
-- Server-enforced tool profiles (`read-only`, `control`, `full`), a service status tool,
-  bounded logs with a correlation ID, and the commands `config init`,
-  `config add-device`, `config validate`, `doctor` and `discover` (opt-in mDNS).
-- A tool contract with schema versions, a contract snapshot test, firmware support tiers
-  and a version and migration policy.
+Tested: mocks and loopback devices in CI on Linux amd64 and arm64 with Python 3.13, including real
+stdio and loopback HTTP clients and image builds for both architectures. Hardware acceptance
+covers the single-controller feature set on one RGB controller (WLED 16.0.1) in both transports and
+one deployment of both modes on one MCPHub host; H07 was not run. Groups, scenes, bundles,
+playlists, restore, advanced segment fields, profiles and `discover` have mock and loopback
+evidence only. Windows and macOS are experimental; WLED below 16.0.0 is unsupported (served with a
+warning), other 16.x versions are unknown.
 
-### Tested and not tested
+Known limitations: no PyPI package, GHCR image or registry entry; storing a preset without changing
+the live output is impossible on WLED 16 and saving a playlist starts it; one writer per controller;
+`tools/list` is CPU-heavy on small hosts; configuration changes need `config validate` and a
+restart. Migration: none.
 
-- Automated tests use mocks and synthetic loopback devices and run in CI on Linux amd64
-  and arm64 with Python 3.13, including real stdio and loopback HTTP clients and a
-  container image build for both architectures.
-- Hardware acceptance covers the first (single-controller) feature set on one RGB
-  controller with WLED 16.0.1 in both transports, and one deployment of both modes on one
-  MCPHub host. The live offline-controller check (H07) has not been run.
-- Groups, scenes, preset bundles, playlist authoring, snapshot restore, advanced segment
-  fields, tool profiles and `discover` have mock and loopback evidence only; no hardware
-  run covers them yet.
-- Windows and macOS are experimental. WLED below 16.0.0 is unsupported and only served
-  with a warning; other 16.x versions are unknown.
-
-### Known limitations
-
-- No package on PyPI, no container image on GHCR and no registry or marketplace entry.
-- Storing, restoring or importing a preset without changing the live output is not
-  possible on WLED 16, and saving a playlist starts it.
-- One writer per controller: locks are per process.
-- `tools/list` is CPU-heavy on small hosts.
-- No inventory reload; configuration changes need `wled-mcp config validate` and a restart.
-
-### Migration
-
-None; this is the first release.
-
-### Notices
-
-Not affiliated with, endorsed by or supported by the WLED project or MCPHub. There is no
-support commitment and no security support; the software is provided as is, at your own
-risk (see [SECURITY.md](SECURITY.md)). Licensed under Apache-2.0.
+Not affiliated with, endorsed by or supported by the WLED project or MCPHub. No support commitment
+and no security support; provided as is, at your own risk (see [SECURITY.md](SECURITY.md)).
+Licensed under Apache-2.0.
