@@ -22,7 +22,15 @@ on WLED 16.0.1. No support is promised
 
 - Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a
   named inventory in a TOML file; nothing is discovered unless you run `wled-mcp discover` or
-  (unreleased) call [`wled_discover_devices`](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md); `wled_add_device` (unreleased) enrolls one by IPv4 address.
+  call a discovery tool.
+- Agent-driven discovery and enrollment (milestone M8, **not yet released**; the tools are
+  merged, live evidence and the release are pending; [contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md)):
+  `wled_discover_devices` finds controllers on request (mDNS plus a bounded unicast
+  `GET /json/info` probe of RFC 1918 ranges you configured), `wled_set_discovery_ranges`
+  stores those ranges, and `wled_add_device` adds one verified controller by IPv4 address after
+  confirmation by the MCP client. An inventory change takes effect by in-process reload,
+  without a restart, in stdio and in the HTTP container. The two writing tools change only
+  the server's own inventory file, never a device.
 - State and catalogs: normalized state, capabilities and each device's own effect and
   palette catalogs; effects can be filtered by firmware metadata and searched by curated
   properties (motion, flashing, colour slots; the catalog is small).
@@ -67,8 +75,11 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
   data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
   playlist saves change the live output before they store, and the previous lighting is not
   restored.
-- **No hidden reach.** No discovery by the server or its tools, no arbitrary endpoints or
-  caller-supplied hosts (bar `wled_add_device`, unreleased: one RFC 1918 IPv4, one read-only `GET /json/info`), no silent preset overwrite (`overwrite=true` is required).
+- **No hidden reach.** No discovery at startup or on its own: it runs only on an explicit
+  `wled-mcp discover` or `wled_discover_devices` call, within hard server-side caps (RFC 1918
+  only, at most a /24 per configured range). No arbitrary endpoints or caller-supplied hosts
+  (bar `wled_add_device`: one RFC 1918 IPv4, one read-only `GET /json/info`; M8, not yet
+  released), no silent preset overwrite (`overwrite=true` is required).
 - **Authorization.** The MCP host authorizes people; annotations are hints only. HTTP
   requires its own token and Host/Origin allowlists even behind a hub: hub authentication
   alone does not protect direct access. Keep it off the internet; see the
@@ -146,7 +157,7 @@ on one controller; details are in [docs/VALIDATION.md](https://github.com/descip
 - On WLED 16, storing, restoring or importing a preset changes the live output, and saving a
   playlist may start it.
 - One writer per controller: locks are per process.
-- No inventory reload; changes need `wled-mcp config validate` and a restart.
+- Hand edits of the inventory need `wled-mcp config validate` and a restart; the M8 tools (not yet released) apply their own changes by in-process reload.
 - No device authentication: WLED has none for its light API ("Anyone with your IP and port
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
   sends no device credentials and does not support a controller behind HTTP authentication.

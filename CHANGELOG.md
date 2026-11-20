@@ -36,8 +36,9 @@ this file. Fixes are made for the latest release only. See
   address or MAC (`INVENTORY_CONFLICT`, an entry is never overwritten), then appends one
   `[[devices]]` entry through the shared writer and applies it without a restart. It never
   writes to the device and never sets `max_class`. Additive: devices gain the optional `mac`
-  key (12 lowercase hex; an older server rejects the unknown key at startup; the migration-notes
-  rows come with #204), and `wled_discover_devices` and `wled-mcp discover` use a stored `mac` to
+  key (12 lowercase hex; an older server rejects the unknown key at startup; migration-notes
+  rows for `/devices/mac` and `/discovery` under the provisional 0.5.0 in
+  [versioning](docs/contract/versioning.md)), and `wled_discover_devices` and `wled-mcp discover` use a stored `mac` to
   recognize a moved controller without an extra read. Mocked evidence only; the live enrollment
   is pending.
 - **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
@@ -205,9 +206,15 @@ protocol error bodies, the HTTP startup line and the definition-directory scan c
   to 0.2.0 on the deployed service ([#25](https://github.com/descipar/wled-mcp/issues/25),
   [report](docs/validation/launch-report.md)).
 - Contract text for agent-driven discovery and enrollment
-  ([#198](https://github.com/descipar/wled-mcp/issues/198), [contract](docs/contract/discovery.md)) is
-  merged as documentation of milestone M8; **none of it is implemented in this release**: there is no
-  `wled_discover_devices`, `wled_add_device` or `wled_set_discovery_ranges` tool.
+  ([#198](https://github.com/descipar/wled-mcp/issues/198), [contract](docs/contract/discovery.md)).
+  Its tools `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device` are
+  listed under Added above and are not in any released version yet.
+- Milestone M8 closing documentation ([#204](https://github.com/descipar/wled-mcp/issues/204)):
+  README, deployment guide (in-process reload by the M8 tools, discovery from a container,
+  writable config directory), quickstart (agent-driven path), tool contract, coverage table,
+  migration-notes rows and the [validation plan](docs/validation/issue-204.md) with the
+  release-preparation checklist. The live discovery runs per deployment mode are pending
+  owner authorization; no release is made and the version is unchanged.
 - Decision records, roadmap and agent-workflow documents changed; they do not affect the package.
 
 ## 0.3.0 - M2: observe and explain

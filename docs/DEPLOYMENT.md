@@ -417,10 +417,21 @@ is the preferred mode where in-flight calls must drain.
 
 ## Changing the inventory
 
-The inventory file is read once at startup in both modes. A change takes effect
-through a restart after `wled-mcp config validate` has accepted the edited file
-(DEV-03); there is no in-process reload (ISSUE-16-DEC-001, closing the deferral of
-ISSUE-13-DEC-001). The procedure is copy, edit, validate, restart. From M8 (not yet released; [contract/discovery.md](contract/discovery.md)) an agent can add a controller and set discovery ranges through tools that take effect by in-process reload; hand edits keep this procedure:
+The inventory file is read at startup in both modes. In every released version this is
+the only read: a change takes effect through a restart after
+`wled-mcp config validate` has accepted the edited file (DEV-03), and there is no in-process
+reload (ISSUE-16-DEC-001, closing the deferral of ISSUE-13-DEC-001).
+
+Milestone M8 (merged, **not yet released**; [contract/discovery.md](contract/discovery.md),
+DEC-035) adds two tools that change the inventory themselves: `wled_add_device` adds one
+verified controller and `wled_set_discovery_ranges` replaces the stored discovery ranges.
+Both are `manage`-class configuration writes (profile `full` only, confirmed by the MCP
+client, no approval inside the plugin) that go through the shared inventory writer (lock,
+`.bak`, atomic replace, validation) and take effect by in-process reload without a restart,
+in stdio and in the HTTP container. They never write to a device. A hand edit made after the
+server started is not picked up by itself: the next tool write refuses with
+`INVENTORY_CONFLICT` (`file_changed`) and leaves the file alone, so restart after a hand
+edit. Hand edits keep this procedure: copy, edit, validate, restart.
 
 1. Keep a copy of the working file next to it, for example
    `devices.toml` -> `devices.toml.previous`, in the same config directory
@@ -491,7 +502,32 @@ file modes and the backups writability check reflect what the server will see.
   resolvers usually cannot resolve `.local` names; reserve the address in DHCP so that
   it stays valid. Adding a controller by address always works without discovery.
 
-From M8 (not yet released) an agent can also discover controllers through an MCP tool, with an additional bounded unicast probe of configured private ranges that works from a container; see [contract/discovery.md](contract/discovery.md).
+From M8 (merged, **not yet released**) an agent can also discover controllers through the
+MCP tool `wled_discover_devices`, in stdio and in the HTTP service; see
+[contract/discovery.md](contract/discovery.md). It runs only on an explicit call, never at
+startup. Two methods, both read-only:
+
+- mDNS: every announced private host is verified on port 80 with one `GET /json/info`.
+- Unicast: one `GET /json/info` to each host of each range stored with
+  `wled_set_discovery_ranges` (or `[discovery] ranges` in the inventory file). Only RFC 1918
+  ranges, at most a /24 each and a few ranges, with fixed timeouts and concurrency; no
+  parameter, key or environment variable raises these caps, and nothing is scanned that was
+  not configured.
+
+In a container on a Docker bridge network mDNS usually sees nothing, so the report says so
+and does not claim that no controller exists. The unicast probe is the method for a
+container: it works only if the container can route to the LAN range, which depends on the host's
+network setup and any firewall or VLAN rule and is not assumed here. Docker Desktop on macOS runs containers in a virtual machine:
+treat mDNS as unavailable there and expect the unicast reach to depend on that VM's
+networking. These two container facts are the subject of the live runs planned in
+[validation/issue-204.md](validation/issue-204.md) (pending owner authorization); until
+they are run, container discovery is mock-covered only.
+
+Release preparation for M8: the changes are listed under Unreleased in the
+[changelog](../CHANGELOG.md) and the README marks them "not yet released". The release
+checklist (version, tag, GitHub release, PyPI and registry, all owner-gated, none done) is
+in [validation/issue-204.md](validation/issue-204.md#release-preparation). Deploying a
+version that contains M8 stays an owner-gated step of its own.
 
 Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md).
 
@@ -509,8 +545,10 @@ operator's explicit request for the selected device. Snapshots stay under
 
 - `/app/data/wled-mcp/config/devices.toml`: local inventory, not in Git. A service that only
   reads it can keep it read-only. Where the inventory is written (`config add-device`,
-  `config init --force`, and the discovery tools of milestone M8 once they exist) the
-  directory must be writable by that user and mounted as a directory, not as a single file:
+  `config init --force`, and the M8 tools `wled_add_device` and `wled_set_discovery_ranges`,
+  not yet released) the directory must be writable by that user and mounted as a directory,
+  not as a single file (the M8 tools need this; a read-only or single-file mount makes them fail with
+  `STORAGE_FAILED` and changes nothing):
   a write replaces the file atomically, keeps one previous generation as `devices.toml.bak`
   and takes the lock file `.devices.toml.lock` in the same directory. Neither file is secret
   beyond what the inventory already is; keep both out of Git.
