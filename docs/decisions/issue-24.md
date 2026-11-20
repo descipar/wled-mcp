@@ -1,186 +1,61 @@
 # Issue #24 decisions
 
-Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
+Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09. Human sources are owner chat messages in the main coordinator session, no permalinks.
 
 ## ISSUE-24-DEC-001 — Prepare registry metadata, drafts and the next patch release
 
 - ID: ISSUE-24-DEC-001
-- Recorded date: 2026-11-09
 - Status: active for issue #24 only.
-- Authority: human decision (owner instruction in the main coordinator session; chat is the
-  normal channel for owner authority).
-- Source: owner message in the main session on 2026-11-09 (no permalink): "Ja, mach so"
-  (English: "Yes, do it that way"), answering the coordinator's proposed packet for #24
-  (items 1 to 4 below and the technical defaults of ISSUE-24-DEC-002).
-- Scope: issue #24 (S2-MARKET-01 to 03), one pull request that refers to the issue ("Refs",
-  not "Closes"); the issue stays open because the fresh-MCPHub install test needs the
-  published package.
-- Decision: the following is authorized.
-  1. A registry namespace marker in the README for `io.github.descipar/wled-mcp`.
-  2. A locally validated root `server.json` for that name: the PyPI package, stdio through
-     uvx, no `remotes`.
-  3. Drafts only of the MCPM / local-catalog entry and of the hosted mcphub.app submission
-     copy.
-  4. Preparation of the next patch release in the same pull request (version bump,
-     `uv.lock`, changelog).
-- Not authorized: a Git tag, a GitHub release, a PyPI upload, installing, logging in to,
-  validating with or publishing with `mcp-publisher`, any external issue, pull request or form
-  submission, and any hardware or LAN contact. The `mcp-publisher validate` command is not used
-  because it sends the file to an external service.
-- Applicability / conditions / expiry: bounded to the listed work on this issue. It is not
-  standing permission for publication or submission; each of those needs the owner's instruction
-  at that time (DEC-023). The merge of the pull request follows DEC-022 and DEC-029 item 4
-  (milestone M1, where #24 now sits per DEC-030: standing approval with a current-head PASS and
-  green CI, while it is valid); a merge under it authorizes no publication step (DEC-030).
-- Rationale supplied: none beyond the scope choice.
-- Affected requirement IDs, files, issues and tests: S2-MARKET-01, S2-MARKET-02 (drafts),
-  S2-MARKET-03 (not run); README.md, server.json, docs/listings/, docs/MARKETPLACE.md,
-  docs/PUBLISHING.md, scripts/check_distribution.py, tests/test_registry_metadata.py; issue #24.
-- Supersedes / superseded by: none.
-- Propagated to roles / packet references: requirements, implementer and reviewer via the
-  coordinator handoff (local packet under `.agent-runs/`).
-- Revalidation needed / next action: owner merge decision; the owner actions listed in
-  [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release) after the release.
-- Update 2026-11-09: the pull request was merged. Item 4 (a patch release) is superseded in
-  part by DEC-030 item 4: the milestone release needs a minor version; the prepared patch
-  version was never tagged or published and was replaced by a minor version in a follow-up
-  change. Items 1 to 3 stand; item 3's drafts are narrowed by ISSUE-24-DEC-003.
+- Authority: human decision ("Ja, mach so" (English: "Yes, do it that way")), answering the coordinator's proposed packet (items 1 to 4 and ISSUE-24-DEC-002).
+- Scope: #24 (S2-MARKET-01 to 03), one PR with "Refs" (not "Closes"); the issue stays open because the fresh-MCPHub install test needs the published package.
+- Decision: authorized: (1) a registry namespace marker in the README for `io.github.descipar/wled-mcp`; (2) a locally validated root `server.json` (PyPI package, stdio through uvx, no `remotes`); (3) drafts only of the MCPM / local-catalog entry and the hosted mcphub.app submission copy; (4) preparing the next patch release in the same PR (version bump, `uv.lock`, changelog).
+- Not authorized: Git tag, GitHub release, PyPI upload, installing, logging in to, validating with or publishing with `mcp-publisher` (`validate` sends the file to an external service), any external issue, PR or form submission, hardware or LAN contact.
+- Conditions: not standing permission for publication; each step needs an instruction at that time (DEC-023). Merge follows DEC-022 and DEC-029 item 4 (M1, #24 per DEC-030) and authorizes no publication step.
+- Update 2026-11-09: the PR was merged. Item 4 is superseded in part by DEC-030 item 4 (the milestone release needs a minor version); the prepared patch version was never tagged or published. Items 1 to 3 stand; item 3 is narrowed by ISSUE-24-DEC-003.
 
 ## ISSUE-24-DEC-002 — Technical defaults for the registry packet
 
 - ID: ISSUE-24-DEC-002
-- Recorded date: 2026-11-09
-- Status: active for issue #24 only; technical proposal by the coordinator under
-  ISSUE-24-DEC-001, not an owner decision. The owner may overrule any item.
+- Status: active for issue #24 only; technical proposal by the coordinator under ISSUE-24-DEC-001, not an owner decision.
 - Authority: technical proposal (coordinator).
-- Source: issue-24 coordinator session, 2026-11-09.
-- Scope: the issue-24 packet.
+- Scope: the issue-24 packet (S2-MARKET-01 to 03).
 - Decision:
-  1. `server.json` in the repository root; `$schema` is the 2025-12-11 server schema.
-  2. Name `io.github.descipar/wled-mcp` (DEC-012); title "WLED MCP (unofficial)"; the
-     description (at most 100 characters) says unofficial and not affiliated with the WLED
-     project; repository and website URLs point to the repository.
-  3. The marker `<!-- mcp-name: io.github.descipar/wled-mcp -->` follows the README intro
-     paragraph and contains no link.
-  4. Exactly one package entry and no `remotes`: `pypi`, identifier `wled-mcp`, the version of
-     `project.version`, runtime hint `uvx`, transport stdio. Runtime arguments mirror README
-     step 3; package arguments are `--transport stdio`, `--config {config_path}` and
-     `--data-dir {data_dir}`, whose variables are required, `filepath`, not secret and carry a
-     description only. No environment variables.
-  5. The MCPM draft `docs/listings/mcpm-wled-mcp.json` follows the MCPM manifest schema, with
-     an unpinned uvx installation, the two paths as `${...}` environment references, synthetic
-     example paths, no `is_official` and no tools array.
-  6. The hosted-directory copy `docs/listings/mcphub-app-submission.md` is English and
-     impersonal, states that the form fields are unverified and that the status is draft, and
-     uses no WLED logo.
-  7. The published schemas are not vendored. `tests/test_registry_metadata.py` holds offline
-     invariants with negative controls; `docs/validation/issue-24.md` records one live
-     validation run against the published schemas and states that the publisher's own checks
-     were not run.
-  8. `scripts/check_distribution.py` requires `mcp-name: <name of server.json>` in the wheel
-     `METADATA`, which the publish workflow's smoke test already runs.
-  9. The release preparation bumps `pyproject.toml` to the next patch version, refreshes
-     `uv.lock` and writes the changelog from `git log v0.1.2..HEAD`; the changes are additive,
-     so this is a patch release ([versioning](../contract/versioning.md)). The default of
-     bumping in this pull request (Q1) is adopted.
-  10. `docs/PUBLISHING.md` documents the registry steps after the PyPI release; each needs the
-     owner's instruction at that time and no automation is wired. `mcp-publisher validate` is
-     not used (Q2).
-  11. Currently true wording (README "no registry entry", the Status paragraph) stays
-     unchanged.
-- Applicability / conditions / expiry: until the owner changes it or the listed work is
-  merged.
-- Rationale supplied: not supplied (coordinator proposal).
-- Affected requirement IDs, files, issues and tests: as ISSUE-24-DEC-001;
-  tests/test_version_source.py (`server.json` allowlisted and checked on its own),
-  scripts/ci_scope.py (reader test listed).
-- Supersedes / superseded by: none.
-- Propagated to roles / packet references: via the coordinator handoff.
-- Revalidation needed / next action: review of the pull request. Implementer note: item 4's
-  `--isolated` is written as a positional argument with the fixed value `--isolated` (a bare
-  named argument without a value is schema-valid but leaves clients free to prompt for a
-  value); this is a deviation from "named flag" in the proposal and is reported to the
-  coordinator.
+  1. Root `server.json`, `$schema` the 2025-12-11 server schema.
+  2. Name `io.github.descipar/wled-mcp` (DEC-012); title "WLED MCP (unofficial)"; description at most 100 characters, unofficial and not affiliated; repository and website URLs to the repository.
+  3. Marker `<!-- mcp-name: io.github.descipar/wled-mcp -->` after the README intro paragraph, no link.
+  4. One package entry, no `remotes`: `pypi`, `wled-mcp`, version of `project.version`, runtime hint `uvx`, stdio; runtime arguments mirror README step 3; package arguments `--transport stdio`, `--config {config_path}`, `--data-dir {data_dir}` (required, `filepath`, not secret); no environment variables. `--isolated` is a positional argument with the fixed value (deviation from "named flag", reported).
+  5. MCPM draft `docs/listings/mcpm-wled-mcp.json`: unpinned uvx, paths as `${...}` references, synthetic paths, no `is_official`, no tools array.
+  6. Hosted-directory copy `docs/listings/mcphub-app-submission.md`: English, impersonal, fields unverified, draft status, no WLED logo.
+  7. Published schemas are not vendored; `tests/test_registry_metadata.py` holds offline invariants with negative controls; `docs/validation/issue-24.md` records one live schema validation and that the publisher's checks were not run.
+  8. `scripts/check_distribution.py` requires `mcp-name: <name of server.json>` in the wheel `METADATA`.
+  9. Release preparation: patch bump, `uv.lock`, changelog from `git log v0.1.2..HEAD` (additive, [versioning](../contract/versioning.md)); bump in this PR.
+  10. `docs/PUBLISHING.md` documents registry steps after the PyPI release; no automation; `mcp-publisher validate` not used.
+  11. Currently true wording (README "no registry entry", Status paragraph) stays.
+- Conditions: until the owner changes it or the work is merged.
 
 ## ISSUE-24-DEC-003 — Official MCP Registry only; no MCPM or hosted-directory submission for now
 
 - ID: ISSUE-24-DEC-003
-- Recorded date: 2026-11-09
 - Status: active for issue #24 only.
-- Authority: human decision (owner instruction in the main coordinator session; chat is the
-  normal channel for owner authority).
-- Source: owner message in the main session on 2026-11-09 (no permalink): once milestone M1 is
-  closed, the server shall be findable in the MCPHub registry, which is the official MCP
-  Registry; the MCPM contribution and the hosted mcphub.app form are not wanted for now.
-- Scope: issue #24 (S2-MARKET-01 to 03), the listing routes only.
-- Decision: the goal is that the server is findable through the official MCP Registry after M1
-  closes. The MCPM / local-catalog contribution and the hosted mcphub.app submission are dropped
-  for now; their drafts stay in `docs/listings/` as unsubmitted drafts and are not maintained
-  for a submission. A tag, a GitHub release, a PyPI upload, `mcp-publisher login` and
-  `mcp-publisher publish` each need the owner's explicit instruction at that time.
-- Applicability / conditions / expiry: bounded to #24 and "for now"; the owner may reinstate
-  either route. It is not standing permission for any publication or submission (DEC-023,
-  DEC-030).
-- Rationale supplied: the MCPHub registry view is the official registry; no other reason given.
-- Affected requirement IDs, files, issues and tests: S2-MARKET-02 (not planned, drafts only);
-  docs/MARKETPLACE.md, docs/PUBLISHING.md, tests/test_registry_metadata.py (status vocabulary).
-- Supersedes / superseded by: narrows ISSUE-24-DEC-001 item 3; supersedes nothing else.
-- Propagated to roles / packet references: via the coordinator handoff.
-- Revalidation needed / next action: the 0.2.0 release chain in
-  [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release), step by step on
-  the owner's instruction.
+- Authority: human decision (paraphrased: once M1 closes the server shall be findable in the MCPHub registry, i.e. the official MCP Registry; MCPM contribution and hosted mcphub.app form not wanted for now).
+- Scope: #24 listing routes only (S2-MARKET-01 to 03).
+- Decision: the goal is findability through the official MCP Registry after M1 closes. The MCPM / local-catalog contribution and the hosted mcphub.app submission are dropped for now; their drafts stay in `docs/listings/` unsubmitted and unmaintained. Tag, GitHub release, PyPI upload, `mcp-publisher login` and `mcp-publisher publish` each need an explicit instruction at that time.
+- Conditions: bounded to #24 and "for now"; the owner may reinstate a route; not standing permission (DEC-023, DEC-030). Narrows ISSUE-24-DEC-001 item 3. Next: the 0.2.0 release chain in [PUBLISHING.md](../PUBLISHING.md#registry-listing-after-the-pypi-release).
 
 ## ISSUE-24-DEC-004 — Per-step publication instructions for the M1 release
 
 - ID: ISSUE-24-DEC-004
-- Recorded date: 2026-11-09
 - Status: executed (each instruction was used once; nothing remains authorized).
-- Authority: human decision (owner chat instructions in the main coordinator session; recorded by
-  the coordinator).
-- Source: owner chat messages in the main session on 2026-11-09 (no permalinks): separate
-  instructions for the tag and GitHub release, for approving the `pypi` environment of the
-  publish run, for signing in with `mcp-publisher login github` (run by the owner) and for
-  `mcp-publisher publish`.
-- Scope: issue #24 and the M1 minor release only, under ISSUE-24-DEC-003 and DEC-030.
-- Decision: each of these steps was authorized once, when instructed: tag and GitHub release of
-  the M1 release, approval of the `pypi` environment for that publish run, the publisher login,
-  and the registry publish of `server.json`.
-- Applicability / conditions / expiry: bounded to that release and registry entry; consumed by
-  execution. It is not standing permission: a later release, tag, upload or registry publish needs
-  its own instruction (DEC-023, DEC-030).
-- Rationale supplied: none beyond the instructions.
-- Affected requirement IDs, files, issues and tests: S2-MARKET-01; docs/PUBLISHING.md,
-  docs/MARKETPLACE.md, README.md, docs/validation/issue-24.md; issue #24.
-- Supersedes / superseded by: completes the DEC-030 open question for M1 together with
-  ISSUE-24-DEC-003; supersedes nothing.
-- Propagated to roles / packet references: via the coordinator handoff.
-- Revalidation needed / next action: none for these steps. The fresh-install test (S2-MARKET-03)
-  is separate and not recorded here.
+- Authority: human decision (separate owner chat instructions).
+- Scope: #24 and the M1 minor release only, under ISSUE-24-DEC-003 and DEC-030 (S2-MARKET-01).
+- Decision: authorized once each: tag and GitHub release of the M1 release, approval of the `pypi` environment for that publish run, the publisher login (run by the owner), and the registry publish of `server.json`.
+- Conditions: consumed by execution; a later release, tag, upload or registry publish needs its own instruction (DEC-023, DEC-030). The fresh-install test (S2-MARKET-03) is separate. Completes the DEC-030 open question for M1 with ISSUE-24-DEC-003.
 
 ## ISSUE-24-DEC-005 — Waive the hub-side start of an adapted registry entry
 
 - ID: ISSUE-24-DEC-005
-- Recorded date: 2026-11-10
 - Status: active for issue #24 only.
-- Authority: human decision (owner chat answer in the main coordinator session; recorded by the
-  coordinator).
-- Source: owner message in the main session on 2026-11-10 (no permalink): "nein, es reicht so
-  als installiert" (English: "no, it is enough as installed as it is"), answering whether the
-  corrected entry should be started once in the owner's hub to verify it.
+- Authority: human decision (2026-11-10: "nein, es reicht so als installiert" (English: "no, it is enough as installed as it is")), answering whether the corrected entry should be started once in the owner's hub.
 - Scope: item 6 of #24 (fresh install from generated configuration, S2-MARKET-03) only.
-- Decision: the owner waives the hub-side start of the manually adapted registry entry. The
-  registry listing, the observed install dialog with the documented manual adaptation (README
-  note, [validation/issue-24.md](../validation/issue-24.md#mcphub-registry-tab-observed-install-dialog-2026-11-10))
-  and the local launch check of the composed command are accepted as sufficient for item 6.
-- Applicability / conditions / expiry: item 6 is closed by this waiver, not by an observation.
-  It does not turn the install-test row into "install-tested": that row stays "not run" and
-  says "waived by the owner", the generated dialog was observed and the hub-side start was not.
-  It claims nothing about how other hosts handle the entry and is not permission for any
-  publication step.
-- Rationale supplied: the owner considered the existing evidence sufficient.
-- Affected requirement IDs, files, issues and tests: S2-MARKET-03; docs/MARKETPLACE.md,
-  docs/validation/issue-24.md, tests/test_registry_metadata.py; issue #24.
-- Supersedes / superseded by: none; closes the open install-test follow-up of ISSUE-24-DEC-004.
-- Propagated to roles / packet references: coordinator and `wled_completion` for #24.
-- Revalidation needed / next action: none; a later hub-side observation can be recorded without
-  changing this decision.
+- Decision: the hub-side start of the manually adapted registry entry is waived. The registry listing, the observed install dialog with the documented manual adaptation ([validation/issue-24.md](../validation/issue-24.md#mcphub-registry-tab-observed-install-dialog-2026-11-10)) and the local launch check of the composed command are sufficient for item 6.
+- Conditions: closed by waiver, not observation: the install-test row stays "not run" and says "waived by the owner". Claims nothing about other hosts; no publication permission. A later hub-side observation can be recorded without changing this. Closes the follow-up of ISSUE-24-DEC-004.

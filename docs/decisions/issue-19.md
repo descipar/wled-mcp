@@ -8,52 +8,32 @@ owner is recorded as [ISSUE-18-DEC-002](issue-18.md#issue-18-dec-002--capability
 - ID: ISSUE-19-DEC-001
 - Recorded date: 2026-11-07
 - Status: active for issue #19.
-- Authority: human decision (repository owner).
-- Source: owner answer in the coordinator session on 2026-11-07 to the Phase-0
-  questions of the stage-2 parallel plan (DEC-021), packet
-  `.agent-runs/stage2/issue-19/packet.md` (D-19-2): "alles nach empfehlung"
-  (English: "everything as recommended"); no permalink.
-- Scope: issue #19 acceptance item "decide overlap/layering explicitly";
-  `wled_patch_segments` and `wled_replace_layout`.
+- Authority: human decision (repository owner), coordinator session, 2026-11-07, answering
+  the Phase-0 questions of DEC-021 (D-19-2): "alles nach empfehlung" (English: "everything
+  as recommended").
+- Scope: `wled_patch_segments` and `wled_replace_layout` overlap handling.
 - Decision: option B. Overlap stays rejected by default. An explicit request flag
-  `allow_overlap=true` in both tools permits it; the plan lists every overlapping pair
-  and the render order (higher slot on top), and `blend_mode` (0-16) becomes settable.
-- Applicability / conditions / expiry: issue #19 on supported firmware (DEC-020);
-  `blend_mode` is settable only where the device reports the field.
-- Rationale supplied: none beyond accepting the recommendation; the packet rationale
-  (explicit intent, no silent bypass of stage-1 validation) is agent analysis.
-- Affected requirement IDs, files, issues and tests: S2-SEG requirements of #19;
-  docs/TOOL-CONTRACT.md; patch/layout tests; #94 coverage rows.
-- Supersedes / superseded by: extends the stage-1 overlap rejection with an opt-in;
-  does not remove it.
-- Propagated to roles / packet references: issue-19 packet; refresh before #19 starts.
-- Revalidation needed / next action: none before implementation.
+  `allow_overlap=true` in both tools permits it; the plan lists every overlapping pair and
+  the render order (higher slot on top), and `blend_mode` (0-16) becomes settable.
+- Conditions: supported firmware (DEC-020); `blend_mode` settable only where the device
+  reports the field.
+- Supersedes / superseded by: extends the stage-1 overlap rejection with an opt-in.
 
 ## ISSUE-19-DEC-002 — Segment features not exposed
 
 - ID: ISSUE-19-DEC-002
 - Recorded date: 2026-11-07
 - Status: active for issue #19 and the coverage list (#94).
-- Authority: human decision (repository owner).
-- Source: owner answer in the coordinator session on 2026-11-07 to the coordinator's
-  question about the exclusions proposed in `.agent-runs/stage2/issue-19/packet.md`
-  (TD-19-8): "ja, merge #96 und alles nach empfehlung" (English: "yes, merge #96 and
-  everything as recommended"); no permalink.
+- Authority: human decision (repository owner), coordinator session, 2026-11-07, on the
+  exclusions proposed in TD-19-8: "ja, merge #96 und alles nach empfehlung" (English: "yes,
+  merge #96 and everything as recommended").
 - Scope: segment features of the WLED JSON API that the segment tools do not expose.
-- Decision: not exposed are segment repetition `rpt` (creates implicit additional
-  segments, contrary to explicit segment IDs), the effect-defaults flag `fxdef`
-  (implicit parameter resets) and matrix/panel configuration through `/json/cfg`
-  (outside the segment scope). Individual LED control `i` stays excluded by
-  ISSUE-13-DEC-001 (SEG-06). Alias and alternative encodings (`len`, the Loxone `lx`/`ly`
-  build option, non-array color forms) are not separate features.
-- Applicability / conditions / expiry: issue #19 and later stages until a new decision.
-- Rationale supplied: none beyond accepting the recommendation; the reasons in
-  parentheses are the packet's agent analysis.
-- Affected requirement IDs, files, issues and tests: S2-SEG requirements of #19;
-  docs/TOOL-CONTRACT.md; docs/WLED-COVERAGE.md excluded rows.
+- Decision: not exposed are segment repetition `rpt`, the effect-defaults flag `fxdef` and
+  matrix/panel configuration through `/json/cfg`. Individual LED control `i` stays excluded
+  by ISSUE-13-DEC-001 (SEG-06). Alias and alternative encodings (`len`, the Loxone
+  `lx`/`ly` build option, non-array color forms) are not separate features.
+- Conditions: issue #19 and later stages until a new decision.
 - Supersedes / superseded by: none.
-- Propagated to roles / packet references: issue-19 and issue-94 packets.
-- Revalidation needed / next action: none.
 
 ## ISSUE-19-DEC-003 — Technical defaults for the capability model and segment fields
 
@@ -61,118 +41,63 @@ owner is recorded as [ISSUE-18-DEC-002](issue-18.md#issue-18-dec-002--capability
 - Recorded date: 2026-11-08
 - Status: active for issue #19 (both pull requests).
 - Authority: technical proposal accepted by the coordinator (not a human decision).
-- Source: refreshed requirements packet `.agent-runs/stage2/issue-19/packet.md`
-  (refresh 1, items TD-19-1 to TD-19-14 and AC-19-01 to AC-19-18), accepted in the
-  coordinator session on 2026-11-08 together with the coordinator choices C-19-1 to
-  C-19-3 below; recorded with the first #19 pull request.
-- Scope: issue #19 only; not a project-wide rule. It applies the human decisions
-  ISSUE-19-DEC-001 and -002 and the capability-model ownership of ISSUE-18-DEC-002.
-- Decision:
-  - TD-19-1 No new tool. Input fields are added to `SegmentPatch`, `LayoutSegment` and
-    `SuppliedSegment`, output fields to the `wled_get_state` segment view and
-    `capabilities`; no new `required` entry, no removed or renamed field or enum value,
-    no tightened schema bound.
-  - TD-19-2 Public names and wire keys: `cct` (`cct`, 0-255), `start_y`/`stop_y`
-    (`startY`/`stopY`), `reverse_y` (`rY`), `mirror_y` (`mY`), `transpose` (`tp`),
-    `map_1d_2d` (`m12`, 0-4), `custom1`/`custom2` (`c1`/`c2`, 0-255), `custom3` (`c3`,
-    0-31), `check1`-`check3` (`o1`-`o3`), `sound_simulation` (`si`, 0-3), `segment_set`
-    (`set`, 0-3), `freeze` (`frz`), `blend_mode` (`bm`, 0-16) and the request-level
-    `allow_overlap` (default false). `SuppliedSegment` uses the wire keys. Custom
-    parameters get ranges only; `fxdata` is not parsed.
-  - TD-19-3 Per-segment capability evidence: `state.seg[].lc`, else the
-    position-aligned `info.leds.seglc` entry, else none. CCT is bit 0x04; four color
-    channels need the white bit; a white-only range takes four channels with RGB 0.
-    Never decided by product name or firmware version.
-  - TD-19-4 New or moved ranges (extends the #7-only ISSUE-7-DEC-004 deliberately):
-    `info.leds.lc` is an integer, every active segment's capability equals it and
-    contains the required bits; otherwise `UNSUPPORTED_CAPABILITY`. The mixed-bus
-    residual risk is documented.
-  - TD-19-5 Field presence: an option field is settable only when the target segment's
-    fresh readback carries its wire key (a new ID: every active segment); 2D fields need
-    `info.leds.matrix` with integer `w`, `h` >= 1. This covers `WLED_DISABLE_2D` builds
-    and older firmware without a version gate.
-  - TD-19-6 Replace create defaults where TD-19-5 evidence exists: `cct` 127,
-    `custom1`/`custom2` 128, `custom3` 16, checks false, `sound_simulation` 0,
-    `segment_set` 0, `map_1d_2d` 0, `freeze` false, `blend_mode` 0, orientation false;
-    on a matrix a new segment needs explicit `start_y`/`stop_y` (planner rule).
-  - TD-19-7 Matrix geometry: X against the width, Y against the height, rectangle
-    overlap; a trailing strip range (`start >= width * height`) is read and preserved,
-    creating or moving one is `UNSUPPORTED_CAPABILITY`. 1D devices are unchanged.
-  - TD-19-8 Plan and dry run carry `capability_evidence` per field (`state_lc`,
-    `info_seglc`, `uniform`, `field_present`, `matrix`) and, with `allow_overlap`,
-    `overlaps` and `render_order`; `freeze=true` warns that master power-on unfreezes
-    all segments.
-  - TD-19-9 `src/wled_mcp/capabilities.py` is pure and network-free: `parse_matrix`
-    (moved from bundles.py, same semantics), `SegmentCapability`, `DeviceCapabilities`,
-    `derive_capabilities(state, info)` and the color helpers that replace the private
-    patches.py helpers; the `CAP_*` constants move there and stay importable from
-    readmodels.py. No firmware tiering.
-  - TD-19-10 Bundles: no behavior change beyond sourcing the matrix and the CCT bit from
-    capabilities.py; `format_version` and the `source.capabilities` keys stay, so no
-    TD-21-5 bump; new #19 keys in bundle entries stay verbatim-written (residual limit
-    in docs/contract/presets.md).
-  - TD-19-11 Coverage: the first pull request moves W-SEG-14 to W-SEG-22 from planned to
-    partial (read only); the second moves W-SEG-13 to W-SEG-22 to supported, with the
-    note changes listed in the packet; W-INFO-02 lists `leds.matrix` and `seg[].lc`.
-  - TD-19-12 `wled_store_preset` gains the new wire keys in the second pull request,
-    validated by the same capability, field-presence and matrix rules; overlap stays
-    rejected there.
-  - TD-19-13 Documentation: contract text in docs/contract/segments.md, evidence in
-    docs/validation/issue-19.md, one link line each in the "Stage 2 and later files"
-    lists; only small in-place corrections elsewhere.
-  - TD-19-14 Two pull requests: A (capability model and read side, no change to any
-    write payload, validation outcome or bundle behavior) and B (every write-side
-    change).
-  - Acceptance scenarios AC-19-01 to AC-19-18 as listed in the packet: capability read,
-    new read fields, refactor parity (A); CCT, white handling, 2D bounds, the matrix
-    X-gap fix, orientation, option bounds, overlap opt-in, replace defaults,
-    preservation, uncertain writes, transport parity, store extension (B); no
-    version-based refusal below 16.0.0 and hardware honesty (both).
-  - Coordinator choices: C-19-1 extend `wled_store_preset` in pull request B (TD-19-12
-    stays in #19); C-19-2 two pull requests; C-19-3 start on `main` 57896f9 and merge
-    `main` after #105.
-- Applicability / conditions / expiry: issue #19 on supported firmware (DEC-020); the
-  firmware tier of #21 is not read by any #19 rule (TD-21-6).
-- Rationale supplied: packet analysis (agent): evidence-based settability without
-  version gates, additive contract changes and a behavior-preserving refactor first.
-- Affected requirement IDs, files, issues and tests: S2-SEG-01, S2-SEG-02, S2-T05,
-  S2-COMPAT-01/-02, SEG-01 to SEG-05, READ-01, MCP-01/-02, REL-02, PRE-03;
-  src/wled_mcp/capabilities.py and the segment, preset and bundle modules;
-  docs/contract/segments.md; docs/validation/issue-19.md; docs/WLED-COVERAGE.md;
-  tests/test_segment_capabilities.py.
-- Supersedes / superseded by: extends ISSUE-6-DEC-003 (TD-19-3 adds `/json/state`
-  `seg[].lc` to its read-only `/json/info` evidence source for #19 and later writes; see
-  S-2 below); ISSUE-18-DEC-003's interim raw-matrix rule is now served by
-  capabilities.py with unchanged behavior.
-- Propagated to roles / packet references: issue-19 packet refresh 1; implementer and
-  reviewer briefs of both pull requests.
-- Revalidation needed / next action: S-1 below is confirmed with the owner at the next
-  DEC-022 revalidation.
-- Amendment (2026-11-08, from the full review of pull request B at b219017; authority
-  unchanged: coordinator, not a human decision):
-  - S-1 `blend_mode` is settable without `allow_overlap`, with field presence only.
-    Reason: WLED blends every segment over a black frame buffer, so `bm` takes effect
-    without overlap (FX_fcn.cpp L1416-1429, L1699), and the applicability of
-    ISSUE-19-DEC-001 ("settable only where the device reports the field") ties it to
-    field presence. This is a coordinator reading of the owner decision
-    ISSUE-19-DEC-001, to be confirmed with the owner at the next DEC-022 revalidation.
-  - S-2 TD-19-3 extends the ISSUE-6-DEC-003 evidence source from the read-only
-    `/json/info` `leds.seglc` to the `/json/state` `seg[].lc` (still read-only, no
-    probe writes) for #19 and later writes; the aggregate fallback for an existing
+- Source: refreshed requirements packet (TD-19-1 to TD-19-14, AC-19-01 to AC-19-18),
+  coordinator session, 2026-11-08.
+- Scope: issue #19 only; applies ISSUE-19-DEC-001/-002 and ISSUE-18-DEC-002.
+- Decision (contract text in docs/contract/segments.md):
+  - TD-19-1 No new tool; additive input fields on `SegmentPatch`, `LayoutSegment`,
+    `SuppliedSegment`, output fields on the `wled_get_state` segment view and `capabilities`.
+  - TD-19-2 Public names and wire keys: `cct`, `start_y`/`stop_y` (`startY`/`stopY`),
+    `reverse_y` (`rY`), `mirror_y` (`mY`), `transpose` (`tp`), `map_1d_2d` (`m12`, 0-4),
+    `custom1`-`custom3` (`c1`-`c3`; 0-255, 0-255, 0-31), `check1`-`check3` (`o1`-`o3`),
+    `sound_simulation` (`si`, 0-3), `segment_set` (`set`, 0-3), `freeze` (`frz`),
+    `blend_mode` (`bm`, 0-16), request-level `allow_overlap` (default false).
+  - TD-19-3 Per-segment capability evidence: `state.seg[].lc`, else the position-aligned
+    `info.leds.seglc` entry, else none; CCT is bit 0x04; never by product name or firmware.
+  - TD-19-4 New or moved ranges: `info.leds.lc` is an integer, every active segment's
+    capability equals it and has the required bits; otherwise `UNSUPPORTED_CAPABILITY`.
+  - TD-19-5 An option field is settable only when the target segment's fresh readback
+    carries its wire key; 2D fields need `info.leds.matrix` with integer `w`, `h` >= 1.
+  - TD-19-6 Replace create defaults where evidence exists (`cct` 127, `custom1`/`custom2`
+    128, `custom3` 16, others 0/false); on a matrix a new segment needs explicit
+    `start_y`/`stop_y`.
+  - TD-19-7 Matrix geometry: X against width, Y against height; a trailing strip range is
+    read and preserved, creating or moving one is `UNSUPPORTED_CAPABILITY`.
+  - TD-19-8 Plan and dry run carry `capability_evidence` per field and, with
+    `allow_overlap`, `overlaps` and `render_order`; `freeze=true` warns that master power-on
+    unfreezes all segments.
+  - TD-19-9 `src/wled_mcp/capabilities.py` is pure and network-free (`parse_matrix`,
+    `SegmentCapability`, `DeviceCapabilities`, `derive_capabilities`, color helpers); no
+    firmware tiering.
+  - TD-19-10 Bundles: no behavior change beyond sourcing matrix and CCT bit from
+    capabilities.py; `format_version` unchanged.
+  - TD-19-11 Coverage: W-SEG-14..22 planned to partial (PR A), W-SEG-13..22 to supported
+    (PR B); W-INFO-02 lists `leds.matrix` and `seg[].lc`.
+  - TD-19-12 `wled_store_preset` gains the new wire keys in PR B under the same rules;
+    overlap stays rejected there.
+  - TD-19-13 Contract text in docs/contract/segments.md, evidence in
+    docs/validation/issue-19.md.
+  - TD-19-14 Two pull requests: A (capability model and read side, no write change) and B
+    (all write-side changes).
+  - Coordinator choices: C-19-1 extend `wled_store_preset` in PR B; C-19-2 two PRs; C-19-3
+    start on `main` and merge `main` after #105.
+- Conditions: supported firmware (DEC-020); the firmware tier of #21 is not read by any #19
+  rule (TD-21-6).
+- Supersedes / superseded by: extends ISSUE-6-DEC-003 (see S-2); ISSUE-18-DEC-003's
+  interim raw-matrix rule is now served by capabilities.py.
+- Amendment (2026-11-08, full review of PR B; coordinator, not a human decision):
+  - S-1 `blend_mode` is settable without `allow_overlap`, with field presence only (a
+    coordinator reading of ISSUE-19-DEC-001, to be confirmed with the owner at the next
+    DEC-022 revalidation).
+  - S-2 TD-19-3 extends the ISSUE-6-DEC-003 evidence source from `/json/info` `leds.seglc`
+    to `/json/state` `seg[].lc` (read-only); the aggregate fallback for an existing
     unchanged range is kept.
-  - (a) A new range keeps the stage-1 RGB-only rule of ISSUE-7-DEC-004 beside TD-19-4,
-    so devices without per-segment evidence do not regress.
-  - (b) `capability_evidence` is present only when a #19 field is supplied and does
-    not list colors.
+  - (a) A new range keeps the stage-1 RGB-only rule of ISSUE-7-DEC-004 beside TD-19-4.
+  - (b) `capability_evidence` appears only when a #19 field is supplied; no colors.
   - (d) In `wled_store_preset` an existing ID with unchanged X and rows uses its own
-    evidence; any other entry uses the uniform rule; omitted `startY`/`stopY` of an
-    existing ID take its current rows; an existing trailing strip is never moved.
-  - N-3 The store's color width keeps the stage-1 aggregate `info.leds.lc` rule
-    (extended only by the white-only and RGB+CCT widths of TD-19-3).
-  - (f) Unapplied or uncertain writes keep the stage-1 outcome mappings:
-    `wled_patch_segments` `unknown/mismatch`, a failed replace step after verified
-    steps `applied/mismatch`, a lost readback `unknown/unknown` with
-    `WRITE_OUTCOME_UNKNOWN`.
-  - N-4 The edit of tests/test_upgrade_compat.py (envelope test calls
-    `envelope_difference`) was a coordinator-assigned carried nit of pull request A,
-    outside the packet's path list.
+    evidence, other entries the uniform rule; an existing trailing strip is never moved.
+  - N-3 The store's color width keeps the stage-1 aggregate `info.leds.lc` rule.
+  - (f) Unapplied or uncertain writes keep the stage-1 outcome mappings (`unknown/mismatch`,
+    `applied/mismatch`, `unknown/unknown` with `WRITE_OUTCOME_UNKNOWN`).
+  - N-4 A carried nit edit of tests/test_upgrade_compat.py outside the path list was
+    coordinator-assigned.

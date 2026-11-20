@@ -1,311 +1,88 @@
 # Issue #12 decisions
 
-Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06.
+Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-06. Human sources are owner replies in the coordinator session, also recorded as coordinator comments on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalinks. Device and host names stay in the local, git-ignored run record.
 
 ## ISSUE-12-DEC-001 — One test controller released for #12 hardware testing
 
 - ID: ISSUE-12-DEC-001
-- Recorded date: 2026-11-06
 - Status: active for issue #12 only.
 - Authority: human decision.
-- Source: owner instruction in the coordinator session on 2026-11-06, recorded as a
-  coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12); no
-  permalink to the original message available.
-- Scope: one designated test controller (named only in the local, git-ignored run
-  record) for the #12 hardware acceptance run.
-- Decision: the designated test controller is released completely for #12 testing,
-  including state, segment, layout and preset save/activate/delete writes (H04-H06).
-  Condition: the current state, segment layout and presets file are captured before
-  any write, and restored afterwards; the restoration is verified and recorded.
-- Applicability / conditions / expiry: that controller only; no other controller,
-  no controller configuration, firmware, reboot or network change. Bounded to the #12
-  test run; not standing permission for later writes, devices or issues. Device and
-  host names stay in the local run record.
-- Rationale supplied: none beyond the instruction.
-- Affected requirement IDs, files, issues and tests: H04-H06; CTRL-01, SEG-01-04,
-  PRE-01-05, READ-01/02, TEST-01; [VALIDATION.md](../VALIDATION.md),
-  [TRACEABILITY.md](../TRACEABILITY.md); packet `.agent-runs/issue-12/packet.md`.
-- Supersedes / superseded by: none.
-- Propagated to roles / packet references: requirements packet "Authorized scope";
-  implementer and reviewer through the coordinator.
-- Revalidation needed / next action: the coordinator captures the baseline before
-  the first write; a failed or unverifiable restoration is recorded and reported to
-  the owner instead of being retried blindly.
+- Scope: one designated test controller for the #12 hardware acceptance run (H04-H06; CTRL-01, SEG-01-04, PRE-01-05, READ-01/02, TEST-01).
+- Decision: the controller is released completely for #12 testing, including state, segment, layout and preset save/activate/delete writes. Condition: state, segment layout and presets file are captured before any write and restored afterwards; restoration is verified and recorded.
+- Conditions: that controller only; no configuration, firmware, reboot or network change; not standing permission. A failed or unverifiable restoration is reported to the owner, not retried blindly.
 
 ## ISSUE-12-DEC-002 — Technical defaults for the #12 run
 
 - ID: ISSUE-12-DEC-002
-- Recorded date: 2026-11-06
 - Status: active for issue #12 only, superseded in part (TD-12-1) by ISSUE-12-DEC-004.
-- Authority: technical proposal by the requirements agent, accepted by the coordinator.
-  This is not a human decision; the owner did not choose these defaults and may veto
-  them at review.
-- Source: requirements packet `.agent-runs/issue-12/packet.md`, sections 1, 2 and 4
-  (TD-12-1 to TD-12-7), 2026-11-06, no permalink.
-- Scope: issue #12 live run plan, harness and evidence recording.
+- Authority: technical proposal by the requirements agent, accepted by the coordinator; not a human decision, the owner may veto.
+- Scope: #12 live run plan, harness and evidence recording (READ-01/02, SEG-04, PRE-05, OPS-01/02/05, MCP-03/04, TEST-01).
 - Decision:
-  - TD-12-1 Exercise Streamable HTTP only. ISSUE-11-DEC-004 keeps one active mode;
-    registering stdio as a second writer would be uncoordinated. stdio items are
-    recorded explicitly as cited #11 observations (dated) or as not exercised.
-  - TD-12-2 Preset tests use explicit slot 250 (highest reviewed ID, free in the
-    baseline, least collision risk with the operator's own saves), plus an optional
-    lowest-free allocation check that is deleted immediately. Preset 1 is never
-    written.
-  - TD-12-3 No controller reboot. Persistence is the `/presets.json` readback defined
-    by PRE-05 and the tool contract; power-cycle survival is recorded as not run.
-  - TD-12-4 An opt-in, standard-library-only HTTP probe (`scripts/hw_http_probe.py`)
-    for ping, `tools/list`, an allowlist of read-only tools, bursts with latency
-    percentiles and the request-body bound. It refuses any other tool, never prints
-    the credential and is never run against devices or targets in CI; its tests use a
-    loopback stub and the in-process service.
-  - TD-12-5 [TRACEABILITY.md](../TRACEABILITY.md) keeps its existing cell forms; no new
-    `recorded:` form is added, so ISSUE-10-DEC-001 stays unchanged.
-  - TD-12-6 stdio "own execution context": in stdio mode the server runs as the
-    hub-managed subprocess inside the hub container, so the #11 stdio hub reads
-    already ran from that context; they are cited, not repeated.
-  - TD-12-7 Restoration criteria: R1 presets file byte-equal to the baseline
-    preferred; parsed-equal with recognized empty entries for the test slots and a
-    byte-identical preset 1 is accepted with the exact byte difference recorded.
-    R2 state compared field by field with the baseline (only `ps`/`pl` markers and an
-    empty versus absent segment name may differ, each recorded). R3 configuration
-    file hash equal to the baseline.
-- Applicability / conditions / expiry: bounded to the #12 run and its evidence. A
-  material deviation during the run is recorded and returned to the coordinator.
-- Rationale supplied: none by the owner. Agent rationale: see the packet.
-- Affected requirement IDs, files, issues and tests: READ-01/02, SEG-04, PRE-05,
-  OPS-01/02/05, MCP-03/04, TEST-01; `scripts/hw_http_probe.py`,
-  `tests/test_hw_http_probe.py`, [VALIDATION.md](../VALIDATION.md),
-  [TRACEABILITY.md](../TRACEABILITY.md).
-- Supersedes / superseded by: superseded in part: TD-12-1 (HTTP only) is superseded by
-  [ISSUE-12-DEC-004](#issue-12-dec-004--stdio-via-uvx-stays-in-12-scope) for the
-  remaining #12 work; TD-12-2 to TD-12-7 stay active. ISSUE-10-DEC-001 remains in force
-  unchanged.
-- Propagated to roles / packet references: implementer and reviewer through the
-  coordinator.
-- Revalidation needed / next action: independent review of the candidate.
+  - TD-12-1 Exercise Streamable HTTP only (ISSUE-11-DEC-004 keeps one active mode); stdio items are cited #11 observations or recorded as not exercised. Superseded in part by [ISSUE-12-DEC-004](#issue-12-dec-004--stdio-via-uvx-stays-in-12-scope).
+  - TD-12-2 Preset tests use explicit slot 250, plus an optional lowest-free allocation check deleted immediately; preset 1 is never written.
+  - TD-12-3 No controller reboot; persistence is the `/presets.json` readback of PRE-05; power-cycle survival is recorded as not run.
+  - TD-12-4 Opt-in standard-library HTTP probe `scripts/hw_http_probe.py` (ping, `tools/list`, read-only tool allowlist, bursts with latency percentiles, body bound); never prints the credential, never run in CI.
+  - TD-12-5 [TRACEABILITY.md](../TRACEABILITY.md) keeps its cell forms; ISSUE-10-DEC-001 unchanged.
+  - TD-12-6 stdio "own execution context": the #11 stdio hub reads already ran from the hub-managed subprocess; cited, not repeated.
+  - TD-12-7 Restoration: R1 presets file byte-equal preferred (parsed-equal with recognized empty test slots and identical preset 1 accepted, difference recorded); R2 state field by field (only `ps`/`pl` markers and empty-vs-absent segment name may differ); R3 configuration file hash equal.
+- Conditions: bounded to the #12 run; a material deviation goes back to the coordinator.
 
 ## ISSUE-12-DEC-003 — Service stop/start and load on the deployed HTTP service
 
 - ID: ISSUE-12-DEC-003
-- Recorded date: 2026-11-06
-- Status: confirmed retroactively by the owner for the #12 run only (2026-11-06);
-  issue #12 only.
-- Authority: coordinator interpretation of the owner's instruction to implement #12
-  under the defined workflow and of #12 acceptance box 7 (drain and load per mode);
-  not a human decision and not an explicit human answer.
-  [ISSUE-11-DEC-008](issue-11.md#issue-11-dec-008--drain-and-load-live-checks-move-to-12)
-  asked for an own instruction naming target and permitted operations. The
-  coordinator announced the stop/start and load plan (including stopping the service
-  while a call is in flight) to the owner before the run; the owner did not object but
-  gave no separate explicit approval. This interpretation was then presented to the
-  owner for confirmation.
-- Owner confirmation: confirmed retroactively on 2026-11-06 for that run only; not
-  standing permission for future service operations. Source: owner reply "ja, war in
-  ordnung" in the coordinator session on 2026-11-06, answering the coordinator's
-  question whether stopping/starting the deployed HTTP service during the #12 tests
-  (two short outages of about 2 s) was acceptable; also recorded as a coordinator
-  comment on #12. No permalink.
-- Source: ISSUE-11-DEC-008, the #12 acceptance criteria and the coordinator's plan
-  announcement in the coordinator session, 2026-11-06; no permalink.
-- Scope: the deployed Streamable HTTP service of #11 (its own Compose project) on the
-  existing target.
-- Decision: stopping and starting the deployed HTTP service (SIGTERM drain checks)
-  and load measurements against it are within #12 scope. Not authorized: image
-  rebuild or change, inventory or secret edits, hub entry or hub container changes,
-  other hosts or services.
-- Applicability / conditions / expiry: bounded to the #12 run; the service is left
-  running as the one active mode (ISSUE-11-DEC-004). Not standing permission.
-- Rationale supplied: none by the owner. Coordinator rationale: box 7 cannot be met
-  without stopping the deployed service and loading it.
-- Affected requirement IDs, files, issues and tests: MCP-04, OPS-01/05; drain D1-D3,
-  load L1-L6; [VALIDATION.md](../VALIDATION.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
-  [TRACEABILITY.md](../TRACEABILITY.md).
-- Supersedes / superseded by: none.
-- Propagated to roles / packet references: implementer and reviewer through the
-  coordinator.
-- Revalidation needed / next action: none for the #12 run (owner confirmation
-  recorded above). Any further service stop/start, load run or operation outside this
-  list needs a new human instruction.
+- Status: confirmed retroactively by the owner for the #12 run only (2026-11-06); issue #12 only.
+- Authority: coordinator interpretation of the instruction to implement #12 and of acceptance box 7; confirmed retroactively by the owner ("ja, war in ordnung" (English: "yes, that was fine")) after the coordinator announced the plan and asked about two short outages of about 2 s. Not standing permission.
+- Scope: the deployed Streamable HTTP service of #11 on the existing target (MCP-04, OPS-01/05; drain D1-D3, load L1-L6).
+- Decision: stopping and starting the service (SIGTERM drain checks) and load measurements against it are within #12 scope. Not authorized: image rebuild, inventory or secret edits, hub entry or hub container changes, other hosts or services.
+- Conditions: bounded to the #12 run; the service is left running as the one active mode (ISSUE-11-DEC-004). Source context: [ISSUE-11-DEC-008](issue-11.md#issue-11-dec-008--drain-and-load-live-checks-move-to-12) asked for an own instruction.
 
 ## ISSUE-12-DEC-004 — stdio via uvx stays in #12 scope
 
 - ID: ISSUE-12-DEC-004
-- Recorded date: 2026-11-06
 - Status: active for issue #12 only.
-- Authority: human decision.
-- Source: owner reply in the coordinator session on 2026-11-06 ("nein, auch stdio in
-  #12", answering the coordinator's question on the stdio scope of #12), recorded as a
-  coordinator comment on [#12](https://github.com/descipar/wled-mcp/issues/12); no
-  permalink to the original message available.
-- Scope: the remaining #12 acceptance work.
-- Decision: stdio via uvx stays in #12 scope. The stdio-mode live checks (drain of an
-  in-flight call when the entry is stopped, load measurements, and the H04-H06
-  scenarios as applicable) are required for #12 and are not moved to stage 2.
-- Applicability / conditions / expiry: issue #12 only. It defines scope, not an
-  operation approval: each live run still needs its own authorization (for the second
-  run, ISSUE-12-DEC-005).
-- Rationale supplied: none beyond the reply.
-- Affected requirement IDs, files, issues and tests: MCP-04, OPS-01/02/05, CTRL-01,
-  SEG-01-04, PRE-01-05, TEST-01; [VALIDATION.md](../VALIDATION.md),
-  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md).
-- Supersedes / superseded by: supersedes TD-12-1 (HTTP only) of ISSUE-12-DEC-002 for
-  the remaining #12 work; the first run's HTTP-only scope stays as recorded.
-- Propagated to roles / packet references: coordinator comment on #12; implementer and
-  reviewer through the coordinator.
-- Revalidation needed / next action: none.
+- Authority: human decision ("nein, auch stdio in #12" (English: "no, stdio in #12 too")).
+- Scope: the remaining #12 acceptance work (MCP-04, OPS-01/02/05, CTRL-01, SEG-01-04, PRE-01-05, TEST-01).
+- Decision: stdio via uvx stays in #12 scope; the stdio live checks (drain when the entry is stopped, load, H04-H06 as applicable) are required and not moved to stage 2. Supersedes TD-12-1 of ISSUE-12-DEC-002 for the remaining work; the first run's HTTP-only scope stays as recorded.
+- Conditions: defines scope, not an operation approval (second run: ISSUE-12-DEC-005).
 
 ## ISSUE-12-DEC-005 — Authorization of the second #12 live run
 
 - ID: ISSUE-12-DEC-005
-- Recorded date: 2026-11-06
 - Status: used by the second #12 live run on 2026-11-06; expired after that run.
-- Authority: human decision.
-- Source: owner reply in the coordinator session on 2026-11-06 ("ja zu den 3 fragen",
-  answering the coordinator's three questions), recorded as a coordinator comment on
-  [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
-  message available.
-- Scope: the deployed Streamable HTTP service of #11 and its hub entry on the existing
-  target, a temporary stdio hub entry on the same hub, and the test controller of
-  ISSUE-12-DEC-001.
-- Decision:
-  1. Update the HTTP deployment on the target to a build from current main, and stop
-     and start the HTTP service.
-  2. Temporarily register a stdio hub entry and temporarily disable the HTTP hub entry
-     during the stdio tests, then remove the stdio entry and re-enable the HTTP entry.
-  3. Use the same designated test controller again, with state, segment layout and
-     presets file captured beforehand and restored afterwards.
-  The owner is within sight for visual checks but may reply with delay; no test may
-  depend on a quick human reaction.
-- Applicability / conditions / expiry: this run only; not standing permission for later
-  deployments, hub changes, service operations or controller writes. Device and host
-  names stay in the local run record.
-- Rationale supplied: none beyond the reply.
-- Affected requirement IDs, files, issues and tests: as ISSUE-12-DEC-004, plus OPS-02;
-  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
-- Supersedes / superseded by: none. ISSUE-12-DEC-001 conditions apply to the controller
-  writes; ISSUE-11-DEC-004 (one active mode) holds because the HTTP entry was disabled
-  while the stdio entry was registered.
-- Propagated to roles / packet references: coordinator comment on #12; implementer and
-  reviewer through the coordinator.
-- Revalidation needed / next action: any further deployment, hub change or controller
-  write needs a new human instruction.
+- Authority: human decision ("ja zu den 3 fragen" (English: "yes to the 3 questions")).
+- Scope: the deployed HTTP service and hub entry on the target, a temporary stdio hub entry on the same hub, and the test controller of ISSUE-12-DEC-001.
+- Decision: (1) update the HTTP deployment to a build from current main and stop/start it; (2) temporarily register a stdio hub entry and disable the HTTP entry during the stdio tests, then remove the stdio entry and re-enable HTTP; (3) reuse the test controller with state, layout and presets captured and restored. No test may depend on a quick human reaction.
+- Conditions: this run only. ISSUE-12-DEC-001 conditions apply to controller writes; ISSUE-11-DEC-004 held because HTTP was disabled while stdio was registered. Evidence: [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
 
 ## ISSUE-12-DEC-006 — stdio host-level no-drain accepted as a documented limitation
 
 - ID: ISSUE-12-DEC-006
-- Recorded date: 2026-11-06
 - Status: active.
-- Authority: human decision.
-- Source: owner reply in the coordinator session on 2026-11-06 to the coordinator's
-  question whether the stdio host-level no-drain is acceptable ("ja, ist in ordnung.
-  stdio ist ja nur die zweite wahl für heute, ich bevorzuge http" (English: "yes, that is fine. stdio is only the second choice for today anyway, I prefer http")), relayed by the
-  coordinator; no permalink to the original message available.
-- Scope: issue #12, the stdio-via-uvx mode and its host-owned subprocess lifecycle
-  (MCP-04 drain evidence).
-- Decision: the behavior observed in the second #12 run, that the MCP host (MCPHub)
-  closes the stdio connection on entry disable or stop without draining in-flight
-  calls, is accepted as a documented limitation of stdio mode for #12. Streamable HTTP
-  is the owner's preferred mode. No code change is requested.
-- Applicability / conditions / expiry: #12 and the stdio host lifecycle only. Not a
-  deprecation of stdio, not a change to the confirmed two-transport scope, and no
-  acceptance of other host behavior. The documented guidance stays: read the state
-  before retrying a write cut off this way.
-- Rationale supplied: stdio is the second choice for the current use; HTTP is preferred.
-- Affected requirement IDs, files, issues and tests: MCP-04;
-  [TRACEABILITY.md](../TRACEABILITY.md), [DEPLOYMENT.md](../DEPLOYMENT.md),
-  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
-- Supersedes / superseded by: none; resolves the open question of the MCP-04 cell
-  raised after the second run. ISSUE-12-DEC-004 (stdio stays in #12 scope) is unchanged.
-- Propagated to roles / packet references: coordinator to implementer; reviewer through
-  the coordinator.
-- Revalidation needed / next action: none.
+- Authority: human decision ("ja, ist in ordnung. stdio ist ja nur die zweite wahl für heute, ich bevorzuge http" (English: "yes, that is fine. stdio is only the second choice for today anyway, I prefer http")).
+- Scope: #12, stdio via uvx and its host-owned subprocess lifecycle (MCP-04 drain evidence).
+- Decision: the MCP host (MCPHub) closing the stdio connection on entry disable or stop without draining in-flight calls (second run) is accepted as a documented limitation for #12. Streamable HTTP is the preferred mode; no code change.
+- Conditions: #12 and the stdio host lifecycle only; not a deprecation of stdio or change of the two-transport scope. Guidance stays: read state before retrying a cut-off write. ISSUE-12-DEC-004 unchanged. Evidence: [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
 
 ## ISSUE-12-DEC-007 — Remaining #12 scope after the second run, and a third run
 
 - ID: ISSUE-12-DEC-007
-- Recorded date: 2026-11-06
-- Status: active for issue #12; item 2 (the run authorization) was used by the third
-  #12 live run on 2026-11-06 and expired after that run.
-- Authority: human decision.
-- Source: owner reply in the coordinator session on 2026-11-06 ("stimme zu") to the
-  coordinator's six-point proposal, relayed by the coordinator and recorded in
-  coordinator comments on [#12](https://github.com/descipar/wled-mcp/issues/12) (the
-  decision, and a later clarification of the details of items 2 and 3) and, for item 6,
-  on [#25](https://github.com/descipar/wled-mcp/issues/25); no permalink to the original
-  message available.
-- Scope: the items left open after the second run by the post-merge completion record
-  of PR #71 (boxes 1, 3 and 7 of #12, and the relevance of H07 to #12).
+- Status: active for issue #12; item 2 (the run authorization) was used by the third #12 live run on 2026-11-06 and expired after that run.
+- Authority: human decision ("stimme zu" (English: "I agree")) to the coordinator's six-point proposal; item 6 also recorded on [#25](https://github.com/descipar/wled-mcp/issues/25).
+- Scope: items left open after the second run (boxes 1, 3 and 7 of #12, relevance of H07); H02, H04, H07, MCP-04.
 - Decision:
-  1. H02: the comparison "with the WLED UI" is satisfied by comparing the tool output
-     with the controller endpoints the WLED UI renders (state, info, effect, palette
-     and preset data); no separate screenshot or UI comparison is required.
-  2. A short owner-watched run through the deployed Streamable HTTP service on the
-     test controller of ISSUE-12-DEC-001 verifies visible effect animation and a speed
-     change; capture before and restore after apply. This agreement authorizes that
-     one run only (the third run). The accepted proposal covered the visible H04
-     behavior of that run, and the owner explicitly asked for the brightness and
-     dimming repeats during it, so the brightness transition (E3) falls under this
-     item.
-  3. stdio H04 is sufficient as exercised in the second run (power/brightness rules
-     plus the verified stdio color and effect writes: layout replacements through
-     `wled_replace_layout` that set segment colors and one effect, and a segment patch
-     through `wled_patch_segments` that changed a color and the speed while preserving
-     the other segments); the stdio mode uses the same domain code as HTTP.
-  4. stdio drain evidence at host level is sufficient for #12, consistent with
-     ISSUE-12-DEC-006; no dedicated server-side SIGTERM observation in stdio mode.
-  5. stdio load measured through the hub within its rate limit is sufficient for #12;
-     Streamable HTTP is the preferred mode and is fully measured. Load beyond the
-     hub's rate limit or without the hub hop is not required for #12.
-  6. The live H07 check (an unreachable configured controller on the deployed target)
-     moves to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)); the
-     mocked coverage (T02, T09) remains the stage-1 evidence. A live H07 run needs its
-     own authorization.
-- Applicability / conditions / expiry: issue #12 only. Item 2 is bounded to the third
-  run, the HTTP entry and the one test controller, with capture and restore; it is not
-  standing permission for later controller writes, service or hub operations. Items 1
-  and 3-5 define sufficiency for #12 and are not general rules for other issues or
-  later releases. Item 6 changes no other stage-2 scope.
-- Rationale supplied: HTTP is the preferred mode (see ISSUE-12-DEC-006); otherwise none
-  beyond the proposal.
-- Affected requirement IDs, files, issues and tests: H02, H04, H07; READ-02, CTRL-01,
-  SEG-04, DEV-02, REL-01, MCP-04, OPS-01, TEST-01;
-  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
-  [TRACEABILITY.md](../TRACEABILITY.md), README.md; #12, #25;
-  `tests/test_deployment_artifacts.py`.
-- Supersedes / superseded by: none. Narrows the remaining #12 work under
-  ISSUE-12-DEC-004 (stdio stays in #12 scope) without removing stdio from #12;
-  ISSUE-12-DEC-001 conditions apply to the run of item 2.
-- Propagated to roles / packet references: coordinator comments on #12 and #25;
-  implementer and reviewer through the coordinator.
-- Revalidation needed / next action: post-merge completion review of #12 against the
-  run-3 record and this decision; any further controller write, deployment or live H07
-  run needs a new human instruction.
+  1. H02: comparison "with the WLED UI" is satisfied by comparing tool output with the controller endpoints the UI renders (state, info, effect, palette, preset data); no screenshot required.
+  2. One short owner-watched run through the deployed HTTP service on the test controller of ISSUE-12-DEC-001 verifies visible effect animation, a speed change and (owner request) brightness transitions (E3); capture before, restore after. Authorizes the third run only.
+  3. stdio H04 as exercised in the second run (power/brightness rules, verified color and effect writes via `wled_replace_layout` and `wled_patch_segments`) is sufficient; same domain code as HTTP.
+  4. stdio drain evidence at host level is sufficient (ISSUE-12-DEC-006); no server-side SIGTERM observation in stdio mode.
+  5. stdio load measured through the hub within its rate limit is sufficient; HTTP is fully measured; load beyond the rate limit or without the hub hop is not required.
+  6. Live H07 (unreachable configured controller on the target) moves to stage 2 ([#25](https://github.com/descipar/wled-mcp/issues/25)); mocked coverage (T02, T09) remains the stage-1 evidence; a live run needs its own authorization.
+- Conditions: #12 only; item 2 bounded to the third run, HTTP entry and one controller; items 1 and 3-5 are sufficiency rules for #12, not general rules. Narrows ISSUE-12-DEC-004 without removing stdio. Evidence: [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06).
 
 ## ISSUE-12-DEC-008 — No separate visual check of an intensity change for H04
 
 - ID: ISSUE-12-DEC-008
-- Recorded date: 2026-11-06
 - Status: active for issue #12 only.
-- Authority: human decision.
-- Source: owner reply in the coordinator session on 2026-11-06 ("rückmeldung und
-  speedtest genügen" (English: "feedback and the speed test are sufficient")), relayed by the coordinator and recorded as a coordinator comment
-  on [#12](https://github.com/descipar/wled-mcp/issues/12); no permalink to the original
-  message available.
-- Scope: the H04 item "one effect's speed/intensity ... visible behavior" for #12 (the
-  visual intensity change left pending after run 3).
-- Decision: for H04 the visual intensity change does not need a separate visual check.
-  The verified readback of intensity writes (run 1 H04: a segment patch with effect,
-  speed and intensity, applied and matched on readback) plus the owner-confirmed visible
-  speed change of run 3 (E2) are sufficient.
-- Applicability / conditions / expiry: issue #12 only; not a general rule that readback
-  replaces visual checks for other issues, controllers or later releases. No new
-  hardware run is authorized or needed.
-- Rationale supplied: none beyond the reply.
-- Affected requirement IDs, files, issues and tests: H04; CTRL-01;
-  [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06),
-  [TRACEABILITY.md](../TRACEABILITY.md); `tests/test_deployment_artifacts.py`.
-- Supersedes / superseded by: none; complements ISSUE-12-DEC-007 item 2, which named
-  only a speed change.
-- Propagated to roles / packet references: coordinator comment on #12; implementer and
-  reviewer through the coordinator.
-- Revalidation needed / next action: post-merge completion review of #12.
+- Authority: human decision ("rückmeldung und speedtest genügen" (English: "feedback and the speed test are sufficient")).
+- Scope: the H04 item "speed/intensity visible behavior" for #12 (CTRL-01).
+- Decision: no separate visual check of an intensity change is needed. Verified readback of intensity writes (run 1 H04) plus the owner-confirmed visible speed change of run 3 (E2) are sufficient. Complements ISSUE-12-DEC-007 item 2.
+- Conditions: #12 only; not a general rule that readback replaces visual checks; no new hardware run authorized. Evidence: [VALIDATION.md](../VALIDATION.md#issue-12-hardware-acceptance-run-3-2026-11-06).

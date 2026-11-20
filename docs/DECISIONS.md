@@ -95,1324 +95,603 @@ locate the durable project restatement, not an invented original-message URL.
 The entries are active only within their described scope. A later human decision
 can explicitly amend them.
 
+Detail below is condensed: each entry keeps status, source, scope, the decision and
+supersession. Coordinator notes, long rationale and affected-file lists live in the
+contract files, CHANGELOG and git history. Quotes are verbatim with translation (DEC-017).
+
 ### DEC-006 — Post-merge issue completion
 
-- Status: active workflow intent; implementation and its merge remain subject to
-  the normal branch, independent review and human merge process.
-- Authority/source: human request in the current coordinator session on
-  2026-11-04 following observation that PR #33 was merged while issue #2 remained
-  open with unchecked criteria. No source-message permalink is available;
-  [issue #34](https://github.com/descipar/wled-mcp/issues/34) records the work scope.
-- Scope/decision: add an agent responsible for post-merge issue/checklist
-  completion. This is a workflow change, not authorization to implement the WLED
-  backlog, merge future PRs, deploy, change devices or publish.
-- Conditions: use actual merged work and acceptance evidence under the governing
-  project rules. A merge or agent verdict does not prove unrelated requirements.
-  Detailed handoff, idempotency and issue-state policies in PM-01–06 are technical
-  implementation choices, not separately supplied human decisions.
-- Rationale supplied: issue completion should follow merge; no further rationale
-  supplied. Supersedes no earlier recorded human decision; refines the existing
-  workflow's missing post-merge handoff.
-- Affected: PM-01–06; completion/coordinator roles, workflow, report template and
-  setup checker. Coordinator propagates this ID with the requirements packet to
-  implementer and reviewer; its recording is not evidence of a live completion run.
-- Revalidation: changed scope, missing acceptance evidence or a different candidate
-  requires reassessment; no bounded operation approval becomes standing authority.
+- Status: active workflow intent; implementation and merge follow the normal review and
+  human merge process.
+- Source: human request, coordinator session, 2026-11-04, after PR #33 merged while issue #2
+  stayed open ([issue #34](https://github.com/descipar/wled-mcp/issues/34)).
+- Decision: add an agent that completes issue checklists after merge. Not an authorization
+  to implement the backlog, merge, deploy, change devices or publish.
+- Conditions: based on actual merged work and acceptance evidence; a merge or agent verdict
+  does not prove unrelated requirements. PM-01-06 details are technical choices.
 
 ### DEC-007 — Shared Claude Code and Codex roles
 
-- Status: active workflow intent; the changed candidate requires refreshed
-  independent review and the normal human merge decision.
-- Authority/source: human request in the current coordinator session on
-  2026-11-04 to rewrite the agents so Claude and Codex share definitions. No
-  source-message permalink is available; [issue #37](https://github.com/descipar/wled-mcp/issues/37)
-  records the implementation scope.
-- Scope/decision: maintain common role definitions for both clients, preserving
-  the existing issue workflow including independent review and DEC-006 completion.
-  Provider-neutral source files, generated native adapters and their exact format
-  are technical implementation choices, not individually human-confirmed details.
-- Conditions: client configuration remains separate where native formats differ;
-  do not force models, providers, credentials, permissions or MCP connections.
-  This does not authorize product work, model launches, merge, deployment,
-  device writes, publication or closing unrelated issues.
-- Rationale supplied: shared agents for the two clients; no further rationale
-  supplied. Supersedes no earlier human decision.
-- Affected: CA-01–06, the five role definitions and client adapters, setup tooling,
-  project instructions and workflow docs; PM-01–06 remain in force. The coordinator
-  propagates DEC-007 with the packet to requirements, implementation and review.
-- Revalidation: edits invalidate the prior PR #35 candidate review. Structural
-  fidelity, native client discovery and actual model behavior require distinct
-  evidence; generated files alone do not prove an end-to-end run.
+- Status: active workflow intent.
+- Source: human request, coordinator session, 2026-11-04 ([issue #37](https://github.com/descipar/wled-mcp/issues/37)).
+- Decision: maintain common role definitions for both clients, keeping the issue workflow,
+  independent review and DEC-006 completion. Source files and generated adapters are
+  technical choices (CA-01-06).
+- Conditions: client configuration stays separate; no models, providers, credentials,
+  permissions or MCP connections are forced.
 
 ### DEC-008 — Reviewer on Opus in Claude Code
 
 - Status: active workflow decision for Claude Code sessions.
-- Authority/source: human instruction in the issue-48 workflow session, 2026-11-05
-  (no permalink): the review agent has to be started with Opus, restricted by the
-  human to Claude only because Codex offers no Opus model.
-- Scope/decision: when the coordinator runs in Claude Code, it passes the Opus model
-  explicitly on every `wled_reviewer` delegation. Codex sessions keep their inherited
-  model; no Codex configuration changes.
-- Conditions: the choice is made at delegation time by the coordinator. Role sources and
-  generated adapters keep carrying no model override (setup checker rule unchanged). If
-  Opus is unavailable in a Claude Code session, report that instead of silently
-  reviewing with another model.
-- Rationale supplied: none beyond Codex lacking Opus. Supersedes no earlier decision;
-  refines the "models inherited from the session" default for this one role/client.
-- Affected: agents/coordinator.md (and its generated adapters), docs/AGENT-WORKFLOW.md.
+- Source: human instruction, issue-48 workflow session, 2026-11-05.
+- Decision: in Claude Code the coordinator passes the Opus model on every `wled_reviewer`
+  delegation; Codex keeps its inherited model. Role sources carry no model override. If
+  Opus is unavailable, report it instead of reviewing with another model.
 
 ### DEC-009 — Public-ready repository baseline
 
 - Status: active project decision.
-- Authority/source: owner direction in the coordinator session on 2026-11-06 (no
-  permalink): the project should later become public rather than serve one
-  installation only, so installation-specific content must go and a proper README is
-  needed; the owner also asked for example deployment files in the repository,
-  referenced from the README. Issue #62 restates this direction.
-- Scope/decision: keep tracked content neutral and installation-independent, provide a
-  user-facing README and synthetic example deployment files for both transports, and
-  guard against private identifiers in CI.
-- Conditions: no visibility change, license choice, package/image publication, listing
-  submission or history rewrite is implied; those remain owner decisions tracked by #23.
-  Rollback/update procedures stay in stage 2 per the owner.
-- Rationale supplied: later public use instead of a single installation.
-- Supersedes: amends earlier "private project" framing in REQUIREMENTS.md and
-  ARCHITECTURE.md going forward; historical records keep their meaning.
-- Affected: README.md, docs, examples, agent roles, pyproject.toml, CI; issue #62.
+- Source: owner direction, coordinator session, 2026-11-06 ([issue #62](https://github.com/descipar/wled-mcp/issues/62)).
+- Decision: keep tracked content neutral and installation-independent, provide a user-facing
+  README and synthetic example deployment files for both transports, guard against private
+  identifiers in CI.
+- Conditions: no visibility change, license choice, publication, listing submission or
+  history rewrite is implied (tracked by #23). Rollback/update procedures stay in stage 2.
 
 ### DEC-010 — Stage in every issue title
 
-- Status: active project decision.
-- Authority/source: owner instructions in the coordinator session on 2026-11-06 (no
-  permalink): "ein issue muss eine stage haben und das muss im namen sichtbar sein" (English: "an issue must have a stage and that must be visible in its name");
-  the owner then confirmed recording the rule "jedes Issue hat genau eine Stage, sichtbar
-  als 'Stage N: …' im Titel plus Label stage:N" (English: "every issue has exactly one stage, visible as 'Stage N: …' in the title plus label stage:N"), and chose stage 1 for the workflow-tooling
-  issues #34 and #37 (previously described as cross-stage), including their link as
-  sub-issues of #1.
-- Owner decision: every issue has exactly one stage, shown as a `Stage N: ` title prefix
-  and exactly one `stage:N` label. #34 and #37 belong to stage 1.
-- Coordinator-derived conventions (not owner statements; the owner may amend them):
-  stage trackers use `Stage N epic: `; each issue is linked as a sub-issue of its stage
-  tracker (#1, #15 or #26); a new workflow/tooling issue is assigned a stage like any
-  other issue instead of being left cross-stage, and the coordinator asks the owner when
-  the stage is not clear from labels, tracker and roadmap.
-- Conditions: DEC-002 still governs deriving stage context; it no longer permits leaving
-  an issue without a stage. Moving an issue to a different stage than the one evident
-  from its labels, tracker or an owner note needs the owner; adding a missing prefix,
-  label or tracker link for an evident stage does not.
-- Rationale supplied: none.
-- Supersedes: the "may be recorded as cross-stage" allowance in agents/coordinator.md and
-  docs/AGENT-WORKFLOW.md (introduced with DEC-002, PR #32).
-- Affected: AGENTS.md, agents/coordinator.md, agents/requirements.md, generated adapters,
-  docs/AGENT-WORKFLOW.md, docs/IMPLEMENTATION-PLAN.md, docs/PROJECT.md; all GitHub issues
-  (retitled, labelled and linked 2026-11-06).
+- Status: active project decision (superseded by DEC-029 for open and new work; closed
+  history unchanged).
+- Source: owner instructions, coordinator session, 2026-11-06: "jedes Issue hat genau eine
+  Stage, sichtbar als 'Stage N: …' im Titel plus Label stage:N" (English: "every issue has
+  exactly one stage, visible as 'Stage N: …' in the title plus label stage:N").
+- Decision: every issue has one stage, shown as a `Stage N: ` title prefix and one `stage:N`
+  label; #34 and #37 belong to stage 1. Coordinator-derived conventions: trackers use
+  `Stage N epic: `, issues are sub-issues of their tracker, workflow issues get a stage too.
+- Supersedes: the "may be recorded as cross-stage" allowance from DEC-002.
 
 ### DEC-011 — Apache-2.0 license with NOTICE attribution
 
 - Status: active project decision.
-- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
-  permalink): the project should be freely available, but others must not be allowed to
-  remove the owner as author ("ich würde es gerne frei verfügbar machen, aber sie sollen
-  mich als author nicht entfernen dürfen" (English: "I would like to make it freely available, but they must not be allowed to remove me as author"), typing errors corrected); after the coordinator compared MIT, Apache-2.0
-  and copyleft options, the owner chose "apache mit notice" (English: "Apache with notice") and the author name for the
-  attribution.
-- Owner decision: outbound license Apache-2.0; a `NOTICE` file carries the copyright and
-  author attribution, which Section 4(d) of the license requires redistributions,
-  including modified versions, to retain. The author name in `NOTICE` and in
-  `pyproject.toml` authors is an explicit owner request and an exception to DEC-005 for
-  those attribution fields only.
-- Coordinator notes (not owner statements): no license can stop a fork from adding its
-  own authors; it requires keeping the existing notices. No third-party NOTICE content is
-  needed while no upstream code is reused (SOURCES.md).
-- Conditions: no visibility change, package/image publication, registry submission,
-  history rewrite or public contact address is decided here (STAGE-2 open items 2-9).
-- Rationale supplied: free availability with preserved author attribution.
-- Supersedes: the "does not choose a license" limitation of DEC-009 for the license only.
-- Affected: LICENSE, NOTICE, pyproject.toml, README.md, docs/PROJECT.md, docs/STAGE-2.md,
-  scripts/check_distribution.py, tests/test_readme.py.
+- Source: owner instructions, coordinator session, 2026-11-07: "apache mit notice" (English:
+  "Apache with notice").
+- Decision: license Apache-2.0; a `NOTICE` file carries copyright and author attribution that
+  redistributions must retain (Section 4(d)). The author name in `NOTICE` and `pyproject.toml`
+  is an explicit owner request and an exception to DEC-005 for those fields only.
+- Conditions: no visibility change, publication, registry submission or history rewrite is
+  decided here. Supersedes the "no license chosen" limit of DEC-009 for the license only.
 
 ### DEC-012 — Project and package identity
 
 - Status: active project decision.
-- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
-  permalink). The owner asked whether `wled-mcp` sounds too official, as if part of the
-  WLED project; the coordinator offered (1) keep `wled-mcp` with a clear unofficial
-  marking, (2) an owner prefix, (3) an own project name. The owner chose option 1 after
-  a check for a WLED trademark policy, then confirmed recording the identity and the
-  three conditions below as DEC-012.
-- Owner decision: repository `descipar/wled-mcp`, PyPI distribution `wled-mcp`, container
-  image `ghcr.io/descipar/wled-mcp`, MCP Registry name `io.github.descipar/wled-mcp`.
-  Conditions: (a) no WLED logo or logo imitation, including marketplace listings;
-  (b) the package summary and registry/listing texts state that the project is
-  unofficial and not affiliated with the WLED project, in addition to the README
-  statement; (c) if the WLED project asks for a rename, comply; this is a known risk.
-- Coordinator notes (not owner statements): research on 2026-11-07 found no trademark or
-  name-usage policy in the WLED repository/README (code licensed EUPL-1.2) and no active
-  US registration of the word mark (one 2011 application, abandoned 2012, relation to
-  the project unknown); EU/German registers were not checked. Community forks and
-  companion projects commonly use the WLED name. The PyPI name was unregistered on
-  2026-11-07; nothing has been reserved.
-- Conditions: no name reservation, package/image publication, registry submission or
-  visibility change is authorized here.
-- Rationale supplied: the owner was concerned the name could appear official; resolved by
-  explicit unofficial marking rather than renaming.
-- Supersedes: the `io.github.<publisher>` placeholder in STAGE-2.md and MARKETPLACE.md.
-- Affected: pyproject.toml (description), docs/MARKETPLACE.md, docs/STAGE-2.md.
+- Source: owner instructions, coordinator session, 2026-11-07 (option 1: keep the name with
+  clear unofficial marking).
+- Decision: repository `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`,
+  MCP Registry name `io.github.descipar/wled-mcp`. Conditions: (a) no WLED logo or imitation;
+  (b) package summary and listing texts state the project is unofficial and not affiliated
+  with WLED, besides the README; (c) comply if the WLED project asks for a rename.
+- Conditions: reserves nothing and publishes nothing.
 
 ### DEC-013 — General contact and no security support
 
 - Status: active project decision.
-- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
-  permalink). For general contact the owner chose option (a), GitHub issues only. For
-  security the owner stated that this is a private product, that they do not want to do
-  extra security work, and that it is "use at own risk"; the owner then confirmed the
-  coordinator's proposal below.
-- Owner decision: public contact is GitHub issues only; no e-mail address in package
-  metadata or listings. No security support: no private reporting channel (GitHub
-  private vulnerability reporting stays off), no response commitment, no guaranteed
-  fixes, no advisories. A short `SECURITY.md` states this, allows reports as regular
-  issues without exploit details and recommends running the HTTP service only on a
-  trusted network. S2-PUBLIC-03 requires this statement instead of a security contact.
-- Coordinator notes (not owner statements): the Apache-2.0 warranty and liability
-  disclaimers (Sections 7 and 8) already apply; built-in safeguards (HTTP token,
-  Host/Origin checks, validation before writes) remain project requirements and are not
-  affected by this decision.
-- Conditions: no repository setting is changed by this decision.
-- Rationale supplied: private hobby product; the owner does not want security process work.
-- Supersedes: the "security reporting/contact" part of S2-PUBLIC-03.
-- Affected: SECURITY.md, docs/STAGE-2.md.
+- Source: owner instructions, coordinator session, 2026-11-07 (private product, "use at own risk").
+- Decision: public contact is GitHub issues only, no e-mail in metadata or listings. No
+  security support: no private reporting channel (private vulnerability reporting stays off),
+  no response commitment, no advisories. `SECURITY.md` states this, allows issue reports
+  without exploit details and recommends a trusted network. S2-PUBLIC-03 requires this
+  statement instead of a security contact. Built-in safeguards stay requirements.
 
 ### DEC-014 — Keep the existing Git history
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): after the coordinator presented a history scan and the options (A) keep the
-  history, (B) a fresh public repository, the owner chose A and stated that the commit
-  e-mail address may be public.
-- Owner decision: the existing history and author identities (owner and agent noreply
-  identity) stay as they are when the repository becomes public. No history rewrite and
-  no fresh public repository; existing issue/PR links and commit references remain valid.
-- Coordinator notes (not owner statements): the 2026-11-07 scan of all 70 commits found
-  the owner's commit e-mail address, the owner's first name in earlier wording and, in
-  two commits of 2026-11-04 later neutralized by #62, an internal hub hostname and coarse
-  hub hardware/mount details. Test IPv4 values are synthetic; no secrets and no deleted
-  files were found. A rewrite in place was not recommended because GitHub keeps pull
-  request refs, so old commits would remain reachable. Accepting these historic contents
-  follows from this decision.
-- Conditions: no visibility change is authorized here. Open owner decision 5 (review of
-  issue/PR bodies and comments before a visibility change) is not resolved by this entry.
-- Rationale supplied: none beyond the e-mail address being acceptable to publish.
-- Supersedes: none.
-- Affected: docs/STAGE-2.md.
+- Source: owner instruction, coordinator session, 2026-11-07 (option A of keep versus fresh
+  repository; the commit e-mail address may be public).
+- Decision: the existing history and author identities stay when the repository becomes
+  public; no history rewrite, no fresh public repository. Authorizes no visibility change.
 
 ### DEC-015 — Issue and PR review before visibility change
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's four-part proposal ("ja, mach
-  DEC-015 so" (English: "yes, do DEC-015 that way")), then amended item 3: the #11 revision may stay because the hub is not
-  publicly reachable.
-- Owner decision:
-  1. Two review layers: (a) a repeatable, read-only script (working name
-     `scripts/check_issue_content.py`) that scans issue/PR titles, bodies, comments,
-     review comments and their edit histories; concrete private terms come from the
-     existing untracked private denylist and are never committed; (b) one agent
-     read-through of all items for context no pattern detects, producing a findings
-     list that the owner approves.
-  2. Timing: the full review runs immediately before the visibility change, as a
-     mandatory step of #23/#25; the script is built as part of #23, not now.
-     Amended by DEC-019: the review, the script and the visibility change moved to
-     #90.
-  3. Existing edit-history findings stay: the internal hub hostname in an earlier
-     revision of #11 (the owner subsequently decided against the proposed deletion
-     because the hub is not publicly reachable), the owner's first name (#15, #16, #24)
-     and the hub hardware (#11, #62).
-  4. The existing AGENTS.md rule keeps issues and PRs impersonal; no new rule.
-- Coordinator notes (not owner statements): a pattern scan on 2026-11-07 of 85 issues/PRs,
-  19 comments and 126 edit-history revisions found the current texts clean (remaining
-  hits are synthetic examples or intended attribution) and the edit-history findings
-  listed above. Pull request commits are covered by DEC-014.
-- Conditions: no visibility change is authorized here. Any future deletion of an
-  edit-history revision is an owner action in the GitHub UI; agents do not perform it.
-- Rationale supplied: none.
-- Supersedes: none.
-- Affected: docs/STAGE-2.md; future #23/#25 scope.
+- Source: owner instruction, coordinator session, 2026-11-07: "ja, mach DEC-015 so" (English:
+  "yes, do DEC-015 that way"), amended: the #11 revision may stay.
+- Decision: (1) two layers: a repeatable read-only script (`scripts/check_issue_content.py`)
+  scanning titles, bodies, comments and edit histories with the untracked private denylist,
+  plus one agent read-through whose findings the owner approves; (2) the full review runs
+  immediately before the visibility change (moved to #90 by DEC-019); (3) known edit-history
+  findings stay; (4) AGENTS.md keeps issues impersonal. Deleting an edit-history revision is
+  an owner action in the GitHub UI.
 
 ### DEC-016 — Ship the agent tooling and decision records
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-016 so" (English: "yes, do DEC-016 that way")).
-- Owner decision: the public repository ships `AGENTS.md`, `CLAUDE.md`, `agents/`, the
-  generated `.claude/agents/` and `.codex/` definitions, `docs/AGENT-*.md`,
-  `docs/agent-workflow/`, `scripts/sync_agents.py` with its tests, `docs/DECISIONS.md`
-  and `docs/decisions/`. Nothing is removed or restructured now. A short orientation
-  (README section and/or the CONTRIBUTING guidance of S2-PUBLIC-03) explains that the
-  project is developed with a documented agent workflow, that human contributions do not
-  require it, and where the design decisions are recorded; this is #23 work.
-- Coordinator notes (not owner statements): removal would give no privacy benefit because
-  the history stays public (DEC-014); product documentation and source comments link the
-  decision records as design rationale, so removing them would break those references.
-  The tracked client files contain agent roles and an agent concurrency limit only, no
-  secrets or personal settings.
-- Conditions: no visibility change is authorized here. Open owner decision 6 (German
-  source quotes) is decided separately.
-- Rationale supplied: none beyond accepting the proposal.
-- Supersedes: none.
-- Affected: docs/STAGE-2.md; future #23 scope.
+- Source: owner instruction, coordinator session, 2026-11-07 ("ja, mach DEC-016 so").
+- Decision: the public repository ships AGENTS.md, CLAUDE.md, `agents/`, generated
+  `.claude/agents/` and `.codex/` definitions, `docs/AGENT-*.md`, `docs/agent-workflow/`,
+  `scripts/sync_agents.py` with tests, this log and `docs/decisions/`. A short orientation
+  for outside readers is #23 work.
 
 ### DEC-017 — Verbatim owner quotes with English translation
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-017 so"
-  (English: "yes, do DEC-017 that way")).
-- Owner decision: German owner quotes in decision records stay verbatim as source
-  evidence and are followed by an English translation, `"original" (English:
-  "translation")`. Existing quotes are translated now; the recording rules above require
-  the same form for future records. Quotes are not removed or replaced by translations.
-- Coordinator notes (not owner statements): 21 quote occurrences in DECISIONS.md and the
-  issue-7, issue-11 and issue-12 records were translated; the translations are the
-  coordinator's and do not change the recorded decisions. Earlier wording remains in the
-  public history (DEC-014).
-- Conditions: no visibility change is authorized here.
-- Rationale supplied: none beyond accepting the proposal.
-- Supersedes: none.
-- Affected: docs/DECISIONS.md, docs/decisions/issue-7.md, docs/decisions/issue-11.md,
-  docs/decisions/issue-12.md, docs/STAGE-2.md.
+- Source: owner instruction, coordinator session, 2026-11-07 ("ja, mach DEC-017 so").
+- Decision: German owner quotes in decision records stay verbatim as source evidence and
+  carry an English translation, `"original" (English: "translation")`; future records use the
+  same form; quotes are never replaced by translations.
 
 ### DEC-018 — Private denylist and main branch rules
 
 - Status: active project decision; item 3 (branch rules) is superseded by DEC-024.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink). The owner stated having no list of private terms in mind ("ich hab im
-  moment keine liste überhaupt im kopf" (English: "at the moment I have no list in mind
-  at all"), typing errors corrected) and then confirmed the adjusted proposal below
-  ("ja, mach DEC-018 so" (English: "yes, do DEC-018 that way")).
-- Owner decision:
-  1. Private denylist mechanism: a local untracked `runtime/private-denylist.txt` and the
-     same content as a GitHub Actions secret; a CI step writes the secret to a temporary
-     file and sets `WLED_MCP_PRIVATE_DENYLIST` for `scripts/check_private_identifiers.py`.
-     Without the secret (for example fork pull requests) only the rule checks run.
-  2. Candidate list: an agent derives candidate terms (hostnames, addresses, device and
-     network names) from the untracked `.agent-runs/` records, the Git history and the
-     issues/PRs and presents them; the owner removes or adds entries. This runs together
-     with the DEC-015 review immediately before the visibility change. Concrete terms
-     never appear in committed files, issues or PRs.
-  3. Branch rules at the visibility change: a ruleset on `main` with pull requests
-     required, the CI status check required, force-push and deletion blocked, no
-     required approving reviews; the owner may bypass only the pull-request requirement.
-- Coordinator notes (not owner statements): branch protection/rulesets are not available
-  for this private repository on its current plan, hence the timing. The script reports
-  denylist hits as entry numbers only. Creating the secret and the ruleset are owner
-  actions in the repository settings; the CI step is #23 work (moved to #90 by DEC-019).
-- Conditions: no visibility change, secret or repository setting is created by this
-  decision; no denylist content is decided here.
-- Rationale supplied: none beyond accepting the proposal.
-- Supersedes: none.
-- Affected: docs/STAGE-2.md; future #23/#25 scope.
+- Source: owner instruction, coordinator session, 2026-11-07 ("ja, mach DEC-018 so").
+- Decision: (1) the private denylist is a local untracked `runtime/private-denylist.txt` plus
+  the same content as a GitHub Actions secret; CI writes it to a temporary file and sets
+  `WLED_MCP_PRIVATE_DENYLIST` for `scripts/check_private_identifiers.py`; without the secret
+  only the rule checks run; (2) an agent proposes candidate terms from `.agent-runs/`, history
+  and issues/PRs, the owner edits the list, together with the DEC-015 review before the
+  visibility change; concrete terms never appear in committed files; (3) branch rules at the
+  visibility change (superseded by DEC-024).
 
 ### DEC-019 — Make the repository public before the release
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner confirmed the coordinator's proposal below ("ja, mach DEC-019 so"
-  (English: "yes, do DEC-019 that way")), including creating the readiness issue and
-  adjusting #23 and #25.
-- Owner decision: repository visibility is decoupled from the release. The repository
-  becomes public once the readiness checklist of
-  [#90](https://github.com/descipar/wled-mcp/issues/90) is complete and the owner
-  explicitly instructs the change: DEC-015 review, DEC-018 denylist and CI step, DEC-016
-  orientation with pre-release/no-support status and a minimal CONTRIBUTING.md, owner
-  review of the overall state, the visibility change by the owner, and the DEC-018
-  `main` ruleset immediately afterwards. Package/image publication and registry or
-  marketplace submissions remain in #25 and its final release instruction.
-- Coordinator notes (not owner statements): rulesets and unlimited Actions minutes become
-  available with public visibility, which supports parallel stage-2 work (PR #81). After
-  the change, new issues, PRs and evidence are public immediately; the impersonal-issue
-  rule and the DEC-018 denylist apply. #90 was created as a stage-2 sub-issue of #15; a
-  "Visibility split (DEC-019)" section was appended to #23 and #25 with their previous
-  bodies preserved.
-- Conditions: this decision does not itself change visibility; the change requires the
-  owner's explicit instruction under #90. Agents do not change visibility, secrets or
-  rulesets.
-- Rationale supplied: none beyond accepting the proposal.
-- Supersedes: the part of #25 that bundled repository visibility into the final release
-  instruction.
-- Affected: docs/STAGE-2.md; issues #23, #25, #90.
+- Source: owner instruction, coordinator session, 2026-11-07 ("ja, mach DEC-019 so").
+- Decision: visibility is decoupled from the release. The repository becomes public once the
+  readiness checklist of [#90](https://github.com/descipar/wled-mcp/issues/90) is complete and
+  the owner explicitly instructs it (DEC-015 review, DEC-018 denylist and CI step, DEC-016
+  orientation with pre-release/no-support status and a minimal CONTRIBUTING.md, owner review,
+  visibility change by the owner, `main` ruleset right after). Package, image and
+  marketplace publication stay in #25. Agents never change visibility, secrets or rulesets.
 
 ### DEC-020 — Support and version policy
 
 - Status: active project decision.
-- Authority/source: owner instruction in the coordinator session on 2026-11-07 (no
-  permalink): the owner accepted the coordinator's proposal below with one amendment
-  ("ja, aber eine ergänzung unterstützung erst ab wled 16.0.0" (English: "yes, but one
-  addition: support only from WLED 16.0.0"), typing errors corrected).
-- Owner decision:
-  1. Versions: `0.x` releases until a separate owner decision on `1.0`; breaking changes
-     may occur in minor releases and carry migration notes in the changelog. Fixes only
-     for the latest release.
-  2. WLED firmware: support starts at WLED 16.0.0 (owner amendment). Within that range,
-     tiers: tested (hardware evidence; currently 16.0.1), expected (source-reviewed and
-     mock-tested), unknown (no claim). A version moves up a tier with recorded evidence
-     from the owner or a reproducible user report. Firmware below 16.0.0, including
-     0.15.x, is unsupported: the server warns but does not refuse.
-  3. Python: supported means tested in CI (currently 3.13); newer versions are added when
-     CI passes; older ones may be dropped when they cause effort.
-  4. Platforms: Linux supported (container amd64/arm64 and stdio); Windows and macOS
-     experimental.
-  5. Responses to reports: best effort without commitment (DEC-013).
-  A short support table in the README reflects this; #21 and #23 fill it with evidence.
-- Coordinator notes (not owner statements): the existing source profile and several
-  contract notes are based on WLED v0.15.1 source review plus WLED 16 evidence; this
-  decision does not remove that code or documentation. Whether 0.15.x-specific handling is
-  kept, and how the below-16.0.0 warning is implemented, is #21 (and #16 diagnostics) work.
-  Windows is experimental partly because six tests currently fail on a local Windows
-  setup while Linux CI passes.
-- Conditions: no code change is made by this decision.
-- Rationale supplied: none.
-- Supersedes: none.
-- Affected: docs/STAGE-2.md (S2-COMPAT-02); future #21/#23 scope.
+- Source: owner instruction, coordinator session, 2026-11-07: "ja, aber eine ergänzung
+  unterstützung erst ab wled 16.0.0" (English: "yes, but one addition: support only from WLED
+  16.0.0").
+- Decision: (1) `0.x` releases until a separate `1.0` decision, breaking changes in minors with
+  changelog migration notes, fixes only for the latest release; (2) WLED support starts at
+  16.0.0, tiers tested (hardware evidence, currently 16.0.1), expected (source-reviewed and
+  mock-tested), unknown; below 16.0.0 is unsupported (warn, do not refuse); (3) Python means
+  tested in CI (currently 3.13); (4) Linux supported, Windows and macOS experimental;
+  (5) best-effort responses (DEC-013). A short README support table reflects this.
 
 ### DEC-021 — Adopt the stage-2 parallel plan
 
 - Status: active stage-2 workflow decision.
-- Authority/source: owner instructions in the coordinator session on 2026-11-07 (no
-  permalink). The owner asked whether stage 2 could be started with a single request
-  so that the agent knows what to do ("kann man das nicht einfach machen, nach dem:
-  starte stage 2 parallel und der agent weiss was zu tun ist dann?" (English: "can't
-  this simply be done with: start stage 2 in parallel, and the agent then knows what to
-  do?"), capitalization and typing errors corrected), and then agreed to all open points
-  of the plan ("zustimmen zu allen offenen punkten im plan" (English: "agree to all open
-  points in the plan"), typing errors corrected).
-- Owner decision:
-  1. docs/STAGE-2-PARALLEL-PLAN.md is the adopted stage-2 execution plan.
-  2. At most two implementation tracks run at once; a third only for docs/read-only work.
-  3. #90 comes first in Phase 1.
-  4. Workflow rules: one coordinator per issue in an isolated worktree on its own branch;
-     the main session is the integration owner; branches are kept current by merging
-     `main` (no rebase with force-push); stacked PRs are retargeted to `main` before
-     their base branch is deleted; a sync whose diff equals the PR's own commits with
-     green CI keeps the review PASS, otherwise a fresh review; one merge at a time after
-     the owner's merge approval; DEC-010 applies to new issues.
-  5. "Depends on" in #16, #17, #20, #21 and #23 reflect the plan's couplings.
-  6. "Starte Stage 2 parallel" (or an equivalent request) starts or resumes the plan;
-     the main session derives progress from issue/PR state and decision records and
-     stops only for merge approval, owner-only actions (visibility, secrets, rulesets,
-     publication), hardware authorization and genuine decisions.
-- Coordinator notes (not owner statements): the start phrase mirrors DEC-001 for single
-  issues. Human merge approval per PR stays unchanged. The "Depends on" lines were edited
-  on 2026-11-07 (#16: #21; #17: #16, #20, #21; #20: #16 plus classifying tools of
-  #17-#19; #21: stage-1 foundations, absorbs #70; #23: #16, #90).
-- Conditions: stage 2 only; changes to plan order, track count or rules need the owner.
-  Does not authorize visibility changes, publication, deployment or hardware writes.
-- Rationale supplied: start stage 2 with one request without repeating instructions.
-- Supersedes: the "proposal only" status of docs/STAGE-2-PARALLEL-PLAN.md.
-- Affected: docs/STAGE-2-PARALLEL-PLAN.md, agents/coordinator.md and generated adapters,
-  AGENTS.md, docs/AGENT-WORKFLOW.md; issues #16, #17, #20, #21, #23.
+- Source: owner instructions, coordinator session, 2026-11-07: "zustimmen zu allen offenen
+  punkten im plan" (English: "agree to all open points in the plan").
+- Decision: (1) docs/STAGE-2-PARALLEL-PLAN.md is the adopted plan; (2) at most two
+  implementation tracks at once, a third only for docs/read-only work; (3) #90 first;
+  (4) one coordinator per issue in an isolated worktree and branch, the main session is
+  integration owner, branches sync by merging `main` (no force-push), stacked PRs are
+  retargeted to `main` before the base is deleted, one merge at a time after the owner's
+  approval; (5) "Depends on" lines reflect the plan; (6) "Starte Stage 2 parallel" starts or
+  resumes the plan; the main session stops only for merge approval, owner-only actions
+  (visibility, secrets, rulesets, publication), hardware authorization and genuine decisions.
+- Conditions: stage 2 only; no authorization for visibility, publication, deployment or
+  hardware writes.
 
 ### DEC-022 — Proportionate review and standing merge approval
 
-- Status: active stage-2 workflow decision; the standing merge approval (item 4) is
-  pending revalidation after three issues (see Conditions).
-- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
-  permalink). The owner observed that the work takes long ("ich hab das gefühl das
-  alles dauert immer sehr lange weil vllt auch zuviele tests gemacht werden"
-  (English: "I have the feeling that everything always takes very long, maybe also
-  because too many tests are done")). The coordinator answered that the test suite is
-  not the bottleneck and proposed items 1-3 and, optionally, item 4. The owner
-  answered: "ersten 3 punkte so übernehmen und auch so festschreiben das auf anderen
-  rechner das so gemacht wird. pauschale freigabe erteilt, sollte aber nach 3-4 issues
-  nochmal überprüpft werden" (English: "adopt the first 3 points as proposed and record
-  them so that it is done this way on other computers as well. Blanket approval
-  granted, but it should be reviewed again after 3-4 issues"), typing errors kept.
-- Owner decision:
-  1. Nits do not start a review round. A PASS (which may list nits) with no must-fix is
-     mergeable; nits and optional should-fix items are carried into the next PR of the
-     same track (or a follow-up issue) and listed in the PR body. A correction round is
-     needed only for must-fix items and for should-fix items that concern behavior,
-     safety, data loss or factually wrong documentation.
-  2. A sync that merges `main` into a reviewed branch keeps the review PASS when the
-     coordinator verifies that the branch's own changes under `src/`, `tests/` and
-     `scripts/` are unchanged against the reviewed SHA
-     (`git diff <base>..<reviewed>` equals `git diff <main>..<synced>` for those paths),
-     the remaining differences are conflict resolutions or wording in documentation,
-     no newly merged work overlaps semantically with the PR (for example it changes
-     code the PR calls or the same contract), and CI is green on the synced head. The
-     coordinator records this check in the PR. Any change to own code, tests or
-     scripts, or a semantic overlap, needs a fresh review. This refines the sync rule
-     of DEC-021 item 4 and docs/STAGE-2-PARALLEL-PLAN.md.
-  3. Review depth is proportionate. Documentation-only and small non-behavioral PRs get
-     a light review: acceptance criteria, links, consistency, privacy and CI; no mutation
-     runs, fixture regeneration or source re-reads. Full depth (reproducers, mutants,
-     upstream source checks) stays for code that writes to devices or files, changes
-     safety, protocol or security behavior, or changes data formats. The reviewer is
-     still launched with Opus (DEC-008). The test suite itself is not reduced.
-  4. Standing merge approval: the coordinator may merge a stage-2 PR without asking
-     when all of the following hold, and reports the merge afterwards:
-     - a current-head review verdict PASS (nits allowed) without must-fix, or a sync
-       that keeps the PASS under item 2;
-     - all CI checks green on that exact head; the merge uses
-       `gh pr merge --squash --match-head-commit <sha>`;
-     - no open NEEDS_DECISION, no scope change beyond the issue/packet, and no change
-       to repository visibility, secrets, rulesets, publication, deployment or
-       hardware/LAN access in the PR.
-     The PR body or a coordinator comment states "Merged under DEC-022 standing
-     approval". Post-merge completion follows as before.
-- Conditions: stage 2 only. Item 4 covers the merges of at most three issues reaching
-  completion (DONE) under it, counted from 2026-11-08 (first round: #18, #21, #19;
-  renewed for a second round, see Revalidation), PR-by-PR merges of partial scopes
-  included in their issue. After the third, the coordinator stops merging
-  without asking and asks the owner to confirm, adjust or end the standing approval;
-  the owner may end it at any time. Owner-only actions and hardware authorization
-  stay separate.
-- Revalidation, 2026-11-08 (owner, coordinator session): after #18, #21 and #19 had
-  reached completion under item 4, the coordinator stopped merging and asked. The
-  owner answered "Weiter für 3 Issues (meine Empfehlung): Die Bedingungen bleiben
-  gleich, also PASS von Opus für den aktuellen Stand und grüne CI. Danach frage ich
-  wieder nach." (English: "Continue for 3 issues (my recommendation): the conditions
-  stay the same, i.e. PASS from Opus for the current head and green CI. Afterwards I
-  ask again."), quoting the coordinator's option text. Effect: item 4 continues
-  unchanged for the next three issues reaching completion (DONE), counted from this
-  answer; the first of them is #16. After the third, the coordinator stops and asks
-  again. The owner did not answer the second question of that exchange (see
-  ISSUE-19-DEC-003, interpretation S-1, `blend_mode` without `allow_overlap`); it stays
-  a coordinator reading awaiting owner confirmation.
-- Coordinator note (not an owner statement), 2026-11-08: since the DEC-024 rulesets the
-  merge command of item 4 is `gh pr merge --squash --match-head-commit <sha>` and, when
-  that is refused only because no approving review exists, the same command with
-  `--admin` (the owner's bypass for pull-request merges). The conditions of item 4 are
-  unchanged; `--admin` is no additional permission and never covers failing checks. See
-  `agents/coordinator.md`.
-- Rationale supplied: shorten turnaround without reducing the test suite.
-- Supersedes: per-PR merge approval in stage 2 while item 4 is active (DEC-021 item 4
-  "one merge at a time after the owner's merge approval" and item 6 "stops only for
-  merge approval" apply again when item 4 ends; one merge at a time stays); adds an
-  exception to the recording rule on standing permission; refines the DEC-021 sync
-  rule.
-- Affected: agents/coordinator.md, agents/reviewer.md and generated adapters,
-  AGENTS.md, docs/AGENT-WORKFLOW.md, docs/STAGE-2-PARALLEL-PLAN.md, the recording rules
-  above.
+- Status: active stage-2 workflow decision; the standing merge approval (item 4) is revalidated
+  with the owner after three issues.
+- Source: owner instructions, coordinator session, 2026-11-08: "ersten 3 punkte so übernehmen
+  und auch so festschreiben das auf anderen rechner das so gemacht wird. pauschale freigabe
+  erteilt, sollte aber nach 3-4 issues nochmal überprüpft werden" (English: "adopt the first 3
+  points as proposed and record them so that it is done this way on other computers as well.
+  Blanket approval granted, but it should be reviewed again after 3-4 issues").
+- Decision:
+  1. Nits do not start a review round. A PASS with no must-fix is mergeable; nits and optional
+     should-fix items go to the next PR of the track (or a follow-up issue) and are listed in
+     the PR body. A correction round is needed only for must-fix items and for should-fix
+     items about behavior, safety, data loss or factually wrong documentation.
+  2. A sync that merges `main` into a reviewed branch keeps the PASS when the coordinator
+     verifies that the branch's own changes under `src/`, `tests/` and `scripts/` are
+     unchanged (`git diff <base>..<reviewed>` equals `git diff <main>..<synced>` for those
+     paths), the rest are conflict resolutions or documentation wording, no newly merged work
+     overlaps semantically with the PR, and CI is green on the synced head; the coordinator
+     records the check in the PR. Any own code/test/script change or semantic overlap needs a
+     fresh review. Refines DEC-021 item 4.
+  3. Review depth is proportionate: documentation-only and small non-behavioral PRs get a light
+     review (acceptance criteria, links, consistency, privacy, CI; no mutation runs, fixture
+     regeneration or source re-reads); full depth stays for code that writes to devices or
+     files, changes safety, protocol or security behavior, or changes data formats. The
+     reviewer still runs on Opus (DEC-008). The test suite is not reduced.
+  4. Standing merge approval: the coordinator may merge a stage-2 PR without asking, and
+     reports afterwards, when all hold: a current-head review PASS (nits allowed) without
+     must-fix, or a sync that keeps the PASS under item 2; all CI checks green on that exact
+     head (`gh pr merge --squash --match-head-commit <sha>`); no open NEEDS_DECISION, no scope
+     change beyond the issue/packet, and no change to visibility, secrets, rulesets,
+     publication, deployment or hardware/LAN access. The PR body or a coordinator comment
+     states "Merged under DEC-022 standing approval".
+- Conditions: stage 2 only. Item 4 covers at most three issues reaching completion (DONE),
+  counted from 2026-11-08; after the third the coordinator stops and asks the owner to
+  confirm, adjust or end it; the owner may end it at any time. Owner-only actions and hardware
+  authorization stay separate.
+- Revalidation, 2026-11-08 (owner): after #18, #21 and #19, the owner answered "Weiter für 3
+  Issues (meine Empfehlung): Die Bedingungen bleiben gleich, also PASS von Opus für den
+  aktuellen Stand und grüne CI. Danach frage ich wieder nach." (English: "Continue for 3 issues
+  (my recommendation): the conditions stay the same, i.e. PASS from Opus for the current head
+  and green CI. Afterwards I ask again."). Item 4 continues unchanged for the next three
+  issues, the first being #16. The unanswered S-1 question stays with ISSUE-19-DEC-003.
+- Coordinator note: since the DEC-024 rulesets the merge command is
+  `gh pr merge --squash --match-head-commit <sha>` and, only when refused for lack of an
+  approving review, the same with `--admin` (the owner's bypass). `--admin` is no extra
+  permission and never covers failing checks (`agents/coordinator.md`).
+- Supersedes: per-PR merge approval in stage 2 while item 4 is active; refines the DEC-021
+  sync rule; an exception to the recording rule on standing permission.
 
 ### DEC-023 — Staged first public release
 
-- Status: active stage-2 release decision; item 3 contains one coordinator reading
-  awaiting owner confirmation.
-- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
-  permalink). The owner remarked that a lot of tokens and money had been spent without
-  a public release ("wir haben nun schon massiv token und geld verbraucht und sind noch
-  nicht bei einem öffentlichen release" (English: "we have already used a lot of tokens
-  and money and are not yet at a public release"), typing errors corrected) and that the
-  required scope itself can be shortened ("diesen plan was verlangt ist kann man auch
-  kürzen" (English: "what this plan requires can also be shortened")). The coordinator
-  proposed three stages (stage 0: public repository and GitHub release; stage 1: plus
-  PyPI; stage 2: everything else, later). The owner answered "Stufe 0, dann PyPI danach
+- Status: active stage-2 release decision; item 3 holds one coordinator reading awaiting owner
+  confirmation.
+- Source: owner instructions, coordinator session, 2026-11-08: "Stufe 0, dann PyPI danach
   entscheiden" (English: "Stage 0, then decide on PyPI afterwards").
-- Owner decision:
-  1. The first public release is stage 0: after the DEC-015 scan and the owner's approval
-     of its findings, the owner makes the repository public (DEC-019) and a GitHub
-     release is created from an exact `main` commit, tagged with the version of the single
-     version source (S2-COMPAT-01). Installation is from Git
-     (`uvx --from git+https://github.com/descipar/wled-mcp wled-mcp`).
-  2. Whether a PyPI package follows (stage 1: wheel/sdist and one publish workflow) is
-     decided by the owner after the repository is public.
-  3. Everything else listed as Launch in this document is deferred past the first public
-     release, not dropped: the container image pipeline and provenance work of #22
-     beyond a possible PyPI workflow, the remaining documentation of #23 beyond what a
-     reader of the public repository needs (quickstart, changelog), marketplace and
-     registry listings (#24) and the beta/launch report with simulator and H07 (#25).
-     Coordinator reading, awaiting owner confirmation: the DEC-018 CI secret step and the
-     `main` ruleset are not prerequisites of stage 0; the ruleset stays recommended
-     immediately after the visibility change because it needs no further work.
-  4. The DEC-015 scan (issue and PR text with edit histories) and the owner's approval of
-     its findings are not reduced: public content cannot be withdrawn afterwards.
-- Conditions: bounded to the first public release. Publication of any artifact, a
-  visibility change and every secret or ruleset remain owner-only actions that need the
-  owner's explicit instruction at that time; this decision authorizes none of them.
-  Deferred items can be scheduled again by the owner at any time.
-- Rationale supplied: reach a public release with less spend and effort.
-- Supersedes: the Launch classification in docs/STAGE-2.md for the items in item 3, for
-  the first public release only; DEC-018 is not superseded (see item 3 reading).
-- Affected: docs/STAGE-2.md (release staging note), issues #15, #22, #23, #24, #25 and
-  #90 (comments with the deferral; bodies and acceptance lists unchanged).
+- Decision: (1) the first public release is stage 0: after the DEC-015 scan and owner approval
+  the owner makes the repository public (DEC-019) and a GitHub release is created from an exact
+  `main` commit, tagged with the version of the single version source (S2-COMPAT-01),
+  installable from Git (`uvx --from git+https://github.com/descipar/wled-mcp wled-mcp`);
+  (2) whether a PyPI package follows (stage 1) is decided by the owner afterwards;
+  (3) everything else marked Launch is deferred, not dropped: image pipeline and provenance
+  work of #22 beyond a PyPI workflow, remaining #23 documentation, marketplace and registry
+  listings (#24), the beta/launch report with simulator and H07 (#25). Coordinator reading,
+  unconfirmed: the DEC-018 CI secret step and `main` ruleset are not prerequisites of stage 0
+  (the ruleset stays recommended right after the visibility change); (4) the DEC-015 scan and
+  owner approval of its findings are not reduced.
+- Conditions: bounded to the first public release. Publication, visibility change, secrets and
+  rulesets remain owner-only and need the owner's explicit instruction at that time.
+- Supersedes: the Launch classification in docs/STAGE-2.md for the items in item 3 (first
+  public release only).
 
 ### DEC-024 — Main branch rules with review for external pull requests
 
-- Status: active project decision; items 1 and 3 contain coordinator readings awaiting
-  owner confirmation (see Coordinator notes).
-- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
-  permalink). Asked how the `main` rules of DEC-018 could require a review of pull
-  requests from others, the owner wrote "was ist wenn ich will, das ich das reviewn
-  lassen will wenn andere außer dich und von mir gestartete agenten ein pr machen. von
-  fremden will ich das vorher sehen" (English: "what if I want to have it reviewed when
-  others, apart from you and agents started by me, open a PR. I want to see those from
-  outsiders beforehand"), typing errors kept, and confirmed the coordinator's proposal:
-  "ja, mach DEC-024 so und schreib die klickschritte bzw. prüfe über du das per api nicht
-  selber kannst" (English: "yes, do DEC-024 that way and write the click steps, or check
-  via the API what you cannot do yourself"), typing errors kept.
-- Owner decision, applied at the visibility change (#90, DEC-019), created by the owner:
-  1. Ruleset A, no bypass actors, target the default branch: required status checks
-     `checks (ubuntu-latest, 3.13)` and `checks (ubuntu-24.04-arm, 3.13)`, block force
-     pushes, restrict deletions. "Require branches to be up to date" is not enabled.
-  2. Ruleset B, target the default branch: require a pull request with one approving
-     review. Bypass list: the repository admin role (the owner), bypass mode "for pull
-     requests only". Reviews of pull requests from external contributors are therefore
-     required; pull requests of the owner and of agents working under the owner's account
-     are merged by the owner's bypass.
-  3. Repository setting Actions, General, "Approval for running fork pull request
-     workflows from contributors": "Require approval for all external contributors", so
-     that no workflow of an outside pull request runs before the owner has seen it.
-  4. The agent verifies the result read-only through the API (GET requests only) after
-     the owner created it, as described in the [runbook](validation/issue-90.md).
-- Coordinator notes (not owner statements): GitHub applies a bypass to the whole ruleset,
-  not to single rules, so the DEC-018 wording "bypass only the pull-request requirement"
-  is realized by keeping the CI, force-push and deletion rules in ruleset A without
-  bypass (documentation check, not yet observed live). Reading 1: bypass mode "for pull
-  requests only" lets the owner merge but not push directly to `main`; an owner who wants
-  direct pushes would choose "always allow" in ruleset B. Reading 3: the squash merge by
-  the coordinator needs `gh pr merge --admin` once ruleset B is active; that command
-  change, with `agents/coordinator.md` and DEC-022 item 4, is made after ruleset B exists
-  and the first merge has been observed. Observed 2026-11-08 on the first merge under the
-  rulesets: the plain squash merge was refused (review required) and `--admin` merged it
-  with green checks, which confirms reading 3 and the documented bypass of ruleset B for a
-  pull-request merge; the command change was then made. Rulesets and the fork-approval setting cannot be
-  read or created while the repository is private (observed 2026-11-08: HTTP 403 and
-  422), so verification is possible only after the visibility change.
-- Conditions: creating the rulesets and the setting is an owner-only action; this decision
-  changes no repository setting, visibility or secret. The CI-secret denylist step of
-  DEC-018 and its deferral under DEC-023 are unaffected.
-- Rationale supplied: pull requests from outsiders must be seen by the owner before they
-  run or merge.
+- Status: active project decision; items 1 and 3 hold coordinator readings awaiting owner
+  confirmation.
+- Source: owner instructions, coordinator session, 2026-11-08: "ja, mach DEC-024 so und schreib
+  die klickschritte bzw. prüfe über du das per api nicht selber kannst" (English: "yes, do
+  DEC-024 that way and write the click steps, or check via the API what you cannot do
+  yourself"); the aim is to see pull requests from outsiders before they run or merge.
+- Decision, applied by the owner at the visibility change (#90): (1) ruleset A, no bypass,
+  default branch: required checks `checks (ubuntu-latest, 3.13)` and
+  `checks (ubuntu-24.04-arm, 3.13)`, block force-push, restrict deletion, "up to date" not
+  required; (2) ruleset B, default branch: pull request with one approving review, bypass
+  only for the repository admin role (the owner), mode "for pull requests only"; (3) Actions
+  setting "Require approval for all external contributors"; (4) the agent verifies the result
+  read-only through the API as in the [runbook](validation/issue-90.md).
+- Notes: the bypass applies to a whole ruleset, so CI, force-push and deletion rules stay in
+  ruleset A. Observed 2026-11-08 on the first merge under the rulesets: plain squash merge was
+  refused and `--admin` merged with green checks (confirms reading 3 and the DEC-022 command).
+  Rulesets cannot be read while the repository is private.
+- Conditions: creating rulesets and the setting is an owner-only action.
 - Supersedes: DEC-018 item 3 (branch rules) only.
-- Affected: docs/validation/issue-90.md (runbook), issue #90 acceptance item on the
-  ruleset, agents/coordinator.md and DEC-022 item 4 (merge command, follow-up).
 
 ### DEC-026 — Stage releases on the target machine
 
-- Status: active project decision. DEC-025 is reserved for the stage 4 plan, whose record is
-  kept in issue #127 until stage 4 starts.
-- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
-  permalink), while a release was being installed on a Linux host after being staged on a
-  Windows machine: "ich will kein staging auf windows und dann kopieren auf linux. stage
-  immer auf dem rechner wo wir installieren wollen" (English: "I do not want staging on
-  Windows and then copying to Linux. Always stage on the machine where we want to install"),
-  typing errors corrected. When the coordinator had stored it as a private note, the owner
-  corrected: "nein, das soll kein memory sein, sondern auch für andere rechner gelten"
-  (English: "no, that should not be a memory, it should also apply to other computers").
-- Owner decision: release directories (`deploy/stage_release.py`) are staged on the machine
-  that will run them, from a clean checkout of the release tag or commit, and are not built
-  on another machine or operating system and copied. The rule applies on every host and for
-  every agent; it is part of the repository rules, not a personal preference.
-- Observed the same day (not owner statements): a wheel and the staged `Dockerfile`,
-  `.dockerignore` and `requirements-runtime.txt` built from a Windows checkout had other
-  hashes than those staged on the Linux host, probably because of CRLF line endings
-  ([#131](https://github.com/descipar/wled-mcp/issues/131)); the Linux constraints file had
-  the SHA-256 recorded for the first release.
-- Conditions: applies to release directories and the images and hub entries built from them.
-  It does not cover running the test suite or the development checks on a development
-  machine. Where the target cannot build (no `uv`, no network, no Docker), the owner decides
-  the exception; it is not assumed.
-- Rationale supplied: the directory that is installed must be the one that was built on that
-  system.
-- Supersedes: the "from a clean checkout ... on a build machine" and "copy the directory
-  unchanged to the target" wording of docs/DEPLOYMENT.md and docs/QUICKSTARTS.md.
-- Affected: docs/DEPLOYMENT.md, docs/QUICKSTARTS.md, AGENTS.md,
-  docs/validation/live-check-2026-11-08.md.
+- Status: active project decision. DEC-025 is reserved for the stage 4 plan (kept in issue #127).
+- Source: owner instructions, coordinator session, 2026-11-08: "ich will kein staging auf
+  windows und dann kopieren auf linux. stage immer auf dem rechner wo wir installieren wollen"
+  (English: "I do not want staging on Windows and then copying to Linux. Always stage on the
+  machine where we want to install"), and "das soll kein memory sein, sondern auch für andere
+  rechner gelten" (English: "that should not be a memory, it should also apply to other
+  computers").
+- Decision: release directories (`deploy/stage_release.py`) are staged on the machine that will
+  run them, from a clean checkout of the release tag or commit, never built elsewhere and
+  copied. Applies on every host and for every agent.
+- Conditions: covers release directories and the images and hub entries built from them, not
+  the test suite or development checks. If the target cannot build, the owner decides the
+  exception. Observed: Windows-built artifacts hashed differently from Linux ones (probably
+  CRLF, [#131](https://github.com/descipar/wled-mcp/issues/131)).
 
 ### DEC-027 — Re-stage the open work by value per effort
 
 - Status: active project decision. Items 5 to 8 are coordinator defaults the owner did not
-  decide explicitly; they stay open for confirmation.
-- Authority/source: owner instructions in the coordinator session on 2026-11-08 (no
-  permalink). The owner asked the coordinator to go through all issues, find an order that
-  brings the most with minimal effort, re-order the work and assign stages, have it reviewed
-  by Opus and present the plan. After the plan and the review result were presented, the owner
-  answered "setze den plan vom review einfach so um" (English: "just implement the plan from
-  the review as it is").
-- Owner decision (the plan as presented, with the review's changes):
-  1. Stage 2 closes out with #130, #131, #67 and a new issue for a hardware check of the
-     stage-2 features on the test controller, narrowed to what one RGB controller can show
-     (preset store, import and restore, a playlist, one single-device scene, groups as local
-     files). Multi-device scenes, CCT, 2D and profiles are not part of it; `discover` runs
-     only on an explicit request; H07 and the live rollback stay with #25 (the rollback after
-     the first release that changes code).
-  2. Stage 3 is worked in value order: #31 (kept small), #30, #28, #27, #29.
-  3. Stage 4 (#127, #128) stays after stage 3, as the owner set earlier.
-  4. A new stage 5 "public distribution and backlog" (tracker #133) takes #22, #23, #24, #25
-     and #117. They are worked only on a trigger: a wish to be listed, outside interest or
-     hardware-verified features. The PyPI decision stays with the owner.
-- Effect on earlier records: the stage-2 Launch requirements owned by #22 to #25 (S2-DIST-01 to
-  03, the remaining S2-PUBLIC-02 and S2-PUBLIC-03, S2-MARKET-01 to 03, S2-LAUNCH-01 and 02 and
-  the live part of S2-COMPAT-03) are not met and are not dropped; they now belong to stage 5.
-  The acceptance line of #15 "every launch-required requirement has evidence" applies to
-  stage 5 for these IDs, and DEC-023 item 3 is refined accordingly: still deferred, now
-  tracked in stage 5. Records that say "moved to stage 2 (#25)" describe #25 as it was when
-  they were written and are not rewritten.
-- Coordinator defaults, not decided by the owner and open for confirmation:
-  5. Merging PR #132 (DEC-026 and the live-check record) was treated as part of the plan.
-  6. The nightlight auto-off idea is not added to stage 3 (it would be a sixth feature beyond
-     DEC-004 and its end behavior is undocumented); no issue was created.
-  7. DEC-021 and DEC-022 are not extended to stage 3 or 5: merges still need the owner's
-     approval.
-  8. The four pending confirmations (DEC-023 item 3, DEC-024 readings 1 and 3,
-     ISSUE-19-DEC-003 S-1, the PyPI decision) stay open.
-- Conditions: no hardware run, setting change, deployment or publication is authorized by
-  this decision.
-- Rationale supplied: the owner wants the next steps ordered by benefit for the least effort.
-- Supersedes: nothing; refines DEC-023 item 3 and the stage assignment of #22 to #25 and #117.
-- Affected: docs/STAGE-2.md, docs/STAGE-3.md, docs/STAGE-5.md, docs/PROJECT.md, issues #15,
-  #22 to #25, #117, #26, #133 and the new hardware-check issue.
+  decide explicitly and stay open for confirmation.
+- Source: owner instruction, coordinator session, 2026-11-08: "setze den plan vom review
+  einfach so um" (English: "just implement the plan from the review as it is").
+- Decision: (1) stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2
+  features on the test controller, limited to what one RGB controller can show (H07 and the
+  live rollback stay with #25); (2) stage 3 order: #31, #30, #28, #27, #29; (3) stage 4
+  (#127, #128) stays after stage 3; (4) a new stage 5 "public distribution and backlog"
+  (tracker #133) takes #22 to #25 and #117, worked only on a trigger; the PyPI decision stays
+  with the owner. The stage-2 Launch requirements owned by #22 to #25 are not met and not
+  dropped; they now belong to stage 5. Refines DEC-023 item 3.
+- Coordinator defaults, open: (5) merging PR #132 counted as part of the plan; (6) the nightlight
+  auto-off idea is not added to stage 3; (7) DEC-021 and DEC-022 are not extended to stage 3 or
+  5; (8) the pending confirmations (DEC-023 item 3, DEC-024 readings 1 and 3, ISSUE-19-DEC-003
+  S-1, the PyPI decision) stay open.
+- Conditions: no hardware run, setting change, deployment or publication is authorized.
 
 ### DEC-028 — Pragmatic delivery
 
 - Status: active project workflow decision.
-- Authority/source: owner instructions in the main session on 2026-11-09 (no permalink). While
-  a dependency-range change was being prepared the owner said "mach es doch sinnvoller und gehe
-  nicht alle versionen so tief runter, da kann man doch mal abwägen" (English: "do it more
-  sensibly and do not go that deep into all versions, you can weigh it up"), then "für mich
-  haben sich die agenten da schon wieder verzettelt. ich will eine pragmatische heransgehensweise
-  und keine immer 100% lösung" (English: "to me the agents got lost in details again. I want a
-  pragmatic approach and not always a 100% solution") and "das gehört allgemein in das projekt"
-  (English: "this belongs in the project in general").
-- Owner decision (the wording of the items is the main session's, from that instruction):
-  1. Aim for good enough, not for completeness. Fix scope, evidence and review depth before
-     starting and say so in the packet; weigh effort against risk and state the weighing in one
-     or two lines.
-  2. Evidence is one or two runs that show the point (for example the lower bound and the
-     current set of a dependency range), not matrices or exhaustive combinations. Where the
-     evidence is thin, choose the conservative limit and say so.
-  3. Review depth follows DEC-022 (light unless the change writes to devices or files, changes
-     safety, protocol or security behavior or data formats; DEC-028 adds: or cannot be undone). No extra review
-     rounds, no tests beyond what the change needs and no optional polishing; nits go to the
-     next PR.
-  4. A small follow-up that belongs to the same release path is folded into the open PR instead
-     of a new PR, when it does not make the review harder.
-- Not changed: hardware authorization, the owner's approval for publication, tagging and
-  releases, the human merge decision and the other rules of DEC-022, DEC-024 and DEC-023.
-- Applicability: all issues and all agents of this repository until the owner changes it.
+- Source: owner instructions, main session, 2026-11-09: "ich will eine pragmatische
+  heransgehensweise und keine immer 100% lösung" (English: "I want a pragmatic approach and
+  not always a 100% solution") and "das gehört allgemein in das projekt" (English: "this belongs
+  in the project in general").
+- Decision (item wording is the main session's): (1) aim for good enough; fix scope, evidence
+  and review depth before starting, state them in the packet, weigh effort against risk in one
+  or two lines; (2) evidence is one or two runs that show the point, not matrices; where thin,
+  choose the conservative limit and say so; (3) review depth follows DEC-022 (light unless the
+  change writes to devices or files, changes safety, protocol, security or data formats, or
+  cannot be undone); no extra review rounds, no tests beyond what the change needs, no
+  optional polish; nits go to the next PR; (4) a small follow-up on the same release path is
+  folded into the open PR when it does not make review harder.
+- Not changed: hardware authorization, owner approval for publication, tagging and releases, the
+  human merge decision and the other rules of DEC-022, DEC-024 and DEC-023.
+- Applicability: all issues and agents until the owner changes it.
 
 ### DEC-029 — Milestones instead of stages
 
 - Status: active project decision.
-- Authority/source: owner answers in the main session on 2026-11-09 (no permalink), given to
-  four questions on the roadmap model, the new scope, the order and merge approval.
-- Owner decision (the wording of the items is the main session's, from those answers):
-  1. Hybrid milestone model: open and new work is organised by GitHub milestones M1 to M6
-     plus Backlog, defined in [ROADMAP.md](ROADMAP.md). Every open or new issue has exactly one
-     milestone (Backlog counts). New issues get no `Stage N: ` title prefix and no `stage:N`
-     label. Closed issues, requirement IDs and the stage documents keep their stage history.
-  2. New scope: #147 to #151 (agent guidance, effect metadata parsing, effect and palette names
-     in segment tools, live colour snapshot, MCPB bundle). Timers (W-CFG-04) stay excluded.
-  3. Order: M1 (#147, #148, #149), M2 (#150, #30), M3 (#29, #27), M4 (#28), M5 (#128),
-     M6 distribution (#22 to #25, #151), then Backlog (#138, #117, #152).
-  4. Standing merge approval under DEC-022 item 4 for milestones M1 and M2 only: a PR with a
-     current-head PASS and green CI may be merged without a per-PR question, and the approval
-     is revalidated with the owner after three issues. Issues that write to devices (#149, #27,
-     #28) keep per-PR approval. Other milestones need the owner's merge decision.
-  5. The stage trackers #26, #127 and #133 are closed as superseded; the acceptance line of
-     #133 is carried by the M6 description.
+- Source: owner answers, main session, 2026-11-09 (roadmap model, new scope, order, merge approval).
+- Decision (item wording is the main session's): (1) open and new work is organised by GitHub
+  milestones M1 to M6 plus Backlog ([ROADMAP.md](ROADMAP.md)); every open or new issue has
+  exactly one milestone (Backlog counts), new issues get no `Stage N: ` title prefix and no
+  `stage:N` label; closed issues, requirement IDs and stage documents keep their stage history;
+  (2) new scope #147 to #151; timers (W-CFG-04) stay excluded; (3) order: M1 (#147, #148, #149),
+  M2 (#150, #30), M3 (#29, #27), M4 (#28), M5 (#128), M6 distribution (#22 to #25, #151), then
+  Backlog (#138, #117, #152); (4) standing merge approval under DEC-022 item 4 for milestones M1
+  and M2 only: a PR with a current-head PASS and green CI may be merged without a per-PR
+  question, revalidated with the owner after three issues; issues that write to devices (#149,
+  #27, #28) keep per-PR approval; other milestones need the owner's merge decision; (5) stage
+  trackers #26, #127 and #133 are closed as superseded.
 - Not changed: DEC-021 and DEC-022 otherwise, hardware authorization, publication approvals
-  (DEC-023) and the human merge decision outside item 4.
-- Supersedes: DEC-010 for open and new work (the history of closed issues is unchanged); amends
-  DEC-002 (context is derived from milestone, labels and roadmap).
-- Affected: docs/ROADMAP.md, AGENTS.md, agents/coordinator.md, agents/requirements.md,
-  docs/AGENT-WORKFLOW.md, scripts/check_coverage.py (rule C5), docs/STAGE-3.md and docs/STAGE-5.md
-  work-order sections.
+  (DEC-023), the human merge decision outside item 4.
+- Supersedes: DEC-010 for open and new work; amends DEC-002.
 
 ### DEC-030 — Milestone closure includes a minor release
 
 - Status: active project decision.
-- Authority/source: owner answers in the main session on 2026-11-09 (no permalink). The owner
-  suggested that closing a milestone should always come with at least a minor release and an
-  adapted README, confirmed it for M1 with "ja 1" (English: "yes, 1") to the option "yes, from M1", and asked that #24
-  (registry metadata) be part of M1 and that the release wait until its work is finished. The
-  scope of "release" was then answered (item 5).
-- Owner decision (the wording of the items is the main session's, from those answers):
-  1. A milestone is closed only after at least one minor release (or a higher one) that contains
-     its merged work, and after the README has been adapted to the milestone's user-visible
-     features.
-  2. The rule applies from M1. M1 was closed once before its release and is re-opened until the
-     release is done. #24 moved from M6 to M1.
-  3. Documentation-only or maintenance milestones follow the same rule unless the owner waives it
-     for that milestone.
-  4. [PR #168](https://github.com/descipar/wled-mcp/pull/168) (#24) merged into main on
-     2026-11-09 with the version prepared as patch release 0.1.3 (ISSUE-24-DEC-001), before this
-     rule was recorded. A patch release does not satisfy item 1: the M1 release needs a minor
-     version (for example 0.2.0), prepared in a follow-up change with the README adaptation.
-     Nothing had been tagged, released, uploaded or submitted at that point.
-  5. Release scope for M1 (owner answer in the main session on 2026-11-09, option "full path as
-     M1 criterion"): the minor release 0.2.0 is tagged, published as a GitHub release, uploaded
-     to PyPI and published in the official MCP Registry. It was carried out under per-step owner
-     instructions recorded in ISSUE-24-DEC-003 to ISSUE-24-DEC-005 (tag and release v0.2.0, PyPI
-     upload, registry publication; the hub-side install test was waived, not observed). The
-     scope applies to M1 only; later milestones need their own answer.
-- Not changed: DEC-023 and the publication gates. Version bump, changelog and README are
-  repository changes; a tag, a GitHub release, a PyPI or registry upload, hub deployment and any
+- Source: owner answers, main session, 2026-11-09 ("ja 1", English: "yes, 1", to "yes, from M1";
+  release scope: "full path as M1 criterion").
+- Decision: (1) a milestone is closed only after at least one minor (or higher) release that
+  contains its merged work and after the README is adapted to its user-visible features;
+  (2) applies from M1, which is re-opened until its release; #24 moved from M6 to M1;
+  (3) documentation-only or maintenance milestones follow the rule unless the owner waives it
+  for that milestone; (4) PR #168 (#24) merged with patch version 0.1.3 (ISSUE-24-DEC-001),
+  which does not satisfy item 1, so M1 needs a minor release; (5) release scope for M1: minor
+  release 0.2.0 tagged, published as GitHub release, uploaded to PyPI and published in the
+  official MCP Registry, carried out under per-step owner instructions (ISSUE-24-DEC-003 to
+  ISSUE-24-DEC-005; the hub-side install test was waived, not observed); M1 only.
+- Not changed: DEC-023 and the publication gates. A version bump, changelog and README are
+  repository changes; a tag, GitHub release, PyPI or registry upload, hub deployment and any
   external submission each need the owner's explicit instruction. A merge under the standing
-  approval (DEC-029 item 4) does not authorize them.
-- Publication gates stay: each step (tag, GitHub release, PyPI upload, registry publish) is run
-  only on the owner's explicit instruction at that point (DEC-023); a merge under the standing
-  approval authorizes none of them. No hub deployment is part of the M1 closing criterion.
-- Amends: DEC-029 (assignment of #24 to M6 instead of M1, and the closing of milestones).
-- Affected: docs/ROADMAP.md (M1 row, closing rule), docs/AGENT-WORKFLOW.md, pyproject.toml,
-  CHANGELOG.md, server.json and README.md (version and features of the M1 release).
+  approval authorizes none of them. No hub deployment is part of the closing criterion.
+- Amends: DEC-029 (assignment of #24 and the closing of milestones).
 
 ### DEC-031 — Release scope for milestone M2
 
 - Status: active project decision, M2 only.
-- Authority/source: owner answer in the coordinator session on 2026-11-11 (no permalink) to
-  the question on the release scope for M2: "ja, 0.3.0 vorbereiten, Veröffentlichung später
-  separat. Alle schritte" (English: "yes, prepare 0.3.0, publication separately later. All
-  steps").
-- Owner decision (the wording is the main session's, from that answer):
-  1. The release scope for M2 is the same as for M1 (DEC-030 item 5): tag, GitHub release,
-     PyPI upload and publication in the official MCP Registry.
-  2. Preparing the release 0.3.0 (version, changelog, README, metadata, evidence) is allowed
-     now and is done in a repository change.
-  3. Every publication step runs only on the owner's explicit instruction at the time of that
-     step (DEC-023). Merging the preparation pull request authorizes none of them.
-  4. M2 stays open until the release is done (DEC-030 item 1).
-- Scope: milestone M2 only; a later milestone needs its own answer. No hub deployment is
-  authorized.
-- Not changed: DEC-023, DEC-029 item 4 and DEC-030.
-- Affected: docs/ROADMAP.md (M2 row), CHANGELOG.md, README.md, pyproject.toml, server.json,
-  uv.lock and docs/validation/release-m2.md.
-- Carried out on 2026-11-11, each step on the owner's instruction in the coordinator session:
-  tag and GitHub release ("Tag v0.3.0 setzen und GitHub-Release erstellen", English: "set tag
-  v0.3.0 and create the GitHub release"); PyPI upload (the `pypi` environment approval was
-  given in the GitHub UI by the owner's account, see
-  [the record](validation/release-m2.md#release-and-registry-publication-2026-11-11));
-  registry publication ("mach den rest für #m2", English: "do the rest for #m2", followed by
-  the owner's own `mcp-publisher login github`). M2 is closed after this record is merged.
+- Source: owner answer, coordinator session, 2026-11-11: "ja, 0.3.0 vorbereiten,
+  Veröffentlichung später separat. Alle schritte" (English: "yes, prepare 0.3.0, publication
+  separately later. All steps").
+- Decision: (1) M2 release scope equals M1 (DEC-030 item 5): tag, GitHub release, PyPI upload,
+  official MCP Registry; (2) preparing 0.3.0 (version, changelog, README, metadata, evidence) is
+  allowed now in a repository change; (3) every publication step runs only on the owner's
+  explicit instruction at that step (DEC-023), merging the preparation PR authorizes none;
+  (4) M2 stays open until the release is done. No hub deployment is authorized.
+- Carried out 2026-11-11, each step on the owner's instruction: tag v0.3.0 and GitHub release,
+  PyPI upload (`pypi` environment approval by the owner, see
+  [the record](validation/release-m2.md#release-and-registry-publication-2026-11-11)),
+  registry publication. M2 closed after this record merged.
 
 ### DEC-032 — M3 closes without its own release
 
 - Status: active project decision, M3 only.
-- Authority/source: owner statement in the coordinator session on 2026-11-11 (no permalink),
-  after the open work of M3 was listed: "wir machen für m3 kein neues release. das zu klein"
-  (English: "we do not make a new release for M3. that is too small").
-- Owner decision (the wording of the items is the coordinator's, from that statement):
-  1. M3 has no release of its own. The owner waives DEC-030 item 1 for M3 under DEC-030 item 3.
-  2. M3 is closed once its issues (#27, #29) are closed and this record is merged.
-  3. The merged work of M3 stays under `Unreleased` in `CHANGELOG.md` and ships with the next
-     minor release (the one that closes the next milestone with a release). No version, tag,
-     GitHub release, PyPI upload or registry publication is prepared for M3.
-  4. The README already describes zones and the layout preview. Its tool count and version
-     statements are updated when that next release is prepared.
-- Scope: milestone M3 only; it is not a general rule that small milestones skip a release.
-  A later milestone needs its own answer.
-- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
-- Affected: docs/ROADMAP.md (M3 row).
+- Source: owner statement, coordinator session, 2026-11-11: "wir machen für m3 kein neues
+  release. das zu klein" (English: "we do not make a new release for M3. that is too small").
+- Decision: the owner waives DEC-030 item 1 for M3 (under DEC-030 item 3). M3 closes once #27
+  and #29 are closed and this record is merged; its work stays under `Unreleased` in
+  `CHANGELOG.md` and ships with the next minor release; nothing is prepared for publication.
+  The README's tool count and version statements are updated with that release.
+- Scope: M3 only, not a general rule for small milestones.
 
 ### DEC-033 — Windows is a supported development platform
 
 - Status: active project decision.
-- Authority/source: owner statement in the coordinator session on 2026-11-11 (no permalink),
-  answering the open question of issue #191 whether Windows is a supported development
-  platform: "Windows wird unterstützt als entwicklungsplattform" (English: "Windows is
-  supported as a development platform").
-- Owner decision (the wording of the items is the coordinator's, from that statement):
-  1. Windows is a supported platform for developing this project: the test suite, the lint and
-     type checks and the local scripts are expected to work on a Windows checkout.
-  2. A test that fails only on Windows is a defect to fix, or to skip on `win32` with a visible
-     reason where the behaviour is POSIX-specific. The offline guarantee of tests must not be
-     weakened on any platform.
-  3. Issue #191 (Windows-only test failures) is therefore implemented, not closed as
-     "not supported". Its first acceptance item (decision on Windows support) is answered by
-     this record; documentation of the development setup (docs/DEVELOPMENT.md) is part of that
-     issue.
-- Scope: development platform only. Not changed: DEC-020 item 4 (user-facing platform tiers:
-  Linux supported, Windows and macOS experimental), the CI platform matrix (Linux is
-  authoritative) and the staging rule of DEC-026. On the follow-up question whether the
-  user-facing Windows tier should change, the owner answered in the same session on
-  2026-11-11: "windows für nutzer experimental" (English: "Windows stays experimental for
-  users"; the typo in the original was corrected). DEC-020 item 4 and the README support table
-  therefore stay as they are.
-- Not changed: DEC-023 and the publication gates.
-- Affected: issue #191, docs/DEVELOPMENT.md and the README support table only when a later
-  change adopts this record.
+- Source: owner statement, coordinator session, 2026-11-11 (issue #191): "Windows wird
+  unterstützt als entwicklungsplattform" (English: "Windows is supported as a development
+  platform").
+- Decision: the test suite, lint/type checks and local scripts are expected to work on a
+  Windows checkout; a Windows-only failure is a defect to fix, or to skip on `win32` with a
+  visible reason where behavior is POSIX-specific, without weakening the offline guarantee;
+  #191 is implemented, not closed as unsupported.
+- Scope: development platform only. DEC-020 item 4 stays (Windows experimental for users; the
+  owner confirmed: "windows für nutzer experimental", English: "Windows stays experimental for
+  users"), as do the CI matrix (Linux authoritative) and DEC-026.
 
 ### DEC-034 — M4 closes without its own release
 
 - Status: active project decision, M4 only.
-- Authority/source: owner statement in the coordinator session on 2026-11-12 (no permalink),
-  after the completion of #28 and the open question whether M4 gets a release: "wir
-  verzichten auf das release" (English: "we waive the release").
-- Owner decision (the wording of the items is the coordinator's, from that statement):
-  1. M4 has no release of its own. The owner waives DEC-030 item 1 for M4 under DEC-030 item 3.
-  2. M4 is closed once its issue (#28) is closed and this record is merged.
-  3. The merged work of M4 stays under `Unreleased` in `CHANGELOG.md`, with the unreleased work
-     of M3, and ships with the next minor release. No version, tag, GitHub release, PyPI upload
-     or registry publication is prepared for M4.
-  4. The README already describes the temporary signals as not yet released. Its version
-     statements are updated when that next release is prepared.
-- Scope: milestone M4 only; it is not a general rule that small milestones skip a release,
-  and it does not extend DEC-032. A later milestone needs its own answer.
-- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
-- Affected: docs/ROADMAP.md (M4 row).
+- Source: owner statement, coordinator session, 2026-11-12: "wir verzichten auf das release"
+  (English: "we waive the release").
+- Decision: the owner waives DEC-030 item 1 for M4. M4 closes once #28 is closed and this
+  record is merged; its work stays under `Unreleased` with M3's and ships with the next minor
+  release; nothing is prepared for publication. Scope: M4 only, extends no other waiver.
 
 ### DEC-039 — `main` is the integration line, releases are tags
 
 - Status: active workflow decision, global.
-- Authority/source: owner statements in the main session on 2026-11-18 (no permalink). The
-  owner asked whether all features of a milestone should be built on one branch that is merged
-  into `main` only at the end, the stated aim being that `main` always runs correctly and holds
-  nothing half-finished; after the coordinator advised against it, the owner answered: "man kann
-  auch einfach das release nehmen dann" (English: "one can simply use the release instead").
-- Owner decision (the wording of the items is the coordinator's, from that statement):
-  1. No long-lived milestone branch. Issues are implemented on short-lived feature branches that
-     are merged into `main` one PR at a time, as before.
-  2. `main` is the integration line and needs no release-ready state at every commit; it must
-     still be green (CI and a current-head review PASS before every merge; the DEC-022 sync rule applies).
-  3. What users receive is a release: a tag `v<version>` on a reviewed `main` commit
-     (docs/PUBLISHING.md), staged per DEC-026. The release moment is chosen deliberately and
-     stays owner-gated (DEC-023, DEC-030).
-  4. A change that is not usable on its own is split so each issue works by itself, or kept
-     behind an off-by-default option until the rest has merged.
-- Scope: workflow, all milestones. A tightly coupled pair or triple of issues may use stacked
-  PRs (retarget to `main` before deleting the base); a change that would break `main`
-  incompatibly needs a short-lived integration branch and an owner decision first.
-- Not changed: DEC-021 (branch sync by merging `main`), DEC-022, DEC-023, DEC-026, DEC-030 and
-  the human merge gate.
-- Affected: docs/AGENT-WORKFLOW.md, agents/coordinator.md and generated adapters.
+- Source: owner statements, main session, 2026-11-18: "man kann auch einfach das release nehmen
+  dann" (English: "one can simply use the release instead"), after advice against a
+  long-lived milestone branch.
+- Decision: (1) no long-lived milestone branch; issues use short-lived feature branches merged
+  into `main` one PR at a time; (2) `main` is the integration line, green (CI and a
+  current-head review PASS before every merge, DEC-022 sync rule) but not necessarily
+  release-ready; (3) users receive a release: a tag `v<version>` on a reviewed `main` commit
+  (docs/PUBLISHING.md), staged per DEC-026, chosen deliberately and owner-gated (DEC-023,
+  DEC-030); (4) a change not usable on its own is split or kept behind an off-by-default option.
+- Scope: workflow, all milestones. A tightly coupled pair or triple of issues may use stacked PRs
+  (retarget to `main` before deleting the base); a change that would break `main` incompatibly
+  needs a short-lived integration branch and an owner decision first.
+- Not changed: DEC-021 (sync by merging `main`), DEC-022, DEC-023, DEC-026, DEC-030, the human
+  merge gate.
 
 ### DEC-038 — M7 closes without its own release
 
 - Status: active project decision, M7 only.
-- Authority/source: owner statement in the coordinator session on 2026-11-16 (no permalink),
-  asked for the DEC-030 release question of milestone M7: "keine release für m7" (English: "no
+- Source: owner statement, coordinator session, 2026-11-16: "keine release für m7" (English: "no
   release for M7").
-- Owner decision (the wording of the items is the coordinator's, from that statement):
-  1. The owner waives DEC-030 item 1 for M7 under DEC-030 item 3.
-  2. M7 has no release of its own. Its work (#183), once merged, ships with the next minor release and
-     stays under Unreleased in the changelog until then; no version, tag, GitHub release, PyPI
-     upload or registry publication is prepared for M7. The README marks the room behavior
-     "not yet released" until that release exists.
-  3. M7 is closed on GitHub once #183 is closed and this record is merged.
-- Scope: milestone M7 only; it extends none of DEC-032, DEC-034 or DEC-036. A later milestone
-  needs its own answer.
-- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
-- Affected: docs/ROADMAP.md (M7 row), the GitHub milestone M7.
+- Decision: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships
+  with the next minor release and stays under Unreleased; the README marks room behavior "not yet
+  released". M7 closes once #183 is closed and this record is merged. Scope: M7 only.
 
 ### DEC-037 — No MCPHub reinstall in project steps
 
 - Status: active project decision, global.
-- Authority/source: owner statement relayed by the coordinator on 2026-11-13 (no permalink; the
-  wording is the coordinator's paraphrase of the owner's answer, not a verbatim quote).
-- Owner decision:
-  1. A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and is
-     never part of any project test, rollback or release step.
-  2. The MCPHub fresh-install test stays waived ([ISSUE-24-DEC-005](decisions/issue-24.md)).
-  3. Changes to the wled-mcp service on a deployed target (update, rollback, restore, restart)
-     do not imply any hub reinstall.
-- Scope: global, limited to reinstalling the hub. It says nothing about the wled-mcp hub entry or
-  other hub entries; those are governed by the issue decisions (ISSUE-25-DEC-003).
-- Affected: docs/DEPLOYMENT.md (rollback note), docs/decisions/issue-25.md,
-  docs/validation/issue-25-rollback-plan.md, docs/validation/launch-report.md.
+- Source: owner statement relayed by the coordinator, 2026-11-13 (coordinator's English
+  paraphrase, no verbatim quote).
+- Decision: a reinstall of the MCPHub itself is never authorized and never part of any project
+  test, rollback or release step; the hub fresh-install test stays waived
+  ([ISSUE-24-DEC-005](decisions/issue-24.md)); changes to the wled-mcp service on a deployed
+  target (update, rollback, restore, restart) imply no hub reinstall.
+- Scope: global, limited to reinstalling the hub; hub entries are governed by issue decisions
+  (ISSUE-25-DEC-003).
 
 ### DEC-036 — M5 closes without its own release
 
 - Status: active project decision, M5 only.
-- Authority/source: owner instruction in the coordinator session on 2026-11-12 (no permalink),
-  after the completion of #128 and the coordinator's note that DEC-030 requires a minor release
-  unless the owner waives it (as for M3 and M4): "M5 auf GitHub schließen und in der roadmap
-  vermerken" (English: "close M5 on GitHub and note it in the roadmap"). The coordinator read
-  that as a waiver of the release and said so; the owner then confirmed: "kein minor release"
-  (English: "no minor release").
-- Owner decision (the wording of the items is the coordinator's, from those statements):
-  1. M5 is closed on GitHub now. The owner waives DEC-030 item 1 for M5 under DEC-030 item 3;
-     M5 only records hardware evidence and one mock test.
-  2. M5 has no release of its own. Its merged work (#128) ships with the next minor release; no
-     version, tag, GitHub release, PyPI upload or registry publication is prepared for M5.
-  3. The README limitation already states the verified result; no README change is needed for M5.
-  4. The roadmap notes M5 as done.
-- Scope: milestone M5 only; it extends neither DEC-032 nor DEC-034. A later milestone needs its
-  own answer.
-- Not changed: DEC-023, DEC-029 item 4 and DEC-030 (still applies to every other milestone).
-- Affected: docs/ROADMAP.md (M5 row), the GitHub milestone M5.
+- Source: owner instruction, coordinator session, 2026-11-12: "M5 auf GitHub schließen und in der
+  roadmap vermerken" (English: "close M5 on GitHub and note it in the roadmap"), then
+  confirmed as a waiver: "kein minor release" (English: "no minor release").
+- Decision: M5 is closed now; the owner waives DEC-030 item 1 for M5 (it only records hardware
+  evidence and one mock test). Its work (#128) ships with the next minor release; nothing is
+  prepared for publication; the README limitation already states the result; the roadmap
+  notes M5 as done. Scope: M5 only.
 
 ### DEC-035 — Agent-driven discovery and enrollment
 
 - Status: active project decision (milestone M8).
-- Authority/source: owner answers in the coordinator session on 2026-11-12 to the
-  discovery and enrollment questions of milestone M8 (no permalink). The answers reached
-  this record relayed and paraphrased in English by the coordinator; no verbatim owner
-  wording exists in the record, so none is quoted (DEC-017 applies to quotes that exist).
-  [Issue #198](https://github.com/descipar/wled-mcp/issues/198) tracks the work.
-- Owner decision (the wording of the items is the coordinator's paraphrase):
-  1. Agents find controllers through MCP and add them to the inventory after confirmation
-     by the MCP client. There is no interactive approval mechanism inside the plugin.
-  2. Inventory changes made this way take effect by in-process reload, not by restart.
-  3. A bounded unicast `GET /json/info` probe over configured private IPv4 ranges is
-     approved in addition to mDNS, as thorough as possible, under hard server-side caps that
-     no tool parameter can override: RFC 1918 addresses only (no loopback, link-local or
-     public addresses), at most a /24 per range, a small maximum number of ranges, bounded
-     timeouts and concurrency.
-  4. An agent sets the ranges through a separate configuration-write tool,
-     `wled_set_discovery_ranges`: the client confirmation shows the exact ranges, tool
-     profiles can disable it, and operators may set the ranges by hand.
-     `wled_discover_devices` without configured ranges runs mDNS only and proposes ranges
-     derived from the addresses already in the inventory; it never scans the proposals.
-  5. A known controller found at a changed address is only reported, never rewritten
-     automatically.
-  6. No new runtime dependency and no extra service: standard library only (OPS-01).
-  7. The work is organized as milestone M8 (issues #198 to #204).
-  The coverage report of a discovery run must never claim that nothing was found when the
-  run could not look.
-- Scope: milestone M8 only (discovery, enrollment, discovery ranges).
-- Not changed: DEC-023 and the publication gates; DEC-029 item 4 (the standing merge
-  approval covers M1 and M2 only, so M8 has none and every M8 PR needs its own merge
-  approval); DEC-030 (M8 closes with a minor release and a README update); the AGENTS rule
+- Source: owner answers, coordinator session, 2026-11-12 (no permalink), relayed and paraphrased
+  in English by the coordinator; no verbatim quote exists
+  ([issue #198](https://github.com/descipar/wled-mcp/issues/198)).
+- Decision (paraphrase): (1) agents find controllers through MCP and add them to the inventory
+  after confirmation by the MCP client; no interactive approval inside the plugin;
+  (2) inventory changes take effect by in-process reload, not restart; (3) a bounded unicast
+  `GET /json/info` probe over configured private IPv4 ranges is approved in addition to mDNS,
+  under hard server-side caps no tool parameter can override: RFC 1918 only (no loopback,
+  link-local or public), at most a /24 per range, a small maximum number of ranges, bounded
+  timeouts and concurrency; (4) ranges are set by the separate configuration-write tool
+  `wled_set_discovery_ranges` (client confirmation shows the exact ranges, profiles can disable
+  it, operators may set ranges by hand); `wled_discover_devices` without ranges runs mDNS only
+  and proposes ranges from inventory addresses, never scanning them; (5) a known controller at a
+  changed address is reported, never rewritten; (6) standard library only (OPS-01); (7) work is
+  milestone M8 (issues #198 to #204). A coverage report must never claim nothing was found when
+  the run could not look.
+- Scope: M8 only. Not changed: DEC-023, DEC-029 item 4 (M8 has no standing merge approval, every
+  PR needs its own), DEC-030 (M8 closes with a minor release and README update), the AGENTS rule
   against silent preset overwrite, delete, arbitrary endpoint forwarding and configuration
-  migration; device-write authorization (the new tools never write to a device).
-- Supersedes: ISSUE-16-DEC-001 in part and ISSUE-16-DEC-002 TD-16-8 in part: the
-  "restart instead of in-process reload" half of Q1 and the "CLI only, not an MCP tool,
-  never writes the inventory, no unicast probes" parts of Q2 and TD-16-8 no longer hold from
-  M8. Kept from them: standard library only, discovery runs only on explicit invocation, the
-  `wled-mcp discover` command and the validate-then-restart procedure for hand edits.
-  Amends the AGENTS.md rule on discovery scans and inventory writes.
-- Technical details (numeric caps, schemas, error codes, class `manage`, configuration
-  keys, MAC identity) are technical proposals, recorded separately as
-  [ISSUE-198-DEC-001](decisions/issue-198.md); the owner can override them.
-- Affected: AGENTS.md, DEV-03, S2-SETUP-02, [contract/discovery.md](contract/discovery.md),
-  docs/contract/cli.md, docs/DEPLOYMENT.md, issues #198 to #204.
+  migration; the new tools never write to a device.
+- Supersedes: ISSUE-16-DEC-001 in part and ISSUE-16-DEC-002 TD-16-8 in part (restart instead of
+  in-process reload; CLI only, no inventory writes, no unicast probes). Kept: standard library
+  only, discovery only on explicit invocation, `wled-mcp discover`, validate-then-restart for
+  hand edits. Amends the AGENTS.md rule on discovery scans and inventory writes.
+- Technical details (caps, schemas, error codes, class `manage`, keys, MAC identity) are
+  recorded as [ISSUE-198-DEC-001](decisions/issue-198.md); the owner can override them
+  ([contract/discovery.md](contract/discovery.md)).
 
-## Issue-specific decisions (pointers)
+## Issue-specific decisions (index)
 
-- [ISSUE-200-DEC-001](decisions/issue-200.md) (coordinator, technical proposal,
-  2026-11-19, issue #200 / M8 only): discovery tool wrapper defaults D1, D2, D4 and D5
-  (envelope warnings only, `conclusion` first key of `data`, ranges seam read per call,
-  `OPEN_WORLD_TOOLS` exception set); not a human decision.
-- [ISSUE-202-DEC-001](decisions/issue-202.md) (coordinator, technical proposal,
-  2026-11-19, issue #202 / M8 only): `wled_set_discovery_ranges` defaults TP-202-1 to TP-202-6
-  (shared hard-caps module, strict CIDR syntax, `[discovery]` table text edit, success
-  envelope, snapshot dry run, shared writer and `Resources.discovery_ranges`); not a human
-  decision.
-- [ISSUE-203-DEC-001](decisions/issue-203.md) (coordinator, technical proposal,
-  2026-11-19, issue #203 / M8 only): `wled_add_device` defaults TP-203-1 to TP-203-8
-  (RFC 1918 IPv4 literal only with a canonical stored URL, probe result mapping with the new
-  `NOT_WLED`, conflict order and pre-read checks, envelope, default ID and name, `devices[].mac`,
-  self-checked append through the shared writer, test seams); not a human decision.
-- [ISSUE-201-DEC-001](decisions/issue-201.md) (coordinator, technical proposal,
-  2026-11-17, issue #201 / M8 only): inventory writer defaults TP-201-1 to TP-201-5 (one
-  `<config>.bak` backup, sibling OS lock file, SHA-256 baseline for `file_changed`, error
-  mapping, edit callback); not a human decision.
-- [ISSUE-198-DEC-001](decisions/issue-198.md) (coordinator, technical proposal,
-  2026-11-12, issue #198 / M8 only): technical proposals TP-1 to TP-12 of
-  [contract/discovery.md](contract/discovery.md) (tool classes and annotations, numeric hard
-  caps, schemas, new error codes, `[discovery] ranges` key, optional `devices[].mac`);
-  the owner decision is DEC-035.
-- [ISSUE-150-DEC-001](decisions/issue-150.md) (human, owner chat, 2026-11-10,
-  issue #150 verification only): bounded read-only checks on one explicitly selected
-  controller; no writes, discovery, deployment or authorization for other targets.
-- [ISSUE-30-DEC-001](decisions/issue-30.md) (human, owner chat, 2026-11-11, issue #30 /
-  M2 live run only): one bounded read-only run (at most two calls) on one explicitly selected
-  controller; no writes, discovery, deployment or authorization for other targets.
-- [ISSUE-28-DEC-001](decisions/issue-28.md) (human, owner chat, 2026-11-12, issue #28 /
-  M4 evidence only): bounded live-output writes and temporary-signal runs on one explicitly
-  selected controller with full restoration to the recorded baseline; no reboot, OTA,
-  configuration, other controllers or hub deployment.
-  ISSUE-28-DEC-002 (coordinator, technical proposal): three signal tools, one signal per
-  device, owned-field conditional restore, no persistence across restarts, bounded shutdown restore.
-- [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, technical proposal, 2026-11-11,
-  issue #29 only): `wled_preview_layout` read tool, SVG as `data.svg` in the tool result,
-  1D only, pure bounded renderer; no hardware access.
-- [ISSUE-183-DEC-001](decisions/issue-183.md) (human, owner chat, 2026-11-16, issue #183 /
-  M7 evidence only): bounded live writes (room action, restore) on one selected controller
-  against the PASS-ready candidate, full restoration to the recorded baseline; no preset or
-  configuration writes, reboot, OTA, other controllers or hub deployment.
-- [ISSUE-183-DEC-002](decisions/issue-183.md) (coordinator, technical proposal, 2026-11-16,
-  issue #183 only): a room is a stored group with `kind`; one room per controller; one control
-  tool `wled_apply_room` on the scene write path; optional `room` on the zone tools; the owner
-  can change any default at the merge decision.
+Authority in parentheses: human = owner statement, coordinator/agent = technical proposal or
+delegated decision (not a human decision). Details are in the linked files.
 
-Stage 5 (recorded 2026-11-09):
-- [ISSUE-22-DEC-001](decisions/issue-22.md) (human, owner chat instruction, 2026-11-09,
-  issue #22 only): build `.github/workflows/publish.yml` with Trusted Publishing behind the
-  GitHub environment `pypi`, implemented and reviewed on Opus; no upload, registration,
-  environment, tag or release is authorized. ISSUE-22-DEC-002 (coordinator, technical
-  proposal): PyPI part only, release/dispatch triggers, tag-version and `main`-reachability
-  guard, SHA-pinned actions, `docs/PUBLISHING.md`, package-page metadata. Owner update
-  2026-11-09: #141 merged, items 2 and 4 confirmed, no TestPyPI rehearsal.
-- [ISSUE-22-DEC-003 and -005](decisions/issue-22.md) (human, owner chat, 2026-11-09, issue
-  #22 only): loosen the exact runtime pins; make README.md fit for the PyPI project page in
-  the same pull request. ISSUE-22-DEC-004 (coordinator, technical proposal): the declared
-  ranges, `anyio` declared, floors confirmed by a lowest-direct run,
-  `docs/contract/dependencies.md`.
-
-Stage 2 (recorded 2026-11-07):
-- [ISSUE-16-DEC-001](decisions/issue-16.md) (human): `config validate` plus restart
-  instead of in-process reload; CLI-only standard-library discovery. Superseded in part
-  by DEC-035 (2026-11-12): ISSUE-16-DEC-001 and TD-16-8 no longer hold for the reload and
-  the MCP/unicast discovery surface from M8.
-  ISSUE-16-DEC-002 (coordinator, technical proposal): CLI shape and exit codes, atomic
-  config writes, read-only `doctor` with sanitized export, no `config migrate`.
-- [ISSUE-17-DEC-001](decisions/issue-17.md) (human): groups and scenes are local JSON
-  documents under `<data-dir>/groups/` and `<data-dir>/scenes/`, written by `manage`
-  tools; the default failure policy is `strict`, `best_effort` is an opt-in.
-  ISSUE-17-DEC-002 (coordinator, technical proposal): technical defaults TD-17-1 to
-  TD-17-18 for #17 (two pull requests, tools and classes, formats and limits, sharing,
-  coverage) and C-17-1 (#17 starts with the class classification only); amendment 1
-  (pull request B): per-device `UNKNOWN_DEVICE` reading, guard location of TD-17-16, leak
-  scan of every exported string.
-- [ISSUE-18-DEC-001](decisions/issue-18.md) (human): supplied objects are written as
-  single JSON API entries with a documented live effect; ISSUE-18-DEC-002 (coordinator):
-  #19 owns the capability model; ISSUE-18-DEC-003 (coordinator, technical proposal):
-  no version gate, exact-firmware restore with its own snapshot, tool names/classes and
-  coverage statuses, 192 KiB bundle and 50-entry import bounds; playlist restore
-  accepts repeat/shuffle and refuses while a playlist runs.
-- [ISSUE-19-DEC-001 and -002](decisions/issue-19.md) (human): overlap only with an
-  explicit `allow_overlap`; `rpt`, `fxdef` and matrix/panel configuration not exposed.
-- [ISSUE-19-DEC-003](decisions/issue-19.md) (coordinator): technical defaults TD-19-1 to
-  TD-19-14 and acceptance scenarios AC-19-01 to AC-19-18 for #19 (capability module,
-  evidence chain, field presence, matrix geometry, two pull requests).
-- [ISSUE-20-DEC-001](decisions/issue-20.md) (human): default profile `full`, per-device
-  maximum class, status tool, classes `read`/`control`/`manage`; applies to every
-  tool-adding issue.
-  ISSUE-20-DEC-002 (coordinator, technical proposal): TD-20-1 to TD-20-15 (profile and
-  class vocabulary, required `Operation.tool_class`, guard layers G1 to G3, `ACCESS_DENIED`,
-  additive configuration, two pull requests) and C-20-1 (provisional migration release).
-- [ISSUE-21-DEC-001](decisions/issue-21.md) (human): automated update/rollback tests in
-  #21, live run as #25 evidence.
-- [ISSUE-21-DEC-002](decisions/issue-21.md) (coordinator): technical defaults TD-21-1 to
-  TD-21-10 for #21 and #70 (version source, non-release ids, matrix, policy).
-- [ISSUE-31-DEC-001](decisions/issue-31.md) (coordinator, technical proposal): technical
-  defaults TD-31-1 to TD-31-12 for effect search, two properties `visibility` and
-  `palette_saturation_need`, catalog not applied below the firmware floor.
-- [ISSUE-27-DEC-001](decisions/issue-27.md) (coordinator, technical proposal): technical
-  defaults TD-27-1 to TD-27-16 for named zones (reviewed local files, three tools,
-  existing-segments-only policy, no layout change); scene/group zone targets and a zone save
-  tool deferred.
-- [ISSUE-94-DEC-001 and -002](decisions/issue-94.md) (human; coordinator): `unplanned`
-  coverage status; coverage-list technical defaults.
-- [ISSUE-98-DEC-001](decisions/issue-98.md) (coordinator): every tool-adding PR adds its
-  tool with its class to `tests/tool_contract.py`.
-
-- [ISSUE-52-DEC-001](decisions/issue-52.md) (delegated decision, 2026-11-05, issue #52
-  only, content decided by the coordinator): `wled_set_state` sends `on=false` with a
-  positive brightness on an off master, shows it as targeted compensation and verifies
-  the resolved `on` on every master write.
-- [ISSUE-48-DEC-001](decisions/issue-48.md) (human, 2026-11-05, issue #48 only): both
-  segment tools reject unrepresentable names (>32 UTF-8 bytes, U+0000), grouping/spacing
-  outside 1/0-255, `on=true` with `brightness=0` and `brightness=0` without `on=false` on
-  an on segment before any write; positive brightness on an off segment is compensated
-  with `on=false`. Supersedes the corresponding parts of ISSUE-7-DEC-006.
-
-- [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
-  (human, 2026-11-05, issue #7 only): `wled_replace_layout` aligns with #6 for the
-  name limit, grouping/spacing bounds and `bri` handling; resolves ISSUE-7-OPEN-001.
-  It does not apply to other issues.
-- [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
-  #7 only): step order/allocation bound, range-capability evidence and no-op/limit
-  behavior accepted. The owner delegated the choice to the main session; the content was
-  decided by the main session, not personally dictated by the owner. Not generalized to
-  other issues or stages.
-- [ISSUE-7-DEC-007 to -009](decisions/issue-7.md) (delegated decision, 2026-11-05, issue
-  #7 only, content decided by the main session): narrow reading of DEC-006 confirmed,
-  `scripts/check_distribution.py` edit accepted, follow-up issue
-  [#48](https://github.com/descipar/wled-mcp/issues/48) for the shared #6/#7 limits.
-
-- [ISSUE-8-DEC-001 and -002](decisions/issue-8.md) (human, 2026-11-05, issue #8 only):
-  restore execution deferred (no `wled_restore_preset`); #8 delivers the snapshot store
-  and `Resources` interface, #9 wires the real tools.
-- [ISSUE-8-DEC-003](decisions/issue-8.md) (delegated decision, 2026-11-05, issue #8 only,
-  content decided by the main session): layout/ID, envelope, compatibility, error codes,
-  retention, repo guard, fsync and backup-source defaults accepted.
-
-- [ISSUE-9-DEC-001](decisions/issue-9.md) (delegated decision relayed by the main session,
-  2026-11-05, issue #9 only, content decided by the main session): PRE-03/restore stay
-  deferred, playlist overwrite rejected, type/activation rules, delete route evidence rule.
-
-- [ISSUE-53-DEC-001](decisions/issue-53.md) (delegated decision, 2026-11-05, issue #53
-  only, content decided by the coordinator): the stdio no-listener test allows only the
-  stdlib loopback socketpair of the asyncio self-pipe; no product change, no platform skip.
-
-- [ISSUE-55-DEC-001](decisions/issue-55.md) (technical coordinator decision, 2026-11-05,
-  issue #55 only): the deadline/retry test uses controlled time instead of wall-clock
-  sleeps; no product change.
-
-- [ISSUE-10-DEC-001](decisions/issue-10.md) (agent technical proposal accepted by the
-  coordinator, 2026-11-05, issue #10 only; not a human decision): traceability lives in
-  `docs/TRACEABILITY.md`, enforced by `scripts/check_traceability.py` through a pytest
-  test; hardware/deployment cells may only say `pending: ...` or `not applicable: ...`.
-
-- [ISSUE-11-DEC-001](decisions/issue-11.md) (human, 2026-11-06, issue #11 only):
-  implementation, tests, docs, review and a reviewable PR; no merge, deployment, hub
-  registration, LAN/device contact, publication or license selection.
-- [ISSUE-11-DEC-002](decisions/issue-11.md) (agent technical proposal accepted by the
-  coordinator, 2026-11-06, issue #11 only; not a human decision): deployment defaults
-  TD-1 to TD-9 (pre-staged wheel, pinned slim base image, separate Compose project,
-  file secret, persistent uv paths).
-- [ISSUE-11-DEC-003](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
-  test installation of both modes on the hub host with read checks and power on/off on
-  one authorized test controller; not standing permission.
-- [ISSUE-11-DEC-004](decisions/issue-11.md) (human approval of coordinator proposals,
-  2026-11-06, issue #11 only; mode choice by the coordinator): keep one mode active
-  (HTTP), remove the stdio hub entry, follow-up documentation PR, issue #61.
-- [ISSUE-11-DEC-005](decisions/issue-11.md) (human, 2026-11-06, issue #11 only): live
-  version-to-version update/rollback moves to stage 2 (#21, #25); the documented
-  procedures remain #11 scope.
-- [ISSUE-11-DEC-006](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
-  live removal test of the HTTP service on the same target, followed by a redeploy so
-  HTTP stays the active mode; not standing permission.
-- [ISSUE-11-DEC-007](decisions/issue-11.md) (human, 2026-11-06, one bounded operation):
-  remaining box 5/6 live checks on the same target and test controller (catalog and
-  preset reads, stdio rebuild, hub container recreation); writes only after a
-  restorable baseline, none performed; not standing permission.
-- [ISSUE-11-DEC-008](decisions/issue-11.md) (human, 2026-11-06, issue #11 only): live
-  drain of an in-flight call on the target and load measurements move from #11 to #12;
-  automated T21 drain coverage stays the #11 evidence; no live operation authorized.
-
-- [ISSUE-12-DEC-001](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): one
-  designated test controller released for #12 testing including writes, on condition
-  that state, segment layout and presets file are captured before and restored after,
-  with verified, recorded restoration; that controller only; not standing permission.
-- [ISSUE-12-DEC-002](decisions/issue-12.md) (agent technical proposal accepted by the
-  coordinator, 2026-11-06, issue #12 only; not a human decision): HTTP only, preset slot
-  250, no controller reboot, opt-in read-only HTTP probe, restoration criteria R1-R3,
-  stdio context interpretation; TRACEABILITY cell forms unchanged (ISSUE-10-DEC-001).
-  Superseded in part: TD-12-1 (HTTP only) by ISSUE-12-DEC-004.
-- [ISSUE-12-DEC-003](decisions/issue-12.md) (coordinator interpretation of the owner's
-  #12 implementation instruction and #12 acceptance box 7, 2026-11-06, issue #12 only;
-  not a human decision): stop/start of the deployed HTTP service and load against it
-  are in scope; no rebuild, inventory/secret edit or hub change. ISSUE-11-DEC-008 asked
-  for an instruction naming target and operations; the plan was announced to the owner
-  without objection but without separate explicit approval. Confirmed retroactively by
-  the owner on 2026-11-06 for that run only; not standing permission for future service
-  operations.
-- [ISSUE-12-DEC-004](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): stdio
-  via uvx stays in #12 scope; stdio-mode drain, load and H04-H06 live checks are
-  required for #12; supersedes TD-12-1 (HTTP only) of ISSUE-12-DEC-002 for the remaining
-  #12 work (ISSUE-12-DEC-002 is superseded in part).
-- [ISSUE-12-DEC-005](decisions/issue-12.md) (human, 2026-11-06, one bounded run): second
-  #12 live run: update the HTTP deployment to a build from current main and stop/start
-  it; temporary stdio hub entry with the HTTP entry disabled, then restored; the same
-  test controller with capture and restore; the owner observes with delayed replies, no
-  test relies on a quick reaction; this run only, not standing permission.
-- [ISSUE-12-DEC-006](decisions/issue-12.md) (human, 2026-11-06, issue #12 and stdio host
-  lifecycle only): the host closing the stdio connection on entry disable/stop without
-  draining in-flight calls is accepted as a documented stdio limitation; HTTP is the
-  preferred mode; no code change; not a deprecation of stdio.
-- [ISSUE-12-DEC-007](decisions/issue-12.md) (human, 2026-11-06, issue #12 only; item 2
-  one bounded run): remaining #12 scope after run 2: H02 UI comparison satisfied by
-  the controller endpoints the WLED UI renders; one owner-watched HTTP run for visible
-  effect animation and speed with capture/restore (run 3, expired after it); stdio H04,
-  host-level stdio drain and rate-limited stdio load through the hub are sufficient
-  for #12; live H07 moves to stage 2 (#25), mocked coverage remains.
-- [ISSUE-12-DEC-008](decisions/issue-12.md) (human, 2026-11-06, issue #12 only): H04
-  needs no separate visual check of an intensity change; verified readback of intensity
-  writes plus the owner-confirmed visible speed change are sufficient.
-- [ISSUE-66-DEC-001](decisions/issue-66.md) (agent technical determination accepted by
-  the coordinator, 2026-11-06, issue #66 only; not a human decision): WLED v16.0.1 `bs`
-  (blending style) is light state; it joins the `state` allowlist and the save compare
-  (only when live state has it); a saved entry that is not `state` gets a key-name-only
-  warning. Amends the issue-9 allowlist without superseding ISSUE-9-DEC-001.
-- [ISSUE-61-DEC-001](decisions/issue-61.md) (human, 2026-11-06, issue #61 only): option
-  A — underscores are accepted in `base_url` host labels; all other URL checks stay
-  fail-closed; a rejected inventory names the offending device entry without secrets.
-- [ISSUE-61-DEC-002](decisions/issue-61.md) (agent technical proposals accepted by the
-  coordinator, 2026-11-06, issue #61 only; not a human decision): host labels use
-  `[A-Za-z0-9_-]` and must start/end alphanumeric; the startup diagnostic names
-  `devices[i]` and the field, never values or the device id.
-- [ISSUE-74-DEC-001](decisions/issue-74.md) (human, 2026-11-06, issue #74 only): both
-  options — inventory rejects invalid IPv4-like hosts at startup, and client-side URL
-  errors map to a safe domain error; no URL or host in diagnostics.
-- [ISSUE-74-DEC-002](decisions/issue-74.md) (agent technical proposals accepted by the
-  coordinator, 2026-11-06, issue #74 only; not a human decision): a host whose last
-  label is numeric or `0x`-hex must be a canonical dotted-quad IPv4 address; client
-  `InvalidURL` maps to `CONFIG_ERROR`; exception suppression is tested.
-- [ISSUE-13-DEC-001](decisions/issue-13.md) (human, 2026-11-06, stage-1 scope): DEV-03
-  is a documented restart procedure (reload/validate to #16); SEG-05 counts as
-  delivered (CCT/2D to #19); PRE-03, restore and playlist authoring to #18; raw state
-  patch, timers and pixel/realtime streaming are excluded.
-- [ISSUE-13-DEC-002](decisions/issue-13.md) (agent proposal accepted by the coordinator,
-  2026-11-06, #13 only; not a human decision): conditional acceptance boxes shown not to
-  apply are checked as "not applicable" with evidence.
-- [ISSUE-62-DEC-001](decisions/issue-62.md) (agent technical proposals accepted by the
-  coordinator, 2026-11-06, issue #62 only; not a human decision): repository-wide
-  private-identifier scanner with allowlist and optional untracked denylist, neutral
-  role wording, README/PROJECT split, neutral package metadata.
-- [ISSUE-1-DEC-001](decisions/issue-1.md) (human, 2026-11-06, stage-1 close-out): the
-  OPS-04 diagnostics on main count as delivered for stage 1, the remainder is deferred to
-  #16; housekeeping issue #44 belongs to stage 2.
-- [ISSUE-134-DEC-001](decisions/issue-134.md) (human, delegated owner chat authority,
-  2026-11-09, issue #134 only): one hardware run of the stage-2 features on the test
-  controller through the hub HTTP service, state restored at the end, playlist covered; the
-  run is complete and recorded in [validation/issue-134.md](validation/issue-134.md).
-- [ISSUE-130-DEC-001](decisions/issue-130.md) (human, delegated owner chat authority,
-  confirmed 2026-11-09, issue #130 only; technical content proposed by the coordinator):
-  the served envelope and error output schema allow additional properties; the
-  one-time stale-cache transition is documented.
-- [ISSUE-147-DEC-001](decisions/issue-147.md) (human, owner chat authority, 2026-11-09,
-  issue #147 and the M1 exit criterion only): the evidence for served instructions and
-  prompts is one local stdio client check; MCPHub forwarding is no longer an acceptance
-  condition and is recorded as not observed.
-- [ISSUE-24-DEC-001](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
-  prepare the registry namespace marker, a locally validated `server.json`, drafts of the MCPM
-  and hosted-directory entries and the release preparation of the next patch version in one pull
-  request; no tag, release, upload, `mcp-publisher` use, submission or hardware contact is
-  authorized. ISSUE-24-DEC-002 (coordinator, technical proposal): the file shapes, tests and
-  documentation defaults.
-- [ISSUE-24-DEC-003](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
-  the server is to be findable through the official MCP Registry after M1 closes; the MCPM
-  contribution and the hosted mcphub.app submission are dropped for now (drafts remain
-  unsubmitted); tag, GitHub release, PyPI upload and registry publication each need the owner's
-  explicit instruction.
-- [ISSUE-24-DEC-004](decisions/issue-24.md) (human, owner chat, 2026-11-09, issue #24 only):
-  the owner gave separate instructions for the tag and GitHub release of the M1 release, the
-  `pypi` environment approval, `mcp-publisher login` and `mcp-publisher publish`; each was used
-  once and authorizes nothing further (status executed).
-- [ISSUE-24-DEC-005](decisions/issue-24.md) (human, owner chat, 2026-11-10, issue #24 only): the
-  hub-side start of an adapted registry entry is waived; item 6 of #24 is closed by this waiver,
-  not by an observation, and the install-test row stays "not run".
-- [ISSUE-128-DEC-001](decisions/issue-128.md) (human, owner chat, 2026-11-12, issue #128 only):
-  read-only probes (no writes) of one designated controller with the settings PIN and the OTA
-  lock both, then separately, enabled; run once per state and recorded in
-  [validation/issue-128.md](validation/issue-128.md).
-- [ISSUE-128-DEC-002](decisions/issue-128.md) (human, owner chat, 2026-11-12, issue #128 only):
-  the minimal write set (master state, segment patch, preset store and delete on an unused
-  slot) on the same controller, once per lock state, after the owner confirmed each state; run
-  and recorded in [validation/issue-128.md](validation/issue-128.md).
-- [ISSUE-25-DEC-001](decisions/issue-25.md) (human, owner chat, 2026-11-12, issue #25 only):
-  the opt-in synthetic demo/simulator of S2-LAUNCH-01 is dropped, not deferred; no Backlog
-  issue is opened and the rest of #25 is unchanged.
-- [ISSUE-23-DEC-001](decisions/issue-23.md) (human, owner chat, 2026-11-12, open M6 issues): the
-  bodies of #23, #25 and #181 now state the current requirements, #151 is unchanged, the
-  `stage:5` label is removed, and the defined workflow runs for #23 as a docs-only change; the
-  deferred optional items are a coordinator proposal.
-- [ISSUE-151-DEC-001](decisions/issue-151.md) (human, owner chat, 2026-11-12, issue #151 only): the
-  MCPB bundle is built with every release and attached to the GitHub release by a separate job
-  after the PyPI upload; the project does not test it and states so in the README, without
-  warranty; directory submission stays an owner action.
-- [ISSUE-151-DEC-002](decisions/issue-151.md) (technical proposal by the requirements role and the
-  coordinator, 2026-11-12, #151 only; not an owner decision): manifest 0.3 with a python-type
-  uvx launch, Python-only packing against a vendored schema, and a separate bundle job that does
-  not gate the PyPI upload.
+- Stage 1 and early issues: [ISSUE-1-DEC-001](decisions/issue-1.md) (human, OPS-04 delivered,
+  rest to #16); [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
+  (human, `wled_replace_layout` aligns with #6 limits and `bri`; resolves ISSUE-7-OPEN-001);
+  [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) and ISSUE-7-DEC-007 to -009 (same file)
+  (delegated, step order, range evidence, no-op behavior, follow-up #48);
+  [ISSUE-8-DEC-001 and -002](decisions/issue-8.md) (human, restore deferred),
+  [ISSUE-8-DEC-003](decisions/issue-8.md) (delegated defaults);
+  [ISSUE-9-DEC-001](decisions/issue-9.md) (delegated, PRE-03 deferred, playlist overwrite
+  rejected); [ISSUE-10-DEC-001](decisions/issue-10.md) (agent, traceability file and check);
+  [ISSUE-13-DEC-001](decisions/issue-13.md) (human, stage-1 scope), [ISSUE-13-DEC-002](decisions/issue-13.md)
+  (agent, "not applicable" boxes).
+- Bug and hygiene issues: [ISSUE-48-DEC-001](decisions/issue-48.md) (human, segment-tool input
+  rejection; supersedes parts of ISSUE-7-DEC-006); [ISSUE-52-DEC-001](decisions/issue-52.md)
+  (delegated, `wled_set_state` brightness on an off master); [ISSUE-53-DEC-001](decisions/issue-53.md)
+  (delegated, stdio socket guard); [ISSUE-55-DEC-001](decisions/issue-55.md) (coordinator,
+  controlled time in a retry test); [ISSUE-61-DEC-001](decisions/issue-61.md) (human) and
+  [ISSUE-61-DEC-002](decisions/issue-61.md) (agent) (underscore host labels, diagnostics);
+  [ISSUE-62-DEC-001](decisions/issue-62.md) (agent, private-identifier scanner);
+  [ISSUE-66-DEC-001](decisions/issue-66.md) (agent, `bs` in the state allowlist);
+  [ISSUE-74-DEC-001](decisions/issue-74.md) (human) and [ISSUE-74-DEC-002](decisions/issue-74.md)
+  (agent) (invalid IPv4-like hosts, `CONFIG_ERROR`); [ISSUE-94-DEC-001 and -002](decisions/issue-94.md)
+  (human; coordinator: `unplanned` coverage status); [ISSUE-98-DEC-001](decisions/issue-98.md)
+  (coordinator, tool contract entry per tool PR).
+- Deployment and hardware (#11, #12): [ISSUE-11-DEC-001](decisions/issue-11.md) (human, scope),
+  [ISSUE-11-DEC-002](decisions/issue-11.md) (agent, TD-1 to TD-9), [ISSUE-11-DEC-003](decisions/issue-11.md)
+  to [ISSUE-11-DEC-008](decisions/issue-11.md) (human: bounded live operations, HTTP stays the
+  active mode, update/rollback to stage 2, drain/load to #12; DEC-004 mode choice, DEC-005
+  stage-2 move, DEC-006 service removal test, DEC-007 catalog reads and hub recreation);
+  [ISSUE-12-DEC-001](decisions/issue-12.md) (human, one test controller with capture/restore),
+  [ISSUE-12-DEC-002](decisions/issue-12.md) (agent, superseded in part by
+  [ISSUE-12-DEC-004](decisions/issue-12.md)), [ISSUE-12-DEC-003](decisions/issue-12.md)
+  (coordinator reading, retroactively confirmed), [ISSUE-12-DEC-005](decisions/issue-12.md)
+  (human, run 2), [ISSUE-12-DEC-006](decisions/issue-12.md) (human, stdio drain limitation),
+  [ISSUE-12-DEC-007](decisions/issue-12.md) (human, remaining #12 scope, run 3),
+  [ISSUE-12-DEC-008](decisions/issue-12.md) (human, H04 needs no separate visual check of an
+  intensity change).
+- Stage 2 (2026-11-07): [ISSUE-16-DEC-001](decisions/issue-16.md) (human; superseded in part by
+  DEC-035), [ISSUE-16-DEC-002](decisions/issue-16.md) (coordinator, CLI shape);
+  [ISSUE-17-DEC-001](decisions/issue-17.md) (human, local groups/scenes, `strict` default),
+  [ISSUE-17-DEC-002](decisions/issue-17.md) (coordinator, TD-17-1 to TD-17-18);
+  [ISSUE-18-DEC-001](decisions/issue-18.md) (human, supplied objects), [ISSUE-18-DEC-002](decisions/issue-18.md),
+  [ISSUE-18-DEC-003](decisions/issue-18.md) (coordinator); [ISSUE-19-DEC-001 and -002](decisions/issue-19.md)
+  (human, overlap and unexposed fields), [ISSUE-19-DEC-003](decisions/issue-19.md) (coordinator,
+  TD-19-1 to TD-19-14); [ISSUE-20-DEC-001](decisions/issue-20.md) (human, profiles and classes),
+  [ISSUE-20-DEC-002](decisions/issue-20.md) (coordinator, TD-20-1 to TD-20-15);
+  [ISSUE-21-DEC-001](decisions/issue-21.md) (human, update/rollback tests),
+  [ISSUE-21-DEC-002](decisions/issue-21.md) (coordinator).
+- Stage 2 close-out and M1/M2: [ISSUE-130-DEC-001](decisions/issue-130.md) (human, envelope schema
+  allows additional properties); [ISSUE-134-DEC-001](decisions/issue-134.md) (human, one hardware run,
+  [validation](validation/issue-134.md)); [ISSUE-147-DEC-001](decisions/issue-147.md) (human, one
+  local stdio client check); [ISSUE-150-DEC-001](decisions/issue-150.md) (human, bounded read-only
+  checks); [ISSUE-30-DEC-001](decisions/issue-30.md) (human, one read-only run);
+  [ISSUE-31-DEC-001](decisions/issue-31.md) (coordinator, effect search TD-31-1 to TD-31-12);
+  [ISSUE-24-DEC-001](decisions/issue-24.md), [ISSUE-24-DEC-002](decisions/issue-24.md),
+  [ISSUE-24-DEC-003](decisions/issue-24.md) (registry route, MCPM and mcphub.app dropped),
+  [ISSUE-24-DEC-004](decisions/issue-24.md) (per-step release instructions),
+  [ISSUE-24-DEC-005](decisions/issue-24.md) (hub-side install test waived).
+- M3 to M7: [ISSUE-27-DEC-001](decisions/issue-27.md) (coordinator, named zones);
+  [ISSUE-28-DEC-001](decisions/issue-28.md) (human, bounded live signal runs),
+  [ISSUE-28-DEC-002](decisions/issue-28.md) (coordinator, signal tools);
+  [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, `wled_preview_layout`);
+  [ISSUE-128-DEC-001](decisions/issue-128.md) and [ISSUE-128-DEC-002](decisions/issue-128.md)
+  (human, lock-state probes and minimal write set, [validation](validation/issue-128.md));
+  [ISSUE-183-DEC-001](decisions/issue-183.md) (human, bounded live room run),
+  [ISSUE-183-DEC-002](decisions/issue-183.md) (coordinator, rooms).
+- M6 distribution and Stage 5: [ISSUE-22-DEC-001](decisions/issue-22.md) (human, PyPI workflow),
+  [ISSUE-22-DEC-002](decisions/issue-22.md) (coordinator), [ISSUE-22-DEC-003 and -005](decisions/issue-22.md)
+  (human, loosened pins, README for PyPI), [ISSUE-22-DEC-004](decisions/issue-22.md) (coordinator,
+  ranges); [ISSUE-23-DEC-001](decisions/issue-23.md) (human, open M6 issue bodies);
+  [ISSUE-25-DEC-001](decisions/issue-25.md) (human, simulator dropped), further ISSUE-25
+  decisions in that file; [ISSUE-151-DEC-001](decisions/issue-151.md) (human, MCPB bundle attached
+  by a separate job, untested by the project), [ISSUE-151-DEC-002](decisions/issue-151.md)
+  (coordinator, manifest 0.3 and bundle job).
+- M8 (discovery and enrollment, DEC-035): [ISSUE-198-DEC-001](decisions/issue-198.md)
+  (technical proposals TP-1 to TP-12, [contract/discovery.md](contract/discovery.md));
+  [ISSUE-200-DEC-001](decisions/issue-200.md); [ISSUE-201-DEC-001](decisions/issue-201.md);
+  [ISSUE-202-DEC-001](decisions/issue-202.md); [ISSUE-203-DEC-001](decisions/issue-203.md);
+  all coordinator technical proposals, not human decisions.
 
 ## Still unresolved
 
-Handling an unmet issue prerequisite is not yet a confirmed workflow decision.
-Do not record either automatic prerequisite implementation or a mandatory stop
-policy as a human choice: the prior discussion identified this gap but did not
-choose its resolution. Requirements analysis must report actual dependency
-readiness under the existing issue scope.
+Handling an unmet issue prerequisite is not a confirmed workflow decision. Do not record
+automatic prerequisite implementation or a mandatory stop policy as a human choice.
+Requirements analysis reports actual dependency readiness under the existing issue scope.
 
 ## Lookup and propagation
 
-1. Read this log plus any issue-specific entries relevant to the selected issue,
-   ancestor/stage and dependencies. Check current source/conditions, not keywords
-   alone. Record the applicable IDs and log commit/reference in the work packet.
-2. Before asking the owner, check whether an active decision answers the question.
-   If it does, apply and cite it in the packet rather than ask again.
-3. After a new answer, classify scope and source, save the decision and update the
-   packet and relevant issue/contract documentation. Do not automatically edit
-   global rules from a narrow or ambiguous answer.
-4. Explicitly send changed decision IDs and consequences to active requirements,
-   implementation and review agents. Shared files alone do not prove a child
-   agent has received the update. Freeze dependent writes if the change invalidates
-   the active implementation contract.
-5. Refresh requirements references, acceptance tests and commit-specific review
-   when behavior changes. Do not retain PASS for an outdated contract/candidate.
-6. At handoff/resume, reload applicable entries and their status. If saving is
-   unavailable, report the exact unsaved decision and hand it off; do not claim
-   that a future session can recall it automatically.
+1. Read this log and the issue-specific entries relevant to the selected issue, milestone and
+   dependencies. Check current source and conditions, not keywords alone. Record applicable IDs
+   and the log commit in the work packet.
+2. Before asking the owner, check whether an active decision answers it; apply and cite it.
+3. After a new answer, classify scope and source, save the decision and update the packet and
+   relevant documentation. Do not edit global rules from a narrow or ambiguous answer.
+4. Send changed decision IDs and consequences explicitly to active requirements, implementation
+   and review agents; shared files alone do not prove receipt. Freeze dependent writes if the
+   change invalidates the active contract.
+5. Refresh requirements references, acceptance tests and commit-specific review when behavior
+   changes; do not retain PASS for an outdated contract or candidate.
+6. At handoff or resume, reload applicable entries and status. If saving is unavailable, report
+   the exact unsaved decision; a future session cannot recall it automatically.
