@@ -39,7 +39,7 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-09.
 - Scope: S3-SIGNAL-01/-02 and S3-T02, the M4 exit evidence; that one controller only.
 - Decision: the live-output writes and bounded temporary-signal runs that the #28 evidence needs
   are authorized: one or two evidence runs, not a matrix. Pattern as in
-  [issue-134](../validation/hardware-checks.md): read-only probes first; capture full state and preset
+  [issue #134](../validation/hardware-checks.md): read-only probes first; capture full state and preset
   list; restore and verify afterwards; local build of the candidate (stdio or loopback HTTP) with
   its own data directory, removed afterwards.
 - Baseline to restore: power off, brightness 47, one segment, preset list exactly one entry

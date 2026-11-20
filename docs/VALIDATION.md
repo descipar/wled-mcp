@@ -315,19 +315,18 @@ Several of these items were run later the same day in [run 2](#issue-12-hardware
 Second authorized run on the same day, controller and target, under ISSUE-12-DEC-005 (HTTP deployment update and stop/start, a temporary
 stdio hub entry with the HTTP entry disabled, controller writes with capture and restore) and ISSUE-12-DEC-001; ISSUE-12-DEC-004 keeps stdio in
 #12 scope, so both modes were exercised. The owner was within sight for visual checks. Sanitized; WLED 16.0.1 unchanged since
-[run 1](#issue-12-hardware-acceptance-2026-11-06). Build: wled-mcp 0.1.0 from main commit `b36f410` (includes the #66 fix), MCPHub 1.2.1. The package
-version on main was still 0.1.0, so the build was staged under the ad-hoc directory `0.1.0+b36f410` / image tag `wled-mcp:0.1.0-b36f410`, a deviation from
-the documented procedure (identification scheme tracked by [#70](https://github.com/descipar/wled-mcp/issues/70)); the previous 0.1.0 directory and
-image were kept as the rollback source. HTTP update: start to listening 7.53 s, the hub entry reconnected without hub action, the `b36f410` image stays active.
+[run 1](#issue-12-hardware-acceptance-2026-11-06). Build: wled-mcp 0.1.0 from main commit `b36f410` (includes the #66 fix), MCPHub 1.2.1, staged under the ad-hoc
+directory `0.1.0+b36f410` (a deviation from the documented procedure, identification scheme tracked by [#70](https://github.com/descipar/wled-mcp/issues/70));
+the previous directory and image were kept as the rollback source. HTTP update: start to listening 7.53 s, the hub entry reconnected without hub action.
 Scenarios run: P0, HTTP update, L4, D3, visual A-C, stdio H04-H06, stdio load, stdio drain, R1-R3.
 
 ### L4 and D3, Streamable HTTP
 
-- L4 `ping` peak established connections followed client concurrency: 16 (204 req/s, p50 76), 32 (203 req/s, p50 153), 64 (198 req/s, p50 307, p95 412), all HTTP 200;
-  throughput stayed at about 200 requests/s, so more concurrency only queued; RSS at most 75,656 KiB; afterwards 2 listening, 2,731 in TIME-WAIT, none established.
-- D3 in-flight write: brightness-only `wled_set_state` calls on the off controller; writes sent before and just after the stop timestamp (i=6, 7, 8) all returned
-  HTTP 200 and were applied and verified; from +0.417 s connections were refused; no write reported `uncertain`; stop 1.42 s exit 0, start to listening 6.45 s. Caveat as in
-  run 1: the signal time is only bracketed (+0.242 s to +0.417 s); write i=8 was probably in flight; no admitted write was cut off.
+- L4 `ping` peak established connections followed client concurrency (16, 32, 64; about 200 req/s throughout, p50 76 to 307 ms, all HTTP 200), so more concurrency only
+  queued; RSS at most 75,656 KiB; afterwards 2 listening, none established.
+- D3 in-flight write: brightness-only `wled_set_state` calls on the off controller around the stop timestamp all returned HTTP 200 and were applied and verified;
+  from +0.417 s connections were refused; no write reported `uncertain`; stop 1.42 s exit 0, start to listening 6.45 s. Caveat: the signal time is only bracketed
+  (+0.242 s to +0.417 s); one write was probably in flight; no admitted write was cut off.
 
 ### Visual checks (owner)
 
@@ -345,24 +344,22 @@ and transition were not observed separately (run 3).
 
 ### stdio via uvx: H04-H06, load and drain
 
-HTTP entry disabled; temporary stdio entry with the staged `b36f410` release connected after 8 s with 12 tools; all calls through the hub.
+HTTP entry disabled; temporary stdio entry with the staged release connected after 8 s with 12 tools; all calls through the hub.
 
-- H04/H05/H06 passed as in HTTP: `brightness 0` rejected, master stays off, layouts two to one, one to three, three to one (stale IDs removed, readback matched), segment patch
-  leaving others unchanged, preset 250 conflict then overwrite after snapshot (classification `state`), activation, delete (with a warning that the deleted preset carried
-  the active-preset marker), repeated delete `PRESET_NOT_FOUND`. Two snapshot files in the stdio data directory; run-1 snapshots unchanged.
-- stdio load through the hub (temporary hub system key, removed afterwards): `ping`/`tools/list` are answered by the hub (no server CPU); MCPHub 1.2.1 returned HTTP 429 after
-  about 200 requests per window, so no load beyond that was possible; `wled_get_state` c1 (20) 4 req/s, p50 107, about 20 ms CPU; c4 (40) 2.2 req/s, p50 394; `wled_get_effects`
-  (refresh) c4 (20) p50 1,940, about 38 ms CPU; process RSS 77.5 MiB, 3 threads, no listening socket, `uv` wrapper 36 MiB. Early attempts (wrong tool prefix, CPU of the wrapper,
-  rate-limited runs) are not counted. The figures are shaped by the hub and not comparable with run 1.
-- stdio drain: disabling the entry while `wled_get_effects` calls were in flight: 3 finished, 2 in flight were answered by the hub with "ProtocolError, Connection closed"
-  (server-side outcome unknown to the client), later calls "Tool not available", the stdio process was gone 0.88 s after the disable. The host owns the subprocess lifecycle and does not
+- H04/H05/H06 passed as in HTTP (brightness 0 rejected, master stays off, layouts two to one, one to three, three to one with stale IDs removed, segment patch leaving
+  others unchanged, preset 250 conflict then overwrite after snapshot, activation, delete, repeated delete `PRESET_NOT_FOUND`); two snapshot files in the stdio data directory.
+- stdio load through the hub (temporary hub key, removed afterwards): `ping` and `tools/list` are answered by the hub; MCPHub 1.2.1 returned HTTP 429 after about 200
+  requests per window, so no load beyond that was possible; `wled_get_state` c1 4 req/s, p50 107; c4 2.2 req/s, p50 394; process RSS 77.5 MiB, 3 threads, no listening
+  socket. The figures are shaped by the hub and not comparable with run 1.
+- stdio drain: disabling the entry while `wled_get_effects` calls were in flight: 3 finished, 2 were answered by the hub with "ProtocolError, Connection closed"
+  (server-side outcome unknown to the client), later calls "Tool not available", the process was gone 0.88 s after the disable. The host owns the subprocess lifecycle and does not
   drain; ISSUE-12-DEC-006 accepts this as a documented limitation of stdio mode (HTTP preferred). An in-flight write cut off this way is possibly applied, so read state before retrying
   ([DEPLOYMENT.md](DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal)).
 
 ### Cleanup and restoration (R1-R3)
 
-Temporary stdio entry and hub key removed, HTTP entry re-enabled, controller restored via preset 1 and off. R1 preset file JSON-equal to the run-2 baseline (bytes 3,770 to 6,105,
-blanked entries); R2 state and R3 configuration byte-identical.
+Temporary stdio entry and hub key removed, HTTP entry re-enabled, controller restored via preset 1 and off. R1 preset file JSON-equal to the run-2 baseline (blanked entries
+change the byte size); R2 state and R3 configuration byte-identical.
 
 ### Not run
 

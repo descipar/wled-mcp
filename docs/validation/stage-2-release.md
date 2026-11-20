@@ -65,12 +65,10 @@ and agent sync passed.
 Evidence for the PyPI part of [#22](https://github.com/descipar/wled-mcp/issues/22) (AC-22P-01 to
 AC-22P-12 of the issue-22 packet); decisions
 [ISSUE-22-DEC-001 and ISSUE-22-DEC-002](../decisions/stage-2.md). Procedure:
-[PUBLISHING.md](../PUBLISHING.md).
-
-At the time of PR #141 nothing was published and the workflow had not run on GitHub; all evidence in
-the first sections is local, synthetic and loopback-only. The release-event and dispatch paths, the
-environment review and the OIDC upload first ran at the owner-instructed release (see
-[First upload](#first-upload-2026-11-09)).
+[PUBLISHING.md](../PUBLISHING.md). At the time of PR #141 nothing was published and the workflow had not
+run on GitHub; the scenario evidence is local, synthetic and loopback-only. The release-event path, the
+environment review and the OIDC upload first ran at the owner-instructed release
+([First upload](#first-upload-2026-11-09)).
 
 ### Scenario to evidence
 
@@ -89,115 +87,64 @@ environment review and the OIDC upload first ran at the owner-instructed release
 | AC-22P-11 documentation | [PUBLISHING.md](../PUBLISHING.md) covers pending publisher, environment reviewers, tag policy, first-release procedure, rollback, yank, uncertain uploads; attestations not claimed as S2-DIST-03. |
 | AC-22P-12 evidence | This file; link lines in [VALIDATION.md](../VALIDATION.md), [DEPLOYMENT.md](../DEPLOYMENT.md), [STAGE-5.md](../STAGE-5.md). |
 
-### Action pins
+### Action pins and local runs
 
-Resolved on 2026-11-09 (latest release of each; annotated tag of the publish action dereferenced).
-
-| Action | Version | Commit |
-| --- | --- | --- |
-| actions/checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
-| actions/setup-python | v7.1.0 | `6d4fd22b20465ccc0f7354476588e8df7c9ca0e0` |
-| astral-sh/setup-uv | v10.3.3 | `68559e99cc807c1eb7e9238fd43a15bba460eec2` |
-| actions/upload-artifact | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
-| actions/download-artifact | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` |
-| pypa/gh-action-pypi-publish | v1.14.3 | `7245906fb61fa33a13554f9d5fb856fe61758086` |
-
-### Local runs
-
-Branch `stage5/22-pypi-publish`, macOS arm64, Python 3.13.2, local uv 0.11.7 (workflow pins 0.11.14),
-2026-11-09.
-
-| Command | Result |
-| --- | --- |
-| `uv sync --locked` | passes; `uv.lock` unchanged |
-| `ruff check` / `ruff format --check` (`ci.yml` list), `mypy` | pass; 45 source files |
-| `uv run --frozen pytest` | 2829 passed, 6 skipped (5 GNU-shell tests on macOS, 1 opt-in Docker) |
-| `pytest tests/test_publish_workflow.py` in a `python:3.13-slim` container | 43 passed, 0 skipped |
-| `check_distribution.py` (CI path) and with `--wheel/--sdist` on the local build | PASS, 29 exact runtime versions; an added `SHA256SUMS` exits 1 |
-| `uvx --from twine==7.0.0 twine check --strict` (also 6.1.0) | both PASSED |
-| actionlint 1.7.12 with shellcheck on `publish.yml` and `ci.yml` | 0 errors |
-| `check_private_identifiers.py`, `check_agent_setup.py`, `check_lock.py` | pass |
-
-The wheel built from the sdist is byte-identical to the wheel built from the tree; the sdist has no
-`.git` entry although the checkout is a linked worktree. Local checksums differ from any future CI
-build.
+Actions are pinned to full commit SHAs with a version comment (`checkout` v7.0.1, `setup-python` v7.1.0,
+`setup-uv` v10.3.3, `upload-artifact` v7.0.2, `download-artifact` v8.0.2, `gh-action-pypi-publish`
+v1.14.3, resolved 2026-11-09 with read-only `gh api` calls). Local runs (macOS arm64, Python 3.13.2, uv
+0.11.7, 2026-11-09): `uv sync --locked`, ruff, mypy, `check_lock`, `check_private_identifiers` and
+`check_agent_setup` pass; `uv run --frozen pytest` 2829 passed, 6 skipped (5 GNU-shell tests on macOS, 1
+opt-in Docker); `tests/test_publish_workflow.py` in a `python:3.13-slim` container 43 passed;
+`check_distribution.py` PASS with 29 exact runtime versions (an added `SHA256SUMS` exits 1); `twine check
+--strict` PASSED for 7.0.0 and 6.1.0; actionlint with shellcheck 0 errors. The wheel built from the sdist
+is byte-identical to the wheel built from the tree.
 
 ### Limits
 
-GitHub-side behavior (release and dispatch events, environment review, OIDC exchange, artifact
-transfer, attestations, the upload) was not exercised before the first upload; one runner
-architecture; the package is pure Python. Still open in #22 at PR #141 (runtime pins and README done
-below): OCI images, SBOM/provenance, vulnerability review, the first publication.
+GitHub-side behavior (release and dispatch events, environment review, OIDC exchange, artifact transfer,
+attestations, the upload) was not exercised before the first upload; one runner architecture; the package
+is pure Python. Still open in #22 at PR #141: OCI images, SBOM and provenance, vulnerability review.
 
 ### Runtime dependency ranges
 
 Evidence for #22 acceptance item 4 (AC-22R-01 to AC-22R-14, AC-22R-README-01 to -08); decisions
 ISSUE-22-DEC-003 to ISSUE-22-DEC-005 ([decision log](../decisions/stage-2.md)); contract
-[dependencies.md](../contract/dependencies.md). Branch `stage5/22-runtime-dependency-ranges`, macOS
-arm64, Python 3.13.2, uv 0.11.7, 2026-11-09. Nothing published or released; resolution and installs
-reached PyPI only.
+[dependencies.md](../contract/dependencies.md). macOS arm64, Python 3.13.2, uv 0.11.7, 2026-11-09;
+nothing published, resolution and installs reached PyPI only.
 
-- Declaration, lock and export: only the project's own metadata changed in `uv.lock`; no package
-  version, source or hash changed. Wheel `Requires-Dist`: `anyio<5,>=4.10`, `httpx2<3,>=2.16`,
-  `mcp<3,>=2.3.0`, `pydantic<3,>=2.12.0`, `starlette<2,>=1.0.0`, `uvicorn<0.55,>=0.31.1`.
-  `tests/test_dependency_ranges.py` (bounded ranges, every third-party import declared, lock and
-  export inside the ranges) and `tests/test_check_distribution.py` (`requires_dist_problems`) cover it.
-- Lowest and highest combinations were installed into two new virtual environments (lowest via
-  `uv pip compile --resolution lowest-direct`, highest by default resolution), `uv pip check` passes.
+- Only the project's own metadata changed in `uv.lock`. Wheel `Requires-Dist`: `anyio<5,>=4.10`,
+  `httpx2<3,>=2.16`, `mcp<3,>=2.3.0`, `pydantic<3,>=2.12.0`, `starlette<2,>=1.0.0`,
+  `uvicorn<0.55,>=0.31.1`; covered by `tests/test_dependency_ranges.py` and `tests/test_check_distribution.py`.
+- The lowest-direct and the highest resolution were installed into two new environments and `uv pip
+  check` passes; each floor equals the declared lower bound; the highest set differs from the lock only in
+  `pydantic` and `sse-starlette` (the lock is the tested set).
+- Full suite in both environments 2867 passed, 6 skipped (the lowest run needed `anyio_backend` pinned to
+  asyncio in `tests/test_tools_list_cache.py`); wheel smoke in both (version, setup commands, stdio
+  handshake, read-only profile, HTTP start, authenticated `tools/list`, restart) PASS; the locked
+  environment passes ruff, mypy, pytest, `check_distribution.py` (29 versions), coverage, identifiers,
+  traceability and agent setup. No image was built or pushed.
 
-| Distribution | Lowest | Highest | Lock |
-| --- | --- | --- | --- |
-| mcp | 2.3.0 | 2.3.0 | 2.3.0 |
-| pydantic | 2.12.0 | 2.14.3 | 2.14.2 |
-| httpx2 | 2.16.0 | 2.16.0 | 2.16.0 |
-| starlette | 1.0.0 | 1.10.0 | 1.10.0 |
-| uvicorn | 0.31.1 | 0.54.0 | 0.54.0 |
-| anyio | 4.10.0 | 4.16.0 | 4.16.0 |
-| sse-starlette | 3.7.0 | 3.7.0 | 3.6.0 |
-
-The highest set differs from the lock (pydantic, sse-starlette): the lock is the tested set. Each
-floor equals the declared lower bound.
-
-| Run | Result |
-| --- | --- |
-| Highest, full suite (installed package, not the source tree) | 2867 passed, 6 skipped |
-| Lowest, full suite | 2867 passed, 6 skipped; `tests/test_tools_list_cache.py` now pins `anyio_backend` to asyncio (anyio 4.10.0 also parametrized an uninstalled trio variant) |
-| Wheel smoke in both environments | `--version`, setup commands, stdio handshake, read-only profile, HTTP start, authenticated `tools/list`, restart: PASS |
-| Locked environment: ruff, mypy, `pytest` (2867 passed, 6 skipped), `check_distribution.py` (29 versions), coverage, identifiers, traceability, agent setup | pass |
-
-`deploy/stage_release.py`, the HTTP Dockerfile, `examples/mcphub.example.json` are unchanged;
-`tests/test_deployment_artifacts.py` and the opt-in Docker `compose config` check pass; no image was
-built or pushed.
-
-Limits: only the lowest and highest combination ran; one host (macOS arm64); floor runs are not in CI,
-so the floor claim can decay unless a lowest-direct CI job is added.
+Limits: only the lowest and highest combination ran, on one host; floor runs are not in CI, so the floor
+claim can decay unless a lowest-direct CI job is added.
 
 ### First upload (2026-11-09)
 
-After PR #141 (workflow) and PR #143 (ranges and PyPI README) the owner instructed the tag and release
-of 0.1.2 and approved the `pypi` environment deployment in the GitHub UI (chat instructions, no
-permalink).
-
-- Release `v0.1.2` on `main` commit `91736b4` (CI green). The `release: published` run built and
-  smoke-tested the distribution, waited at the `pypi` environment, and the publish job succeeded after
-  approval.
-- PyPI lists `wled-mcp` 0.1.2 with `wled_mcp-0.1.2-py3-none-any.whl` (sha256
-  `3177df4bd68f1e4362f16b6519b72c2748847bbd58713cc2e8e41e02d5940c3e`) and `wled_mcp-0.1.2.tar.gz`
-  (sha256 `0db94687f9de49b56dd50ce97fe415b7d892cae3785b16e24c27acee7cce4ce4`); metadata names the
-  project unofficial, Apache-2.0, and the dependency ranges.
-- Clean install: `uvx wled-mcp==0.1.2 --version` without cache printed `wled-mcp 0.1.2`.
-- Not done: digests not compared with the build job summary (only file names and the install); no
-  TestPyPI rehearsal (owner declined); the image, SBOM and provenance parts of #22 stay open.
+After PR #141 (workflow) and PR #143 (ranges and PyPI README) the owner instructed the tag and release of
+0.1.2 and approved the `pypi` environment deployment in the GitHub UI. The `release: published` run built
+and smoke-tested, waited at the environment and succeeded after approval. PyPI lists 0.1.2 (wheel sha256
+`3177df4bd68f1e4362f16b6519b72c2748847bbd58713cc2e8e41e02d5940c3e`, sdist
+`0db94687f9de49b56dd50ce97fe415b7d892cae3785b16e24c27acee7cce4ce4`; metadata names the project
+unofficial, Apache-2.0 and the ranges); `uvx wled-mcp==0.1.2 --version` printed `wled-mcp 0.1.2`. Not
+done: digests not compared with the build job summary; no TestPyPI rehearsal (owner declined); the image,
+SBOM and provenance parts of #22 stay open.
 
 ## Issue #24 validation: registry metadata and listing drafts
 
 Evidence for the bounded packet of [#24](https://github.com/descipar/wled-mcp/issues/24) (AC-24-01 to
-AC-24-10); decisions [ISSUE-24-DEC-001 and ISSUE-24-DEC-002](../decisions/stage-2.md). Listing
-status per route: [MARKETPLACE.md](../MARKETPLACE.md#status-per-route).
-
-At the time of the packet nothing was published, tagged, uploaded or submitted; no `mcp-publisher`
-was used; only plain `GET` requests (two schemas, one GitHub API read, package downloads) were made.
-Publication happened later ([below](#release-and-registry-publication-2026-11-09)).
+AC-24-10); decisions [ISSUE-24-DEC-001 and ISSUE-24-DEC-002](../decisions/stage-2.md). Listing status per
+route: [MARKETPLACE.md](../MARKETPLACE.md#status-per-route). At the time of the packet nothing was
+published, tagged, uploaded or submitted and only plain `GET` requests were made; publication happened
+later ([below](#release-and-registry-publication-2026-11-09)).
 
 ### Scenario to evidence
 
@@ -214,115 +161,77 @@ Publication happened later ([below](#release-and-registry-publication-2026-11-09
 | AC-24-09 release preparation | Version bumped, `uv.lock` refreshed (project entry only), CHANGELOG from `git log v0.1.2..HEAD`. |
 | AC-24-10 no external effect | Statement at the top of this file. |
 
-### Live schema validation (one run, 2026-11-09)
+### Live schema validation, local checks, not run and limits
 
-Plain `GET` of both schemas outside the repository, checked with `jsonschema` 4.26.0 from the locked
-dev environment (`python -I`).
-
-| Item | Observation |
-| --- | --- |
-| Official schema | `https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json`, draft-07, SHA-256 `3fba09590c99f61735d234822279f4223fab9e300c0a81e81c91ab62a4114de0`; `server.json` 0 errors, `$schema` equals `$id` |
-| MCPM schema | `mcp-registry/schema/server-schema.json`, 2020-12, SHA-256 `db6a9e57a91c82a22c9ad6d57f65b8255dedb76e6dc24e9376501f821aa11b18`, last changed 2025-07-08; MCPM draft 0 errors |
-| Negative controls | a `server.json` copy (101-character description, no transport) and an MCPM copy (name `WLED_MCP`, no licence) were rejected with 2 errors each |
-
-Limits: `format` keywords not enforced, unknown properties are not forbidden by the schema, and the
-publisher's own checks (namespace ownership, package verification, `mcp-publisher validate`) were
-**not run**; schema-valid does not mean registry-accepted.
-
-### Local checks
-
-Windows 11, Python 3.13.2, uv 0.11.14, on the branch merged with `origin/main`.
-
-| Command | Result |
-| --- | --- |
-| `uv sync --locked`, `check_lock.py` | passes (45 packages) |
-| `ruff check` / `format --check`, `mypy` | pass (124 files; 51 source files) |
-| `check_agent_setup.py`, `check_private_identifiers.py` | pass (286 files) |
-| `uv run --frozen pytest` | 3147 passed, 30 skipped, 6 failed, 5 errors (known local Windows failures in `test_hw_http_probe.py` and `test_inventory_client.py`, identical on unchanged `origin/main`; Linux CI is authoritative, DEC-020) |
-| `check_distribution.py` (checkout path without spaces) | PASS, 30 exact runtime versions incl. registry marker, stdio, HTTP restart, uvx |
-
-In a checkout whose path contains a space the last step (stdio hub example) fails identically on
-unchanged `origin/main`; it is environmental, not part of this change.
-
-### Not run and limits
-
-- No registry publication, listing or submission at that time; no MCPHub install test (S2-MARKET-03);
-  the hosted directory's form (sign-in) was not seen, so its fields stay unverified.
-- That a client turns the argument list into the intended command is not tested (`--isolated` is a
-  positional argument with a fixed value; that is a reading of the schema).
-- MCPM's handling of `${...}` in `env` was not observed. Only the Windows machine ran these checks.
+- One run on 2026-11-09 with `jsonschema` 4.26.0: `server.json` against the official schema
+  (`2025-12-11`, draft-07) and the MCPM draft against the MCPM schema (2020-12) both had 0 errors, and a
+  negative-control copy of each was rejected with 2 errors. Limits: `format` keywords not enforced,
+  unknown properties not forbidden, and the publisher's own checks (namespace ownership, package
+  verification, `mcp-publisher validate`) were not run; schema-valid does not mean registry-accepted.
+- Local checks (Windows 11, Python 3.13.2): `check_lock`, ruff, mypy, `check_agent_setup` and
+  `check_private_identifiers` pass; `uv run --frozen pytest` 3147 passed, 30 skipped, 6 failed, 5 errors
+  (known local Windows failures in `test_hw_http_probe.py` and `test_inventory_client.py`, identical on
+  unchanged `main`; Linux CI is authoritative, DEC-020); `check_distribution.py` PASS with 30 exact
+  runtime versions. In a checkout path containing a space the stdio hub-example step fails identically on
+  unchanged `main` (environmental).
+- Not run: registry publication, listing or submission at that time; the MCPHub install test
+  (S2-MARKET-03); the hosted directory's sign-in form was not seen, so its fields stay unverified; that a
+  client turns the argument list into the intended command (`--isolated` is a positional argument, a
+  reading of the schema); MCPM's handling of `${...}` in `env`.
 
 ### Follow-up: release 0.2.0 preparation (2026-11-09)
 
-The 0.1.3 preparation was never published; [DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)
-requires a minor release for M1, so the version became 0.2.0 (`pyproject.toml`, `uv.lock` project entry,
-both `server.json` versions) and the changelog was rewritten.
-[ISSUE-24-DEC-003](../decisions/stage-2.md) narrows listing routes to the official MCP Registry; the
-MCPM and hosted drafts stay unsubmitted.
-
-- Schema run repeated: same SHA-256 values, `server.json` 0 errors, MCPM draft 0 errors, both negative
-  controls rejected; the stated limits apply.
-- The status-vocabulary test accepts "not planned" only for a row citing ISSUE-24-DEC-003; the official
-  registry row stays "validated locally" and the install test "not run" (at that time).
-- README: M1 features and tool count 27 to 31. Nothing was tagged, released, uploaded or submitted.
+The 0.1.3 preparation was never published;
+[DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release) requires a minor release for
+M1, so the version became 0.2.0 and the changelog was rewritten.
+[ISSUE-24-DEC-003](../decisions/stage-2.md) narrows listing routes to the official MCP Registry; the MCPM
+and hosted drafts stay unsubmitted. The schema run was repeated with the same hashes and results, the
+status-vocabulary test accepts "not planned" only for a row citing ISSUE-24-DEC-003, and README features
+and tool count were updated (27 to 31). Nothing was tagged, released, uploaded or submitted.
 
 ### Release and registry publication 2026-11-09
 
-Recorded from the coordinator's verification in the owner's #24 session, each step instructed
-separately ([ISSUE-24-DEC-004](../decisions/stage-2.md)); a copy of what was reported, not a re-run.
+Recorded from the coordinator's verification in the owner's #24 session, each step instructed separately
+([ISSUE-24-DEC-004](../decisions/stage-2.md)); a copy of what was reported, not a re-run.
 
-- **Tag and release:** `v0.2.0` and a GitHub release at commit `b27180930febcee7985dce35282a05d8be0dc137`
-  (main, CI green).
-- **PyPI:** `publish.yml` run 42715819076 succeeded after the owner approved the `pypi` environment.
-  Wheel SHA-256 `383cc49fb73f28bca2ffe2a4c1e2afa85f0d8ed0cc815a2c7dacdac47ec617e8`, sdist
+- Tag and GitHub release `v0.2.0` on a green `main` commit; `publish.yml` succeeded after the owner
+  approved the `pypi` environment. Wheel SHA-256
+  `383cc49fb73f28bca2ffe2a4c1e2afa85f0d8ed0cc815a2c7dacdac47ec617e8`, sdist
   `67128a688faa27b10d717c336fa3ffd9c496d8b63f97213144b6d90c12550508`, identical to the job's
-  `SHA256SUMS`. The PyPI description carries `mcp-name: io.github.descipar/wled-mcp`.
-- **Install check:** `uvx --no-cache --isolated --python 3.13 --from wled-mcp==0.2.0 wled-mcp --version`
-  printed `wled-mcp 0.2.0` (a first attempt failed only on a stale local index cache).
-- **Registry publish:** `mcp-publisher` 1.8.8 (checksum equal to the release checksums file) after the
-  owner's `mcp-publisher login github`; it printed "Successfully published
-  io.github.descipar/wled-mcp version 0.2.0" with the `server.json` identical to main. This repository
-  did not run `mcp-publisher validate`.
-- **Readback:** the registry search API returns exactly one entry: version 0.2.0, pypi package, no
-  `remotes`, status active, `isLatest` true, `publishedAt` 2026-11-09T22:58:41Z.
+  `SHA256SUMS`; the PyPI description carries the `mcp-name` marker.
+- `uvx --no-cache --isolated --python 3.13 --from wled-mcp==0.2.0 wled-mcp --version` printed `wled-mcp
+  0.2.0`.
+- `mcp-publisher` 1.8.8 (checksum equal) after the owner's login printed "Successfully published
+  io.github.descipar/wled-mcp version 0.2.0"; this repository did not run `mcp-publisher validate`. The
+  registry search returns exactly one entry: 0.2.0, pypi package, no `remotes`, active, latest, published
+  2026-11-09.
 
-Status per route afterwards: official registry **accepted** and **visible** in the registry's search
-API; MCPM and hosted directory not planned (ISSUE-24-DEC-003); fresh-install test **not run**. Not
-observed: an MCPHub registry tab showing the entry, or how a host turns the entry into a launch
-configuration. #24 item 6 is run separately and not claimed here.
+Status per route afterwards: official registry accepted and visible in the search API; MCPM and hosted
+directory not planned (ISSUE-24-DEC-003); fresh-install test not run. Not observed: an MCPHub registry tab
+showing the entry, or how a host turns the entry into a launch configuration.
 
 #### Launch check of the composed command (2026-11-10)
 
-Reported by the coordinator, Windows, with a real stdio client from the locked `mcp` SDK (script not
-in the repository). Command composed from `packages[0]` of `server.json`:
-
-```text
-uvx --isolated --python 3.13 wled-mcp==0.2.0 --transport stdio --config <copy of examples/devices.example.toml> --data-dir <existing empty directory>
-```
-
-It started the published package; `initialize` returned `wled-mcp 0.2.0`; `tools/list` returned 31
-tools; `wled_list_devices` returned `ok: true` with the two synthetic devices (`probe_status`
-"untested", no network contact). Two earlier attempts failed only on the stale uv index cache. This
-shows that the argument composition, including the positional `--isolated`, gives a working command
-for a generic composer; it is partial evidence, not the install test (no MCPHub involved).
+Reported by the coordinator, Windows, with a real stdio client from the locked `mcp` SDK: the command
+composed from `packages[0]` of `server.json` (`uvx --isolated --python 3.13 wled-mcp==0.2.0 --transport
+stdio --config <copy of the example inventory> --data-dir <empty directory>`) started the published
+package, `initialize` returned `wled-mcp 0.2.0`, `tools/list` returned 31 tools and `wled_list_devices`
+returned `ok: true` with the two synthetic devices (no network contact). Partial evidence that the
+argument composition gives a working command for a generic composer; not the install test (no MCPHub).
 
 #### MCPHub Registry tab, observed install dialog (2026-11-10)
 
-Observed by the owner in their MCPHub (admin only) from a screenshot of the Install dialog; not re-run
-by an agent. The dialog was prefilled with type STDIO, command `uvx` and arguments `wled-mcp@0.2.0`,
-`----transport`, `stdio`, `----config`, `{config_path}`, `----data-dir`, `{data_dir}`.
-
-- This MCPHub prepends `--` to argument names that already start with `--`, leaves `{config_path}` and
-  `{data_dir}` unresolved and drops the runtime arguments (`--isolated`, `--python 3.13`). The
-  coordinator read the MCPHub source (`getArgs()`, main branch, 2026-11-10), which matches the dialog;
-  whether the owner's build equals that revision was not checked.
-- `server.json` conforms to the registry schema and was not changed; the deployment guide tells users to
-  edit the dialog ([DEPLOYMENT](../DEPLOYMENT.md#installing-from-the-mcphub-registry-tab)).
+Observed by the owner in their MCPHub (admin only) from a screenshot of the Install dialog; not re-run by
+an agent. This MCPHub prepends `--` to argument names that already start with `--`, leaves `{config_path}`
+and `{data_dir}` unresolved and drops the runtime arguments; the coordinator's read of the MCPHub source
+matches the dialog (whether the owner's build equals that revision was not checked). `server.json`
+conforms to the registry schema and was not changed; the deployment guide tells users to edit the dialog
+([DEPLOYMENT](../DEPLOYMENT.md#installing-from-the-mcphub-registry-tab)).
 
 Result for #24 item 6: a documented finding; the configuration this MCPHub generates is not runnable
-without a manual edit. The hand-corrected entry was **not** started inside MCPHub: the owner decided on
-2026-11-10 that this is not wanted ([ISSUE-24-DEC-005](../decisions/stage-2.md), waiver). Item 6 is
-closed by that waiver, not by an observation; the install-test state stays "not run". The AC wording of
+without a manual edit. The hand-corrected entry was not started inside MCPHub: the owner decided on
+2026-11-10 that this is not wanted ([ISSUE-24-DEC-005](../decisions/stage-2.md), waiver). Item 6 is closed
+by that waiver, not by an observation; the install-test state stays "not run" and the AC wording of
 S2-MARKET-03 ("metadata-generated uvx configuration") is not met for this hub build.
 
 ## Issue #151 validation: MCPB bundle
@@ -395,7 +304,7 @@ no new action, no `secrets.` reference; PyPI job texts untouched.
 ### First release run
 
 Recorded 2026-11-13 from the main session's readbacks (record:
-[release-m3-m6.md](releases.md)). `publish.yml` run 43414020842 for release `v0.4.0`: all four
+[release record](releases.md#release-and-registry-publication-2026-11-13)). `publish.yml` run 43414020842 for release `v0.4.0`: all four
 jobs succeeded (build and smoke test, `build-mcpb`, publish to PyPI, `release-asset`). The release
 lists `wled-mcp-0.4.0.mcpb` (15006 bytes) and its `.sha256`; the bundle SHA-256
 `a6ccec213a71193c832783a9664d164c071d7e7d1527e34eb42c1b85a0cc2daf` equals the `.sha256` asset, the

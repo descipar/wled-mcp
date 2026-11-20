@@ -177,126 +177,63 @@ not degrade the other controller (DEV-02, REL-01). Elapsed time per failing call
 
 ## Issue #25: live rollback checklist for the deployed target
 
-Status: **executed once on 2026-11-13 (0.3.0 to 0.2.0 and back);** results are in the
-[launch report](releases.md#3-upgrade-and-rollback-evidence). The checklist is kept as the
-procedure that was followed. It covers acceptance item 1 of
+Status: executed once on 2026-11-13 (0.3.0 to 0.2.0 and back); results are in the
+[launch report](releases.md#3-upgrade-and-rollback-evidence). Covers acceptance item 1 of
 [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-COMPAT-03, live part) and follows
-[DEPLOYMENT.md](../DEPLOYMENT.md#http-service-update-rollback-recreation-removal). All names, paths
-and tags are placeholders.
+[DEPLOYMENT.md](../DEPLOYMENT.md#http-service-update-rollback-recreation-removal); authorization
+[ISSUE-25-DEC-003](../decisions/stage-2.md). The run restarts the deployed HTTP service twice and touches
+only its Compose project, never the hub (never reinstalled,
+[DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)).
 
-The run restarts the deployed HTTP service twice (rollback, restore); the hub sees a short outage each
-time. It touches only the `wled-mcp-http` Compose project and its `wled-mcp` service, never the hub or
-its network. Authorization: the owner's instruction naming the target and this run
-([ISSUE-25-DEC-003](../decisions/stage-2.md)); no publication, release, tag or registry step, and no
-hub change other than backing up and restoring the wled-mcp entry.
-
-### Preconditions
-
-0. Observed 2026-11-13 (read-only): the target ran 0.3.0 (updated to 0.4.0 later, see
-   [deploy-0.4.0.md](releases.md)). The owner chose rollback target P = 0.2.0, staged on the target
-   per DEC-026 (`deploy/stage_release.py` from a clean checkout of the tag; the PyPI wheel is not the
-   staged artifact and its hash is not guaranteed equal). The hub is never reinstalled
-   ([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)); the hub entry may change
-   only if verification needs it: back it up, restore it, record both states without hostnames.
-1. A real rollback exists: release N runs and an older P is retained as image `wled-mcp:<tag-P>` and
-   `/app/binaries/wled-mcp/<P>/` (or rebuildable there). Record both.
-2. Quiet window: no tool call in flight, no active signal (stop sends SIGTERM, up to 130 s drain).
-3. Only read tools are called; the service profile is unchanged.
-4. Backups first, on the target and outside Git: `compose.yaml`, the inventory (also as
-   `devices.toml.previous`) and the whole `data/wled-mcp` tree (`cp -a`). Record file counts and a
-   checksum list of `backups/`, `groups/`, `scenes/` and the inventory.
-5. Version compatibility: confirm in the CHANGELOG between P and N that no data or inventory format
-   changed (0.2.0 to 0.3.0 changed none). If one did, stop and ask.
-6. A rollback to a release with fewer tools may need the hub entry reloaded (expected from the
-   tool-list refresh finding of [live-check-2026-11-08.md](hardware-checks.md), not observed).
-
-### Steps
-
-1. Record before: `ps`, current `image:` tag and ID, `logs --tail 50`, authenticated `ping`,
-   `wled_get_service_status`, `wled_list_devices`, `wled_get_state` of one controller.
-2. Validate the inventory with release P on a copy: `uvx --from wled-mcp==<P> wled-mcp config validate
-   --config <copy> --data-dir <copy-dir>`.
-3. Set `image:` to `wled-mcp:<tag-P>`; `docker compose -p wled-mcp-http -f compose.yaml up -d --no-deps
-   wled-mcp`.
-4. Verify on P: `ps`, logs (startup line, no configuration error, no `BACKUPS_NOT_WRITABLE`), `ping`
-   HTTP 200, hub entry reloaded if needed, tool count equals P's, devices, state, groups, scenes and
-   snapshots written by N present, service status.
-5. Prove no controller write: call counters and log lines show only `class=read` calls; the data
-   directory checksum list is unchanged.
-6. Restore `image:` to N, repeat the command and step 4, record health.
-7. Keep both images and release directories; remove only scratch copies outside the data tree. Never
-   prune backups.
-
-### What to record
-
-Versions N and P with build provenance (tag, source commit, wheel SHA-256), the exact commands in
-order, time from `up -d` to the first `ping` for each switch, tool counts, outcomes of steps 1, 4 and
-6, the step-5 proof, the data directory comparison, deviations from DEPLOYMENT.md, and what was not
-run. Use "the deployed target"; no hostnames, addresses, paths or tokens.
-
-### Stop conditions
-
-Stop and report when: no older release is retained or buildable; the service is not ready on P and the
-previous `compose.yaml` does not bring it back at once (restore N immediately); a data or inventory
-format differs between N and P; the run would need a new artifact, tag or publication.
+- **Preconditions:** release N runs and an older release P is retained as an image and release directory
+  (staged per DEC-026 from a clean checkout of the tag); quiet window with no call or signal in flight;
+  read tools only, profile unchanged; backups first on the target and outside the repository (compose
+  file, inventory, whole data tree with file counts and a checksum list); the CHANGELOG between P and N
+  shows no data or inventory format change, otherwise stop and ask.
+- **Steps:** record before (`ps`, image tag, logs, authenticated `ping`, status, devices, one state);
+  validate the inventory with P on a copy; set `image:` to P and `up -d --no-deps`; verify on P (health,
+  startup line, `ping` 200, tool count equals P's, data written by N present); prove no controller write
+  (only `class=read` calls, unchanged checksum list); restore `image:` to N and verify again; keep both
+  images and release directories, never prune backups.
+- **Record:** versions with provenance, exact commands, time from `up -d` to the first `ping`, tool counts,
+  the no-write proof, deviations from DEPLOYMENT.md and what was not run, without hostnames, addresses,
+  paths or tokens.
+- **Stop when:** no older release is retained or buildable; the service is not ready on P and restoring
+  the previous compose file does not bring it back at once; a data or inventory format differs; the run
+  would need a new artifact, tag or publication.
 
 ## Live check of the second release (2026-11-08)
 
-One owner-authorized live check of the second release on the same target class and single test
-controller as the first deployment check ([#11](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06)).
-Host names, addresses and paths are omitted. Not a broad hardware acceptance: one controller on WLED
-16.0.1 (ESP32-C3, 133 LEDs, one segment), reads, master power and brightness, and segment effects.
-Each write run was authorized separately (brightness with restoration, a visible power test, a brighter
-step, a 60 s effect run with master brightness capped at 120, no flashing, no presets); none is standing
-permission.
+One owner-authorized live check of the second release on the same target class and single test controller
+as the first deployment check ([#11](../VALIDATION.md#issue-11-live-deployment-check-2026-11-06)): one
+controller on WLED 16.0.1 (ESP32-C3, 133 LEDs, one segment), reads, master power and brightness and
+segment effects; each write run authorized separately, none standing permission. Host names, addresses and
+paths omitted. Not a broad hardware acceptance.
 
-### Target and staging
-
-- aarch64 single-board computer, Docker, MCPHub with the HTTP service in its own Compose project.
-- Staging ([DEC-026](../DECISIONS.md#dec-026--stage-releases-on-the-target-machine)): clean clone of the
-  release tag on the target, `uv sync --locked`, offline wheel build, `deploy/stage_release.py`,
-  `sha256sum -c SHA256SUMS` all OK, directory made read-only. `check_distribution.py` was not run on the
-  target (CI runs it for the tag).
-- Source commit `ea3c58cfdf64e993670e8fdb0853633445f17e03`, tree clean; wheel SHA-256
-  `5c6d394d8614194ef06fb04d8a277dce69f9b89ee91e8ec06789099e1076d4c1`. A staging run on a Windows
-  checkout produced other hashes ([#131](https://github.com/descipar/wled-mcp/issues/131)); that
-  directory was discarded.
-- Hub configuration and Compose file backed up; the data directory backup needed elevated rights
-  (container-owned files). Previous images and directories kept; no rollback was run.
-
-### HTTP service (default transport)
-
-| Check | Result |
-| --- | --- |
-| Update (`up -d --no-deps`) | recreated; `healthy` about 33 s after start |
-| First hub call after the update | failed once ("data must NOT have additional properties"); succeeded about a minute later after the hub refreshed its tool list ([#130](https://github.com/descipar/wled-mcp/issues/130)) |
-| Service status | second-release version, `streamable-http`, profile `full`, device `reachable` |
-| Reads | device list with probe, state (tier `tested`), catalogs, presets, snapshots (the three of the first check), groups (empty) |
-| Writes (master only) | brightness 47 to 60 and back (master off, verified by readback); power on at 47, 120, 47, off; 200 confirmed clearly visible by the owner, then 47 and off; every step `applied`/`verified` |
-| Effect run | about 55 s: five calm phases (random effects and palettes), master brightness 71 to 105, no strobe or sparkle effects, no presets; 13 verified writes |
-| Restoration | fade out, then effect 0, palette 11, speed and intensity 128, original colors, brightness 47, master off; readbacks equal the earlier state |
-| Counters (read before the visible tests) | 10 calls, all ok, 7 read and 3 control |
-
-Owner remark: went well; some effects were barely visible (pale palettes, low brightness).
-
-### stdio (README route, temporary)
-
-Hub entry via `uvx --isolated --python 3.13 --from git+...@<release tag>`; cold first start about 50 s.
-Through the hub: device list with probe `reachable`, state equal to baseline, service status (`stdio`);
-one write (brightness 47 to 60 and back, verified, not visible). Entry deleted at the owner's request,
-no process left, HTTP entry untouched. The two transports were never used at the same time.
-
-### Not run
-
-- Scenes, groups, preset save/delete/restore/import/export and playlists on the controller; segment
-  geometry; CCT and 2D.
-- A rollback of the HTTP service; an unreachable controller (H07); settings PIN or OTA lock
-  ([#128](https://github.com/descipar/wled-mcp/issues/128)); `check_distribution.py` on the target.
-
-### Findings
-
-- [#130](https://github.com/descipar/wled-mcp/issues/130): the hub rejected the new response right after
-  the update (cached output schema).
-- [#131](https://github.com/descipar/wled-mcp/issues/131): different bytes when staging on Windows.
-- DEPLOYMENT.md said a Git source is never pinned to a tag while the README uses one; reconciled.
-- Owner feedback on effect visibility: noted on [#31](https://github.com/descipar/wled-mcp/issues/31).
+- **Staging ([DEC-026](../DECISIONS.md#dec-026--stage-releases-on-the-target-machine)):** clean clone of the
+  release tag on the aarch64 target, `uv sync --locked`, offline wheel build, `deploy/stage_release.py`,
+  `sha256sum -c` OK; `check_distribution.py` not run on the target. A staging run on a Windows checkout
+  produced other hashes ([#131](https://github.com/descipar/wled-mcp/issues/131)); that directory was
+  discarded. Hub configuration and compose file backed up; no rollback was run.
+- **HTTP service:** recreated, `healthy` about 33 s after start. The first hub call failed once ("data
+  must NOT have additional properties") and succeeded about a minute later after the hub refreshed its tool
+  list ([#130](https://github.com/descipar/wled-mcp/issues/130)). Status: second-release version,
+  `streamable-http`, profile `full`, device `reachable`. Reads: device list with probe, state (tier
+  `tested`), catalogs, presets, snapshots, groups (empty). Master-only writes: brightness 47 to 60 and
+  back, power on at 47, 120, 47 and off (200 clearly visible by the owner); about 55 s effect run in five
+  calm phases (no strobe or sparkle, no presets, 13 verified writes); restoration to effect 0, palette 11,
+  speed and intensity 128, original colors, brightness 47, master off, readbacks equal to the earlier
+  state. Counters before the visible tests: 10 calls, all ok, 7 read and 3 control. Owner remark: went
+  well; some effects were barely visible (pale palettes, low brightness; noted on
+  [#31](https://github.com/descipar/wled-mcp/issues/31)).
+- **stdio (README route, temporary):** hub entry via `uvx ... --from git+...@<release tag>`, cold first
+  start about 50 s; device list with probe `reachable`, state equal to baseline, status `stdio`, one write
+  (brightness 47 to 60 and back, verified). Entry deleted at the owner's request, HTTP entry untouched; the
+  transports were never used at the same time.
+- **Not run:** scenes, groups, preset save, delete, restore, import and export and playlists on the
+  controller; segment geometry; CCT and 2D; a rollback of the HTTP service; an unreachable controller
+  (H07); settings PIN or OTA lock ([#128](https://github.com/descipar/wled-mcp/issues/128));
+  `check_distribution.py` on the target.
+- **Findings:** #130 (cached output schema rejected after the update), #131 (different bytes when staging
+  on Windows); DEPLOYMENT.md said a Git source is never pinned to a tag while the README uses one, now
+  reconciled.

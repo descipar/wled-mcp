@@ -53,7 +53,7 @@ rejects such an entry. `basis` is `source_review`, `observed_run` or `author_jud
 `verified` property needs `source_review` or `observed_run`. `evidence` is required text naming
 the source or record. Visibility and palette saturation of Noise 3 and Blends rest on an owner
 comment on #31 and a remark in a recorded live check
-([live-check-2026-11-08](../validation/hardware-checks.md)); Sine's are author judgement by
+([live check of 2026-11-08](../validation/hardware-checks.md#live-check-of-the-second-release-2026-11-08)); Sine's are author judgement by
 analogy, as is Solid's visibility. All stay `recommended`.
 
 ## Matching and explanation
