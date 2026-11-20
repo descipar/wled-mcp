@@ -785,6 +785,14 @@ def test_traceability_anchors_into_validation_resolve():
     assert cited and cited <= headings
 
 
+def test_private_identifier_detector_allows_loopback_wildcard_and_release_hashes():
+    allowed = (
+        "127.0.0.1:8000 0.0.0.0 wled-mcp:8000 Python 3.10.0.1 "
+        "db0b2edde4d20a07f789d7192314d1e606acb50f319a"
+    )
+    assert private_identifiers(allowed) == []
+
+
 def test_hub_http_registration_points_to_owner_and_reload_requirements():
     text = DEPLOYMENT.read_text("utf-8")
     registration = markdown_section(text, "## HTTP service: build, start, verify")

@@ -1,17 +1,17 @@
 # Rooms (ROOM-01 to ROOM-06, #183)
 
-Contract for milestone M7. A room is a stored group with `kind` `room`: it says where
-controllers are, and one explicit tool applies a master state or a stored scene to the
-members of a room. Rooms are part of the next release (marked "not yet released" in the
-README until then). Decisions: [ISSUE-183-DEC-002](../decisions/issue-183.md) records the
-design defaults (technical proposals, not human decisions; the owner can change any of them
-at the merge decision); [ISSUE-183-DEC-001](../decisions/issue-183.md) is the bounded live-run
-authorization. Evidence is in [validation/issue-183.md](../validation/issue-183.md). Both
-transports (stdio and Streamable HTTP) share these operations. Examples are synthetic.
+Contract for milestone M7. A room is a stored group with `kind` `room`: it says where controllers
+are, and one explicit tool applies a master state or a stored scene to the members of a room. Rooms
+belong to the next release (marked "not yet released" in the README until then). Decisions:
+[ISSUE-183-DEC-002](../decisions/issue-183.md) records the design defaults (technical proposals,
+not human decisions; the owner can change any at the merge decision);
+[ISSUE-183-DEC-001](../decisions/issue-183.md) is the bounded live-run authorization. Evidence:
+[validation/issue-183.md](../validation/issue-183.md). Both transports share these operations.
+Examples are synthetic.
 
-The shared mechanics are not repeated here: storage, bounds, `strict`/`best_effort`, the
-per-device and aggregate outcomes, `WRITE_OUTCOME_UNKNOWN` and `VERIFICATION_MISMATCH` are
-those of [groups-scenes.md](groups-scenes.md); zone resolution is that of [zones.md](zones.md).
+Shared mechanics are those of [groups-scenes.md](groups-scenes.md): storage, bounds,
+`strict`/`best_effort`, per-device and aggregate outcomes, `WRITE_OUTCOME_UNKNOWN` and
+`VERIFICATION_MISMATCH`. Zone resolution is that of [zones.md](zones.md).
 
 ## Requirements
 
@@ -39,66 +39,64 @@ A room is a group document (`wled-mcp.group`, `format_version` 1) with the optio
 }
 ```
 
-- `kind` is `"group"` (default when absent) or `"room"`. Any other value or type is
+- `kind` is `"group"` (default when absent) or `"room"`; any other value or type is
   `VALIDATION_ERROR` naming `kind`. Unknown keys are still rejected.
-- Serialization is canonical: `kind` is written only for a room, so a plain group stays
-  byte-identical to a document saved before rooms existed. The version does not change
-  (a new optional key, [versioning](versioning.md#schema-evolution)); no migration runs and
-  existing files are never rewritten.
-- Downgrade: a server from before rooms rejects a room file as an unknown key and counts it
-  in `invalid_count`; the file stays untouched. Plain-group files stay readable by older
-  servers (migration note in [versioning](versioning.md#migration-notes)).
+- `kind` is written only for a room, so a plain group stays byte-identical to a pre-room document.
+  The version does not change (new optional key, [versioning](versioning.md#schema-evolution));
+  no migration runs and existing files are never rewritten.
+- Downgrade: a server from before rooms rejects a room file as an unknown key and counts it in
+  `invalid_count`; the file stays untouched. Plain-group files stay readable by older servers
+  ([migration note](versioning.md#migration-notes)).
 - Limits are those of groups: 1 to 16 members, at most 100 stored groups in total (rooms and
-  groups share the bound, the `groups/` directory, the locks and the atomic save). A room
-  cannot be stored empty. A member with `segments` designates those segments for the room;
-  without it the whole controller belongs to the room.
-- There is no separate store, no inventory field and no room tool besides the group tools:
-  `wled_save_group` (`kind`), `wled_list_groups` and `wled_delete_group` define, list and
-  remove rooms. Nothing is detected, named or assigned automatically.
+  groups share the bound, the `groups/` directory, locks and atomic save). A room cannot be stored
+  empty. A member with `segments` designates those segments for the room; without it the whole
+  controller belongs to the room.
+- There is no separate store, inventory field or room tool besides the group tools:
+  `wled_save_group` (`kind`), `wled_list_groups` and `wled_delete_group`. Nothing is detected,
+  named or assigned automatically.
 
 ## Belonging and conflicts
 
-Belonging is derived: a controller is in the room whose room-kind group lists it. At most one
-room per controller (a plain group may overlap anything: a floor or "all lamps" stays a
-group). A controller listed by two rooms, with or without segments, is a *conflict*.
+Belonging is derived: a controller is in the room whose room-kind group lists it, at most one room
+per controller (a plain group may overlap anything). A controller listed by two rooms, with or
+without segments, is a *conflict*.
 
-- `wled_save_group kind=room` refuses a member device that another stored room already lists
-  (`VALIDATION_ERROR`, device and other room named, nothing written; `dry_run` reports the
-  same). Replacing the same room ID is allowed. Replacing a room by a save without `kind`
-  turns it into a plain group (the previous document is returned in `data.replaced` and a
-  warning says the kind changed).
-- `wled_list_groups`: every entry has `kind`; `data.room_conflicts` (`device_id`, sorted
-  `rooms`) and one warning appear only when a conflict exists.
+- `wled_save_group kind=room` refuses a member device that another stored room lists
+  (`VALIDATION_ERROR`, device and other room named, nothing written; `dry_run` reports the same).
+  Replacing the same room ID is allowed. Replacing a room by a save without `kind` turns it into a
+  plain group (previous document in `data.replaced`, a warning says the kind changed).
+- `wled_list_groups`: every entry has `kind`; `data.room_conflicts` (`device_id`, sorted `rooms`)
+  and one warning appear only when a conflict exists.
 - `wled_list_devices`: every entry has `room` (room ID or `null`); a device in two rooms has
-  `room: null` and `room_conflict` (sorted IDs); `data.room_conflicts` (count) and a warning
-  appear only when a conflict exists. The call reads the local `groups/` directory and still
-  contacts no device unless `probe=true`. An unusable store never fails the listing: the
-  `room` keys are omitted and a warning says so.
-- A hand-edited conflict is caught by the listings and by the refusals below. A conflict that
-  does not involve the requested room does not block it.
-- The conflict check at save time reads the store and then saves, like every other store write;
-  two server processes saving two rooms for the same device at the same moment are not
-  coordinated, and the listings and the room actions still report and refuse the conflict.
+  `room: null` and `room_conflict` (sorted IDs); `data.room_conflicts` (count) and a warning appear
+  only on a conflict. The call reads the local `groups/` directory and contacts no device unless
+  `probe=true`. An unusable store never fails the listing: the `room` keys are omitted with a
+  warning.
+- A hand-edited conflict is caught by the listings and the refusals below; a conflict not
+  involving the requested room does not block it.
+- The save-time conflict check reads then saves like every store write; two processes saving two
+  rooms for one device at the same moment are not coordinated, and the listings and room actions
+  still report and refuse the conflict.
 
 ## `wled_apply_room`
 
-Class `control` (not read-only, not destructive, not idempotent), served by the `control` and
-`full` profiles only, no `device_id`: the per-device ceiling is checked per member, like a
-scene. `dry_run` does not lower the class, so a `read-only` profile has no room preview; it
-can still use `wled_plan_scene` and `wled_plan_zone`.
+Class `control` (not read-only, destructive or idempotent), `control` and `full` profiles only, no
+`device_id`: the per-device ceiling is checked per member, like a scene. `dry_run` does not lower
+the class, so a `read-only` profile has no room preview (it can use `wled_plan_scene` and
+`wled_plan_zone`).
 
-Inputs: `room` (stored room ID; lookup by ID only), exactly one of `state` and `scene_id`,
-`mode` (`strict` default or `best_effort`), `dry_run`.
+Inputs: `room` (stored room ID; lookup by ID only), exactly one of `state` and `scene_id`, `mode`
+(`strict` default or `best_effort`), `dry_run`.
 
-- `state`: a master patch: `on`, `brightness` (0-255), `transition_ms` (0-65500) with the
-  `wled_set_state` rule (at least `on` or `brightness`). Never segments, geometry or a raw
-  patch (rejected by name).
-- `scene_id`: a stored scene. The scene names its own controllers or groups as usual; it is
-  applied only if everything it touches lies inside the room.
+- `state`: a master patch: `on`, `brightness` (0-255), `transition_ms` (0-65500), with the
+  `wled_set_state` rule (at least `on` or `brightness`). Never segments, geometry or a raw patch
+  (rejected by name).
+- `scene_id`: a stored scene, which names its own controllers or groups; applied only if
+  everything it touches lies inside the room.
 
 Refused as a whole before any device I/O (`VALIDATION_ERROR`, `application` `not_attempted`,
-`data.room`, `data.problems` with at most 10 entries of `device_id`, `reason` and `message`,
-and `data.problem_total`):
+`data.room`, `data.problems` with at most 10 entries of `device_id`, `reason` and `message`, and
+`data.problem_total`):
 
 | Reason | Meaning |
 | --- | --- |
@@ -108,46 +106,43 @@ and `data.problem_total`):
 | `device_outside_room` | The scene targets a controller that is not a member. |
 | `segment_outside_room` | The scene writes a segment the member does not designate. |
 
-A scene that expands to the same controller twice, to more than 16 controllers or to more
-than 64 segment patches is refused by the scene rules (same messages). A group named by the
-scene may be a room-kind group; `kind` is only a label there.
+A scene that expands to the same controller twice, to more than 16 controllers or to more than 64
+segment patches is refused by the scene rules (same messages). A group named by the scene may be
+room-kind; `kind` is only a label there.
 
-Controllers of the room that the scene does not name are not an error: they are listed in
-`data.members_not_targeted` with one warning, so the whole room is never reported as changed
-when it was not. A member that left the inventory is a per-device `UNKNOWN_DEVICE` preflight
-failure without I/O, exactly as for a scene (an empty room therefore writes nothing).
+Room controllers the scene does not name are not an error: they are listed in
+`data.members_not_targeted` with one warning. A member that left the inventory is a per-device
+`UNKNOWN_DEVICE` preflight failure without I/O, as for a scene (an empty room writes nothing).
 
-Execution is the scene path unchanged: one target per member (`origin`
-`room:<id>/member:<n>`; a scene keeps its own origins), `plan_device` for the fresh read, the
-access ceiling and the real master and segment planners, then `apply_device` and
-`Resources.write_verified` (master step, then segment step, each replanned under the device
-lock and checked by readback), at most four in flight. No new write primitive, application or
-verification value, error code or room-level lock exists. The envelope is that of
-`wled_apply_scene` with `data.room` (`id`, `name`), `data.scene` for the scene path,
-`data.devices[]` and `data.summary`. Dry run returns exactly the plan (`targets[]`,
-`would_write`, `skipped`) and sends no write.
+Execution is the scene path unchanged: one target per member (`origin` `room:<id>/member:<n>`; a
+scene keeps its own origins), `plan_device` for the fresh read, access ceiling and the master and
+segment planners, then `apply_device` and `Resources.write_verified` (master step, then segment
+step, each replanned under the device lock and checked by readback), at most four in flight. No
+new write primitive, application or verification value, error code or room-level lock. The
+envelope is that of `wled_apply_scene` with `data.room` (`id`, `name`), `data.scene` for the scene
+path, `data.devices[]` and `data.summary`. Dry run returns the plan (`targets[]`, `would_write`,
+`skipped`) and sends no write.
 
 Aggregate: the first-match table of [groups-scenes.md](groups-scenes.md#apply-wled_apply_scene)
-applies. Some members applied and others refused, skipped or unverified is `applied` /
-`mismatch`, `ok=false`, `VERIFICATION_MISMATCH`; any `unknown` member makes the result
-`unknown` / `unknown`, `WRITE_OUTCOME_UNKNOWN`; a `best_effort` run that skipped a member ends
-`ok=false`; `ok=true` only when every targeted member is `applied` and `verified`. Not atomic,
-not synchronized, no rollback, no replay: a timed-out or unreadable write is never retried
-and the reconciliation text says to read the state of the listed devices.
+applies. Some members applied and others refused, skipped or unverified is `applied` / `mismatch`,
+`ok=false`, `VERIFICATION_MISMATCH`; any `unknown` member makes the result `unknown` / `unknown`,
+`WRITE_OUTCOME_UNKNOWN`; a `best_effort` run that skipped a member ends `ok=false`; `ok=true` only
+when every targeted member is `applied` and `verified`. Not atomic, synchronized, rolled back or
+replayed: a timed-out or unreadable write is never retried and the reconciliation text says to
+read the state of the listed devices.
 
 ## Zones in rooms
 
-`wled_plan_zone` and `wled_apply_zone` take an optional `room` (room ID). Without it nothing
+`wled_plan_zone` and `wled_apply_zone` take an optional `room` (room ID); without it nothing
 changes. With it, before any device I/O: the room exists, is a room, has no conflict for the
-zone's devices, and every part's device is a member of the room (`VALIDATION_ERROR`, "the zone
-extends outside the room", `data.problems` as above). After the fresh read, in the same
-binding step that already guards the write (plan and again under the device lock), a member
-that designates segments admits only those: another resolved segment fails that part with
-`data.problem.reason` `outside_room` (`layout_change_required` false, nothing sent); a member
-without designated segments admits every segment of the zone. A layout change between preview
-and write is still `topology_changed`. `data.room` (`id`, `name`) is added to the plan and
-apply results; `zone_target` carries the exact `segment_ids`, spans and LED ranges. A zone
-call never writes master state.
+zone's devices, and every part's device is a member (`VALIDATION_ERROR`, "the zone extends outside
+the room", `data.problems` as above). After the fresh read, in the binding step that already
+guards the write (plan and again under the device lock), a member that designates segments admits
+only those: another resolved segment fails that part with `data.problem.reason` `outside_room`
+(`layout_change_required` false, nothing sent); a member without designated segments admits every
+segment of the zone. A layout change between preview and write is still `topology_changed`.
+`data.room` (`id`, `name`) is added to plan and apply results; `zone_target` carries the exact
+`segment_ids`, spans and LED ranges. A zone call never writes master state.
 
 ## When to use what
 
@@ -158,14 +153,13 @@ call never writes master state.
 | a zone (`wled_apply_zone`) | part of a controller or a physical region over several controllers |
 | a single device (`wled_set_state`, `wled_patch_segments`) | one controller |
 
-The served `instructions` carry the same statement
-([agent-guidance.md](agent-guidance.md)).
+The served `instructions` carry the same statement ([agent-guidance.md](agent-guidance.md)).
 
 ## Not provided
 
-A controller in several rooms; automatic room detection, naming or moving; a room field in
-the inventory; discovery; scenes without lamp names applied to whichever room (needs a new
-scene format version, as for zone targets in scenes); `wled_list_rooms`, `wled_save_room` or
-`wled_delete_room` (the group tools are used); a separate `wled_plan_room` (`dry_run` is the
-preview); translating a master state into segment changes for a partly assigned member;
-timers and schedules; per-room permissions; any hardware claim beyond the recorded live run.
+A controller in several rooms; automatic room detection, naming or moving; a room field in the
+inventory; discovery; scenes without lamp names applied to whichever room (needs a new scene
+format version); `wled_list_rooms`, `wled_save_room`, `wled_delete_room` or `wled_plan_room` (the
+group tools and `dry_run` are used); translating a master state into segment changes for a partly
+assigned member; timers and schedules; per-room permissions; any hardware claim beyond the
+recorded live run.

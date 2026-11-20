@@ -7,7 +7,6 @@ make a room; every refusal path asserts that no request reached any device.
 
 from __future__ import annotations
 
-import copy
 import json
 import logging
 from typing import Any
@@ -20,19 +19,23 @@ from tests.scene_support import (
     SceneFleet,
     call,
     device_target,
+    entry,
     group_arguments,
     group_target,
     open_fleet,
+    policy,
     scene_document,
     segments_of,
+    snapshot,
     stored_group_path,
     strip,
+    target_of,
     write_group_file,
     write_raw,
     write_scene_file,
 )
 from tests.tool_contract import CONTROL, MANAGE, READ, expected_tool
-from wled_mcp.access import AccessPolicy, ToolClass
+from wled_mcp.access import ToolClass
 from wled_mcp.client import ClientFailure
 from wled_mcp.operations import build_operations
 from wled_mcp.scene_store import DefinitionStore
@@ -58,16 +61,6 @@ def posts_of(fleet: SceneFleet, device_id: str) -> list[Any]:
     return fake_of(fleet, device_id).posts
 
 
-def entry(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [d for d in outcome.data["devices"] if d["device_id"] == device_id]
-    return found
-
-
-def target_of(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [t for t in outcome.data["targets"] if t["device_id"] == device_id]
-    return found
-
-
 def triple(outcome: Any) -> tuple[str, str, bool]:
     return outcome.application, outcome.verification, outcome.ok
 
@@ -90,10 +83,6 @@ def living(tmp_path: Any, members: list[dict[str, Any]] | None = None) -> None:
 
 async def apply(resources: Any, room: str = "living", **kwargs: Any) -> Any:
     return await call(resources, "wled_apply_room", room=room, **kwargs)
-
-
-def snapshot(fleet: SceneFleet) -> dict[str, Any]:
-    return {host: copy.deepcopy(fake.state()) for host, fake in fleet.devices.items()}
 
 
 # ======================================================== classification and registration
@@ -630,10 +619,6 @@ async def test_a_device_in_two_rooms_refuses_both_rooms_and_leaves_another_room_
 
 
 # ============================================================================ access, reuse, logs
-
-
-def policy(profile: str = "control", **caps: str) -> AccessPolicy:
-    return AccessPolicy(profile, {d: ToolClass(v) for d, v in caps.items()})  # type: ignore[arg-type]
 
 
 @pytest.mark.anyio
