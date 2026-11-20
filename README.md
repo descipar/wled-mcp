@@ -67,7 +67,7 @@ WLED feature coverage: 60 % of the planned scope, 48 % of WLED overall ([method 
   data directory. Restores, imports, supplied-state stores (`wled_store_preset`) and
   playlist saves change the live output before they store, and the previous lighting is not
   restored.
-- **No hidden reach.** Discovery runs only on explicit request within hard caps (RFC 1918, at most a /24);
+- **No hidden reach.** No discovery unless explicitly requested, within hard caps (RFC 1918, at most a /24);
   no arbitrary endpoints or hosts (bar `wled_add_device`, M8), no silent preset overwrite.
 - **Authorization.** The MCP host authorizes people; annotations are hints only. HTTP
   requires its own token and Host/Origin allowlists even behind a hub: hub authentication
