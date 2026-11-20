@@ -130,7 +130,8 @@ different one fails the job.
 
 ## Notes
 
-The finding labels AR-01/02/04/05 cited in `src/wled_mcp/signal_manager.py`,
-`src/wled_mcp/diagnostics.py`, `docs/decisions/issue-28.md` and `docs/decisions/issue-29.md` come
-from the architecture review removed in #271, viewable with
+The finding labels AR-01, AR-02, AR-04, AR-05, AR-07 and AR-08 cited in
+`src/wled_mcp/signal_manager.py`, `src/wled_mcp/diagnostics.py`, `docs/decisions/issue-28.md`,
+`docs/decisions/issue-29.md` and the open issues #138 and #157 come from the architecture review
+removed in #271. It lives in git history, in the commit before its deletion:
 `git show 7d2328d:docs/ARCHITECTURE-REVIEW-2026-11-09.md`.

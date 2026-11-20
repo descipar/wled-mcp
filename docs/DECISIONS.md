@@ -305,7 +305,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
      publication, deployment or hardware/LAN access. The PR body or a coordinator comment
      states "Merged under DEC-022 standing approval".
 - Conditions: stage 2 only. Item 4 covers at most three issues reaching completion (DONE),
-  counted from 2026-11-08; after the third the coordinator stops and asks the owner to
+  counted from 2026-11-08 (PR-by-PR merges of partial scopes count within their issue); after the third the coordinator stops and asks the owner to
   confirm, adjust or end it; the owner may end it at any time. Owner-only actions and hardware
   authorization stay separate.
 - Revalidation, 2026-11-08 (owner): after #18, #21 and #19, the owner answered "Weiter für 3
@@ -318,7 +318,9 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   `gh pr merge --squash --match-head-commit <sha>` and, only when refused for lack of an
   approving review, the same with `--admin` (the owner's bypass). `--admin` is no extra
   permission and never covers failing checks (`agents/coordinator.md`).
-- Supersedes: per-PR merge approval in stage 2 while item 4 is active; refines the DEC-021
+- Supersedes: per-PR merge approval in stage 2 while item 4 is active (one merge at a time stays;
+  DEC-021 item 4 "one merge at a time after the owner's merge approval" and item 6 "stops only for
+  merge approval" apply again when item 4 ends); refines the DEC-021
   sync rule; an exception to the recording rule on standing permission.
 
 ### DEC-023 — Staged first public release
@@ -413,7 +415,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   or two lines; (2) evidence is one or two runs that show the point, not matrices; where thin,
   choose the conservative limit and say so; (3) review depth follows DEC-022 (light unless the
   change writes to devices or files, changes safety, protocol, security or data formats, or
-  cannot be undone); no extra review rounds, no tests beyond what the change needs, no
+  cannot be undone (the last is DEC-028's own addition to DEC-022)); no extra review rounds, no tests beyond what the change needs, no
   optional polish; nits go to the next PR; (4) a small follow-up on the same release path is
   folded into the open PR when it does not make review harder.
 - Not changed: hardware authorization, owner approval for publication, tagging and releases, the
@@ -434,7 +436,8 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   and M2 only: a PR with a current-head PASS and green CI may be merged without a per-PR
   question, revalidated with the owner after three issues; issues that write to devices (#149,
   #27, #28) keep per-PR approval; other milestones need the owner's merge decision; (5) stage
-  trackers #26, #127 and #133 are closed as superseded.
+  trackers #26, #127 and #133 are closed as superseded (the acceptance line of #133 is carried by
+  the M6 description).
 - Not changed: DEC-021 and DEC-022 otherwise, hardware authorization, publication approvals
   (DEC-023), the human merge decision outside item 4.
 - Supersedes: DEC-010 for open and new work; amends DEC-002.
@@ -569,7 +572,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   after confirmation by the MCP client; no interactive approval inside the plugin;
   (2) inventory changes take effect by in-process reload, not restart; (3) a bounded unicast
   `GET /json/info` probe over configured private IPv4 ranges is approved in addition to mDNS,
-  under hard server-side caps no tool parameter can override: RFC 1918 only (no loopback,
+  as thorough as possible, under hard server-side caps no tool parameter can override: RFC 1918 only (no loopback,
   link-local or public), at most a /24 per range, a small maximum number of ranges, bounded
   timeouts and concurrency; (4) ranges are set by the separate configuration-write tool
   `wled_set_discovery_ranges` (client confirmation shows the exact ranges, profiles can disable
