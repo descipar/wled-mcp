@@ -449,8 +449,8 @@ issue or record (rules in the [validation README](validation/README.md)).
 | --- | --- |
 | [validation/stage-2-core.md](validation/stage-2-core.md) | #16 setup, `config validate`, `doctor`; #17 groups, scenes, plan, sharing; #18 preset restore, supplied-state save, snapshots, playlists, bundles; #19 capability model and WLED 16 segment fields; #20 tool profiles, guard layers, call logs, status tool (mock and loopback evidence) |
 | [validation/stage-2-release.md](validation/stage-2-release.md) | #21 version source, CI matrix, compatibility policy; #22 PyPI publish workflow (nothing published by it); #24 registry metadata and listing drafts; #151 MCPB bundle and cross-check |
-| [validation/stage-3.md](validation/stage-3.md) | #27 zones; #28 temporary signals (live evidence pending); #29 SVG layout preview; #30 lighting explanation (one read-only live run) |
-| [validation/m3-m6.md](validation/m3-m6.md) | #147 agent guidance (MCPHub check pending); #148 parsed effect metadata; #149 effect and palette names; #150 live snapshot; #181 source security review |
+| [validation/stage-3.md](validation/stage-3.md) | #27 zones; #28 temporary signals (two live runs recorded); #29 SVG layout preview; #30 lighting explanation (one read-only live run) |
+| [validation/m3-m6.md](validation/m3-m6.md) | #147 agent guidance (local stdio check, ISSUE-147-DEC-001); #148 parsed effect metadata; #149 effect and palette names; #150 live snapshot; #181 source security review |
 | [validation/m7-m8.md](validation/m7-m8.md) | #183 rooms; #200 `wled_discover_devices`; #203 `wled_add_device`; #204 M8 documentation, live runs and release preparation; #235 slim tool schemas and token budget |
 | [validation/hardware-checks.md](validation/hardware-checks.md) | #128 PIN and OTA lock behavior; #134 stage-2 hardware check; #25 live H07 offline-controller check and rollback checklist; live check of the second release |
 | [validation/releases.md](validation/releases.md) | Release records 0.3.0 (M2) and 0.4.0 (M3 to M6), the 0.3.0 launch report, the 0.4.0 deployment record and the visibility runbook (#90) |

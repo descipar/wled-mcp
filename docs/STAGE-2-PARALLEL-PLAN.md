@@ -4,7 +4,7 @@ Status: adopted by the owner as [DEC-021](DECISIONS.md#dec-021--adopt-the-stage-
 
 ## Why serial work was the problem
 
-Stage 1 was serial because of shared hotspots, not product dependencies: `docs/VALIDATION.md`, `docs/DECISIONS.md`, `docs/TOOL-CONTRACT.md`, `resources.py` (shared write/verify/lock engine), `scripts/check_distribution.py`, the hard-coded tool lists in tests and `examples/contracts/errors.json`. New contract text and evidence therefore go into new files (`docs/contract/<area>.md`, `docs/validation/<issue>.md`, `docs/decisions/issue-<n>.md`) linked from the existing documents.
+Stage 1 was serial because of shared hotspots, not product dependencies: `docs/VALIDATION.md`, `docs/DECISIONS.md`, `docs/TOOL-CONTRACT.md`, `resources.py` (shared write/verify/lock engine), `scripts/check_distribution.py`, the hard-coded tool lists in tests and `examples/contracts/errors.json`. New contract text and evidence therefore go into new files (`docs/contract/<area>.md`, and sections in the group files of `docs/validation/` and `docs/decisions/`) linked from the existing documents.
 
 ## Couplings between issues
 

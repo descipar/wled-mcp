@@ -18,7 +18,8 @@ before asking a question that may already have been answered.
   An answer about one issue is not a project default. Only explicit general intent
   or an existing governing project rule supports broader scope.
 - Keep shared project/workflow/stage decisions here. Store issue-specific decisions
-  in `docs/decisions/issue-<number>.md`, using the decision template. Link relevant
+  in the group file of its milestone or topic under `docs/decisions/` (see its README), using the
+  decision template. Link relevant
   issue/PR records when they contain the actual human decision. Avoid duplicating
   the full issue specification or chat transcript.
 - Source authority matters: a real user instruction or verified human decision
