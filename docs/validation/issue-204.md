@@ -9,24 +9,23 @@ DISC-01 (no implicit discovery), DISC-12 (stdio and HTTP share the code). Contra
 [DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release),
 DEC-028 (pragmatic delivery).
 
-Status of this record: **the documentation is done; every live run below is pending owner
-authorization and none has been run.** Nothing here was contacted, written or deployed. The
-three M8 tools (#200, #202, #203) are merged with mocked evidence, the enrollment ran live once
-(#203), the discovery in stdio ran live partially (#200, mDNS only); the unicast probe and the
-container deployment have no live evidence yet.
+Status of this record: **the documentation is done and the three live discovery runs were
+run once on 2026-11-20** ([results](#live-runs-2026-11-20)). All of them passed their main
+criterion; the stricter variants listed under run 3 were not run (see there). Nothing was
+written to any device and no inventory changed. The release preparation below is still
+open and owner-gated.
 
 ## Acceptance table
 
 | Deployment mode | Criterion | Status |
 | --- | --- | --- |
-| stdio on the host | Read-only discovery run: mDNS plus unicast of a configured range, inventory unchanged, nothing written to a device (DISC-14, DISC-T08) | pending owner authorization (mDNS half: partial evidence in [issue-200.md](issue-200.md)) |
-| HTTP in a container | Read-only discovery run from the container: mDNS reported honestly, unicast reach of a configured /24 proved (DISC-14, DISC-T08) | pending owner authorization |
-| HTTP in a container | The case where mDNS finds nothing and the unicast probe does (DISC-14) | pending owner authorization |
+| stdio on the host | Read-only discovery run: mDNS plus unicast of a configured range, inventory unchanged, nothing written to a device (DISC-14, DISC-T08) | met 2026-11-20 ([run 1](#run-1-result)); earlier partial mDNS evidence in [issue-200.md](issue-200.md) |
+| HTTP in a container | Read-only discovery run from the container: mDNS reported honestly, unicast reach of a configured /24 proved (DISC-14, DISC-T08) | met 2026-11-20 ([run 2](#run-2-and-3-result)) |
+| HTTP in a container | The case where mDNS finds nothing and the unicast probe does (DISC-14) | met 2026-11-20 by the same call ([run 3](#run-2-and-3-result)); the mDNS-only and unicast-only variants were not run |
 | Both | Single enrollment on the test controller that changes only the inventory | met over stdio ([issue-203.md](issue-203.md)); not repeated in the container, by design of DISC-14 (one enrollment) |
 | Docs | README, deployment guide, quickstart, tool contract, coverage, migration notes, changelog describe M8 accurately and mark it "not yet released" | done in this change |
 
-Until the pending rows are run, the README and the deployment guide state that container
-discovery is mock-covered only. Mocked evidence for the engine, tools and writer is listed in
+Mocked evidence for the engine, tools and writer is listed in
 [issue-200.md](issue-200.md), [issue-203.md](issue-203.md) and DISC-T01 to DISC-T07 of the
 contract.
 
@@ -133,6 +132,57 @@ expectation, and can be one call sequence with run 2 if the owner authorizes bot
    reads for every announced host (none expected in the container); step 2 is the unicast reach
    of run 2.
 
+## Live runs (2026-11-20)
+
+Authorization: [ISSUE-204-DEC-001](../decisions/issue-204.md), one run per row, used once and
+expired. Build: the merged head of `main` (`950e113`), clean checkout; the container image
+was staged with `deploy/stage_release.py --non-release` and built locally, then removed.
+Inventory: a temporary inventory outside git with the selected controller (address resolved
+at run time) and its /24 as the one configured range; the access profile was `read-only`.
+Both runs listed 20 tools. Counts and statuses only; no address, MAC, host name or
+controller name is recorded here.
+
+### Run 1 result
+
+stdio on the host, one `wled_discover_devices` call with `{}` (the call covers mDNS and the
+configured range, so there was one call, not two). `ok` true, 17.6 s.
+
+- mDNS `completed`: 3 rounds, 13 responders, 2 answers verified, 9 rejected.
+- Unicast `completed`: 254 of 254 hosts probed, 0 not probed, deadline not reached; 2 hosts
+  answered as WLED, 44 answered as something else, 21 refused, 187 timed out.
+- 2 candidates, both found by mDNS and by unicast: the selected controller as `known`
+  (matched by address) and a second WLED controller of the same /24 as `new`.
+- `complete` true, conclusion `candidates_found`, `caps` equal to the documented numbers.
+- Inventory hash unchanged, no backup or lock file, stderr 0 bytes, no write tool in the
+  served list (read-only profile).
+
+### Run 2 and 3 result
+
+HTTP in a container (Docker Desktop 29 on macOS, default bridge network, own container,
+the deployed service untouched, credential file outside git), one authenticated
+`wled_discover_devices` call with `{}`. `ok` true, 16.6 s.
+
+- mDNS `completed` with reason `no_answers`: 3 rounds, 0 responders, 0 verified, 0 rejected.
+- Unicast `completed`: 254 of 254 probed, 0 not probed, deadline not reached; 2 answered as
+  WLED, 44 as something else, 23 refused, 185 timed out.
+- The same 2 candidates, both found by unicast only; the selected controller `known`.
+- `complete` true, conclusion `candidates_found`; the envelope has the same shape as over
+  stdio.
+- The container could route to the LAN range (unicast reached the controller) although mDNS
+  saw nothing, which is the DISC-14 case. This is a finding for this Docker Desktop setup
+  only.
+- Container log 221 bytes: the startup lines only (the listening line and a warning that the
+  backups location is not writable, because the temporary data directory was mounted
+  read-only); no address, MAC, range or credential. Inventory hash unchanged.
+- The container, image, credential and inventory were removed afterwards.
+
+Not run, by design of the authorization (no extra reach): the mDNS-only call that would show
+`none_found_incomplete` in the container and the unicast-only call. The envelope rule
+behind them (no `none_found_complete` when a method could not look) is covered by mocks
+only. One finding for the docs: run 1 also reached the second controller of the same /24
+through the range scan, as the stated reach said; a run limited to one device remains
+impossible with the current tool ([#265](https://github.com/descipar/wled-mcp/issues/265)).
+
 ## Release preparation
 
 All items are owner-gated. None is done by this change; the version in `pyproject.toml`, the
@@ -147,8 +197,7 @@ section of [CHANGELOG.md](../../CHANGELOG.md) holds at the release commit.
 
 Checklist, each step only on the owner's explicit instruction:
 
-- [ ] Live runs 1 to 3 above recorded in this file with the actual outcomes, or the owner
-  explicitly accepts the release without them (then the acceptance table says so).
+- [x] Live runs 1 to 3 above recorded in this file with the actual outcomes (2026-11-20).
 - [ ] Merge state: all of #198 to #204 merged, CI green on the release commit, README and
   deployment guide re-read for "not yet released" wording that the release makes obsolete.
 - [ ] Choose the release number (0.5.0 provisional) and correct the provisional release
@@ -167,7 +216,8 @@ Checklist, each step only on the owner's explicit instruction:
 
 ## Known limits
 
-- Docs only: no code, test or network activity in this change.
+- The runs of 2026-11-20 are one run each, on one network, with one Docker Desktop version
+  class; they are not a matrix.
 - A /24 unicast run sends up to 254 read-only requests to LAN hosts; the owner authorization
   must say so.
 - Docker Desktop on macOS is one environment; a Linux host with a bridge network or

@@ -519,9 +519,10 @@ and does not claim that no controller exists. The unicast probe is the method fo
 container: it works only if the container can route to the LAN range, which depends on the host's
 network setup and any firewall or VLAN rule and is not assumed here. Docker Desktop on macOS runs containers in a virtual machine:
 treat mDNS as unavailable there and expect the unicast reach to depend on that VM's
-networking. These two container facts are the subject of the live runs planned in
-[validation/issue-204.md](validation/issue-204.md) (pending owner authorization); until
-they are run, container discovery is mock-covered only.
+networking. Both container facts were checked once on 2026-11-20 on Docker Desktop for macOS
+with a default bridge network: mDNS saw no responder, and the unicast probe of a configured
+/24 reached the test controller ([validation/issue-204.md](validation/issue-204.md#live-runs-2026-11-20)).
+That is one environment; a Linux host or another network setup can differ.
 
 Release preparation for M8: the changes are listed under Unreleased in the
 [changelog](../CHANGELOG.md) and the README marks them "not yet released". The release
