@@ -12,7 +12,7 @@ uv run --frozen python scripts/check_distribution.py
 uv run --frozen python deploy/stage_release.py --output .artifacts/release
 ```
 
-`stage_release.py` writes `.artifacts/release/<version>/` with the wheel, the pinned runtime constraints `requirements-runtime.txt`, the HTTP `Dockerfile`, `SHA256SUMS` and the `RELEASE` record; `<version>` is the `pyproject.toml` version, or `<version>+g<12hex>` for a non-release build staged with `--non-release` ([versioning](contract/versioning.md)). Nothing is uploaded. Check with `sha256sum -c SHA256SUMS`; Windows commands are in [docs/DEVELOPMENT.md](DEVELOPMENT.md).
+This writes `.artifacts/release/<version>/` (wheel, pinned `requirements-runtime.txt`, HTTP `Dockerfile`, `SHA256SUMS`, `RELEASE`); `<version>` is the `pyproject.toml` version, or `<version>+g<12hex>` with `--non-release`. Details, verification and non-release builds: [DEPLOYMENT.md](DEPLOYMENT.md#build-and-stage-a-release); Windows commands: [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Example files
 
