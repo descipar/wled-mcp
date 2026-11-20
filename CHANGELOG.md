@@ -222,7 +222,8 @@ changes below and first hardware evidence for several of them.
   ([#130](https://github.com/descipar/wled-mcp/issues/130)).
 - Packaged text files are checked out with LF on every platform, so builds from a Windows checkout
   match Linux ([#131](https://github.com/descipar/wled-mcp/issues/131)).
-- Package metadata declares lower and upper version ranges instead of exact pins and declares
+- Package metadata declares lower and upper version ranges instead of the exact pins `mcp==2.3.0`,
+  `starlette==1.10.0` and `uvicorn==0.54.0`, and declares
   `anyio` ([#22](https://github.com/descipar/wled-mcp/issues/22),
   [dependency policy](docs/contract/dependencies.md)); install-compatible. The staged release, the
   image and the stdio hub example still install the exact tested set through
