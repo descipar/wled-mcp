@@ -5,71 +5,44 @@ Read with [DECISIONS.md](../DECISIONS.md). Recorded 2026-11-04.
 ## ISSUE-4-DEC-001 — Scoped implementation authority
 
 - Status: active for issue #4 delivery; human merge decision remains separate.
-- Authority/source: actual human request to implement issue #4 with the defined
-  workflow during the active issue-3 run, 2026-11-04; no chat permalink exists.
-- Scope: inventory/client/list-tool foundation, tests, independent review and PR.
-  No deployment, physical device calls, merge, license or publication permission.
-- Rationale supplied: follow defined workflow; no additional rationale supplied.
-- Affected: C4-01–10. Supersession: none; other issue approvals are not reused.
-- Propagation: coordinator supplied packet/DEC-001–005 and relevant issue-2/3
-  references; implementer returns these new IDs for explicit reviewer propagation.
+- Authority/source: human request to implement #4 with the defined workflow, 2026-11-04 (no
+  permalink).
+- Scope: inventory/client/list-tool foundation, tests, review and PR (C4-01–10). No deployment,
+  device calls, merge, license or publication permission; other issue approvals are not reused.
 
 ## ISSUE-4-DEC-002 — Validated inventory and fixed endpoint profile
 
 - Status/authority: active agent technical baseline pending review/human merge.
-- Source: issue-4 packet C4-01–05/10; installed HTTPX2 API and package metadata.
-- Decision: strict immutable inventory/settings, configured targets only, list is
-  network-free by default, explicit bounded probes, no redirects/environment
-  routing, streamed size/JSON limits. HTTPX2 reuses the SDK's locked maintained
-  graph instead of adding a separate older HTTP stack.
-- Rationale: bounded predictable target selection and safe errors; full domain
-  tools remain later issues. No human confirmation of each numeric limit claimed.
-- Conditions/affected: [documented limits](../INVENTORY-CLIENT.md), T01/T02/T15,
-  config/client/list examples. Extends issue-3's temporary empty-inventory staging
-  within #4 only; does not alter its historical authority or HTTP refusal.
-- Propagation: coordinator receives IDs with candidate for reviewer handoff.
+- Decision: strict immutable inventory/settings, configured targets only, list is network-free by
+  default, explicit bounded probes, no redirects or environment routing, streamed size/JSON
+  limits. HTTPX2 reuses the SDK's locked graph. Limits: [INVENTORY-CLIENT.md](../INVENTORY-CLIENT.md);
+  tests T01/T02/T15. Extends issue-3's temporary empty-inventory staging within #4 only.
+- No human confirmation of each numeric limit is claimed.
 
 ## ISSUE-4-DEC-003 — Deadline, uncertain writes and reconciliation
 
-- Status/authority: active agent design under REL-01–03 and issue-2 outcome rules.
-- Source: C4-06/07 and [HTTPX2 documentation](../SOURCES.md#issue-4-client-evidence).
-- Decision: one total deadline includes lock wait/preparation/write/readback;
-  only safe transient reads retry once, writes never retry. Require 20 ms before
-  dispatch and reserve 25% (up to one second) for readback. ACK alone is not proof.
-  Match verifies postcondition; mismatch/unavailable remains uncertain.
-- Rationale: per-I/O timeouts do not bound a whole operation; avoid unsafe replay.
-- Conditions: internal mocked foundation, no public setter/firmware adapter or
-  exactly-once claim. Cancellation after dispatch may have applied.
-- Affected: T09/T10, resources/client/tests. Supersession: none.
-- Propagation: coordinator receives IDs with candidate for reviewer handoff.
+- Status/authority: active agent design under REL-01–03 and issue-2 outcome rules; evidence
+  [HTTPX2 documentation](../SOURCES.md#issue-4-client-evidence).
+- Decision: one total deadline covers lock wait, preparation, write and readback; only safe
+  transient reads retry once, writes never retry. 20 ms required before dispatch, 25% (up to one
+  second) reserved for readback. ACK alone is not proof; a matching readback verifies, mismatch or
+  unavailable stays uncertain; cancellation after dispatch may have applied.
+- Conditions: internal mocked foundation; no public setter, firmware adapter or exactly-once claim.
 
 ## ISSUE-4-DEC-004 — One resource graph per process
 
 - Status/authority: active agent design implementing MCP-04/MULTI-01 foundation.
-- Source: C4-08/09; confirmed dual-transport scope DEC-003 and issue-2 design.
-- Decision: client, immutable inventory, locks, metadata container and inert backup
-  handle are process-owned, shared by operation closures, opened/closed in one
-  async lifecycle. Per-device locks span preparation through verification.
-- Rationale: same-controller serialization with independent controller progress.
-- Conditions: one worker only; external clients/processes remain outside locks.
-  Logical shared-session tests are not actual Streamable HTTP T19 completion.
-  Cache freshness/snapshots/HTTP lifecycle remain #5/#8/#14.
-- Affected: T10/logical T19 and CLI/resources/tests. Supersession: none.
-- Propagation: coordinator receives IDs with candidate for reviewer handoff.
+- Decision: client, immutable inventory, locks, metadata container and inert backup handle are
+  process-owned, shared by operation closures, opened and closed in one async lifecycle;
+  per-device locks span preparation through verification.
+- Conditions: one worker only; logical shared-session tests are not actual Streamable HTTP T19;
+  cache freshness, snapshots and HTTP lifecycle remain #5/#8/#14.
 
 ## ISSUE-4-DEC-005 — T19/MCP-04 acceptance scoped to the logical foundation
 
 - Status: active for issue #4 acceptance only.
-- Authority/source: actual human answer in the current session, 2026-11-05, to
-  the question whether #4 may be treated as satisfied by the logical foundation
-  with actual HTTP T19 tracked in #14; no chat permalink exists.
-- Scope: issue #4, its sentence "Acceptance includes T19 and requirement
-  MCP-04". Not a general rule for other issues.
-- Decision: the merged logical foundation (one process-owned resource graph,
-  per-device locks, independent devices, single close; ISSUE-4-DEC-004) counts as
-  #4's T19/MCP-04 acceptance. Actual concurrent Streamable HTTP client evidence
-  (T19) is proven in #14.
-- Rationale supplied: none beyond the choice itself.
-- Affected: #4 completion, T19, #14. Supersedes: none; narrows ISSUE-4-DEC-004's
-  condition for acceptance purposes only. Does not waive T19 itself for #14.
-- Propagation: coordinator passes this ID to the completion role.
+- Authority/source: human answer, 2026-11-05 (no permalink), to whether #4 may count as satisfied
+  by the logical foundation with actual HTTP T19 tracked in #14.
+- Decision: the merged logical foundation (ISSUE-4-DEC-004) counts as #4's T19/MCP-04
+  acceptance; actual concurrent Streamable HTTP evidence (T19) is proven in #14. Not a general
+  rule and does not waive T19 for #14.

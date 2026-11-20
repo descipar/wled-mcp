@@ -1,4 +1,4 @@
-# Synthetic template for the read-only H01/H02 quick path (docs/HARDWARE-QUICKPATH.md).
+# Synthetic template for the read-only H01/H02 quick path (docs/DEVELOPMENT.md, "Read-only hardware quick path").
 # Copy to runtime/h01-h02/devices.toml (git-ignored) and replace the placeholder
 # with the one explicitly selected test device. Never commit real addresses.
 schema_version = 1

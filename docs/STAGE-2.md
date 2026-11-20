@@ -1,192 +1,109 @@
 # Stage 2 — public project and product roadmap
 
-Planning baseline: 2026-11-04. Tracker: [#15](https://github.com/descipar/wled-mcp/issues/15). Stage 1 remains [#1](https://github.com/descipar/wled-mcp/issues/1).
+Planning baseline: 2026-11-04. Tracker: [#15](https://github.com/descipar/wled-mcp/issues/15). Stage 1 remains [#1](https://github.com/descipar/wled-mcp/issues/1). Open work is organised by milestones ([ROADMAP.md](ROADMAP.md), [DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)); this document keeps the requirement tables and scenario IDs.
 
 ## Intent and authority
 
-The confirmed direction is to make the project publicly available eventually and have it discoverable in MCPHub's marketplace. This stage plans what an independent user needs and which WLED features should follow the first working release. It does not change repository visibility, select a license, publish packages/images, reserve names or submit external listings now.
+The confirmed direction is a publicly available, maintained project that is discoverable in MCPHub's marketplace. "Public release" does not mean endorsement or ownership by the WLED project, the MCP organization or MCPHub; metadata states the actual authorship. The first public release is staged ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)); publication, visibility, license and listing steps need the owner's explicit instruction. Stage 1 delivers the working server; the later ideas (zones, signals, previews, explanations, effect search) are in [STAGE-3.md](STAGE-3.md). Launch requirements that were not met at close-out (#22 to #25) moved to [STAGE-5.md](STAGE-5.md) ([DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort)) and must not be described as delivered.
 
-“Public release” means a maintained release of this project. It does not mean endorsement or ownership by the WLED project, the MCP organization or MCPHub. Metadata must represent actual authorship accurately.
-
-Stage 1 delivers the working server, named devices, typed controls/layouts, persistent presets, both transports and actual acceptance evidence. Stage 2 builds on that foundation; it does not silently add every future feature to stage 1's completion criteria. Design/docs/release preparation can happen in parallel, but a public stable release requires the relevant stage-1 evidence.
-
-The five later ideas—named physical zones, temporary signals, static SVG previews, evidence-based lighting explanations and effect-property search—belong to [stage 3](STAGE-3.md), tracker [#26](https://github.com/descipar/wled-mcp/issues/26), rather than this stage's launch criteria.
-
-## Release staging ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release))
-
-The first public release is deliberately smaller than the Launch set below. Stage 0 is a public repository (after the #90 review) with a GitHub release (tag from the single version source) that is installable from Git. A PyPI package is decided by the owner afterwards. The Launch items of sections F to J that are not needed for this (container images, provenance beyond a possible PyPI workflow, extended documentation, marketplace and registry listings, beta report) are deferred, not dropped, and the owner can schedule them at any time. Until then they must not be described as delivered.
-
-## Close-out and stage 5 ([DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort))
-
-Stage 2 closes out with #130, #131, #67 and a hardware check of its features. The Launch requirements owned by #22 to #25 (S2-DIST-01 to 03, the remaining S2-PUBLIC-02 and 03, S2-MARKET-01 to 03, S2-LAUNCH-01 and 02, the live part of S2-COMPAT-03) were not met and moved to [stage 5](STAGE-5.md), tracker [#133](https://github.com/descipar/wled-mcp/issues/133). The issue map below shows them as they were planned.
-
-## Product judgment and priorities
-
-The most useful next features are **setup and diagnosis**, **groups/scenes**, and **preset/playlist workflows**. Advanced CCT/2D support follows demonstrated device needs. Distribution, compatibility and maintenance are first-class release work: a catalog entry alone does not make installation reliable.
-
-Priorities below:
-
-- **Launch:** required for the proposed first public release; implementation and evidence must exist before claiming public readiness.
-- **Should:** useful stage-2 product work; ship it if ready or explicitly defer it. A public release need not wait for every advanced feature.
-- **Later:** outside this stage's default scope unless separately requested.
-
-These are proposed product priorities, not individual user approvals of every technical choice. Both transports and the future public/marketplace direction are confirmed. Concrete names, support promises and license remain decisions to make with the owner.
+Priorities: **Launch** is required for public readiness, **Should** is useful and ships if ready or is explicitly deferred, **Later** is out of default scope. Both transports and the public direction are confirmed; names, support promises and license were decided with the owner (see the list below).
 
 ## A. Setup that works outside the original installation
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-SETUP-01 | Launch | Noninteractive setup/config validation and portable paths. A user can configure an explicit controller, start either transport and read state without editing source or access to project history. Local config writes are explicit and atomic; no light changes during setup. |
-| S2-SETUP-02 | Should | Optional, explicitly invoked bounded mDNS discovery returns candidate devices, deduplicates identities and requests explicit enrollment. Manual URLs remain fully supported. Explain multicast/VLAN/container limits; never silently scan subnets or enroll discovered devices. Extended by M8 (DEC-035): MCP tool, unicast probe, in-process enrollment; see [contract/discovery.md](contract/discovery.md). |
-| S2-SETUP-03 | Launch | A read-only `doctor`/diagnostic command distinguishes package/runtime/config problems, MCP connectivity/auth, device reachability/capabilities and backup permissions. Provide a sanitized diagnostic export suitable for bug reports, with no secrets, full private inventory or unexpected telemetry. |
+| S2-SETUP-01 | Launch | Noninteractive setup/config validation and portable paths. A user configures an explicit controller, starts either transport and reads state without editing source. Local config writes are explicit and atomic; no light changes during setup. |
+| S2-SETUP-02 | Should | Optional, explicitly invoked bounded mDNS discovery returns candidates, deduplicates identities and requests explicit enrollment. Manual URLs stay fully supported; never silently scan or enroll. Extended by M8 (DEC-035): [contract/discovery.md](contract/discovery.md). |
+| S2-SETUP-03 | Launch | A read-only `doctor` command distinguishes package/runtime/config problems, MCP connectivity/auth, device reachability/capabilities and backup permissions, with a sanitized diagnostic export (no secrets, no full inventory, no telemetry). |
 
-Suggested CLI behavior is a proposal to finalize in the setup issue: `config validate`, explicit config generation, `doctor`, and opt-in `discover`. Commands must have machine-readable output and deterministic exit status for agents. Interactive setup can be optional convenience; it must not be required by MCPHub.
+CLI commands have machine-readable output and deterministic exit status; interactive setup is optional.
 
 ## B. Groups and reusable scenes
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-GROUP-01 | Should | User-defined named groups reference existing configured device IDs and optional explicit segments. Group expansion shows exact targets; no implicit discovery. Reject unknown/duplicate/conflicting targets or resolve them under a documented policy before writing. |
-| S2-GROUP-02 | Should | Versioned local scenes describe desired state across devices. Dry run resolves target capabilities and device-specific effect/palette names or mappings. Define strict preflight versus best-effort execution, bounded concurrency and ordering. Return per-device application/verification outcomes; no atomicity, frame synchronization or automatic compensating rollback claim. |
-
-Example user outcome: “Apply Evening to both shelf strips” resolves a named scene and exact controllers, verifies each result and reports an offline strip independently. Scene definitions contain presentation intent and explicit mappings; a numeric effect ID from one firmware is not assumed portable to another.
+| S2-GROUP-01 | Should | Named groups reference configured device IDs and optional explicit segments. Expansion shows exact targets; no implicit discovery. Unknown/duplicate/conflicting targets are rejected or resolved under a documented policy before writing. |
+| S2-GROUP-02 | Should | Versioned local scenes describe desired state across devices. Dry run resolves capabilities and device-specific effect/palette names. Strict preflight versus best-effort execution, bounded concurrency, per-device outcomes; no atomicity, frame synchronization or automatic rollback claim. |
 
 ## C. Preset portability and native playlists
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-PRESET-01 | Should | Export/import versioned preset bundles using a documented schema. Separate shareable preset content from addresses, credentials and deployment identity. Preserve supported unknown fields; report unsupported versions/fields rather than discarding them silently. |
-| S2-PRESET-02 | Should | Import preview identifies destination IDs, overwrite conflicts, LED-range/capability mismatches, effect mappings and storage changes. Require explicit remapping or approved conversions; do not silently rescale a strip or overwrite a slot. Reuse stage-1 backup, persistence and uncertain-write rules. Finish explicit restore/supplied-state workflows where supported. |
-| S2-PRESET-03 | Should | Author/edit native WLED playlist presets with validated referenced IDs, duration units, repeat/end behavior and active-playback implications. Reuse persistent preset verification; an independent automation scheduler is not introduced. |
+| S2-PRESET-01 | Should | Export/import versioned preset bundles with a documented schema, separated from addresses, credentials and deployment identity. Unknown fields are preserved; unsupported versions/fields are reported. |
+| S2-PRESET-02 | Should | Import preview shows destination IDs, overwrite conflicts, LED-range/capability mismatches, effect mappings and storage changes; explicit remapping, no silent rescale or overwrite. Reuses stage-1 backup, persistence and uncertain-write rules; restore workflows where supported. |
+| S2-PRESET-03 | Should | Author native WLED playlist presets with validated IDs, duration units, repeat/end behavior and active-playback implications; no independent scheduler. |
 
-Portable does not mean “guaranteed visually identical on every strip”. Color order, white handling, LED counts, firmware effects and matrix topology differ. Every conversion must be visible in the plan and tested against its declared scope. A partial import reports exactly what changed and what remains unknown; never replay uncertain writes.
+Portable does not mean visually identical on every strip; every conversion is visible in the plan and a partial import reports what changed. Uncertain writes are never replayed.
 
 ## D. Capability-aware advanced segments
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-SEG-01 | Should | Complete typed grouping/spacing/offset/reverse/mirror and multiple-color controls, then RGBW/CCT options supported by observed firmware/build/device capabilities. Document units and unsupported/unknown values; do not infer support from a product name. |
-| S2-SEG-02 | Should | Define 2D coordinate/range validation and layout behavior separately from 1D indices. Establish explicit overlap/layering policy where supported rather than bypassing stage-1 validation. Keep patch/replace/dry-run semantics consistent, with fixture and available-hardware evidence. |
+| S2-SEG-01 | Should | Typed grouping/spacing/offset/reverse/mirror and multiple-color controls, then RGBW/CCT options supported by observed firmware/build/device capabilities; support is never inferred from a product name. |
+| S2-SEG-02 | Should | 2D coordinate/range validation and layout behavior separate from 1D indices, with an explicit overlap policy where supported; patch/replace/dry-run semantics stay consistent. |
 
-Pixel streaming, arbitrary image/video/text rendering and audio capture are **Later**. Existing built-in effects remain available. Firmware flashing, network credentials, pin/bus configuration and factory reset are not necessary to make a public lighting MCP useful.
+Pixel streaming, image/video/text rendering and audio capture are **Later**; so are firmware flashing, network credentials, pin/bus configuration and factory reset.
 
 ## E. Tool profiles and service operation
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-ACCESS-01 | Launch | Server-enforced read-only and control profiles, plus a distinct preset-management capability when available. Profile-disabled tools are omitted from listing and direct invocation is rejected. Imports, scenes and optional raw tools cannot bypass restrictions. Profiles are explicit deployment configuration applied equally to both transports. |
-| S2-ACCESS-02 | Launch | Configured-device restrictions, HTTP credential storage/rotation instructions and no false isolation claims. A shared credential is not multi-user tenancy. Fine-grained per-user roles/OAuth/SaaS can remain Later; any additional credential-scoped permissions require their own tested design. |
-| S2-ACCESS-03 | Launch | Bounded structured diagnostics with correlation IDs, device-independent liveness and meaningful readiness. Default operation sends no telemetry; diagnostic export is deliberate and sanitized. Status and metrics never imply unavailable devices are healthy. Avoid chatty polling that overloads small controllers. |
+| S2-ACCESS-01 | Launch | Server-enforced read-only and control profiles plus a distinct preset-management capability. Profile-disabled tools are omitted from listing and rejected on direct invocation; imports, scenes and raw tools cannot bypass them. Same configuration on both transports. |
+| S2-ACCESS-02 | Launch | Configured-device restrictions, HTTP credential storage/rotation instructions and no false isolation claims; a shared credential is not multi-user tenancy. Per-user roles/OAuth are Later. |
+| S2-ACCESS-03 | Launch | Bounded structured diagnostics with correlation IDs, device-independent liveness and meaningful readiness. No default telemetry; sanitized deliberate export; status never implies unavailable devices are healthy; no chatty polling. |
 
-The single-worker v1 coordination boundary remains explicit. Multi-worker/distributed locking is Later unless measurements justify it. Increasing the worker count is not a free scalability upgrade for shared physical devices.
+The single-worker v1 coordination boundary stays explicit; multi-worker locking is Later.
 
 ## F. Stable compatibility and upgrade behavior
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-COMPAT-01 | Launch | Define semantic versioning, PEP 440 mapping and one canonical version source across package/image/registry/docs. Document pre-1.0 behavior, breaking changes, deprecation and tool/result/config/backup schema evolution. No silent rename/removal of public tool fields. |
-| S2-COMPAT-02 | Launch | Publish an honest support matrix for Python versions, OS/client scenarios, amd64/arm64 and WLED firmware/build capabilities. Clean-install/SDK tests are distinct from physical-device observations. Choose a narrow tested support range instead of unsupported platform badges. Policy per [DEC-020](DECISIONS.md#dec-020--support-and-version-policy): WLED 16.0.0 or newer only, firmware tiers tested/expected/unknown, Python as tested in CI, Linux supported, Windows/macOS experimental. |
-| S2-COMPAT-03 | Launch | Test upgrades and rollback with previous configuration/snapshot fixtures. Validate migrations before replacing state, preserve backups and explain when a downgrade cannot read newer data. A code rollback does not restore a device's live state automatically. |
-
-Both stdio and Streamable HTTP remain release requirements. Test their actual installed entry points and result parity. Linux/container usage on amd64 and arm64 is the first target; Windows/macOS stdio support may be declared tested or explicitly experimental according to evidence. No requirement to own every possible device before releasing: state what was tested and keep unsupported features honest.
+| S2-COMPAT-01 | Launch | Semantic versioning, PEP 440 mapping and one canonical version source across package/image/registry/docs; documented pre-1.0 behavior, deprecation and schema evolution. No silent rename/removal of public tool fields. |
+| S2-COMPAT-02 | Launch | Honest support matrix (Python, OS/client, amd64/arm64, WLED firmware/build) per [DEC-020](DECISIONS.md#dec-020--support-and-version-policy): WLED 16.0.0 or newer, firmware tiers tested/expected/unknown, Python as tested in CI, Linux supported, Windows/macOS experimental. Clean-install tests are distinct from device observations. |
+| S2-COMPAT-03 | Launch | Test upgrade and rollback with previous configuration/snapshot fixtures; validate migrations before replacing state, preserve backups, explain unreadable newer data. A code rollback does not restore live device state. |
 
 ## G. Distribution and release artifacts
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-DIST-01 | Launch | Produce public-consumption wheel/sdist and a PyPI-ready identity so pinned uvx usage eventually needs no private Git access. Check normalized name collisions/ownership at release. A 404/name availability observation does not reserve a name. No npm wrapper is required for a Python package. |
-| S2-DIST-02 | Launch | Versioned self-hosted OCI images for amd64/arm64, documented data/config/secrets mounts, appropriate unprivileged execution and explicit HTTP/stdio modes. Include digest pinning, liveness, shutdown and update/rollback instructions. HTTP support does not require a centrally hosted service. |
-| S2-DIST-03 | Launch | Build/release pipeline links source commit, test results, artifacts, checksums and release notes; use narrowly scoped CI permissions and controlled publishing credentials. Include dependency/license inventory and provenance/SBOM or documented equivalents. Review vulnerability findings for material applicability. Public dependency declarations must not falsely promise the development lock freezes every user's environment. |
+| S2-DIST-01 | Launch | Public wheel/sdist and a PyPI-ready identity so pinned uvx usage needs no private access; check name collisions at release (availability does not reserve a name). |
+| S2-DIST-02 | Launch | Versioned self-hosted OCI images (amd64/arm64) with documented data/config/secrets mounts, unprivileged execution, explicit HTTP/stdio modes, digest pinning, liveness, shutdown and update/rollback instructions. |
+| S2-DIST-03 | Launch | A release pipeline linking source commit, test results, artifacts, checksums and notes, with narrowly scoped CI permissions, dependency/license inventory, provenance/SBOM or documented equivalents and a vulnerability review. Dependency declarations do not promise that the development lock freezes a user's environment. |
 
-Preparing workflows and artifacts is authorized planning/implementation work only when commissioned. Actual PyPI/OCI publication, account setup/name reservation, public releases and visibility changes need the corresponding later release instruction. Do all concrete preparation first so the owner can review the exact candidate rather than approve an abstract proposal.
+Preparing workflows is authorized only when commissioned; PyPI/OCI publication, name reservation, releases and visibility changes need a later release instruction.
 
 ## H. Public identity, documentation and maintenance
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-PUBLIC-01 | Launch | Decide project/package/container/registry identities, author attribution and outbound license with the owner. Review reused code notices and repository history/artifacts for private content before changing visibility. Do not mark the project as officially endorsed by WLED or a marketplace without actual authorization. |
-| S2-PUBLIC-02 | Launch | English quickstarts for uvx/stdio and self-hosted HTTP/Docker, generated/maintained tool reference, recipes, troubleshooting, capabilities, backups/restoration, upgrade and uninstall. Public docs must work without access to project history or installation-specific context. Use synthetic examples and reproducible no-hardware demonstrations. |
-| S2-PUBLIC-03 | Launch | Prepare contribution guidance, a security statement (no security support, use at own risk, per [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support); no private reporting channel), support/bug templates, changelog and sustainable maintenance/release policy. State supported release lines and response expectations realistically; no unsupported SLA, mandatory hosted account or telemetry service. |
+| S2-PUBLIC-01 | Launch | Project/package/container/registry identities, author attribution and outbound license decided with the owner; reused-code notices and history reviewed for private content before visibility changes; no claimed endorsement by WLED or a marketplace. |
+| S2-PUBLIC-02 | Launch | English quickstarts (uvx/stdio, self-hosted HTTP/Docker), tool reference, recipes, troubleshooting, capabilities, backups, upgrade and uninstall that work without project history, with synthetic examples. |
+| S2-PUBLIC-03 | Launch | Contribution guidance, security statement (no security support, [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support)), support/bug templates, changelog and a realistic maintenance/release policy; no SLA, hosted account or telemetry service. |
 
-### Open owner decisions before publication (from #62)
+Owner decisions for publication (from #62, tracked by [#23](https://github.com/descipar/wled-mcp/issues/23)) are all resolved: license [DEC-011](DECISIONS.md#dec-011--apache-20-license-with-notice-attribution); identities [DEC-012](DECISIONS.md#dec-012--project-and-package-identity) (`descipar/wled-mcp`, PyPI `wled-mcp`, `ghcr.io/descipar/wled-mcp`, registry `io.github.descipar/wled-mcp`, unofficial); contact and no security support DEC-013; history [DEC-014](DECISIONS.md#dec-014--keep-the-existing-git-history); issue/PR review before visibility [DEC-015](DECISIONS.md#dec-015--issue-and-pr-review-before-visibility-change); agent tooling ships [DEC-016](DECISIONS.md#dec-016--ship-the-agent-tooling-and-decision-records); verbatim owner quotes with translation [DEC-017](DECISIONS.md#dec-017--verbatim-owner-quotes-with-english-translation); private denylist and branch rules [DEC-018](DECISIONS.md#dec-018--private-denylist-and-main-branch-rules); visibility before release [DEC-019](DECISIONS.md#dec-019--make-the-repository-public-before-the-release) (#90).
 
-Issue #62 prepared a public-ready baseline under
-[DEC-009](DECISIONS.md#dec-009--public-ready-repository-baseline): neutral tracked
-content, a user-facing README, synthetic example deployment files for both transports
-and the CI check `scripts/check_private_identifiers.py`. It changed no visibility,
-license, attribution or publication. The following decisions remain with the owner and
-are tracked by [#23](https://github.com/descipar/wled-mcp/issues/23) (S2-PUBLIC-01).
-Items marked resolved link their decision record:
-
-1. Resolved by [DEC-011](DECISIONS.md#dec-011--apache-20-license-with-notice-attribution):
-   Apache-2.0 with a NOTICE file. Third-party notices: none needed while no upstream code
-   is reused ([SOURCES.md](SOURCES.md)); recheck when the dependency/license inventory of
-   S2-DIST-03 is prepared.
-2. Project, package, container image and registry identities: repository name and
-   owner, PyPI/OCI names and the `io.github.<publisher>` namespace. Resolved by
-   [DEC-012](DECISIONS.md#dec-012--project-and-package-identity): repository
-   `descipar/wled-mcp`, PyPI `wled-mcp`, image `ghcr.io/descipar/wled-mcp`, registry
-   `io.github.descipar/wled-mcp`, marked unofficial.
-3. Author/maintainer attribution and public contact (`pyproject.toml` authors,
-   security contact). Author attribution resolved by DEC-011 (`NOTICE` and
-   `pyproject.toml` authors); public and security contact resolved by
-   [DEC-013](DECISIONS.md#dec-013--general-contact-and-no-security-support): GitHub
-   issues only, no security support (`SECURITY.md`).
-4. Acceptance of the existing commit history and author identities (owner identity
-   and agent noreply identity), or a history rewrite or a fresh public repository.
-   Resolved by [DEC-014](DECISIONS.md#dec-014--keep-the-existing-git-history): keep the
-   existing history and author identities; no rewrite, no fresh repository.
-5. Review of issue and PR bodies and comments, including closed ones and run evidence
-   links, for installation context before a visibility change; issue visibility
-   follows repository visibility. Resolved by
-   [DEC-015](DECISIONS.md#dec-015--issue-and-pr-review-before-visibility-change): a
-   repeatable read-only scan including edit histories plus one agent read-through,
-   immediately before the visibility change, as a mandatory #23/#25 step with owner
-   approval of the findings.
-6. Whether German source quotes in decision records stay verbatim in a public
-   repository. Resolved by
-   [DEC-017](DECISIONS.md#dec-017--verbatim-owner-quotes-with-english-translation):
-   they stay verbatim with an English translation.
-7. Whether the agent-workflow tooling (`AGENTS.md`, `CLAUDE.md`, `agents/`, `.codex/`,
-   `.claude/`, `docs/AGENT-*.md`, decision records) ships in the public repository.
-   Resolved by [DEC-016](DECISIONS.md#dec-016--ship-the-agent-tooling-and-decision-records):
-   everything ships; a short orientation for outside readers and contributors is #23
-   (S2-PUBLIC-03) work.
-8. Whether CI gets a secret-backed private denylist for
-   `scripts/check_private_identifiers.py` (`WLED_MCP_PRIVATE_DENYLIST`) and branch
-   protection. Resolved by
-   [DEC-018](DECISIONS.md#dec-018--private-denylist-and-main-branch-rules): local
-   denylist file plus CI secret, built from an agent-proposed, owner-approved candidate
-   list before the visibility change; a `main` ruleset at the visibility change.
-9. Timing of the visibility change relative to the beta acceptance of
-   [#25](https://github.com/descipar/wled-mcp/issues/25). Resolved by
-   [DEC-019](DECISIONS.md#dec-019--make-the-repository-public-before-the-release):
-   visibility is decoupled from release and happens earlier through
-   [#90](https://github.com/descipar/wled-mcp/issues/90); artifact publication and
-   submissions stay in #25.
-
-## I. Marketplace discovery and actual publication evidence
+## I. Marketplace discovery and publication evidence
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-MARKET-01 | Launch | Prepare validated official MCP Registry `server.json`, verified publisher namespace and public package ownership metadata, version-consistent with the release. Use `io.github.descipar/wled-mcp` (DEC-012) once the namespace is authenticated. The registry stores metadata, not executable artifacts. |
-| S2-MARKET-02 | Launch | Prepare the separate MCPHub local-catalog/MCPM entry path and, if desired, hosted MCPHub directory submission. Match current schemas, required runtime/config inputs, English descriptions and honest author status. Track drafted/submitted/accepted/visible/install-tested independently; admission and propagation are not guaranteed by our code. |
-| S2-MARKET-03 | Launch | Test a fresh MCPHub installation using metadata-generated uvx configuration and separate self-hosted HTTP instructions. No private source access, real home URLs, fake remote endpoints, developer paths or committed secrets. Package listing does not publish a central WLED service; show how users supply their own controllers and endpoint. |
+| S2-MARKET-01 | Launch | Validated official MCP Registry `server.json` with the verified namespace `io.github.descipar/wled-mcp` (DEC-012), version-consistent with the release; the registry stores metadata only. |
+| S2-MARKET-02 | Launch | The separate MCPHub local-catalog/MCPM entry path and, if desired, a hosted directory submission; current schemas, English descriptions, honest author status. Drafted/submitted/accepted/visible/install-tested are tracked independently. |
+| S2-MARKET-03 | Launch | A fresh MCPHub installation test with metadata-generated uvx configuration and separate self-hosted HTTP instructions; no private paths, fake remotes or committed secrets; users supply their own controllers. |
 
-See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “Launch” here requires complete reviewable metadata and installation evidence; external listing acceptance may remain pending after an authorized release. Report that external state honestly rather than conflating a submitted form with marketplace availability.
+See [MARKETPLACE.md](MARKETPLACE.md). External acceptance may stay pending after an authorized release and is reported as such.
 
 ## J. Beta and release decision
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-LAUNCH-01 | Launch | Reproduce clean install/upgrade/rollback and both-transport interoperability; collect selected beta hardware evidence. An opt-in synthetic demo/simulator helps test without hardware and must never silently substitute for a real device. Record unrun tests and optional feature deferrals. The simulator was dropped by the owner ([ISSUE-25-DEC-001](decisions/issue-25.md)). |
-| S2-LAUNCH-02 | Launch | Assemble one reviewable candidate: exact commit, artifact identities, license decision, public docs, known issues and listing drafts. After the actual release instruction, perform the authorized visibility/publish/submission steps and verify real install/visibility. Keep a factual status log for external review delays. |
+| S2-LAUNCH-01 | Launch | Clean install/upgrade/rollback, both-transport interoperability and selected beta hardware evidence; unrun tests and deferrals recorded. The simulator was dropped by the owner ([ISSUE-25-DEC-001](decisions/issue-25.md)). |
+| S2-LAUNCH-02 | Launch | One reviewable candidate (exact commit, artifact identities, license, docs, known issues, listing drafts); after the release instruction, perform and verify the authorized steps with a factual status log. |
 
-## Issue map and order
+## Issue map
 
 | Issue | Work | Readiness |
 | --- | --- | --- |
-| [#15](https://github.com/descipar/wled-mcp/issues/15) | Stage-2 epic | Parent tracker, separate from stage 1 |
+| [#15](https://github.com/descipar/wled-mcp/issues/15) | Stage-2 epic | Parent tracker |
 | [#16](https://github.com/descipar/wled-mcp/issues/16) | Setup, optional discovery, doctor | Setup/doctor Launch; discovery Should |
 | [#17](https://github.com/descipar/wled-mcp/issues/17) | Groups and scenes | Should |
 | [#18](https://github.com/descipar/wled-mcp/issues/18) | Preset portability, restore and playlists | Should |
@@ -195,27 +112,25 @@ See [MARKETPLACE.md](MARKETPLACE.md) for researched paths and limitations. “La
 | [#21](https://github.com/descipar/wled-mcp/issues/21) | Version contract, compatibility and migrations | Launch |
 | [#22](https://github.com/descipar/wled-mcp/issues/22) | PyPI/OCI release pipeline | Launch |
 | [#23](https://github.com/descipar/wled-mcp/issues/23) | Public docs, identity, license and maintenance | Launch |
-| [#90](https://github.com/descipar/wled-mcp/issues/90) | Visibility readiness and making the repository public (DEC-019) | Before release |
-| [#24](https://github.com/descipar/wled-mcp/issues/24) | Registry/marketplace metadata and install evidence | Launch; external acceptance separately tracked |
-| [#25](https://github.com/descipar/wled-mcp/issues/25) | Beta evidence and reviewable release | Final integration of Launch criteria |
+| [#90](https://github.com/descipar/wled-mcp/issues/90) | Visibility readiness (DEC-019) | Before release |
+| [#24](https://github.com/descipar/wled-mcp/issues/24) | Registry/marketplace metadata and install evidence | Launch |
+| [#25](https://github.com/descipar/wled-mcp/issues/25) | Beta evidence and reviewable release | Final integration |
 
-Start with portable setup and the compatibility/public-identity decisions. Product features can progress independently on the relevant stage-1 foundation. #22 needs #21; #24 needs the chosen identity/artifacts/docs; #25 assembles launch evidence after required tasks and stage-1 acceptance. #17–#19 do not automatically block #25 if explicitly deferred.
-
-Stage-1 Should issue #13 decided its scope in ISSUE-13-DEC-001: deferred work is owned by #16, #18 and #19; do not implement the same feature twice or quietly weaken stage-1 Must behavior.
+Stage-1 Should issue #13 deferred its work to #16, #18 and #19 (ISSUE-13-DEC-001); do not implement a feature twice or weaken stage-1 Must behavior.
 
 ## Stage-2 validation scenarios
 
 | ID | Evidence expected |
 | --- | --- |
-| S2-T01 | Fresh-user synthetic config -> both transport starts -> successful read; doctor identifies a bad path/offline target/auth failure without mutation |
-| S2-T02 | Profile-disabled operation absent from listing and rejected by direct call, scenes/import/raw paths and both transports; restricted device cannot be reached |
-| S2-T03 | Group/scene with mixed capabilities/offline member produces exact preflight plan and truthful per-device outcomes; no implicit synchronization/replay |
+| S2-T01 | Fresh synthetic config, both transports start and read; doctor identifies a bad path/offline target/auth failure without mutation |
+| S2-T02 | Profile-disabled operation absent from listing and rejected by direct call, scenes/import/raw paths and both transports; restricted device unreachable |
+| S2-T03 | Group/scene with mixed capabilities/offline member gives an exact preflight plan and truthful per-device outcomes |
 | S2-T04 | Bundle/playlist roundtrip preserves intended fields, rejects incompatible ranges/unknown schemas, handles collisions and backup/persistence failure |
-| S2-T05 | Capability fixtures distinguish RGB/RGBW/CCT/2D and unknown fields; each advertised hardware capability links actual observations |
-| S2-T06 | Version/config/backup upgrade-downgrade matrix and public schema compatibility checks pass with previous fixtures |
-| S2-T07 | Clean artifact installs, wheel/sdist and declared OCI architectures start both transports; provenance/version/checksum metadata are consistent |
-| S2-T08 | Registry/MCPM metadata validates and generated config starts the real package in a clean MCPHub context; self-hosted HTTP recipe works without installation data |
-| S2-T09 | Public docs/history/artifact review, license/identity decision, secret-free diagnostics and exact release candidate are recorded |
-| S2-T10 | After authorized publication only: verify actual package/image installation and each selected discovery route's independent visibility/status |
+| S2-T05 | Capability fixtures distinguish RGB/RGBW/CCT/2D and unknown fields |
+| S2-T06 | Version/config/backup upgrade-downgrade matrix and schema compatibility pass with previous fixtures |
+| S2-T07 | Clean wheel/sdist and OCI installs start both transports with consistent version/checksum metadata |
+| S2-T08 | Registry/MCPM metadata validates and generated config starts the real package in a clean MCPHub context |
+| S2-T09 | Public docs/history/artifact review, license/identity decision and the release candidate are recorded |
+| S2-T10 | After authorized publication only: real package/image installation and each listing route's status |
 
-No stage-2 test has run: the server itself is not implemented. Optional-feature scenarios are required if those features ship, not invented completion claims or prerequisites for deferring them.
+Optional-feature scenarios are required only if those features ship.

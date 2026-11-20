@@ -1,64 +1,28 @@
 # Publishing to PyPI
 
-How the package `wled-mcp` gets to PyPI: the workflow
-[`.github/workflows/publish.yml`](../.github/workflows/publish.yml), the setup the owner does
-once, and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-002 in
-[decisions/issue-22.md](decisions/issue-22.md); for the MCPB bundle ISSUE-151-DEC-001 and
-ISSUE-151-DEC-002 in [decisions/issue-151.md](decisions/issue-151.md). Evidence:
-[validation/issue-22.md](validation/issue-22.md), [validation/issue-151.md](validation/issue-151.md).
+How the package `wled-mcp` gets to PyPI: the workflow [`.github/workflows/publish.yml`](../.github/workflows/publish.yml), the owner's one-time setup and the release procedure. Decisions: ISSUE-22-DEC-001 and ISSUE-22-DEC-002 ([decisions/issue-22.md](decisions/issue-22.md)); for the MCPB bundle ISSUE-151-DEC-001 and ISSUE-151-DEC-002 ([decisions/issue-151.md](decisions/issue-151.md)). Evidence: [validation/issue-22.md](validation/issue-22.md), [validation/issue-151.md](validation/issue-151.md).
 
-Status: the workflow has published releases (see "First release" and the registry section
-below). Merging a change to the workflow does not publish anything. Registering the publisher, changing the environment, creating a tag or
-release and approving an upload each need the owner's explicit instruction at that time
-([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs
-(see "MCPB bundle (#151)" below) ran for the first time with the release of 2026-11-13
-([validation/issue-151.md](validation/issue-151.md#first-release-run)).
+Status: the workflow has published releases. Merging a change to it publishes nothing. Registering the publisher, changing the environment, creating a tag or release and approving an upload each need the owner's explicit instruction at that time ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release)). The two MCPB bundle jobs ran for the first time with the release of 2026-11-13 ([validation/issue-151.md](validation/issue-151.md#first-release-run)).
 
 ## What the workflow does
 
-Four jobs, one run per ref at a time; a running publish is never cancelled. `build` and
-`publish` are the PyPI path described here and are independent of the other two jobs,
-`build-mcpb` and `release-asset`, which handle the Claude Desktop bundle (next sections).
+Four jobs, one run per ref at a time, a running publish is never cancelled. `build` and `publish` are the PyPI path; `build-mcpb` and `release-asset` handle the Claude Desktop bundle.
 
-1. **build** (`contents: read`, no other permission):
+1. **build** (`contents: read`):
    1. checks out the ref with full history and without stored credentials;
-   2. installs the locked environment without the project (`uv sync --locked
-      --no-install-project`);
-   3. runs the release guard `scripts/check_distribution.py --release-ref` before anything
-      is built (installing the project runs its build backend, so that comes after the
-      guard). It refuses the run unless the ref is a tag, the tag is `v` +
-      `project.version` of `pyproject.toml`, the version is a release version (no local
-      label, no development release), the tag points at the checked-out workflow commit and
-      that commit is reachable from `main`. The values come from the runner variables
-      `GITHUB_REF_TYPE`, `GITHUB_REF_NAME` and `GITHUB_SHA`;
-   4. builds once: `uv build --no-build-isolation` from the locked environment produces
-      the sdist and, from that sdist, the wheel in `dist/`;
-   5. records the SHA-256 of both files, runs `twine check --strict` with a pinned twine;
-   6. smoke-tests exactly these files without building again:
-      `check_distribution.py --wheel dist/<wheel> --sdist dist/<sdist>` checks the file
-      names, the wheel `METADATA` and sdist `PKG-INFO` version, that the sdist contains no
-      Git data, `.agent-runs/`, `.artifacts/`, `.env*` file or `devices.toml`, that `dist/`
-      holds only these two files, and then installs the wheel into a clean environment with
-      the runtime constraints and runs the stdio, read-only profile, HTTP restart, uvx and
-      hub-example handshakes with the MCP SDK client on loopback (no device, no LAN);
-   7. confirms the checksums are unchanged, writes them with the tag and commit to the job
-      summary and hands them to the publish job as a job output, then uploads `dist/` as the
-      artifact `python-distribution`.
-2. **publish** (`id-token: write` only, environment `pypi`): waits for the environment's
-   required reviewers, downloads the artifact, checks that the directory holds exactly the
-   two files with the checksums from the build job, and uploads them with
-   `pypa/gh-action-pypi-publish` through Trusted Publishing (OIDC). It has no checkout, no
-   build or install step, no cache, no token or password and does not skip existing files.
+   2. installs the locked environment without the project (`uv sync --locked --no-install-project`);
+   3. runs the release guard `scripts/check_distribution.py --release-ref` before anything is built. It refuses the run unless the ref is a tag, the tag is `v` + `project.version`, the version is a release version (no local label, no development release), the tag points at the checked-out workflow commit and that commit is reachable from `main` (values from `GITHUB_REF_TYPE`, `GITHUB_REF_NAME`, `GITHUB_SHA`);
+   4. builds once (`uv build --no-build-isolation`): the sdist, and from it the wheel, in `dist/`;
+   5. records the SHA-256 of both files and runs `twine check --strict` with a pinned twine;
+   6. smoke-tests exactly these files: `check_distribution.py --wheel dist/<wheel> --sdist dist/<sdist>` checks the file names, wheel `METADATA` and sdist `PKG-INFO` version, that the sdist contains no Git data, `.agent-runs/`, `.artifacts/`, `.env*` file or `devices.toml`, that `dist/` holds only these two files, then installs the wheel into a clean environment with the runtime constraints and runs the stdio, read-only profile, HTTP restart, uvx and hub-example handshakes on loopback (no device, no LAN);
+   7. confirms the checksums are unchanged, writes them with tag and commit to the job summary and the publish job's input, and uploads `dist/` as the artifact `python-distribution`.
+2. **publish** (`id-token: write` only, environment `pypi`): waits for the environment's required reviewers, downloads the artifact, checks that it holds exactly the two files with the build job's checksums, and uploads them with `pypa/gh-action-pypi-publish` through Trusted Publishing (OIDC). No checkout, build, install, cache, token or password; existing files are not skipped.
 
-All actions are pinned to a full commit SHA with the version as a comment, because this
-workflow holds `id-token: write` (ISSUE-22-DEC-002 item 4). `ci.yml` keeps its tag pins;
-aligning it is a separate change. `tests/test_publish_workflow.py` checks these properties
-and `tests/test_check_distribution.py` the guard.
+All actions are pinned to a full commit SHA with the version as a comment, because the workflow holds `id-token: write` (ISSUE-22-DEC-002 item 4); `ci.yml` keeps tag pins. `tests/test_publish_workflow.py` checks these properties, `tests/test_check_distribution.py` the guard.
 
 ## Owner-side setup (once, before the first upload)
 
-**PyPI pending Trusted Publisher** (PyPI account, "Publishing", "Add a new pending
-publisher", GitHub):
+**PyPI pending Trusted Publisher** (PyPI account, "Publishing", "Add a new pending publisher", GitHub):
 
 | Field | Value |
 | --- | --- |
@@ -68,185 +32,63 @@ publisher", GitHub):
 | Workflow name | `publish.yml` |
 | Environment name | `pypi` |
 
-A pending publisher does not reserve the name: until the first successful upload creates
-the project, anyone can register `wled-mcp`, and the pending publisher then becomes
-unusable. Check the name shortly before the first release; a 404 for the project page is an
-observation, not a reservation (S2-DIST-01).
+A pending publisher does not reserve the name: until the first upload creates the project, anyone can register `wled-mcp`. Check the name shortly before the first release; a 404 is an observation, not a reservation (S2-DIST-01).
 
-**GitHub environment `pypi`** (repository settings, Environments):
+**GitHub environment `pypi`** (repository settings, Environments): required reviewers (the actual barrier; the triggers are not); recommended: deployment branches and tags limited to `v*`, and a `v*` tag ruleset that blocks updating and deleting release tags. No repository or environment secret is needed. **TestPyPI** is not wired (it would need its own publisher, environment and a `repository-url` change).
 
-- required reviewers: the people who may approve an upload. The review is the actual
-  barrier; the workflow triggers are not.
-- recommended: deployment branches and tags limited to the tag pattern `v*`, so a run on a
-  branch cannot even request the deployment;
-- recommended: a tag ruleset for `v*` that blocks updating and deleting release tags.
+## Triggers
 
-The workflow does not need any repository or environment secret.
-
-**TestPyPI** is optional and not wired. A trial upload there would need its own pending
-publisher, its own environment and a change of the workflow (`repository-url`); it is not
-part of this packet.
-
-## Triggers and why
-
-- `release: published` is the normal path: publishing a GitHub release for the tag
-  `v<version>` starts the run.
-- `workflow_dispatch` on the tag `v<version>` runs it again for the same tag, for example
-  after a rejected deployment or a failure before the upload. The guard refuses a dispatch
-  on a branch or on any other tag.
+- `release: published` is the normal path: publishing a GitHub release for `v<version>`.
+- `workflow_dispatch` on the tag `v<version>` re-runs it, for example after a rejected deployment or a failure before the upload. The guard refuses a branch or another tag.
 - No `push`, `pull_request`, `pull_request_target`, `schedule` or `workflow_run` trigger.
 
-A GitHub release marked as pre-release also fires `release: published` and would publish
-`v<version>` to PyPI as that final version; a draft release does not trigger the workflow.
-
-GitHub runs the workflow file of the ref the run is for. A tag whose commit does not
-contain `publish.yml` therefore starts nothing and cannot be selected for a dispatch: a
-tag on a commit from before the merge of this workflow, such as an existing release tag,
-cannot be published by it. Such a version needs a new version on a `main` commit that
-contains the workflow.
-
-**Stop point:** rejecting the deployment in the `pypi` environment review ends the run
-without an upload. The build job's checksums and artifact stay visible in the run.
+A release marked pre-release also fires `release: published` and would publish `v<version>` as the final version; a draft does not trigger it. GitHub runs the workflow file of the ref's commit, so a tag on a commit without `publish.yml` starts nothing and cannot be dispatched: such a version needs a new version on a `main` commit that has the workflow. Rejecting the deployment in the `pypi` review ends the run without an upload; the build job's checksums and artifact stay visible.
 
 ## First release
 
-Each step needs the owner's instruction at that time. Done for the first PyPI release on 2026-11-09, see
-[validation/issue-22.md](validation/issue-22.md#first-upload-2026-11-09).
+Each step needs the owner's instruction at that time. Done for the first PyPI release on 2026-11-09 ([validation/issue-22.md](validation/issue-22.md#first-upload-2026-11-09)).
 
-1. The PR adding the workflow is merged into `main`.
-2. The release commit on `main` carries the version in `project.version`, the changelog
-   entry and a README suitable for PyPI: PyPI shows the README of the uploaded files and it
-   cannot be changed for an uploaded version. Relative links in the README do not resolve
-   on PyPI, and the README must no longer say the package is not published to PyPI. This
-   is release work in the release commit, not part of this workflow.
-3. The pending publisher and the environment are set up as above; the name is checked.
-4. Create the tag `v<version>` on that `main` commit (for example `git tag -a v1.2.3
-   <commit>` and push it) and publish a GitHub release for it, or create both in the
-   release form with the target `main` at that commit.
-   Title the release only `v<version>`, without a description after it (owner rule,
-   2026-11-09); the notes carry the content.
-5. Wait for the build job. Compare the job summary (tag, commit, SHA-256 of both files)
-   with the intended release, then approve or reject the `pypi` deployment.
-6. After the upload, compare the file names and SHA-256 on the PyPI project page with the
-   job summary and check a clean install:
-   `uvx --from wled-mcp==<version> wled-mcp --version`.
-7. After the `release-asset` job ran, check that the GitHub release lists
-   `wled-mcp-<version>.mcpb` and `wled-mcp-<version>.mcpb.sha256` and that the hash matches the
-   `build-mcpb` job summary. The bundle jobs do not gate the PyPI files; the first such check was
-   the release of 2026-11-13, and a wrong asset is removed by hand.
+1. The workflow PR is merged into `main`.
+2. The release commit on `main` carries `project.version`, the changelog entry and a README suitable for PyPI (it cannot be changed for an uploaded version; relative links do not resolve on PyPI, and it must not say the package is unpublished).
+3. Pending publisher and environment are set up; the name is checked.
+4. Create the tag `v<version>` on that commit (for example `git tag -a v1.2.3 <commit>`, push) and publish a GitHub release for it, or create both in the release form with target `main`. Title the release only `v<version>`, no description after it (owner rule, 2026-11-09).
+5. Wait for the build job. Compare the job summary (tag, commit, SHA-256 of both files) with the intended release, then approve or reject the `pypi` deployment.
+6. After the upload, compare file names and SHA-256 on the PyPI page with the summary and check a clean install: `uvx --from wled-mcp==<version> wled-mcp --version`.
+7. After the `release-asset` job, check that the GitHub release lists `wled-mcp-<version>.mcpb` and `wled-mcp-<version>.mcpb.sha256` and that the hash matches the `build-mcpb` summary. The bundle jobs do not gate the PyPI files; a wrong asset is removed by hand.
 
 ## Pinning, update and rollback
 
-- Users pin an exact version: `uvx --from wled-mcp==<version> wled-mcp`. An unpinned
-  `uvx wled-mcp` resolves the newest version that is not yanked.
-- For the dependency versions the release was tested with, add the constraints of that
-  release: `uvx --constraints
-  https://raw.githubusercontent.com/descipar/wled-mcp/v<version>/requirements-runtime.txt
-  --from wled-mcp==<version> wled-mcp`. Without constraints, the dependencies are
-  resolved within the ranges `pyproject.toml` declares when the tool environment is first
-  created; the development lock does not freeze them for PyPI users
-  ([dependency policy](contract/dependencies.md)).
-- Update: change the pinned version. Rollback: pin the previous version again (it must
-  not have been deleted; a yanked version still installs with its exact pin).
+- Pin an exact version: `uvx --from wled-mcp==<version> wled-mcp`; unpinned `uvx wled-mcp` resolves the newest version that is not yanked.
+- For the tested dependency versions add the release's constraints: `uvx --constraints https://raw.githubusercontent.com/descipar/wled-mcp/v<version>/requirements-runtime.txt --from wled-mcp==<version> wled-mcp`. Without them, dependencies resolve within the ranges `pyproject.toml` declares ([dependency policy](contract/dependencies.md)).
+- Update: change the pinned version. Rollback: pin the previous version (a yanked version still installs with its exact pin; a deleted one does not).
 
-## Yank, delete and file names
+## Yank, delete, file names and uncertain uploads
 
-- PyPI never accepts different content under an existing file name, and never accepts
-  the name of a deleted file again. A broken release is fixed with a new version, not a
-  re-upload.
-- Yanking (PEP 592) keeps the files: an exact `==<version>` pin still installs it, only
-  unpinned resolution skips it. Prefer yanking.
-- Deleting a release is irreversible, breaks existing pins and frees nothing for reuse.
-- Yank and delete are owner actions on PyPI; the workflow does neither.
+- PyPI never accepts different content under an existing file name, nor the name of a deleted file again. A broken release is fixed with a new version, not a re-upload.
+- Yanking (PEP 592) keeps the files: an exact `==<version>` pin still installs, unpinned resolution skips it. Prefer yanking. Deleting is irreversible and breaks pins. Both are owner actions on PyPI; the workflow does neither.
+- Treat a timed-out, cancelled or failed publish step as possibly applied: check the project page or `https://pypi.org/pypi/wled-mcp/<version>/json` before running anything again. An upload whose file name and digests equal an existing file is a no-op; the same name with different content is refused ("File already exists").
+- Nothing, one of two files, or unclear: re-run only the failed publish job ("Re-run failed jobs"); it uses the same artifact and checksums, existing files are accepted as a no-op and the missing one is uploaded.
+- Do not start a new release or dispatch run for a version that already has files on PyPI (a rebuild with different bytes is refused) and do not add `skip-existing`.
+- Both uploaded: nothing to repeat; compare checksums with the summary.
 
-## Uncertain or partial uploads
-
-Treat a timed-out, cancelled or failed publish step as possibly applied. Before running
-anything again, check the project page or `https://pypi.org/pypi/wled-mcp/<version>/json`
-for the files of that version.
-
-PyPI accepts an upload whose file name and content digests equal an existing file as a
-no-op; it refuses the same file name with different content ("File already exists") and
-never accepts the name of a deleted file again.
-
-- Nothing uploaded, one of the two files uploaded, or the result unclear: re-run only the
-  failed publish job of the original run ("Re-run failed jobs"). It uses the same tested
-  artifact and checksums; files already on PyPI are accepted again as a no-op and the
-  missing file is uploaded.
-- Do not start a new release or dispatch run for a version that already has files on
-  PyPI: it builds again, and a rebuilt file with different bytes is refused under the
-  existing name. Do not add `skip-existing` to force a run through.
-- Both uploaded: nothing to repeat; compare the checksums with the job summary.
-
-## Attestations
-
-With Trusted Publishing, `pypa/gh-action-pypi-publish` creates PEP 740 attestations for the
-uploaded files by default. They are the provenance for the PyPI files; a separate SBOM
-file is not produced (see the inventory below).
+With Trusted Publishing the publish action creates PEP 740 attestations by default (the PyPI provenance). A separate SBOM file is not produced.
 
 ## MCPB bundle (#151)
 
-Each run also builds a Claude Desktop bundle (`wled-mcp-<version>.mcpb`) and attaches it to the
-GitHub release. **The bundle is built along with each release, not tested by the project, no
-warranty** ([ISSUE-151-DEC-001](decisions/issue-151.md)). It contains no server code: its
-manifest starts the released PyPI package through `uvx`. Format, manifest design and limits:
-[contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view:
-[MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made and
-the bundle jobs ran first with
-the release of 2026-11-13.
+Each run also builds a Claude Desktop bundle (`wled-mcp-<version>.mcpb`) and attaches it to the GitHub release. **The bundle is built along with each release, not tested by the project, no warranty** ([ISSUE-151-DEC-001](decisions/issue-151.md)). It contains no server code: its manifest starts the released PyPI package through `uvx`. Format and limits: [contract/mcpb-bundle.md](contract/mcpb-bundle.md); user view: [MARKETPLACE.md](MARKETPLACE.md#claude-desktop-mcpb-bundle). No Claude Desktop run was made; the bundle jobs ran first with the release of 2026-11-13 (DEC-023; recorded in [validation/issue-151.md](validation/issue-151.md#first-release-run)). Submitting the bundle to any directory is an owner action and not planned.
 
-Two further jobs, both outside the PyPI path (`publish` needs only `build`, so a failure of
-either never prevents or changes the PyPI upload; ISSUE-151-DEC-002 item 4):
+Both jobs are outside the PyPI path (`publish` needs only `build`; a failure of either never changes the PyPI upload; ISSUE-151-DEC-002 item 4):
 
-1. **build-mcpb** (`contents: read`, no `needs`, no environment): checks out the ref without
-   stored credentials, installs the locked environment without the project, runs the same release
-   guard and then `deploy/build_mcpb.py --version "${GITHUB_REF_NAME#v}" --output mcpb-dist`. The
-   script fails unless the requested version equals `project.version`, the manifest validates
-   against the vendored upstream schema and the archive has the four expected members. The
-   SHA-256 goes to the job summary and to a job output, and `mcpb-dist/` is uploaded as the
-   artifact `mcpb-bundle`. `dist/` is not touched.
-2. **release-asset** (`contents: write`, the only job with a write permission): `needs:
-   [build-mcpb, publish]` and no `if:`, so it runs only when the PyPI upload (after the `pypi`
-   environment review) and the bundle build both succeeded; it never runs after a rejected,
-   cancelled or failed deployment. It has no checkout, no build or install step and uses only
-   `actions/download-artifact`. A first step verifies the download against the checksum of the
-   `build-mcpb` job output (exactly that one file, nothing else in the directory) and writes
-   `wled-mcp-<version>.mcpb.sha256` in `sha256sum` format from the tested value. The upload step,
-   the only one that sees the token (`GH_TOKEN` from `github.token`, no new secret), re-checks the
-   tag against `^v<digits>.<digits>.<digits>(rc<digits>)?$` and attaches both files with
-   `gh release upload`. The job calls no `gh release create`, `edit` or `delete`, no `gh api`, no
-   `curl` or `git push`, never unpacks the bundle and does not use `--clobber`.
+1. **build-mcpb** (`contents: read`, no `needs`, no environment): same checkout and release guard, then `deploy/build_mcpb.py --version "${GITHUB_REF_NAME#v}" --output mcpb-dist`. It fails unless the version equals `project.version`, the manifest validates against the vendored upstream schema and the archive has the four expected members. SHA-256 goes to the job summary and a job output; `mcpb-dist/` is uploaded as the artifact `mcpb-bundle`.
+2. **release-asset** (`contents: write`, the only write permission): `needs: [build-mcpb, publish]` and no `if:`, so it runs only after the PyPI upload and the bundle build both succeeded, never after a rejected, cancelled or failed deployment. No checkout, build or install; only `actions/download-artifact`. It verifies the download against the `build-mcpb` checksum (exactly that one file) and writes `wled-mcp-<version>.mcpb.sha256` in `sha256sum` format. The upload step, the only one that sees the token (`GH_TOKEN` from `github.token`), re-checks the tag against `^v<digits>.<digits>.<digits>(rc<digits>)?$` and attaches both files with `gh release upload`. No `gh release create`, `edit` or `delete`, no `gh api`, `curl` or `git push`, no unpacking of the bundle, no `--clobber`.
 
-**Re-runs.** "Re-run failed jobs" re-runs only `release-asset` with the same artifact and
-checksum. An asset that already exists with identical bytes is accepted as a no-op, as PyPI
-accepts identical files; an existing asset with different bytes fails the job and is never
-replaced. A full new run on the same tag rebuilds the archive; it is deterministic, so the bytes
-are identical, and a difference fails the job for the owner to decide. A wrong asset is removed by
-hand in the release page, and a broken bundle is fixed with a new release, like the PyPI files.
-`workflow_dispatch` on a tag without a release makes `gh release view` fail; the job never
-creates a release.
+**Re-runs.** "Re-run failed jobs" re-runs only `release-asset`. An existing asset with identical bytes is a no-op; different bytes fail the job and are never replaced. A full new run on the same tag rebuilds a deterministic archive (a difference fails the job for the owner to decide). Remove a wrong asset by hand on the release page; fix a broken bundle with a new release. `workflow_dispatch` on a tag without a release makes `gh release view` fail; the job never creates a release.
 
-**Residual risk.** `contents: write` is a broad permission (releases, tags, branches; not
-workflow files). The main-branch rulesets ([DEC-024](DECISIONS.md#dec-024--main-branch-rules-with-review-for-external-pull-requests))
-block a direct push by this token because it is not a bypass actor, which this change did not
-re-verify; tag creation and deletion is restricted only if the owner set the recommended `v*` tag
-ruleset above. The `gh` CLI is the version of the runner image (the job prints it), and
-`actions/download-artifact` receives the workflow token through its default input. The bundle is
-unsigned and has no attestation; the `.sha256` asset is published by the same workflow, so it
-checks a download against damage and does not prove origin.
-
-**First run.** Merging the change publishes nothing. The first execution of both jobs was
-the release of 2026-11-13 (DEC-023). Before it the jobs were verified by review, the static and
-shell tests of `tests/test_publish_workflow.py` and a local dry run of the build step; the first
-real run is recorded in [validation/issue-151.md](validation/issue-151.md#first-release-run). Submitting the bundle to any directory is an
-owner action and not planned.
+**Residual risk.** `contents: write` is broad (releases, tags, branches; not workflow files). The main-branch rulesets ([DEC-024](DECISIONS.md#dec-024--main-branch-rules-with-review-for-external-pull-requests)) block a direct push by this token because it is not a bypass actor (not re-verified); tag creation and deletion is restricted only if the owner set the recommended `v*` ruleset. The `gh` CLI is the runner image's version (the job prints it). The bundle is unsigned and has no attestation; the `.sha256` asset comes from the same workflow, so it checks a download against damage and does not prove origin.
 
 ## Dependency and licence inventory, vulnerability review
 
-Checked on 2026-11-09 for the `requirements-runtime.txt` set of the first release (28 packages
-installed on Python 3.13 on macOS; markers for other platforms can add packages such as
-the emscripten transport). Licences come from each package's installed metadata. Users
-resolve the declared ranges, so their set can differ; this is the tested set, not a promise.
+Checked on 2026-11-09 for the `requirements-runtime.txt` set of the first release (28 packages on Python 3.13 on macOS; other platforms can add packages). Licences come from installed metadata; users resolve the declared ranges, so this is the tested set, not a promise.
 
 | Licence | Packages |
 | --- | --- |
@@ -256,73 +98,29 @@ resolve the declared ranges, so their set can differ; this is the tested set, no
 | Apache-2.0 OR BSD-3-Clause | cryptography |
 | PSF-2.0 | typing_extensions |
 
-All are permissive and compatible with this project's Apache-2.0 licence; none is copyleft.
-Repeat the check with a release (`uvx pip-audit -r requirements-runtime.txt --no-deps
---disable-pip` for vulnerabilities; licences from the installed metadata) and record
-material changes in the release notes.
-
-`pip-audit` over the same file reported no known vulnerabilities on 2026-11-09. The result
-describes that date and the known-vulnerability database at the time; a later advisory is
-handled through the process in [SECURITY.md](../SECURITY.md).
+All are permissive and compatible with the project's Apache-2.0 licence; none is copyleft. Repeat with a release (`uvx pip-audit -r requirements-runtime.txt --no-deps --disable-pip`) and record material changes in the release notes. `pip-audit` reported no known vulnerabilities on 2026-11-09; later advisories follow [SECURITY.md](../SECURITY.md).
 
 ## Registry listing after the PyPI release
 
-Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README marker
-`mcp-name: io.github.descipar/wled-mcp` (inside the package description, which
-`scripts/check_distribution.py` requires) and the root [`server.json`](../server.json)
-(see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/issue-24.md](validation/issue-24.md)).
-The goal is that the server is findable in the MCPHub registry, which is the official MCP
-Registry, after milestone M1 closes ([ISSUE-24-DEC-003](decisions/issue-24.md); the MCPM and
-hosted-directory routes are not planned). The workflow above does not touch the registry, and no
-registry automation (for example GitHub OIDC in a workflow) is wired.
+Prepared for [#24](https://github.com/descipar/wled-mcp/issues/24): the README marker `mcp-name: io.github.descipar/wled-mcp` (inside the package description, required by `scripts/check_distribution.py`) and the root [`server.json`](../server.json) (see [MARKETPLACE.md](MARKETPLACE.md); evidence in [validation/issue-24.md](validation/issue-24.md)). The goal is findability in the MCPHub registry, which is the official MCP Registry ([ISSUE-24-DEC-003](decisions/issue-24.md); the MCPM and hosted-directory routes are not planned). The workflow does not touch the registry, and no registry automation is wired.
 
-**Release chain for a milestone release (version in `pyproject.toml`, `<version>` below).**
-Done for the milestone M1 release on 2026-11-09, step by step on the owner's
-instructions ([ISSUE-24-DEC-004](decisions/issue-24.md); facts and checksums in
-[validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)).
-The M2 minor release was published on 2026-11-11 with the steps below, each on the owner's
-instruction ([DEC-031](DECISIONS.md#dec-031--release-scope-for-milestone-m2),
-[record](validation/release-m2.md#release-and-registry-publication-2026-11-11)). For every later release each step needs the owner's explicit instruction at that time;
-completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release),
-[DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
+**Release chain for a milestone release (`<version>` from `pyproject.toml`).** Done for M1 on 2026-11-09 on the owner's instructions ([ISSUE-24-DEC-004](decisions/issue-24.md); facts in [validation/issue-24.md](validation/issue-24.md#release-and-registry-publication-2026-11-09)) and for the M2 minor release on 2026-11-11 ([DEC-031](DECISIONS.md#dec-031--release-scope-for-milestone-m2), [record](validation/release-m2.md#release-and-registry-publication-2026-11-11)). For every later release each step needs the owner's explicit instruction at that time; completing or merging one step never authorizes the next ([DEC-023](DECISIONS.md#dec-023--staged-first-public-release), [DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)):
 
-1. After the release pull request is merged: create the tag `v<version>` on that `main` commit
-   and publish the GitHub release for it (see "First release" above).
-2. `publish.yml` builds, smoke-tests and, after the `pypi` environment review, uploads through
-   Trusted Publishing.
-3. Check that PyPI serves the marker: the `info.description` of
-   `https://pypi.org/pypi/wled-mcp/<version>/json` contains `mcp-name: io.github.descipar/wled-mcp`,
-   and `server.json` carries `<version>` twice.
-4. Install `mcp-publisher` from a pinned release (re-check the current version; v1.8.8 was
-   observed on 2026-11-06) and verify the downloaded file against the checksum or signature
-   the release provides before running it.
-5. Run `mcp-publisher login github` as the account that owns the `descipar` namespace, then
-   `mcp-publisher publish` in the repository root. The `validate` subcommand was observed to
-   send the file to the registry service, so it is an external call, not a local check.
-6. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp`
-   and record the result. Whether a published entry can be corrected under the same version
-   was not checked; read the registry's rules before relying on it.
+1. After the release PR is merged: create the tag `v<version>` on that `main` commit and publish the GitHub release (see "First release").
+2. `publish.yml` builds, smoke-tests and, after the `pypi` review, uploads.
+3. Check that PyPI serves the marker (`info.description` of `https://pypi.org/pypi/wled-mcp/<version>/json` contains `mcp-name: io.github.descipar/wled-mcp`) and that `server.json` carries `<version>` twice.
+4. Install `mcp-publisher` from a pinned release (re-check the version; v1.8.8 on 2026-11-06) and verify the download against the release's checksum or signature before running it.
+5. Run `mcp-publisher login github` as the account that owns the `descipar` namespace, then `mcp-publisher publish` in the repository root. `validate` sends the file to the registry service, so it is an external call, not a local check.
+6. Verify with `GET https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.descipar/wled-mcp` and record it. Whether a published entry can be corrected under the same version was not checked.
 7. Check the bundle assets on the GitHub release (see "MCPB bundle (#151)").
 
-**`mcp-publisher` on Windows (recipe used for the M1 release).** Download the release asset
-`mcp-publisher_windows_amd64.tar.gz` and `registry_<publisher version>_checksums.txt` of the
-pinned publisher release (1.8.8 for the M1 release), compute `Get-FileHash -Algorithm SHA256` of the
-archive, compare it with the line of the checksums file, then extract it. Run the executable
-from a directory outside the repository checkout. `uvx` may not know a version published a
-moment earlier because of its local index cache; add `--no-cache` to the first check
-(`uvx --no-cache --isolated --python 3.13 --from wled-mcp==<version> wled-mcp --version`).
-That was a local cache effect, not a package fault.
+**`mcp-publisher` on Windows (M1 recipe).** Download `mcp-publisher_windows_amd64.tar.gz` and `registry_<publisher version>_checksums.txt` of the pinned release (1.8.8), compare `Get-FileHash -Algorithm SHA256` of the archive with the checksums line, extract, and run the executable from a directory outside the checkout. `uvx` may not know a version published a moment earlier (local index cache): add `--no-cache` to the first check (`uvx --no-cache --isolated --python 3.13 --from wled-mcp==<version> wled-mcp --version`).
 
 ## What stays open
 
-The container image pipeline, image SBOM/provenance, image name check and OCI pinning
-documentation moved to [#156](https://github.com/descipar/wled-mcp/issues/156)
-(ISSUE-22-DEC-006). A separate SBOM file for the PyPI package is not produced; the inventory
-above and the PEP 740 attestations from the publish action are the documented equivalents.
+The container image pipeline, image SBOM/provenance, image name check and OCI pinning documentation moved to [#156](https://github.com/descipar/wled-mcp/issues/156) (ISSUE-22-DEC-006). The inventory above and the PEP 740 attestations are the documented equivalents of a PyPI SBOM.
 
 ## Checking the workflow locally
-
-Without running the workflow:
 
 ```text
 uv sync --locked
@@ -336,9 +134,4 @@ uv run --frozen python deploy/build_mcpb.py --output .artifacts/mcpb-dry-run
 uv run --frozen python -I -m zipfile -l .artifacts/mcpb-dry-run/wled-mcp-<version>.mcpb
 ```
 
-`--release-ref` fails outside a tagged workflow run by design. The bundle dry run prints
-`<sha256>  wled-mcp-<version>.mcpb`, writes only that file and lists `LICENSE`, `NOTICE`,
-`manifest.json` and `server/main.py`; the same command on another operating system is
-non-release evidence ([DEC-026](DECISIONS.md#dec-026--stage-releases-on-the-target-machine)).
-The tests that run the workflow's shell steps need bash, GNU `find` and `sha256sum` and are
-skipped with a stated reason on a plain Windows checkout.
+`--release-ref` fails outside a tagged workflow run by design. The bundle dry run prints `<sha256>  wled-mcp-<version>.mcpb`, writes only that file and lists `LICENSE`, `NOTICE`, `manifest.json` and `server/main.py`; on another operating system it is non-release evidence ([DEC-026](DECISIONS.md#dec-026--stage-releases-on-the-target-machine)). Tests that run the workflow's shell steps need bash, GNU `find` and `sha256sum` and are skipped with a stated reason on a plain Windows checkout.

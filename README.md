@@ -22,31 +22,25 @@ on WLED 16.0.1. No support is promised
 
 - Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a named
   inventory in a TOML file; nothing is discovered unless you ask.
-- Discovery and enrollment (M8, **not yet released**): `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device` find and add controllers on request, applied by in-process reload; the writes touch only the inventory file ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md)).
-- State and catalogs: normalized state, capabilities and each device's own effect and
-  palette catalogs; effects can be filtered by firmware metadata and searched by curated
-  properties (motion, flashing, colour slots; the catalog is small).
-- Typed changes: power and brightness, a patch of selected segments or a replacement of the
-  complete layout. Effects and palettes by name or ID, checked against the device's catalog
-  before any write.
-- Zones: a reviewed zone file maps a physical region to devices and LED ranges; changes apply
-  only inside the zone, otherwise they are refused before any write.
-- Presets, groups and scenes: persistent presets with snapshots, restore, portable bundles
-  and playlists; named device groups and multi-device scenes with a dry-run plan.
-- Rooms (not yet released): a stored group can be marked as a room; `wled_apply_room` applies
-  a state or a stored scene to every controller of one room, with dry run and per-device
-  results; a controller belongs to one room
-  ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/rooms.md)).
-- Observe and explain (read-only): sampled live LED colours per segment, and an explanation
-  of why a change may not show. Neither proves a cause or colour accuracy.
-- Layout preview (read-only): a static SVG of an observed or proposed 1D segment layout.
-- Temporary signals: `wled_start_signal` shows a colour on chosen segments of one controller
-  for a bounded time, then restores the previous state only if nobody changed it; best effort,
-  not a scheduler, nothing survives a restart ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
-- Agent guidance: safe-lighting instructions, a prompt and precise field descriptions, served
-  identically over stdio and HTTP; the client has to pass them on to its agent.
-- Server-enforced profiles (`read-only`, `control`, `full`); for the HTTP service a bearer
-  credential with Host and Origin allowlists.
+- Discovery and enrollment (M8, **not yet released**): `wled_discover_devices`,
+  `wled_set_discovery_ranges` and `wled_add_device` find and add controllers on request; the writes
+  touch only the inventory file ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md)).
+- State, catalogs and effect search: normalized state and capabilities, each device's own effect
+  and palette catalogs, effects filtered by firmware metadata or searched by curated properties.
+- Typed changes: power, brightness, a patch of selected segments or a replacement of the complete
+  layout, with effects and palettes by name or ID checked against the device's catalog first.
+- Zones and rooms: a zone file maps a physical region to devices and LED ranges (changes outside
+  it are refused); a stored group can be a room that `wled_apply_room` (not yet released) addresses
+  as a whole ([rooms](https://github.com/descipar/wled-mcp/blob/main/docs/contract/rooms.md)).
+- Presets, groups and scenes: persistent presets with snapshots, restore, bundles and playlists;
+  named groups and multi-device scenes with a dry-run plan.
+- Observe and explain (read-only): sampled live LED colours, an explanation of why a change may not
+  show, and a static SVG layout preview. None proves a cause or colour accuracy.
+- Temporary signals: a colour on chosen segments for a bounded time, then restored only if nobody
+  changed it; best effort, not a scheduler ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
+- Agent guidance and profiles: safe-lighting instructions and precise field descriptions served
+  over stdio and HTTP; server-enforced profiles (`read-only`, `control`, `full`); the HTTP service
+  has a bearer credential with Host and Origin allowlists.
 
 All tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).

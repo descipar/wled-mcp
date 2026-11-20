@@ -29,16 +29,7 @@
     "uvx": {
       "type": "uvx",
       "command": "uvx",
-      "args": [
-        "--isolated",
-        "--python",
-        "3.13",
-        "--from",
-        "wled-mcp",
-        "wled-mcp",
-        "--transport",
-        "stdio"
-      ],
+      "args": ["--isolated", "--python", "3.13", "--from", "wled-mcp", "wled-mcp", "--transport", "stdio"],
       "package": "wled-mcp",
       "env": {
         "WLED_MCP_CONFIG": "${WLED_MCP_CONFIG}",

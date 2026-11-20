@@ -7,7 +7,6 @@ devices of ``tests/scene_support.py``. No LAN device, no hardware.
 
 from __future__ import annotations
 
-import copy
 import itertools
 import logging
 from collections import Counter
@@ -20,17 +19,23 @@ from tests.scene_support import (
     SceneFleet,
     call,
     device_target,
+    entry,
     group_target,
     open_fleet,
+    policy,
     scene_document,
     segments_of,
+    snapshot,
     strip,
     write_group_file,
     write_scene_file,
 )
+from tests.scene_support import (
+    target_of as entry_of_plan,
+)
 from tests.tool_contract import CONTROL, expected_tool
 from wled_mcp import scene_tools
-from wled_mcp.access import AccessPolicy, ToolClass
+from wled_mcp.access import ToolClass
 from wled_mcp.models import DomainError
 from wled_mcp.scene_tools import (
     MAX_CONCURRENCY,
@@ -93,17 +98,8 @@ def posts_of(fleet: SceneFleet, device_id: str) -> list[Any]:
     return fake_of(fleet, device_id).posts
 
 
-def entry(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [d for d in outcome.data["devices"] if d["device_id"] == device_id]
-    return found
-
-
 def triple(outcome: Any) -> tuple[str, str, bool]:
     return outcome.application, outcome.verification, outcome.ok
-
-
-def snapshot(fleet: SceneFleet) -> dict[str, Any]:
-    return {host: copy.deepcopy(fake.state()) for host, fake in fleet.devices.items()}
 
 
 # ============================================================ classification (AC-17-11)
@@ -707,10 +703,6 @@ async def test_a_stopped_scene_leaves_unstarted_devices_untouched_and_never_repl
 # ======================================================== access: profiles and ceilings
 
 
-def policy(profile: str = "control", **caps: str) -> AccessPolicy:
-    return AccessPolicy(profile, {d: ToolClass(v) for d, v in caps.items()})  # type: ignore[arg-type]
-
-
 @pytest.mark.anyio
 async def test_a_device_below_control_fails_preflight_before_any_read_of_it(tmp_path):
     fleet = three()
@@ -743,11 +735,6 @@ async def test_apply_dry_run_applies_the_same_ceiling_as_an_apply(tmp_path):
     assert entry_of_plan(dry, "shelf_left")["error"]["code"] == "ACCESS_DENIED"
     assert entry_of_plan(plan, "shelf_left")["preflight"] == "ok"
     assert fleet.post_count() == 0
-
-
-def entry_of_plan(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [t for t in outcome.data["targets"] if t["device_id"] == device_id]
-    return found
 
 
 @pytest.mark.anyio

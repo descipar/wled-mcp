@@ -6,7 +6,6 @@ asserts that no device POST was sent.
 
 from __future__ import annotations
 
-import copy
 import json
 from pathlib import Path
 from typing import Any
@@ -21,14 +20,17 @@ from tests.scene_support import (
     call,
     canonical_scene,
     device_target,
+    error_of,
     group_arguments,
     group_target,
     open_fleet,
     scene_document,
     segments_of,
+    snapshot,
     stored_group_path,
     stored_scene_path,
     strip,
+    target_of,
     write_group_file,
     write_raw,
     write_scene_file,
@@ -54,16 +56,6 @@ def three() -> SceneFleet:
         shelf_left=strip(effects=WIPE_LEFT),
         shelf_right=strip(effects=AMBIGUOUS),
     )
-
-
-def error_of(outcome: Any) -> dict[str, Any]:
-    assert outcome.ok is False and outcome.error is not None
-    return outcome.error.model_dump()
-
-
-def target_of(outcome: Any, device_id: str) -> dict[str, Any]:
-    (found,) = [t for t in outcome.data["targets"] if t["device_id"] == device_id]
-    return found
 
 
 async def save_scene(resources: Any, document: dict[str, Any], **kwargs: Any) -> Any:
@@ -515,10 +507,6 @@ async def test_target_map_failures_write_nothing_all_or_nothing(tmp_path):
 
 
 # ===================================================================== plan (AC-17-04, -05)
-
-
-def snapshot(fleet: SceneFleet) -> dict[str, Any]:
-    return {host: copy.deepcopy(fake.state()) for host, fake in fleet.devices.items()}
 
 
 async def planned(resources: Any, scene_id: str = "evening", **kwargs: Any) -> Any:

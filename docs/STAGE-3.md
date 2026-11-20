@@ -2,11 +2,11 @@
 
 Planning baseline: 2026-11-04. Tracker: [#26](https://github.com/descipar/wled-mcp/issues/26).
 
-The five additional ideas are assigned to stage 3 by the user's scope decision. Stage 1 (#1) remains the working server; stage 2 (#15) remains public-release readiness and its existing product roadmap. Stage-3 features are not prerequisites for a first public release. This assignment creates requirements/issues only; no feature is implemented or tested yet.
+The five additional ideas are not prerequisites for a first public release; stage 1 (#1) is the working server and stage 2 (#15) is public-release readiness.
 
 ## Work order
 
-Superseded by milestones ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)): the order and grouping of these issues are in [ROADMAP.md](ROADMAP.md). The earlier order of [DEC-027](DECISIONS.md#dec-027--re-stage-the-open-work-by-value-per-effort) is kept as history. This document keeps the requirement tables.
+Order and grouping follow the milestones ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages), [ROADMAP.md](ROADMAP.md)); this document keeps the requirement tables.
 
 ## Requirements and owning issues
 
@@ -23,27 +23,7 @@ Superseded by milestones ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-
 | S3-EFFECT-01 | Search a curated, versioned effect-property catalog intersected with the target device's real effect catalog. Properties may include motion, flashing, color/palette use and strip-length suitability, with provenance, confidence and firmware/build matching. IDs are not assumed universal. | [#31](https://github.com/descipar/wled-mcp/issues/31) |
 | S3-EFFECT-02 | Explain matches and unverified properties; unknown behavior cannot satisfy a strict filter requiring verified properties. Search is read-only; applying a result uses an explicit existing control call. No mandatory cloud/LLM account, telemetry or unverified promise to classify every effect. | [#31](https://github.com/descipar/wled-mcp/issues/31) |
 
-All features reuse the versioned tool/result contract, capability handling, authorization/profile checks, per-device coordination and uncertain-write behavior. Supporting both transports does not permit one adapter to expose weaker restrictions.
-
-## Scope and sequencing
-
-| Work | Foundation / coordination | Suggested order |
-| --- | --- | --- |
-| Named zones #27 | Stage-1 controls/layouts #6/#7; coordinate with groups/scenes #17 | First: high practical value without timing service logic |
-| Static preview #29 | State/layouts #5/#7; optional zone labels #27 and matrix #19 | Alongside/after zones; useful for inspection and proposed changes |
-| Explanations #30 | State/control evidence #5/#6; doctor #16 and diagnostics #20 | Reuse diagnostics rather than build a separate subsystem |
-| Effect search #31 | Catalogs #5 and compatibility policy #21 | Start with a small reviewed taxonomy, expand with evidence |
-| Temporary signals #28 | Controls/layouts #6/#7, shared HTTP lifecycle #14 and profiles #20 | After restoration/conflict/restart semantics are finalized |
-
-The order is a recommendation, not an instruction to implement now. Temporary signals add a bounded operation lifecycle; they must not quietly introduce a general scheduler contrary to earlier scope. Scene/zone changes need explicit conflict semantics. Missing optional dependencies should narrow advertised functionality rather than create hidden assumptions.
-
-## Agent-facing examples
-
-- A named-zone command resolves “example shelf left” into a documented range and shows whether the existing layout supports that operation.
-- A signal displays a selected color for a requested interval, then restores relevant prior state only if no intervening change is observed. An offline device can leave the outcome uncertain; report that rather than replaying later without policy.
-- A preview shows how a proposed split covers a synthetic 60-LED strip, including gaps, without changing any device.
-- A diagnostic reports an observed active-playback indicator as one possible explanation for a verification mismatch; it does not assert a cause it cannot prove.
-- Effect search returns only available effects, explaining verified and unverified properties. Applying one is a separate explicit mutation.
+All features reuse the versioned tool/result contract, capability handling, profile checks, per-device coordination and uncertain-write behavior on both transports. Temporary signals must not grow into a general scheduler; missing optional dependencies narrow advertised functionality.
 
 ## Acceptance scenarios
 
@@ -55,4 +35,4 @@ The order is a recommendation, not an instruction to implement now. Temporary si
 | S3-T04 | Diagnostics with competing plausible causes, missing firmware indicators, stale evidence and unattributable mismatch; no corrective POSTs or sensitive output |
 | S3-T05 | Effect catalog with changed IDs, missing metadata, strict/partial filters, ambiguous names and firmware differences; unknown flashing/motion properties do not become guarantees |
 
-Run domain/mocked tests and both transport adapters without LAN devices by default. Add opt-in physical validation only where needed and authorized. A static layout preview is not evidence of physical color accuracy or firmware animation fidelity. Update issue status and public tool docs only when behavior is actually implemented and verified.
+Tests run mocked on both transports without LAN devices; physical validation is opt-in and authorized. A static layout preview is no evidence of physical color accuracy or animation fidelity.
