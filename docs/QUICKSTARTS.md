@@ -177,7 +177,7 @@ problems with fixed codes and a sanitized `--export` summary
 ### Agent-driven path (milestone M8, not yet released)
 
 Instead of the CLI, an agent can find and add controllers through the MCP client. These
-tools are merged but not in a released version; the live evidence is pending
+tools are merged but not in a released version; the live evidence was recorded on 2026-11-20
 ([validation/issue-204.md](validation/issue-204.md)). Each step is an explicit call and
 nothing runs at startup ([contract](contract/discovery.md)):
 

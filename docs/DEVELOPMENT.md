@@ -163,6 +163,20 @@ Do not add tool-name lists or tool counts to other tests; select a tool by name 
 probe allowlists in `scripts/hw_http_probe.py` and `scripts/hw_read_only_probe.py`
 stay literal on purpose and are guarded by subset tests.
 
+## Read-only hardware quick path
+
+An optional check of the read tools (H01/H02) against one explicitly authorized device over
+local stdio, with no deployment and no write. Copy
+`examples/h01-h02.devices.example.toml` to `runtime/h01-h02/devices.toml` (ignored by version
+control), put the selected device in it and record its timers, other API clients, playlists and
+realtime inputs without disabling any. Then run
+`uv run --frozen python scripts/hw_read_only_probe.py <device-id>`: it calls only
+`wled_list_devices(probe=true)`, `wled_get_state`, `wled_get_effects` and
+`wled_get_palettes`, refuses any other tool and writes to `runtime/h01-h02/out/`. Compare
+firmware, LED count, capabilities, effect/palette IDs and segments with the WLED UI. Record only a
+sanitized summary in [VALIDATION.md](VALIDATION.md); mismatches become issues. Real addresses and
+raw output never enter the repository.
+
 ## Snapshot store tests
 
 `tests/test_backups.py` covers the #8 snapshot store with pytest `tmp_path`, mock

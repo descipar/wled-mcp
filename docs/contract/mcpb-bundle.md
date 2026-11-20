@@ -12,8 +12,8 @@ workflow: [PUBLISHING.md](../PUBLISHING.md#mcpb-bundle-151).
 | --- | --- | --- |
 | DIST-04 | Every release workflow run builds the Claude Desktop bundle `wled-mcp-<version>.mcpb` from the tagged version, and a separate job attaches it with its SHA-256 to the GitHub release only after the PyPI upload succeeded. The bundle contains no server code: its manifest launches the released PyPI package through `uvx`, pinned to that version, over stdio only. The bundle is built along with each release, not tested by the project and comes without warranty; README, MARKETPLACE.md and PUBLISHING.md say so. A failure of the bundle jobs never prevents or changes the PyPI upload. | D151-01 to D151-14 |
 
-DIST-04 was first named in the [architecture review](../ARCHITECTURE-REVIEW-2026-11-09.md); its
-"one actual install check" wording is superseded for #151 by ISSUE-151-DEC-001 (no Claude
+DIST-04's original "one actual install check" wording (from the architecture review of 2026-11-09,
+since removed from the repository) is superseded for #151 by ISSUE-151-DEC-001 (no Claude
 Desktop run, no test of the bundle by the project).
 
 ## Scenarios

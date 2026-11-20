@@ -39,8 +39,8 @@ this file. Fixes are made for the latest release only. See
   key (12 lowercase hex; an older server rejects the unknown key at startup; migration-notes
   rows for `/devices/mac` and `/discovery` under the provisional 0.5.0 in
   [versioning](docs/contract/versioning.md)), and `wled_discover_devices` and `wled-mcp discover` use a stored `mac` to
-  recognize a moved controller without an extra read. Mocked evidence only; the live enrollment
-  is pending.
+  recognize a moved controller without an extra read. The live enrollment ran once on 2026-11-19
+  ([record](docs/validation/issue-203.md)).
 - **`wled_set_discovery_ranges` (#202).** A `manage` tool (profile `full` only) replaces the
   stored discovery ranges: `ranges` is the complete new list (RFC 1918, /24 to /30, at most 4,
   no overlap; `[]` clears it; `dry_run` shows the final list). Rejections list every bad entry
@@ -54,7 +54,7 @@ this file. Fixes are made for the latest release only. See
   inventory writer: the storage failure reason names the real cause (missing or unwritable
   directory is `not_writable`), the in-process write lock is per file, and a Windows lock-byte
   failure is a storage failure. Contract: [docs/contract/discovery.md](docs/contract/discovery.md).
-  Mocked tests only; live evidence and the release README text follow with #204.
+  Mocked tests plus the live discovery runs of #204 (2026-11-20, [record](docs/validation/issue-204.md)).
 - **Rooms (#183).** A stored group can be marked as a room (`kind` `room`, new optional input of
   `wled_save_group`; the group format stays version 1 and a plain group is saved byte-identical
   to before). A controller is in at most one room: saving a room that lists a device of another
@@ -213,8 +213,8 @@ protocol error bodies, the HTTP startup line and the definition-directory scan c
   README, deployment guide (in-process reload by the M8 tools, discovery from a container,
   writable config directory), quickstart (agent-driven path), tool contract, coverage table,
   migration-notes rows and the [validation plan](docs/validation/issue-204.md) with the
-  release-preparation checklist. The live discovery runs per deployment mode are pending
-  owner authorization; no release is made and the version is unchanged.
+  release-preparation checklist. The three live discovery runs were recorded on 2026-11-20
+  (all passed their main criterion); no release is made and the version is unchanged.
 - Decision records, roadmap and agent-workflow documents changed; they do not affect the package.
 
 ## 0.3.0 - M2: observe and explain

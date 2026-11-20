@@ -116,9 +116,6 @@ completion.
 | [Development](DEVELOPMENT.md) | Local checks, build, wheel launch and CI-equivalent commands |
 | [Validation](VALIDATION.md) | Meaningful automated checks, opt-in hardware checks, per-issue evidence records |
 | [Traceability](TRACEABILITY.md) | Must requirements and T01-T21 to automated evidence; hardware/deployment gaps marked pending |
-| [Implementation plan](IMPLEMENTATION-PLAN.md) | Issue order, dependency graph, requirement traceability |
-| [Hardware quick path](HARDWARE-QUICKPATH.md) | Read-only probe first, then authorized hardware checks |
-| [Agent handoff](AGENT-HANDOFF.md) | Concrete instructions for the next implementing agent |
 | [Agent workflow](AGENT-WORKFLOW.md) | Five shared roles with native Codex/Claude adapters, handoffs, human merge and evidenced issue completion |
 | [Decision log](DECISIONS.md) | Scoped project knowledge from owner answers, sources and supersession |
 | [Sources](SOURCES.md) | Official references, reviewed alternatives, license boundaries |
@@ -134,8 +131,8 @@ completion.
    acceptance conditions, and the [decision log](DECISIONS.md) with the applicable
    [issue records](decisions/README.md).
 3. Read the [tool contract](TOOL-CONTRACT.md) and the [architecture](ARCHITECTURE.md).
-4. Use the [implementation plan](IMPLEMENTATION-PLAN.md) and its linked GitHub issues.
-5. Work from the [agent handoff](AGENT-HANDOFF.md); record evidence in
+4. Use the selected GitHub issue and the [roadmap](ROADMAP.md) for scope and order.
+5. Follow the [agent workflow](AGENT-WORKFLOW.md); record evidence in
    [VALIDATION.md](VALIDATION.md) and keep [TRACEABILITY.md](TRACEABILITY.md) honest.
 
 The repository includes [shared Codex and Claude Code roles](../agents/README.md) and a
