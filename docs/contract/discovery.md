@@ -7,7 +7,8 @@ CLI `discover` on top of it, the inventory writer and in-process reload (#201), 
 evidence is #204). `wled_add_device` with `devices[].mac` is implemented in #203 (mocked
 evidence in `tests/test_add_device.py`; the live enrollment was run once on 2026-11-19, see
 [validation/issue-203.md](../validation/issue-203.md)). None of the tools is in a released
-server yet.
+server yet. The release preparation and the live-run procedures are in
+[validation/issue-204.md](../validation/issue-204.md).
 
 Decisions: [DEC-035](../DECISIONS.md#dec-035--agent-driven-discovery-and-enrollment) is the
 owner decision (confirmed part). [ISSUE-198-DEC-001](../decisions/issue-198.md) records the
@@ -330,9 +331,8 @@ echo). Root keys and `[discovery]` come before the first `[[devices]]`, as for `
 is written by `wled_add_device` (implemented), used only to match a controller whose address changed and
 never to route a request. An older build rejects the unknown keys at startup with exit code 2;
 a downgrade uses the configuration kept for that version. The migration-notes rows in
-versioning.md for `/discovery` and `/devices/mac` are added at the M8 release preparation
-(#204), because no release number is known yet (the rooms row uses a provisional release
-number).
+versioning.md for `/discovery` and `/devices/mac` were added by #204 under the provisional
+release number 0.5.0 (like the rooms row), to be corrected at the release.
 
 ## Reload semantics
 

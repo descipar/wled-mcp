@@ -179,7 +179,7 @@ owning issue for planned rows and the decision for excluded rows.
 | W-INFO-06 | Sync nodes | `/json/nodes` | unplanned | - | - | - |
 | W-INFO-07 | Wi-Fi network scan | `/json/net` | unplanned | - | - | - |
 | W-INFO-08 | Pin usage | `/json/pins` | unplanned | - | - | - |
-| W-INFO-09 | mDNS discovery | mDNS announcement | supported | `wled_discover_devices`, `cli: wled-mcp discover` | - | CLI: one-shot IPv4 mDNS query on explicit invocation; candidates only (ISSUE-16-DEC-001, superseded in part by DEC-035). Tool `wled_discover_devices` (#200, read-only, mDNS plus known-device reads; ranges follow with #202); unicast probe configuration and enrollment: M8, [contract](contract/discovery.md). |
+| W-INFO-09 | mDNS discovery | mDNS announcement | supported | `wled_discover_devices`, `cli: wled-mcp discover` | - | CLI: one-shot IPv4 mDNS query on explicit invocation; candidates only (ISSUE-16-DEC-001, superseded in part by DEC-035). Tool `wled_discover_devices` (#200, read-only, mDNS plus known-device reads and the unicast probe of the ranges stored with `wled_set_discovery_ranges`, #202); enrollment `wled_add_device` (#203). All merged, not yet released; live evidence of #204 pending. [contract](contract/discovery.md). |
 
 ## Configuration
 

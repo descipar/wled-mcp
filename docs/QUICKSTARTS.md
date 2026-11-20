@@ -161,9 +161,10 @@ base_url = "http://wled-desk.example.invalid"
 `wled-mcp config init --config <abs>` writes a new inventory (optionally with one
 device), `wled-mcp config add-device` appends a device and `wled-mcp config validate`
 checks a file with the startup validator, without contacting any device. The file is
-read once at startup. To change it, keep a copy of the working file, edit it, run
+read at startup. To change it by hand, keep a copy of the working file, edit it, run
 `config validate` and restart the server; there is no reload command
-([procedure and rollback](DEPLOYMENT.md#changing-the-inventory)). An invalid file
+([procedure and rollback](DEPLOYMENT.md#changing-the-inventory)). An agent can change it
+without a restart through the M8 tools (merged, not yet released; see below). An invalid file
 stops startup with a message that names the rejected entry by position and field,
 without echoing values. Nothing is discovered automatically: on request,
 `wled-mcp discover` sends one mDNS query on the local network and prints the
@@ -172,3 +173,26 @@ without echoing values. Nothing is discovered automatically: on request,
 read-only `wled-mcp doctor` reports configuration, storage, device and endpoint
 problems with fixed codes and a sanitized `--export` summary
 ([CLI contract](contract/cli.md)).
+
+### Agent-driven path (milestone M8, not yet released)
+
+Instead of the CLI, an agent can find and add controllers through the MCP client. These
+tools are merged but not in a released version; the live evidence is pending
+([validation/issue-204.md](validation/issue-204.md)). Each step is an explicit call and
+nothing runs at startup ([contract](contract/discovery.md)):
+
+1. `wled_discover_devices` runs mDNS and, when ranges are stored, a bounded read-only
+   `GET /json/info` probe of those RFC 1918 ranges (at most a /24 each). It lists candidates
+   as `new`, `known` or `address_changed` and a coverage report; it writes nothing. From a
+   container mDNS usually finds nothing, which the report states.
+2. Optional: `wled_set_discovery_ranges` stores the private ranges to probe (the complete
+   new list; `dry_run` shows the result). It writes only the inventory file and contacts no
+   device. Without stored ranges only mDNS runs and proposed ranges are returned, never probed.
+3. `wled_add_device` adds one candidate by its IPv4 address after one verifying
+   `GET /json/info`; the MCP client asks the person to confirm the call. The entry is in
+   effect at once, without a restart, in stdio and in the HTTP container. It never writes to
+   the device. A duplicate ID, address or MAC is refused.
+
+Both writing tools need the profile `full` and a config directory the server can write (a
+mounted directory, see [Persistent paths](DEPLOYMENT.md#persistent-paths)). The CLI path
+above stays available for hand editing.

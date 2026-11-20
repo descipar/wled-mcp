@@ -24,11 +24,14 @@ atomic and not synchronized across devices (see
 #31 adds the read-only `wled_search_effects`: a search of one device's effects by curated
 properties (see [contract/effect-search.md](contract/effect-search.md)).
 M8 specifies `wled_discover_devices`, `wled_set_discovery_ranges` and `wled_add_device`
-(see [contract/discovery.md](contract/discovery.md)). `wled_discover_devices` is implemented
+(see [contract/discovery.md](contract/discovery.md)); all three are implemented and merged
+but not yet released, and the live evidence of #204 is pending. `wled_discover_devices` is implemented
 (#200: a read tool, writes nothing, error `DISCOVERY_BUSY`), as are `wled_set_discovery_ranges`
 (#202) and `wled_add_device` (#203: a client-confirmed `manage` call, one read-only
 `GET /json/info` of an explicit RFC 1918 IPv4 address, one inventory entry, error `NOT_WLED`;
-the live enrollment is pending).
+the live enrollment ran once on 2026-11-19, see
+[validation/issue-203.md](validation/issue-203.md); the discovery runs per deployment mode
+are pending, [validation/issue-204.md](validation/issue-204.md)).
 #27 adds named physical lighting zones: `wled_list_zones`, `wled_plan_zone` (read) and
 `wled_apply_zone` (control), which change only the segments inside a reviewed zone and never
 the geometry (see [contract/zones.md](contract/zones.md)).
