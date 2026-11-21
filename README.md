@@ -22,7 +22,7 @@ on WLED 16.0.1. No support is promised
 
 - Self-hosted: no cloud service, account, MQTT broker or public endpoint. Controllers are a named
   inventory in a TOML file; nothing is discovered unless you ask.
-- Discovery and enrollment (M8, **not yet released**): `wled_discover_devices`,
+- Discovery and enrollment (M8): `wled_discover_devices`,
   `wled_set_discovery_ranges` and `wled_add_device` find and add controllers on request; the writes
   touch only the inventory file ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/discovery.md)).
 - State, catalogs and effect search: normalized state and capabilities, each device's own effect
@@ -30,7 +30,7 @@ on WLED 16.0.1. No support is promised
 - Typed changes: power, brightness, a patch of selected segments or a replacement of the complete
   layout, with effects and palettes by name or ID checked against the device's catalog first.
 - Zones and rooms: a zone file maps a physical region to devices and LED ranges (changes outside
-  it are refused); a stored group can be a room that `wled_apply_room` (not yet released) addresses
+  it are refused); a stored group can be a room that `wled_apply_room` addresses
   as a whole ([rooms](https://github.com/descipar/wled-mcp/blob/main/docs/contract/rooms.md)).
 - Presets, groups and scenes: persistent presets with snapshots, restore, bundles and playlists;
   named groups and multi-device scenes with a dry-run plan.
@@ -140,7 +140,7 @@ on one controller; details are in [docs/VALIDATION.md](https://github.com/descip
 - On WLED 16, storing, restoring or importing a preset changes the live output, and saving a
   playlist may start it.
 - One writer per controller: locks are per process.
-- Hand edits of the inventory need `wled-mcp config validate` and a restart; the M8 tools (not yet released) apply their own changes by in-process reload.
+- Hand edits of the inventory need `wled-mcp config validate` and a restart; the M8 tools apply their own changes by in-process reload.
 - No device authentication: WLED has none for its light API ("Anyone with your IP and port
   can control the lights", [WLED docs](https://kno.wled.ge/advanced/ota-lock/)). The server
   sends no device credentials and does not support a controller behind HTTP authentication.
