@@ -228,7 +228,7 @@ From M8 an agent can also discover controllers through the MCP tool `wled_discov
 
 In a container on a Docker bridge network mDNS usually sees nothing; the report says so and does not claim that no controller exists. The unicast probe works only if the container can route to the LAN range (host network setup, firewall or VLAN rules; not assumed). Docker Desktop on macOS runs containers in a VM: treat mDNS as unavailable and expect unicast reach to depend on the VM's networking. Both facts were checked once on 2026-11-20 on Docker Desktop for macOS with a default bridge network: mDNS saw no responder, and the unicast probe of a configured /24 reached the test controller ([validation/m7-m8.md](validation/m7-m8.md#live-runs-2026-11-20)). That is one environment; others can differ.
 
-M8 is part of the release described in the [changelog](../CHANGELOG.md); the release record is in [validation/releases.md](validation/releases.md) (to be added at publication). Deploying a version that contains M8 stays an owner-gated step of its own.
+M8 is part of the release described in the [changelog](../CHANGELOG.md); the release record is in [validation/releases.md](validation/releases.md#release-041-milestones-m7-and-m8-and-all-work-merged-since-040). Deploying a version that contains M8 stays an owner-gated step of its own.
 
 Commands, exit codes and the export allowlist: [contract/cli.md](contract/cli.md).
 
