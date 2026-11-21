@@ -5,7 +5,18 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## Unreleased
+## 0.4.1 - M7 and M8: rooms, device discovery and enrollment, slimmer tool schemas
+
+Not a bugfix release despite the patch number: it adds four tools, new optional configuration
+keys and new error codes, and changes the behavior of `wled-mcp discover`. The owner chose the
+number 0.4.1 for this release instead of the provisional 0.5.0 ([DEC-030](docs/DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)
+had asked for a minor release). It carries the work merged since 0.4.0: M7 rooms (#183,
+[DEC-038](docs/DECISIONS.md#dec-038--m7-closes-without-its-own-release)), M8 discovery and enrollment
+(#198 to #204), slimmer served tool schemas (#235), dependency updates and smaller fixes. The `full`
+profile serves 41 tools instead of 37 (`wled_apply_room`, `wled_discover_devices`, `wled_add_device`,
+`wled_set_discovery_ranges`). The changes are additive except the `wled-mcp discover` behavior change
+(see Changed); the schema, configuration and group-file additions are listed in the
+[migration notes](docs/contract/versioning.md#migration-notes), with downgrade steps.
 
 ### Added
 
@@ -40,11 +51,11 @@ this file. Fixes are made for the latest release only. See
   control tool `wled_apply_room` applies a master state or stored scene to a room's members through
   the scene write path (dry run, strict by default, per-device outcomes, uncertain writes never
   retried). `wled_plan_zone` and `wled_apply_zone` take an optional `room` (`outside_room`). The
-  tool list grows from 37 to 38 and the `full` profile from 60572 to 63676 characters
+  tool list grew from 37 to 38 with this change and the `full` profile from 60572 to 63676 characters
   ([measurements](docs/validation/m7-m8.md)). All additive; an older server counts a room file as
   invalid and leaves it untouched ([migration note](docs/contract/versioning.md#migration-notes)).
   Contract: [rooms](docs/contract/rooms.md); one live run in
-  [validation/m7-m8.md](docs/validation/m7-m8.md), not yet released.
+  [validation/m7-m8.md](docs/validation/m7-m8.md).
 
 ### Changed
 
@@ -64,10 +75,25 @@ this file. Fixes are made for the latest release only. See
   schemas shrink from 70926 to 60572 characters (14.6 %), output schemas from 67118 to 53095.
   No tool, name, annotation, field, validation rule or result changed; a test guards a size budget
   per tool and profile ([measurements](docs/validation/m7-m8.md)).
+- Dependencies and tooling: runtime pins `click` 8.5.1, `pydantic` 2.14.3, `pydantic-core` 2.50.4 and
+  `sse-starlette` 3.7.0 (`requirements-runtime.txt`; declared ranges unchanged); build backend
+  `hatchling` 1.33.0; development tools `mypy` 2 and Ruff 0.17.5; GitHub Actions updated
+  and Dependabot grouped monthly. Smaller fixes: the explain, layout preview and CI gate follow-ups
+  of #162, #180, #190 and #242 and the tooling items #213 to #217.
 - Documentation: M8 closing documentation (#204: README, deployment guide, quickstart, tool
-  contract, coverage table, migration rows, [validation plan](docs/validation/m7-m8.md)); the
-  version is unchanged and no release is made. Decision, roadmap and workflow documents do not
+  contract, coverage table, migration rows, [validation plan](docs/validation/m7-m8.md)) and a
+  cleanup of the repository documents (#260). Decision, roadmap and workflow documents do not
   affect the package.
+
+### Tested and not tested
+
+- New tools have mocked and in-memory tests with stdio/HTTP parity. Live, on the one test controller
+  (WLED 16.0.1): one room run (#183), two enrollment attempts of `wled_add_device` on 2026-11-19
+  (first `NOT_WLED`, second succeeded) and three discovery runs on 2026-11-20 (stdio, HTTP, HTTP in a
+  container; one network, one Docker Desktop version, not a matrix; [record](docs/validation/m7-m8.md)).
+  A discovery run limited to one device is not possible ([#265](https://github.com/descipar/wled-mcp/issues/265)).
+  Linux hosts with another Docker network mode and the MCPB bundle in Claude
+  Desktop were not run.
 
 ## 0.4.0 - M3 to M6: layout preview, signals, security review and the MCPB bundle
 

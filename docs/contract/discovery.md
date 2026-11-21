@@ -268,7 +268,7 @@ and the writer emits them in that order. A device gains the optional `mac` (12 l
 colon-separated form is normalized when read), written by `wled_add_device`, used only to match a controller whose
 address changed and never to route a request. An older build rejects the unknown keys at startup with exit code 2; a
 downgrade uses the configuration kept for that version. The migration-notes rows in versioning.md for `/discovery` and
-`/devices/mac` carry the provisional release number 0.5.0 (like the rooms row), to be corrected at the release.
+`/devices/mac` (and the rooms row `/kind`) name the release that first carried them.
 
 ## Reload semantics
 

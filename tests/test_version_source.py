@@ -86,6 +86,7 @@ LITERAL_ALLOWLIST = (
     "server.json",
     "CHANGELOG.md",
     "docs/VALIDATION.md",
+    "docs/contract/versioning.md",  # migration notes name the release of each change
     "docs/validation/",
     "docs/DECISIONS.md",
     "docs/decisions/",
