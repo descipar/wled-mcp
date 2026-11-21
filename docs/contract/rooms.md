@@ -2,7 +2,7 @@
 
 Contract for milestone M7. A room is a stored group with `kind` `room`: it says where controllers
 are, and one explicit tool applies a master state or a stored scene to the members of a room. Rooms
-belong to the next release (marked "not yet released" in the README until then). Decisions:
+were released together with milestone M8 (see the changelog). Decisions:
 [ISSUE-183-DEC-002](../decisions/m7-m8.md) records the design defaults (technical proposals,
 not human decisions; the owner can change any at the merge decision);
 [ISSUE-183-DEC-001](../decisions/m7-m8.md) is the bounded live-run authorization. Evidence:

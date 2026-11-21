@@ -106,6 +106,52 @@ explicit instruction ("everything of the release", 2026-11-13;
 milestone in GitHub is left to the owner or the main session. Deployment of 0.4.0 followed on a separate
 owner instruction (below); the rollback 0.4.0 to 0.3.0 was not run and stays pending.
 
+## Release 0.4.1 (milestones M7 and M8 and all work merged since 0.4.0)
+
+### Preparation
+
+PR #274 (merge commit `b65196a4582c1df9d89c1e429c6e6db220725c31`), on the owner's request to finish M8
+as release 0.4.1 instead of the provisional 0.5.0. The owner counts 0.4.1 as the
+[DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release) release for M8
+([DEC-040](../DECISIONS.md#dec-040--release-041-counts-as-the-dec-030-release-for-m8)); M7 closes
+without its own release ([DEC-038](../DECISIONS.md#dec-038--m7-closes-without-its-own-release)).
+Version `0.4.1` in `pyproject.toml`, `uv.lock` and both `server.json` versions; the `full` profile serves
+41 tools instead of 37 (`wled_apply_room`, `wled_discover_devices`, `wled_add_device`,
+`wled_set_discovery_ranges`); the CHANGELOG section says it is not a bugfix release and the migration rows
+`/kind`, `/devices/mac` and `/discovery` name 0.4.1.
+
+Verified before publication (local, macOS, Python 3.13): `pytest -n auto` 3894 passed, 47 skipped;
+ruff, `ruff --select S`, mypy, `sync_agents --check`, `check_agent_setup`, `check_lock`,
+`check_private_identifiers`, `check_traceability`, `tests/test_version_source.py`,
+`tests/test_upgrade_compat.py` and `scripts/check_distribution.py` PASS; MCPB dry run built. An Opus
+review of the head (CHANGES_REQUESTED on the first head, PASS after fixes) preceded the merge; CI was green.
+
+### Release and registry publication 2026-11-21
+
+Each step on the owner's explicit instruction
+([DEC-023](../DECISIONS.md#dec-023--staged-first-public-release)); recorded by the coordinator.
+
+- Annotated tag `v0.4.1` on `b65196a4582c1df9d89c1e429c6e6db220725c31` and GitHub release `v0.4.1`
+  (title only, not a draft or pre-release).
+- `publish.yml` run 44953263941: all jobs succeeded (build and smoke test, MCPB build, PyPI publish,
+  attach MCPB).
+- PyPI files and SHA-256 (equal to the build artifacts; the `mcp-name` marker is in the description):
+  `wled_mcp-0.4.1-py3-none-any.whl` `230e7cbb33d6aa4544618c85c56bf23fc4b12188c7cc180d744e42087dabf8d4`;
+  `wled_mcp-0.4.1.tar.gz` `536673edb69788dff2c175098b6afabf25ddcc7054dfe6c35b1aff5d994d9053`.
+- `uvx --no-cache --isolated --python 3.13 --from wled-mcp==0.4.1 wled-mcp --version` printed `0.4.1`.
+- MCPB: `wled-mcp-0.4.1.mcpb` SHA-256
+  `1706f1138377c78c0b3cb547391ce24d799599e5c3a0acb41f376f04d309bcd7` with its `.sha256` on the release;
+  the hash equals the local dry run.
+- Registry: `mcp-publisher` 1.8.11 (checksum verified); `io.github.descipar/wled-mcp` 0.4.1 is active and
+  latest; 0.2.0, 0.3.0 and 0.4.0 stay listed.
+
+### Limits
+
+Not run: Claude Desktop with the bundle, Linux hosts or Docker host-network mode for discovery (one
+network and one Docker Desktop version only; [validation/m7-m8.md](m7-m8.md#live-runs-2026-11-20)),
+a deployment of 0.4.1 on the owner's target (a separate owner-gated step, DEC-026, DEC-037) and a
+rollback run. Closing #204 and the M7/M8 milestones is left to the owner or the completion step.
+
 ## Launch report: published release 0.3.0
 
 Evidence for [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01, S2-LAUNCH-02,
