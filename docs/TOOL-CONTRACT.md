@@ -8,7 +8,7 @@ end](#stage-2-and-later-files); see [where new documentation goes](AGENT-WORKFLO
 Inventory and client foundations: [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md).
 
 Status: every tool in the tables below is implemented; the "V1 tools" table names the owning issue and file. The
-discovery tools of M8 are merged but not yet released; live evidence (the #203 enrollment ran twice on 2026-11-19, the #204
+discovery tools of M8 are released; live evidence (the #203 enrollment ran twice on 2026-11-19, the #204
 discovery runs passed on 2026-11-20) is in [validation/m7-m8.md](validation/m7-m8.md). `wled_patch_raw_state` remains a design
 requirement, not executable behavior (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06): [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
 

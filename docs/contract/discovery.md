@@ -2,7 +2,7 @@
 
 Contract for milestone M8. The shared engine (`src/wled_mcp/discovery_engine.py`), the CLI `discover`, the inventory
 writer with in-process reload, `wled_discover_devices`, `wled_set_discovery_ranges` (with `[discovery].ranges` and the
-hard caps) and `wled_add_device` (with `devices[].mac`) are implemented and merged but not yet released. Evidence:
+hard caps) and `wled_add_device` (with `devices[].mac`) are implemented and released (see the changelog). Evidence:
 mocked tests plus the live runs of [validation/m7-m8.md](../validation/m7-m8.md) and
 [validation/m7-m8.md](../validation/m7-m8.md).
 

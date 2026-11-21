@@ -539,6 +539,9 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
 - Decision: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships
   with the next minor release and stays under Unreleased; the README marks room behavior "not yet
   released". M7 closes once #183 is closed and this record is merged. Scope: M7 only.
+- Update (after publication): M7's work shipped in release 0.4.1 together with M8's (the owner chose
+  0.4.1 over the provisional 0.5.0; DEC-030 satisfied by that release). Publication date: <fill in at
+  publication>.
 
 ### DEC-037 — No MCPHub reinstall in project steps
 
