@@ -89,8 +89,9 @@ profile serves 41 tools instead of 37 (`wled_apply_room`, `wled_discover_devices
 
 - New tools have mocked and in-memory tests with stdio/HTTP parity. Live, on the one test controller
   (WLED 16.0.1): one room run (#183), two enrollment attempts of `wled_add_device` on 2026-11-19
-  (first `NOT_WLED`, second succeeded) and three discovery checks from two calls on 2026-11-20 (stdio on the host; one HTTP
-  call in a container, evaluated as runs 2 and 3; one network, one Docker Desktop version, not a matrix; [record](docs/validation/m7-m8.md)).
+  (first `NOT_WLED`, second succeeded) and three discovery checks from two calls on 2026-11-20
+  (stdio on the host; one HTTP call in a container, evaluated as runs 2 and 3; one network, one
+  Docker Desktop version, not a matrix; [record](docs/validation/m7-m8.md)).
   A discovery run limited to one device is not possible ([#265](https://github.com/descipar/wled-mcp/issues/265)).
   Linux hosts with another Docker network mode and the MCPB bundle in Claude
   Desktop were not run.

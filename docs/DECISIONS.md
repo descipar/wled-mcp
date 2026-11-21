@@ -88,6 +88,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-037 | Project / operations | A reinstall of the MCPHub itself (a fresh install of the hub) is never authorized and never part of a project test, rollback or release step; the MCPHub fresh-install test stays waived (ISSUE-24-DEC-005). Changes to the wled-mcp service on a deployed target do not imply a hub reinstall. | Confirmed owner statement, coordinator session, 2026-11-13 (paraphrased in English, no verbatim quote); see [DEC-037](#dec-037--no-mcphub-reinstall-in-project-steps) |
 | DEC-038 | Project / roadmap | Milestone M7 is closed without its own minor release: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships with the next minor release and stays under Unreleased in the changelog until then; the README marks it "not yet released". Applies to M7 only. | Confirmed owner statement, coordinator session, 2026-11-16; see [DEC-038](#dec-038--m7-closes-without-its-own-release) |
 | DEC-039 | Workflow / branches | No long-lived milestone branch: short-lived feature branches merge into `main` one PR at a time; `main` is the integration line (green, not necessarily release-ready) and users receive a release tag on a reviewed `main` commit. Non-standalone changes are split or kept behind an off-by-default option. | Confirmed owner statement, main session, 2026-11-18; see [DEC-039](#dec-039--main-is-the-integration-line-releases-are-tags) |
+| DEC-040 | Project / roadmap | The M8 release is published as 0.4.1; the owner counts it as satisfying DEC-030 item 1 for M8 (no waiver). Applies to this release only, not a rule for patch numbers. | Confirmed owner answer, main session, 2026-11-21; see [DEC-040](#dec-040--release-041-counts-as-the-dec-030-release-for-m8) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -512,6 +513,19 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
 - Decision: the owner waives DEC-030 item 1 for M4. M4 closes once #28 is closed and this
   record is merged; its work stays under `Unreleased` with M3's and ships with the next minor
   release; nothing is prepared for publication. Scope: M4 only, extends no other waiver.
+
+### DEC-040 — Release 0.4.1 counts as the DEC-030 release for M8
+
+- Status: active project decision, M8 release 0.4.1 only.
+- Source: owner answer, main session, 2026-11-21. Question: whether publishing the M8 work as
+  0.4.1 waives DEC-030 item 1 (option 1) or counts as satisfying it (option 2), with the note that
+  the number is then strictly not a minor release. Answer: "gilt als erfüllt" (English: "counts as
+  fulfilled"). The owner also chose the number 0.4.1 instead of the provisional 0.5.0.
+- Decision: release 0.4.1, which carries M8 (and M7's waived work, DEC-038), counts as the DEC-030
+  release for M8. It is not a waiver. Tag, GitHub release, PyPI and registry publication still need
+  the owner's explicit instruction (DEC-023, DEC-030).
+- Scope: the M8 release 0.4.1 only. Not a general rule that a patch number may carry a minor
+  release's content; later milestones follow DEC-030 as written.
 
 ### DEC-039 — `main` is the integration line, releases are tags
 
