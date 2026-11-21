@@ -48,11 +48,6 @@ def load_probe() -> ModuleType:
 probe = load_probe()
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 # ------------------------------------------------------------------------ stub server
 
 

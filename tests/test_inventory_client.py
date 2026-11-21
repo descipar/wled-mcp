@@ -19,11 +19,6 @@ from wled_mcp.operations import ListDevicesRequest, build_operations
 from wled_mcp.resources import Resources
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def device(identifier="desk"):
     return Device(
         id=identifier, name=f"Example {identifier}", base_url=f"http://{identifier}.invalid"

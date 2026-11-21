@@ -38,3 +38,9 @@ def no_real_enrollment_read(monkeypatch):
     from wled_mcp import enroll_tools
 
     monkeypatch.setattr(enroll_tools, "fetch_info", refusing_fetch)
+
+
+@pytest.fixture
+def anyio_backend():
+    """Run every anyio test on asyncio only (shared by all test modules)."""
+    return "asyncio"

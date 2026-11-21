@@ -6,7 +6,7 @@ an explicit ordered sequence of single-object ``seg`` POSTs together with the re
 check of every step and an exact final check.
 
 Technical baseline (accepted by delegated decision, ``ISSUE-7-DEC-003``..``-005``,
-docs/decisions/issue-7.md):
+docs/decisions/stage-1.md):
 baseline profile 0 (WLED v0.15.1 source, observed on 16.0.1), exact stale removal with
 one ``stop: 0`` POST per ID (never an array payload, which could purge/renumber slots),
 no filler segments, no temporary segment, creates only in ascending ID order within the

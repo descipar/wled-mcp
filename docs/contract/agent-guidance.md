@@ -29,6 +29,6 @@ when the replacement or deletion is unclear. Guidance adds no execution or confi
 authorization stays with the MCP host, and profiles, validation and write semantics still apply.
 
 The stdio client check and the not-observed status of MCPHub forwarding
-([ISSUE-147-DEC-001](../decisions/issue-147.md)) are in
-[validation/issue-147.md](../validation/issue-147.md); transport tests do not prove a host forwards
+([ISSUE-147-DEC-001](../decisions/m3-m6.md)) are in
+[validation/m3-m6.md](../validation/m3-m6.md); transport tests do not prove a host forwards
 the guidance.

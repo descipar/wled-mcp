@@ -44,11 +44,6 @@ WIPE_LEFT = ["Solid", "Wipe", "Blink"]
 AMBIGUOUS = ["Solid", "Wipe", "wipe"]
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def three() -> SceneFleet:
     """desk (default catalogs), shelf_left (Wipe is ID 1) and shelf_right (ambiguous)."""
     return SceneFleet(

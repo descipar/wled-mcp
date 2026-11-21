@@ -26,11 +26,6 @@ TOOL = "wled_explain_lighting"
 FALLBACK = {"UNATTRIBUTED_MISMATCH", "INSUFFICIENT_EVIDENCE"}
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def codes(result):
     return [c["code"] for c in result.data["inferred_causes"]]
 

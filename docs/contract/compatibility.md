@@ -3,7 +3,7 @@
 What this server is tested on and how it treats WLED firmware versions. Introduced by
 [#21](https://github.com/descipar/wled-mcp/issues/21) (S2-COMPAT-02); decisions DEC-020 (support
 and version policy), DEC-013 (no support commitment) and ISSUE-21-DEC-002 (technical defaults,
-[decision log](../decisions/issue-21.md)). Version and schema-evolution rules:
+[decision log](../decisions/stage-2.md)). Version and schema-evolution rules:
 [versioning.md](versioning.md).
 
 "Supported" means "covered by the checks listed here", not a support commitment: responses are
@@ -40,7 +40,7 @@ CI (`.github/workflows/ci.yml`):
 - No check is technically required yet; required-check enforcement comes with the DEC-018 branch
   ruleset after the visibility change (owner action, #90). Until then review treats these jobs as
   required.
-- Run evidence: [validation/issue-21.md](../validation/issue-21.md).
+- Run evidence: [validation/stage-2-release.md](../validation/stage-2-release.md).
 
 Python 3.14 is declared only after it passes in CI and `requires-python`.
 
@@ -81,7 +81,7 @@ with the warning. A version-specific branch needs a reviewed 16.x difference fir
 The server sends no device credentials and has no unlock path. One controller (WLED 16.0.1) in
 three states (settings PIN and OTA lock both enabled, PIN only, OTA lock only) answered the probed
 read tools normally (state, effects, palettes, preset list, preset read; others not probed)
-([validation/issue-128.md](../validation/issue-128.md),
+([validation/hardware-checks.md](../validation/hardware-checks.md),
 [#128](https://github.com/descipar/wled-mcp/issues/128)). The minimal write set (master state,
 segment patch, preset store and delete) was applied and verified in each state; other writes under
 a lock were not run. A refused read (HTTP 401 or 403, for example from a proxy) is
@@ -94,4 +94,4 @@ authentication in front of a controller stays unsupported.
   and HTTP envelopes, identical writes on 0.15.1 and 16.0.1).
 - Contract and data compatibility with retained releases: `tests/test_upgrade_compat.py`,
   fixtures in `tests/fixtures/compat/`.
-- CI runs and limits: [validation/issue-21.md](../validation/issue-21.md).
+- CI runs and limits: [validation/stage-2-release.md](../validation/stage-2-release.md).

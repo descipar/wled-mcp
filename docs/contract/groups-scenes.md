@@ -2,8 +2,8 @@
 
 Contract for named device groups, versioned scenes, the dry-run plan, the apply and sharing, introduced by
 [#17](https://github.com/descipar/wled-mcp/issues/17) (S2-GROUP-01, S2-GROUP-02). Decisions: [ISSUE-17-DEC-001 and
--002](../decisions/issue-17.md); tool classes follow ISSUE-20-DEC-001. Evidence:
-[validation/issue-17.md](../validation/issue-17.md). Examples use synthetic IDs.
+-002](../decisions/stage-2.md); tool classes follow ISSUE-20-DEC-001. Evidence:
+[validation/stage-2-core.md](../validation/stage-2-core.md). Examples use synthetic IDs.
 
 `wled_apply_scene` (class `control`) is the only tool of this document that writes to a device; every other tool here
 reads local files, or reads devices, only.

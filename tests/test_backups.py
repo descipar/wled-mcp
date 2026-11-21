@@ -33,11 +33,6 @@ REPO = Path(__file__).resolve().parents[1]
 POSIX = os.name != "nt"
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def code_of(call, *args, **kwargs):
     with pytest.raises(ClientFailure) as caught:
         call(*args, **kwargs)

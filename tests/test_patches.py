@@ -30,11 +30,6 @@ from wled_mcp.resources import Resources
 DESK, SHELF = "desk.invalid", "shelf.invalid"
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def fleet(**kwargs: object) -> WriteRouter:
     router = WriteRouter()
     router.device(DESK, **kwargs)

@@ -15,11 +15,6 @@ FIXTURE = json.loads((Path(__file__).parent / "fixtures/fxdata/wled-16.0.1.json"
 REAL = {entry["name"]: entry["raw"] for entry in FIXTURE["entries"]}
 
 
-@pytest.fixture
-def anyio_backend():
-    return "asyncio"
-
-
 def test_pinned_real_metadata_labels_options_colors_flags_and_defaults():
     parsed = {}
     for name, raw in REAL.items():

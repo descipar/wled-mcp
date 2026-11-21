@@ -1,6 +1,6 @@
 """Segment input rules shared by ``wled_patch_segments`` (#6) and ``wled_replace_layout`` (#7).
 
-Issue #48, ``ISSUE-48-DEC-001`` (docs/decisions/issue-48.md): both tools apply the same
+Issue #48, ``ISSUE-48-DEC-001`` (docs/decisions/hardening.md): both tools apply the same
 rules before any write, identically in a dry run, so that inputs the baseline firmware
 (profile 0: v0.15.1 source, observed on 16.0.1) cannot represent are refused instead of
 surfacing after writes as ``VERIFICATION_MISMATCH``:

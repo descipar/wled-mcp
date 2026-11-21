@@ -1,7 +1,7 @@
 """Signal tools (issue #28): schemas, dry run, access context, both transports.
 
 Mock controllers, a controlled clock and loopback only; nothing contacts a LAN device. Scenario
-IDs T28-xx are those of docs/validation/issue-28.md.
+IDs T28-xx are those of docs/validation/stage-3.md.
 """
 
 from __future__ import annotations
@@ -37,11 +37,6 @@ from wled_mcp.signal_tools import (
 
 START = {"device_id": "desk", "segment_ids": [0], "color": [255, 0, 0], "duration_seconds": 10}
 SIGNAL_TOOLS = ("wled_start_signal", "wled_get_signal_status", "wled_cancel_signal")
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
 
 
 # ------------------------------------------------------------------ T28-14 contract surface

@@ -96,7 +96,7 @@ See [MARKETPLACE.md](MARKETPLACE.md). External acceptance may stay pending after
 
 | ID | Priority | Requirement and observable outcome |
 | --- | --- | --- |
-| S2-LAUNCH-01 | Launch | Clean install/upgrade/rollback, both-transport interoperability and selected beta hardware evidence; unrun tests and deferrals recorded. The simulator was dropped by the owner ([ISSUE-25-DEC-001](decisions/issue-25.md)). |
+| S2-LAUNCH-01 | Launch | Clean install/upgrade/rollback, both-transport interoperability and selected beta hardware evidence; unrun tests and deferrals recorded. The simulator was dropped by the owner ([ISSUE-25-DEC-001](decisions/stage-2.md)). |
 | S2-LAUNCH-02 | Launch | One reviewable candidate (exact commit, artifact identities, license, docs, known issues, listing drafts); after the release instruction, perform and verify the authorized steps with a factual status log. |
 
 ## Issue map

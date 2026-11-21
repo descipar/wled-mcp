@@ -3,7 +3,7 @@
 Invariants of the root ``server.json`` (official MCP Registry), the README ownership
 marker, the MCPM manifest draft and the hosted-directory copy. The published JSON
 schemas are not vendored; one live validation run against them is recorded in
-``docs/validation/issue-24.md`` and the checks here are local invariants with a negative
+``docs/validation/stage-2-release.md`` and the checks here are local invariants with a negative
 control per rule (a mutated copy must be reported). No network, no device, nothing is
 published or submitted.
 """
@@ -564,6 +564,6 @@ def test_status_table_has_one_row_per_route_with_a_vocabulary_state():
 
 
 def test_dropped_routes_cite_a_decision_that_the_decision_files_record():
-    decision = (ROOT / "docs/decisions/issue-24.md").read_text("utf-8")
+    decision = (ROOT / "docs/decisions/stage-2.md").read_text("utf-8")
     assert "## ISSUE-24-DEC-003" in decision
     assert "ISSUE-24-DEC-003" in (ROOT / "docs/DECISIONS.md").read_text("utf-8")

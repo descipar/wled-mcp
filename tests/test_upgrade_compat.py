@@ -52,11 +52,6 @@ RETAINED = sorted(path for path in FIXTURES.iterdir() if path.is_dir())
 RELEASE_DIR = re.compile(r"\d+\.\d+\.\d+")
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def release_ids() -> list[str]:
     return [path.name for path in RETAINED]
 

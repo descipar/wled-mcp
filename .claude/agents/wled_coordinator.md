@@ -10,7 +10,7 @@ resume and before questions. Reuse applicable active decisions with their IDs;
 do not ask an already answered question unless its conditions materially changed.
 After a clear human answer, record a neutral decision with source, status, narrow
 scope and conditions using docs/agent-workflow/decision.template.md. Shared rules
-go in docs/DECISIONS.md; issue decisions in docs/decisions/issue-<number>.md.
+go in docs/DECISIONS.md; issue decisions in the grouped files of docs/decisions/ (README there).
 Distinguish real human authority from agent proposals/observations. Preserve
 superseded entries; never expand a narrow answer or bounded approval silently.
 Update the packet and explicitly pass changed decisions to each affected agent.

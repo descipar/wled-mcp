@@ -33,7 +33,7 @@ C3-05/06 -> console/fixture subprocess and outcome tests; C3-09 -> CI; C3-10 ->
 | T09 | Possible dispatched timeout/reset stays unknown unless bounded readback establishes postcondition; readable mismatch does not prove never applied. No mutation replay; partial sequences stop without further destructive steps, include completed/remaining state; reads/retries share one overall deadline | REL-01–02 |
 | T10 | Per-device lock spans fresh reads, validation, backup, all mutation steps and verification; same-device calls cannot interleave, different devices progress. Actual writes revalidate dry-run plans; external client race is acknowledged | MULTI-01, REL-03 |
 | T11 | List/read preserve types and unknown fields; key 0/temporary 255 excluded, null/empty absent, unknown nonempty occupied. Lowest-free allocation rechecks chosen ID; observed conflict does not reallocate. Explicit overwrite/name byte validation; storage-only capture controls; supported activation leaves storage unchanged | PRE-01–02, PLAY-01 |
-| T12 | Snapshot format/version/source/device/preset/firmware/path validation, exact unknown-field retention, atomic durable backup and safe retention. Backup failure prevents overwrite/delete; changed prior object aborts before overwrite. Restore execution (Should) uses one verified single-entry write with a documented live effect (#18, [validation/issue-18.md](validation/issue-18.md)); no bulk shortcut or claimed restore acceptance from export | PRE-04 |
+| T12 | Snapshot format/version/source/device/preset/firmware/path validation, exact unknown-field retention, atomic durable backup and safe retention. Backup failure prevents overwrite/delete; changed prior object aborts before overwrite. Restore execution (Should) uses one verified single-entry write with a documented live effect (#18, [validation/stage-2-core.md](validation/stage-2-core.md)); no bulk shortcut or claimed restore acceptance from export | PRE-04 |
 | T13 | Delay persistent visibility within one deadline; compare saved name plus all captured included state, not only ID/name. Delete verifies target absence and reports unrelated interference. Asynchronous capture may mismatch; uncertain save/delete/allocation is never resent; unavailable readback and readable mismatch differ | PRE-05, REL-02 |
 | T14 | Real subprocess SDK handshake/list/call, no stdout diagnostics; structured envelope equals JSON text fallback, isError=!ok across success/domain error/uncertainty. Test SDK argument-shape/protocol errors separately | MCP-01–02 |
 | T15 | Mocked HTTP redirect, HTML response, malformed JSON, huge response, missing capabilities and connection reset return actionable bounded errors | READ-01, REL-01, OPS-03 |
@@ -54,14 +54,14 @@ State of the evidence and the limits of the source releases (see also the
 - Automated tests use mocked or synthetic loopback devices and run in CI without hardware.
   Hardware acceptance is partial: one RGB controller on WLED 16.0.1 in both transports and one
   deployment of both modes on one MCPHub host. The live offline-controller check (H07) ran once on
-  the deployed HTTP service against a non-routed address ([validation/issue-25.md](validation/issue-25.md));
+  the deployed HTTP service against a non-routed address ([validation/hardware-checks.md](validation/hardware-checks.md));
   reboot persistence and the other "Not run" items are pending. No compatibility with other
   controllers or firmware is claimed. A short live check of the second release over HTTP and stdio is in
-  [validation/live-check-2026-11-08.md](validation/live-check-2026-11-08.md).
+  [validation/hardware-checks.md](validation/hardware-checks.md).
 - A hardware run of the stage-2 features (WLED 16.0.1, one RGB segment, HTTP service on the hub)
   covered a one-device group and scene, preset store, export, import and restore with snapshots on
   unused slots, and one single-entry playlist; every write was verified and the controller state,
-  segment and preset list were restored ([validation/issue-134.md](validation/issue-134.md)). Four
+  segment and preset list were restored ([validation/hardware-checks.md](validation/hardware-checks.md)). Four
   snapshots remain in the service data directory (no snapshot-delete tool). Not run on hardware:
   multi-device scenes, tool profiles, `discover`, restore onto an occupied slot, playlist import and
   restoring a playlist preset. Advanced segment fields (CCT, RGBW, 2D) have mock and loopback evidence only.
@@ -86,7 +86,7 @@ State of the evidence and the limits of the source releases (see also the
   (WLED 16.0.1) with the settings PIN, the OTA lock or both enabled, five read probes and a minimal
   write set (master state, segment patch, preset store and delete) worked unchanged; other writes under
   a lock were not run ([#128](https://github.com/descipar/wled-mcp/issues/128),
-  [validation/issue-128.md](validation/issue-128.md)).
+  [validation/hardware-checks.md](validation/hardware-checks.md)).
 - One writer per controller: locks are per process, so a second process or service against the same
   devices is not coordinated.
 - In stdio mode the MCP host may stop the subprocess without waiting for a running call; a write
@@ -100,7 +100,7 @@ State of the evidence and the limits of the source releases (see also the
   ([versioning](contract/versioning.md#upgrade-downgrade-and-rollback)). A live update of the deployed
   HTTP service was checked once (earlier build to the second release); one rollback to the previous
   release and back was checked once, without a data-format change
-  ([launch report](validation/launch-report.md#3-upgrade-and-rollback-evidence),
+  ([launch report](validation/releases.md#3-upgrade-and-rollback-evidence),
   [#25](https://github.com/descipar/wled-mcp/issues/25)); a rollback after the next code-changing release
   is not checked.
 
@@ -108,7 +108,7 @@ State of the evidence and the limits of the source releases (see also the
 
 C2 IDs are acceptance criteria for documentation delivery, not runtime tests.
 All refer to [TOOL-CONTRACT.md](TOOL-CONTRACT.md) and the
-[scoped decisions](decisions/issue-2.md). Synthetic JSON parse/consistency checks
+[scoped decisions](decisions/stage-1.md). Synthetic JSON parse/consistency checks
 cannot establish that an adapter implements these outcomes.
 
 | Criterion | Concrete artifact / observable assertion | Future runtime evidence / owner |
@@ -131,7 +131,7 @@ integration/deployment evidence. H02/H03 remain separate authorized operational
 checks. The SDK version is selected (MCP SDK 2.3.0) and mocked/loopback protocol
 execution is automated (see [TRACEABILITY.md](TRACEABILITY.md)); hardware
 compatibility and deployment remain pending. PRE-03 and restore execution are Should work
-added by #18 (mock evidence in [validation/issue-18.md](validation/issue-18.md)); durable
+added by #18 (mock evidence in [validation/stage-2-core.md](validation/stage-2-core.md)); durable
 backup before destructive operations remains Must.
 
 
@@ -315,19 +315,18 @@ Several of these items were run later the same day in [run 2](#issue-12-hardware
 Second authorized run on the same day, controller and target, under ISSUE-12-DEC-005 (HTTP deployment update and stop/start, a temporary
 stdio hub entry with the HTTP entry disabled, controller writes with capture and restore) and ISSUE-12-DEC-001; ISSUE-12-DEC-004 keeps stdio in
 #12 scope, so both modes were exercised. The owner was within sight for visual checks. Sanitized; WLED 16.0.1 unchanged since
-[run 1](#issue-12-hardware-acceptance-2026-11-06). Build: wled-mcp 0.1.0 from main commit `b36f410` (includes the #66 fix), MCPHub 1.2.1. The package
-version on main was still 0.1.0, so the build was staged under the ad-hoc directory `0.1.0+b36f410` / image tag `wled-mcp:0.1.0-b36f410`, a deviation from
-the documented procedure (identification scheme tracked by [#70](https://github.com/descipar/wled-mcp/issues/70)); the previous 0.1.0 directory and
-image were kept as the rollback source. HTTP update: start to listening 7.53 s, the hub entry reconnected without hub action, the `b36f410` image stays active.
+[run 1](#issue-12-hardware-acceptance-2026-11-06). Build: wled-mcp 0.1.0 from main commit `b36f410` (includes the #66 fix), MCPHub 1.2.1, staged under the ad-hoc
+directory `0.1.0+b36f410` (a deviation from the documented procedure, identification scheme tracked by [#70](https://github.com/descipar/wled-mcp/issues/70));
+the previous directory and image were kept as the rollback source. HTTP update: start to listening 7.53 s, the hub entry reconnected without hub action.
 Scenarios run: P0, HTTP update, L4, D3, visual A-C, stdio H04-H06, stdio load, stdio drain, R1-R3.
 
 ### L4 and D3, Streamable HTTP
 
-- L4 `ping` peak established connections followed client concurrency: 16 (204 req/s, p50 76), 32 (203 req/s, p50 153), 64 (198 req/s, p50 307, p95 412), all HTTP 200;
-  throughput stayed at about 200 requests/s, so more concurrency only queued; RSS at most 75,656 KiB; afterwards 2 listening, 2,731 in TIME-WAIT, none established.
-- D3 in-flight write: brightness-only `wled_set_state` calls on the off controller; writes sent before and just after the stop timestamp (i=6, 7, 8) all returned
-  HTTP 200 and were applied and verified; from +0.417 s connections were refused; no write reported `uncertain`; stop 1.42 s exit 0, start to listening 6.45 s. Caveat as in
-  run 1: the signal time is only bracketed (+0.242 s to +0.417 s); write i=8 was probably in flight; no admitted write was cut off.
+- L4 `ping` peak established connections followed client concurrency (16, 32, 64; about 200 req/s throughout, p50 76 to 307 ms, all HTTP 200), so more concurrency only
+  queued; RSS at most 75,656 KiB; afterwards 2 listening, none established.
+- D3 in-flight write: brightness-only `wled_set_state` calls on the off controller around the stop timestamp all returned HTTP 200 and were applied and verified;
+  from +0.417 s connections were refused; no write reported `uncertain`; stop 1.42 s exit 0, start to listening 6.45 s. Caveat: the signal time is only bracketed
+  (+0.242 s to +0.417 s); one write was probably in flight; no admitted write was cut off.
 
 ### Visual checks (owner)
 
@@ -345,24 +344,22 @@ and transition were not observed separately (run 3).
 
 ### stdio via uvx: H04-H06, load and drain
 
-HTTP entry disabled; temporary stdio entry with the staged `b36f410` release connected after 8 s with 12 tools; all calls through the hub.
+HTTP entry disabled; temporary stdio entry with the staged release connected after 8 s with 12 tools; all calls through the hub.
 
-- H04/H05/H06 passed as in HTTP: `brightness 0` rejected, master stays off, layouts two to one, one to three, three to one (stale IDs removed, readback matched), segment patch
-  leaving others unchanged, preset 250 conflict then overwrite after snapshot (classification `state`), activation, delete (with a warning that the deleted preset carried
-  the active-preset marker), repeated delete `PRESET_NOT_FOUND`. Two snapshot files in the stdio data directory; run-1 snapshots unchanged.
-- stdio load through the hub (temporary hub system key, removed afterwards): `ping`/`tools/list` are answered by the hub (no server CPU); MCPHub 1.2.1 returned HTTP 429 after
-  about 200 requests per window, so no load beyond that was possible; `wled_get_state` c1 (20) 4 req/s, p50 107, about 20 ms CPU; c4 (40) 2.2 req/s, p50 394; `wled_get_effects`
-  (refresh) c4 (20) p50 1,940, about 38 ms CPU; process RSS 77.5 MiB, 3 threads, no listening socket, `uv` wrapper 36 MiB. Early attempts (wrong tool prefix, CPU of the wrapper,
-  rate-limited runs) are not counted. The figures are shaped by the hub and not comparable with run 1.
-- stdio drain: disabling the entry while `wled_get_effects` calls were in flight: 3 finished, 2 in flight were answered by the hub with "ProtocolError, Connection closed"
-  (server-side outcome unknown to the client), later calls "Tool not available", the stdio process was gone 0.88 s after the disable. The host owns the subprocess lifecycle and does not
+- H04/H05/H06 passed as in HTTP (brightness 0 rejected, master stays off, layouts two to one, one to three, three to one with stale IDs removed, segment patch leaving
+  others unchanged, preset 250 conflict then overwrite after snapshot, activation, delete, repeated delete `PRESET_NOT_FOUND`); two snapshot files in the stdio data directory.
+- stdio load through the hub (temporary hub key, removed afterwards): `ping` and `tools/list` are answered by the hub; MCPHub 1.2.1 returned HTTP 429 after about 200
+  requests per window, so no load beyond that was possible; `wled_get_state` c1 4 req/s, p50 107; c4 2.2 req/s, p50 394; process RSS 77.5 MiB, 3 threads, no listening
+  socket. The figures are shaped by the hub and not comparable with run 1.
+- stdio drain: disabling the entry while `wled_get_effects` calls were in flight: 3 finished, 2 were answered by the hub with "ProtocolError, Connection closed"
+  (server-side outcome unknown to the client), later calls "Tool not available", the process was gone 0.88 s after the disable. The host owns the subprocess lifecycle and does not
   drain; ISSUE-12-DEC-006 accepts this as a documented limitation of stdio mode (HTTP preferred). An in-flight write cut off this way is possibly applied, so read state before retrying
   ([DEPLOYMENT.md](DEPLOYMENT.md#stdio-via-uvx-register-update-rollback-rebuild-removal)).
 
 ### Cleanup and restoration (R1-R3)
 
-Temporary stdio entry and hub key removed, HTTP entry re-enabled, controller restored via preset 1 and off. R1 preset file JSON-equal to the run-2 baseline (bytes 3,770 to 6,105,
-blanked entries); R2 state and R3 configuration byte-identical.
+Temporary stdio entry and hub key removed, HTTP entry re-enabled, controller restored via preset 1 and off. R1 preset file JSON-equal to the run-2 baseline (blanked entries
+change the byte size); R2 state and R3 configuration byte-identical.
 
 ### Not run
 
@@ -442,64 +439,18 @@ Not run / reason / remaining risk:
 
 All Must requirements need evidence. Mock implementation can be merged while hardware checks are pending if clearly labeled. "Production validated", "all firmware supported", "rollback tested" and "container-recreation persistent" require their own actual observations. Keep the integration issue open until its stated checks are met or explicitly revise the scope with a documented user decision.
 
+
 ## Stage 2 and later files
 
-- [validation/issue-16.md](validation/issue-16.md): setup, `config validate` and
-  read-only `doctor` commands (#16, mock evidence).
-- [validation/issue-17.md](validation/issue-17.md): device groups, scenes, the plan and
-  sharing (#17, mock evidence).
-- [validation/issue-18.md](validation/issue-18.md): preset restore, supplied-state save,
-  snapshot listing, playlist authoring and preset bundles (#18, mock evidence).
-- [validation/issue-19.md](validation/issue-19.md): capability model, WLED 16 segment
-  fields, CCT and 2D layouts (#19, mock and source evidence).
-- [validation/issue-20.md](validation/issue-20.md): tool profiles, per-device maximum
-  class, the guard layers, correlation IDs, call logs and the status tool (#20, mock and
-  loopback evidence).
-- [validation/issue-21.md](validation/issue-21.md): version source, non-release builds,
-  the CI matrix and the compatibility policy (firmware tiers, contract snapshot,
-  upgrade compatibility) (#21, #70).
-- [validation/issue-22.md](validation/issue-22.md): PyPI publish workflow, release guard and
-  local build, metadata and smoke checks of the built files (#22, local evidence; nothing
-  published).
-- [validation/issue-24.md](validation/issue-24.md): registry metadata, listing drafts, local
-  schema validation and the 0.2.0 release preparation and publication (#24). The 0.3.0 preparation is recorded in
-  [validation/release-m2.md](validation/release-m2.md) (preparation and the publication record of 2026-11-11).
-- [validation/release-m3-m6.md](validation/release-m3-m6.md): preparation of the minor release
-  that carries all work merged since 0.3.0 (completeness check against the commit list, local
-  build and check results, owner-gated steps) and the publication record of 2026-11-13.
-- [validation/issue-28.md](validation/issue-28.md): temporary signals with conflict-aware
-  restoration, controlled-clock manager tests and transport parity (#28, mock and loopback
-  evidence; live evidence pending).
-- [validation/issue-29.md](validation/issue-29.md): static SVG layout preview, structural and
-  golden renderer tests, planner reuse, bounds and stdio/HTTP parity (#29, mock and loopback
-  evidence; no hardware).
-- [validation/issue-30.md](validation/issue-30.md): evidence-separated lighting explanation,
-  process-local control evidence, read-only guarantees and parity (#30, mock and loopback
-  evidence plus one read-only live run on the test controller; no write path on hardware).
-- [validation/issue-134.md](validation/issue-134.md): hardware check of groups, scenes, presets,
-  bundles, restore and a playlist on the test controller (#134).
-- [validation/issue-147.md](validation/issue-147.md): agent instructions, static prompt
-  and nested schema guidance over stdio and HTTP (#147; MCPHub check pending).
-- [validation/issue-148.md](validation/issue-148.md): parsed effect metadata, conservative
-  filters and pinned-source fixtures (#148; read-only hardware probe pending).
-- [validation/issue-149.md](validation/issue-149.md): effect and palette names in segment
-  tools, whole-request no-write failures and resolved-ID readback (#149, mocks/loopback).
+Evidence from stage 2 on lives in grouped files under `docs/validation/` with one section per
+issue or record (rules in the [validation README](validation/README.md)).
 
-- [validation/issue-150.md](validation/issue-150.md): bounded live snapshot decoding,
-  mapping, transport/profile parity and selected-controller unavailable response (#150).
-- [validation/issue-151.md](validation/issue-151.md): MCPB bundle build, manifest validation,
-  workflow review and the one-time cross-check with the upstream tool (#151; the release job has
-  not run).
-- [validation/issue-181.md](validation/issue-181.md): bounded source security review, regression fixes,
-  static analysis, dependency updates and residual risks (#181; mocks and loopback only).
-- [validation/issue-235.md](validation/issue-235.md): slimmed served schemas, tighter tool
-  descriptions and the size budget with before/after measurements (#235; mocks only).
-- [validation/issue-25.md](validation/issue-25.md): live H07 check with an unreachable configured
-  controller on the deployed HTTP service (#25; read-only, temporary inventory entry).
-- [validation/launch-report.md](validation/launch-report.md): launch report for the published
-  release 0.3.0 (clean PyPI install, one interoperability run per transport, hardware and
-  firmware observations, external routes, maintenance scope, tests not run) and the
-  [rollback checklist](validation/issue-25-rollback-plan.md) (#25); the update of the deployed
-  service to release 0.4.0 is recorded in [validation/deploy-0.4.0.md](validation/deploy-0.4.0.md).
-- [validation/issue-200.md](validation/issue-200.md): `wled_discover_devices` mocked evidence
-  and the read-only live-run procedure, pending owner authorization (#200).
+| File | Contents |
+| --- | --- |
+| [validation/stage-2-core.md](validation/stage-2-core.md) | #16 setup, `config validate`, `doctor`; #17 groups, scenes, plan, sharing; #18 preset restore, supplied-state save, snapshots, playlists, bundles; #19 capability model and WLED 16 segment fields; #20 tool profiles, guard layers, call logs, status tool (mock and loopback evidence) |
+| [validation/stage-2-release.md](validation/stage-2-release.md) | #21 version source, CI matrix, compatibility policy; #22 PyPI publish workflow (nothing published by it); #24 registry metadata and listing drafts; #151 MCPB bundle and cross-check |
+| [validation/stage-3.md](validation/stage-3.md) | #27 zones; #28 temporary signals (two live runs recorded); #29 SVG layout preview; #30 lighting explanation (one read-only live run) |
+| [validation/m3-m6.md](validation/m3-m6.md) | #147 agent guidance (local stdio check, ISSUE-147-DEC-001); #148 parsed effect metadata; #149 effect and palette names; #150 live snapshot; #181 source security review |
+| [validation/m7-m8.md](validation/m7-m8.md) | #183 rooms; #200 `wled_discover_devices`; #203 `wled_add_device`; #204 M8 documentation, live runs and release preparation; #235 slim tool schemas and token budget |
+| [validation/hardware-checks.md](validation/hardware-checks.md) | #128 PIN and OTA lock behavior; #134 stage-2 hardware check; #25 live H07 offline-controller check and rollback checklist; live check of the second release |
+| [validation/releases.md](validation/releases.md) | Release records 0.3.0 (M2) and 0.4.0 (M3 to M6), the 0.3.0 launch report, the 0.4.0 deployment record and the visibility runbook (#90) |

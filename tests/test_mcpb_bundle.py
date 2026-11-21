@@ -508,8 +508,8 @@ def test_the_contract_lists_every_scenario_and_the_requirement():
         assert f"D151-{number:02d}" in text, number
     assert "DIST-04" in (ROOT / "docs/STAGE-5.md").read_text("utf-8")
     assert "contract/mcpb-bundle.md" in (ROOT / "docs/TOOL-CONTRACT.md").read_text("utf-8")
-    assert "validation/issue-151.md" in (ROOT / "docs/VALIDATION.md").read_text("utf-8")
-    record = (ROOT / "docs/validation/issue-151.md").read_text("utf-8")
+    assert "validation/stage-2-release.md" in (ROOT / "docs/VALIDATION.md").read_text("utf-8")
+    record = (ROOT / "docs/validation/stage-2-release.md").read_text("utf-8")
     assert "## First release run" in record and "not yet run" not in record.lower()
 
 

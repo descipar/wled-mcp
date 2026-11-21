@@ -18,7 +18,8 @@ before asking a question that may already have been answered.
   An answer about one issue is not a project default. Only explicit general intent
   or an existing governing project rule supports broader scope.
 - Keep shared project/workflow/stage decisions here. Store issue-specific decisions
-  in `docs/decisions/issue-<number>.md`, using the decision template. Link relevant
+  in the group file of its milestone or topic under `docs/decisions/` (see its README), using the
+  decision template. Link relevant
   issue/PR records when they contain the actual human decision. Avoid duplicating
   the full issue specification or chat transcript.
 - Source authority matters: a real user instruction or verified human decision
@@ -72,7 +73,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-021 | Stage 2 / workflow | Adopt docs/STAGE-2-PARALLEL-PLAN.md: at most two implementation tracks, #90 first, per-issue coordinators in isolated worktrees with the main session as integration owner, branches synced by merging `main` (no force-push). "Starte Stage 2 parallel" starts or resumes the plan. | Confirmed owner decision, coordinator session, 2026-11-07; see [DEC-021](#dec-021--adopt-the-stage-2-parallel-plan) and [tracker #15](https://github.com/descipar/wled-mcp/issues/15) |
 | DEC-022 | Stage 2 / workflow | Proportionate review: nits go to the next PR instead of a new review round; a main sync without own code changes keeps the PASS after a coordinator diff check; light review for docs-only/small PRs, full depth for writing code. Standing merge approval for PRs with a current-head PASS and green CI, to be revalidated after three issues. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-022](#dec-022--proportionate-review-and-standing-merge-approval) |
 | DEC-023 | Stage 2 / release staging | Release in stages. Stage 0: the repository becomes public after the #90 scan and owner approval, with a GitHub release (tag from the single version source) that is installable from Git. Artifact publication (PyPI first) is decided afterwards; images, registry/marketplace listings, the extended docs set and the beta report are deferred past the first public release. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-023](#dec-023--staged-first-public-release) |
-| DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/issue-90.md) |
+| DEC-024 | Project / main branch rules | Replaces the single branch rule of DEC-018 item 3 with two rulesets on `main` and one Actions setting: ruleset A (CI checks required, no force-push, no deletion, no bypass), ruleset B (pull request with one approval; the owner may bypass only when merging a pull request) and approval of workflow runs for all external contributors. Pull requests from others therefore need the owner's approval before their CI runs and before they merge. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-024](#dec-024--main-branch-rules-with-review-for-external-pull-requests) and [runbook](validation/releases.md) |
 | DEC-026 | Project / deployment | Stage a release directory on the machine that will run it, from a clean checkout of the release tag or commit; never stage on one operating system and copy the result to another. Applies to every host. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-026](#dec-026--stage-releases-on-the-target-machine) |
 | DEC-027 | Project / stages | Re-stage the open work by value per effort: stage 2 closes out with #130, #131, #67 and a hardware check of the stage-2 features; stage 3 is worked in the order #31, #30, #28, #27, #29; stage 4 (#128) stays after stage 3; a new stage 5 "public distribution and backlog" takes #22 to #25 and #117. The stage-2 Launch requirements those issues own are not met and not dropped. | Confirmed owner decision, coordinator session, 2026-11-08; see [DEC-027](#dec-027--re-stage-the-open-work-by-value-per-effort) |
 | DEC-028 | Project / workflow | Pragmatic delivery: good enough instead of 100%. Scope, evidence and review depth are bounded up front, evidence is one or two runs instead of matrices, optional polish and nits go to the next PR, small follow-ups are folded into the open PR. Safety gates are unchanged. | Confirmed owner decision, main session, 2026-11-09; see [DEC-028](#dec-028--pragmatic-delivery) |
@@ -359,7 +360,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   required; (2) ruleset B, default branch: pull request with one approving review, bypass
   only for the repository admin role (the owner), mode "for pull requests only"; (3) Actions
   setting "Require approval for all external contributors"; (4) the agent verifies the result
-  read-only through the API as in the [runbook](validation/issue-90.md).
+  read-only through the API as in the [runbook](validation/releases.md).
 - Notes: the bypass applies to a whole ruleset, so CI, force-push and deletion rules stay in
   ruleset A. Observed 2026-11-08 on the first merge under the rulesets: plain squash merge was
   refused and `--admin` merged with green checks (confirms reading 3 and the DEC-022 command).
@@ -475,7 +476,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   (4) M2 stays open until the release is done. No hub deployment is authorized.
 - Carried out 2026-11-11, each step on the owner's instruction: tag v0.3.0 and GitHub release,
   PyPI upload (`pypi` environment approval by the owner, see
-  [the record](validation/release-m2.md#release-and-registry-publication-2026-11-11)),
+  [the record](validation/releases.md#release-and-registry-publication-2026-11-11)),
   registry publication. M2 closed after this record merged.
 
 ### DEC-032 — M3 closes without its own release
@@ -546,7 +547,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   paraphrase, no verbatim quote).
 - Decision: a reinstall of the MCPHub itself is never authorized and never part of any project
   test, rollback or release step; the hub fresh-install test stays waived
-  ([ISSUE-24-DEC-005](decisions/issue-24.md)); changes to the wled-mcp service on a deployed
+  ([ISSUE-24-DEC-005](decisions/stage-2.md)); changes to the wled-mcp service on a deployed
   target (update, rollback, restore, restart) imply no hub reinstall.
 - Scope: global, limited to reinstalling the hub; hub entries are governed by issue decisions
   (ISSUE-25-DEC-003).
@@ -590,7 +591,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   only, discovery only on explicit invocation, `wled-mcp discover`, validate-then-restart for
   hand edits. Amends the AGENTS.md rule on discovery scans and inventory writes.
 - Technical details (caps, schemas, error codes, class `manage`, keys, MAC identity) are
-  recorded as [ISSUE-198-DEC-001](decisions/issue-198.md); the owner can override them
+  recorded as [ISSUE-198-DEC-001](decisions/m7-m8.md); the owner can override them
   ([contract/discovery.md](contract/discovery.md)).
 
 ## Issue-specific decisions (index)
@@ -598,83 +599,83 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
 Authority in parentheses: human = owner statement, coordinator/agent = technical proposal or
 delegated decision (not a human decision). Details are in the linked files.
 
-- Stage 1 and early issues: [ISSUE-1-DEC-001](decisions/issue-1.md) (human, OPS-04 delivered,
-  rest to #16); [ISSUE-7-DEC-006](decisions/issue-7.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
+- Stage 1 and early issues: [ISSUE-1-DEC-001](decisions/stage-1.md) (human, OPS-04 delivered,
+  rest to #16); [ISSUE-7-DEC-006](decisions/stage-1.md#issue-7-dec-006--align-7-with-6-limits-and-bri-handling)
   (human, `wled_replace_layout` aligns with #6 limits and `bri`; resolves ISSUE-7-OPEN-001);
-  [ISSUE-7-DEC-003 to -005](decisions/issue-7.md) and ISSUE-7-DEC-007 to -009 (same file)
+  [ISSUE-7-DEC-003 to -005](decisions/stage-1.md) and ISSUE-7-DEC-007 to -009 (same file)
   (delegated, step order, range evidence, no-op behavior, follow-up #48);
-  [ISSUE-8-DEC-001 and -002](decisions/issue-8.md) (human, restore deferred),
-  [ISSUE-8-DEC-003](decisions/issue-8.md) (delegated defaults);
-  [ISSUE-9-DEC-001](decisions/issue-9.md) (delegated, PRE-03 deferred, playlist overwrite
-  rejected); [ISSUE-10-DEC-001](decisions/issue-10.md) (agent, traceability file and check);
-  [ISSUE-13-DEC-001](decisions/issue-13.md) (human, stage-1 scope), [ISSUE-13-DEC-002](decisions/issue-13.md)
+  [ISSUE-8-DEC-001 and -002](decisions/stage-1.md) (human, restore deferred),
+  [ISSUE-8-DEC-003](decisions/stage-1.md) (delegated defaults);
+  [ISSUE-9-DEC-001](decisions/stage-1.md) (delegated, PRE-03 deferred, playlist overwrite
+  rejected); [ISSUE-10-DEC-001](decisions/stage-1.md) (agent, traceability file and check);
+  [ISSUE-13-DEC-001](decisions/stage-1.md) (human, stage-1 scope), [ISSUE-13-DEC-002](decisions/stage-1.md)
   (agent, "not applicable" boxes).
-- Bug and hygiene issues: [ISSUE-48-DEC-001](decisions/issue-48.md) (human, segment-tool input
-  rejection; supersedes parts of ISSUE-7-DEC-006); [ISSUE-52-DEC-001](decisions/issue-52.md)
-  (delegated, `wled_set_state` brightness on an off master); [ISSUE-53-DEC-001](decisions/issue-53.md)
-  (delegated, stdio socket guard); [ISSUE-55-DEC-001](decisions/issue-55.md) (coordinator,
-  controlled time in a retry test); [ISSUE-61-DEC-001](decisions/issue-61.md) (human) and
-  [ISSUE-61-DEC-002](decisions/issue-61.md) (agent) (underscore host labels, diagnostics);
-  [ISSUE-62-DEC-001](decisions/issue-62.md) (agent, private-identifier scanner);
-  [ISSUE-66-DEC-001](decisions/issue-66.md) (agent, `bs` in the state allowlist);
-  [ISSUE-74-DEC-001](decisions/issue-74.md) (human) and [ISSUE-74-DEC-002](decisions/issue-74.md)
-  (agent) (invalid IPv4-like hosts, `CONFIG_ERROR`); [ISSUE-94-DEC-001 and -002](decisions/issue-94.md)
-  (human; coordinator: `unplanned` coverage status); [ISSUE-98-DEC-001](decisions/issue-98.md)
+- Bug and hygiene issues: [ISSUE-48-DEC-001](decisions/hardening.md) (human, segment-tool input
+  rejection; supersedes parts of ISSUE-7-DEC-006); [ISSUE-52-DEC-001](decisions/hardening.md)
+  (delegated, `wled_set_state` brightness on an off master); [ISSUE-53-DEC-001](decisions/hardening.md)
+  (delegated, stdio socket guard); [ISSUE-55-DEC-001](decisions/hardening.md) (coordinator,
+  controlled time in a retry test); [ISSUE-61-DEC-001](decisions/hardening.md) (human) and
+  [ISSUE-61-DEC-002](decisions/hardening.md) (agent) (underscore host labels, diagnostics);
+  [ISSUE-62-DEC-001](decisions/hardening.md) (agent, private-identifier scanner);
+  [ISSUE-66-DEC-001](decisions/hardening.md) (agent, `bs` in the state allowlist);
+  [ISSUE-74-DEC-001](decisions/hardening.md) (human) and [ISSUE-74-DEC-002](decisions/hardening.md)
+  (agent) (invalid IPv4-like hosts, `CONFIG_ERROR`); [ISSUE-94-DEC-001 and -002](decisions/hardening.md)
+  (human; coordinator: `unplanned` coverage status); [ISSUE-98-DEC-001](decisions/hardening.md)
   (coordinator, tool contract entry per tool PR).
-- Deployment and hardware (#11, #12): [ISSUE-11-DEC-001](decisions/issue-11.md) (human, scope),
-  [ISSUE-11-DEC-002](decisions/issue-11.md) (agent, TD-1 to TD-9), [ISSUE-11-DEC-003](decisions/issue-11.md)
-  to [ISSUE-11-DEC-008](decisions/issue-11.md) (human: bounded live operations, HTTP stays the
+- Deployment and hardware (#11, #12): [ISSUE-11-DEC-001](decisions/stage-1.md) (human, scope),
+  [ISSUE-11-DEC-002](decisions/stage-1.md) (agent, TD-1 to TD-9), [ISSUE-11-DEC-003](decisions/stage-1.md)
+  to [ISSUE-11-DEC-008](decisions/stage-1.md) (human: bounded live operations, HTTP stays the
   active mode, update/rollback to stage 2, drain/load to #12; DEC-004 mode choice, DEC-005
   stage-2 move, DEC-006 service removal test, DEC-007 catalog reads and hub recreation);
-  [ISSUE-12-DEC-001](decisions/issue-12.md) (human, one test controller with capture/restore),
-  [ISSUE-12-DEC-002](decisions/issue-12.md) (agent, superseded in part by
-  [ISSUE-12-DEC-004](decisions/issue-12.md)), [ISSUE-12-DEC-003](decisions/issue-12.md)
-  (coordinator reading, retroactively confirmed), [ISSUE-12-DEC-005](decisions/issue-12.md)
-  (human, run 2), [ISSUE-12-DEC-006](decisions/issue-12.md) (human, stdio drain limitation),
-  [ISSUE-12-DEC-007](decisions/issue-12.md) (human, remaining #12 scope, run 3),
-  [ISSUE-12-DEC-008](decisions/issue-12.md) (human, H04 needs no separate visual check of an
+  [ISSUE-12-DEC-001](decisions/stage-1.md) (human, one test controller with capture/restore),
+  [ISSUE-12-DEC-002](decisions/stage-1.md) (agent, superseded in part by
+  [ISSUE-12-DEC-004](decisions/stage-1.md)), [ISSUE-12-DEC-003](decisions/stage-1.md)
+  (coordinator reading, retroactively confirmed), [ISSUE-12-DEC-005](decisions/stage-1.md)
+  (human, run 2), [ISSUE-12-DEC-006](decisions/stage-1.md) (human, stdio drain limitation),
+  [ISSUE-12-DEC-007](decisions/stage-1.md) (human, remaining #12 scope, run 3),
+  [ISSUE-12-DEC-008](decisions/stage-1.md) (human, H04 needs no separate visual check of an
   intensity change).
-- Stage 2 (2026-11-07): [ISSUE-16-DEC-001](decisions/issue-16.md) (human; superseded in part by
-  DEC-035), [ISSUE-16-DEC-002](decisions/issue-16.md) (coordinator, CLI shape);
-  [ISSUE-17-DEC-001](decisions/issue-17.md) (human, local groups/scenes, `strict` default),
-  [ISSUE-17-DEC-002](decisions/issue-17.md) (coordinator, TD-17-1 to TD-17-18);
-  [ISSUE-18-DEC-001](decisions/issue-18.md) (human, supplied objects), [ISSUE-18-DEC-002](decisions/issue-18.md),
-  [ISSUE-18-DEC-003](decisions/issue-18.md) (coordinator); [ISSUE-19-DEC-001 and -002](decisions/issue-19.md)
-  (human, overlap and unexposed fields), [ISSUE-19-DEC-003](decisions/issue-19.md) (coordinator,
-  TD-19-1 to TD-19-14); [ISSUE-20-DEC-001](decisions/issue-20.md) (human, profiles and classes),
-  [ISSUE-20-DEC-002](decisions/issue-20.md) (coordinator, TD-20-1 to TD-20-15);
-  [ISSUE-21-DEC-001](decisions/issue-21.md) (human, update/rollback tests),
-  [ISSUE-21-DEC-002](decisions/issue-21.md) (coordinator).
-- Stage 2 close-out and M1/M2: [ISSUE-130-DEC-001](decisions/issue-130.md) (human, envelope schema
-  allows additional properties); [ISSUE-134-DEC-001](decisions/issue-134.md) (human, one hardware run,
-  [validation](validation/issue-134.md)); [ISSUE-147-DEC-001](decisions/issue-147.md) (human, one
-  local stdio client check); [ISSUE-150-DEC-001](decisions/issue-150.md) (human, bounded read-only
-  checks); [ISSUE-30-DEC-001](decisions/issue-30.md) (human, one read-only run);
-  [ISSUE-31-DEC-001](decisions/issue-31.md) (coordinator, effect search TD-31-1 to TD-31-12);
-  [ISSUE-24-DEC-001](decisions/issue-24.md), [ISSUE-24-DEC-002](decisions/issue-24.md),
-  [ISSUE-24-DEC-003](decisions/issue-24.md) (registry route, MCPM and mcphub.app dropped),
-  [ISSUE-24-DEC-004](decisions/issue-24.md) (per-step release instructions),
-  [ISSUE-24-DEC-005](decisions/issue-24.md) (hub-side install test waived).
-- M3 to M7: [ISSUE-27-DEC-001](decisions/issue-27.md) (coordinator, named zones);
-  [ISSUE-28-DEC-001](decisions/issue-28.md) (human, bounded live signal runs),
-  [ISSUE-28-DEC-002](decisions/issue-28.md) (coordinator, signal tools);
-  [ISSUE-29-DEC-001](decisions/issue-29.md) (coordinator, `wled_preview_layout`);
-  [ISSUE-128-DEC-001](decisions/issue-128.md) and [ISSUE-128-DEC-002](decisions/issue-128.md)
-  (human, lock-state probes and minimal write set, [validation](validation/issue-128.md));
-  [ISSUE-183-DEC-001](decisions/issue-183.md) (human, bounded live room run),
-  [ISSUE-183-DEC-002](decisions/issue-183.md) (coordinator, rooms).
-- M6 distribution and Stage 5: [ISSUE-22-DEC-001](decisions/issue-22.md) (human, PyPI workflow),
-  [ISSUE-22-DEC-002](decisions/issue-22.md) (coordinator), [ISSUE-22-DEC-003 and -005](decisions/issue-22.md)
-  (human, loosened pins, README for PyPI), [ISSUE-22-DEC-004](decisions/issue-22.md) (coordinator,
-  ranges); [ISSUE-23-DEC-001](decisions/issue-23.md) (human, open M6 issue bodies);
-  [ISSUE-25-DEC-001](decisions/issue-25.md) (human, simulator dropped), further ISSUE-25
-  decisions in that file; [ISSUE-151-DEC-001](decisions/issue-151.md) (human, MCPB bundle attached
-  by a separate job, untested by the project), [ISSUE-151-DEC-002](decisions/issue-151.md)
+- Stage 2 (2026-11-07): [ISSUE-16-DEC-001](decisions/stage-2.md) (human; superseded in part by
+  DEC-035), [ISSUE-16-DEC-002](decisions/stage-2.md) (coordinator, CLI shape);
+  [ISSUE-17-DEC-001](decisions/stage-2.md) (human, local groups/scenes, `strict` default),
+  [ISSUE-17-DEC-002](decisions/stage-2.md) (coordinator, TD-17-1 to TD-17-18);
+  [ISSUE-18-DEC-001](decisions/stage-2.md) (human, supplied objects), [ISSUE-18-DEC-002](decisions/stage-2.md),
+  [ISSUE-18-DEC-003](decisions/stage-2.md) (coordinator); [ISSUE-19-DEC-001 and -002](decisions/stage-2.md)
+  (human, overlap and unexposed fields), [ISSUE-19-DEC-003](decisions/stage-2.md) (coordinator,
+  TD-19-1 to TD-19-14); [ISSUE-20-DEC-001](decisions/stage-2.md) (human, profiles and classes),
+  [ISSUE-20-DEC-002](decisions/stage-2.md) (coordinator, TD-20-1 to TD-20-15);
+  [ISSUE-21-DEC-001](decisions/stage-2.md) (human, update/rollback tests),
+  [ISSUE-21-DEC-002](decisions/stage-2.md) (coordinator).
+- Stage 2 close-out and M1/M2: [ISSUE-130-DEC-001](decisions/m3-m6.md) (human, envelope schema
+  allows additional properties); [ISSUE-134-DEC-001](decisions/m3-m6.md) (human, one hardware run,
+  [validation](validation/hardware-checks.md)); [ISSUE-147-DEC-001](decisions/m3-m6.md) (human, one
+  local stdio client check); [ISSUE-150-DEC-001](decisions/m3-m6.md) (human, bounded read-only
+  checks); [ISSUE-30-DEC-001](decisions/stage-3.md) (human, one read-only run);
+  [ISSUE-31-DEC-001](decisions/stage-3.md) (coordinator, effect search TD-31-1 to TD-31-12);
+  [ISSUE-24-DEC-001](decisions/stage-2.md), [ISSUE-24-DEC-002](decisions/stage-2.md),
+  [ISSUE-24-DEC-003](decisions/stage-2.md) (registry route, MCPM and mcphub.app dropped),
+  [ISSUE-24-DEC-004](decisions/stage-2.md) (per-step release instructions),
+  [ISSUE-24-DEC-005](decisions/stage-2.md) (hub-side install test waived).
+- M3 to M7: [ISSUE-27-DEC-001](decisions/stage-3.md) (coordinator, named zones);
+  [ISSUE-28-DEC-001](decisions/stage-3.md) (human, bounded live signal runs),
+  [ISSUE-28-DEC-002](decisions/stage-3.md) (coordinator, signal tools);
+  [ISSUE-29-DEC-001](decisions/stage-3.md) (coordinator, `wled_preview_layout`);
+  [ISSUE-128-DEC-001](decisions/m3-m6.md) and [ISSUE-128-DEC-002](decisions/m3-m6.md)
+  (human, lock-state probes and minimal write set, [validation](validation/hardware-checks.md));
+  [ISSUE-183-DEC-001](decisions/m7-m8.md) (human, bounded live room run),
+  [ISSUE-183-DEC-002](decisions/m7-m8.md) (coordinator, rooms).
+- M6 distribution and Stage 5: [ISSUE-22-DEC-001](decisions/stage-2.md) (human, PyPI workflow),
+  [ISSUE-22-DEC-002](decisions/stage-2.md) (coordinator), [ISSUE-22-DEC-003 and -005](decisions/stage-2.md)
+  (human, loosened pins, README for PyPI), [ISSUE-22-DEC-004](decisions/stage-2.md) (coordinator,
+  ranges); [ISSUE-23-DEC-001](decisions/stage-2.md) (human, open M6 issue bodies);
+  [ISSUE-25-DEC-001](decisions/stage-2.md) (human, simulator dropped), further ISSUE-25
+  decisions in that file; [ISSUE-151-DEC-001](decisions/m3-m6.md) (human, MCPB bundle attached
+  by a separate job, untested by the project), [ISSUE-151-DEC-002](decisions/m3-m6.md)
   (coordinator, manifest 0.3 and bundle job).
-- M8 (discovery and enrollment, DEC-035): [ISSUE-198-DEC-001](decisions/issue-198.md)
+- M8 (discovery and enrollment, DEC-035): [ISSUE-198-DEC-001](decisions/m7-m8.md)
   (technical proposals TP-1 to TP-12, [contract/discovery.md](contract/discovery.md));
-  [ISSUE-200-DEC-001](decisions/issue-200.md); [ISSUE-201-DEC-001](decisions/issue-201.md);
-  [ISSUE-202-DEC-001](decisions/issue-202.md); [ISSUE-203-DEC-001](decisions/issue-203.md);
+  [ISSUE-200-DEC-001](decisions/m7-m8.md); [ISSUE-201-DEC-001](decisions/m7-m8.md);
+  [ISSUE-202-DEC-001](decisions/m7-m8.md); [ISSUE-203-DEC-001](decisions/m7-m8.md);
   all coordinator technical proposals, not human decisions.
 
 ## Still unresolved

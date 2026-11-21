@@ -49,11 +49,6 @@ from wled_mcp.server import create_server
 SECRETS = ("desk.invalid", "192.0.2.10", "00005e005301", "00:00:5e:00:53:01", "Example desk")
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def fixture_device() -> BundleDevice:
     """The device whose export is retained as examples/contracts/preset-bundle.json."""
     return BundleDevice(

@@ -190,7 +190,7 @@ def test_literal_guard_finds_planted_copies(planted):
 def test_literal_guard_ignores_other_numbers_and_allowlisted_records():
     files = {
         "README.md": "Python 3.13, WLED 11.2.3, 1.2.30, 1.2.3.4 and 0.1.2.3\n",
-        "docs/decisions/issue-1.md": "decided for 1.2.3\n",
+        "docs/decisions/stage-1.md": "decided for 1.2.3\n",
         "docs/VALIDATION.md": "ran 1.2.3\n",
     }
     assert literal_hits("1.2.3", files) == []

@@ -53,11 +53,6 @@ CONSTRAINTS = "requirements-runtime.txt"
 HTTP_ONLY_FLAGS = {"--host", "--port", "--allowed-host", "--allowed-origin", "--http-token-file"}
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 # ------------------------------------------------------------------------------ helpers
 
 
@@ -704,8 +699,7 @@ LIVE_DOCUMENTS = [
     VALIDATION,
     DEPLOYMENT,
     ROOT / "docs/TRACEABILITY.md",
-    ROOT / "docs/decisions/issue-11.md",
-    ROOT / "docs/decisions/issue-12.md",
+    ROOT / "docs/decisions/stage-1.md",
     ROOT / "deploy/operations-record.template.md",
 ]
 

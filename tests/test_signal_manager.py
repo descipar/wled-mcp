@@ -1,7 +1,7 @@
 """Signal manager behaviour (issue #28, S3-T02): lifecycle, conflicts, failures, shutdown.
 
 Mock controllers and a controlled clock only; nothing waits in real time and nothing contacts a
-LAN device. Scenario IDs T28-xx are those of docs/validation/issue-28.md.
+LAN device. Scenario IDs T28-xx are those of docs/validation/stage-3.md.
 """
 
 from __future__ import annotations
@@ -25,11 +25,6 @@ from tests.signal_support import (
     tree,
 )
 from wled_mcp.access import CURRENT_TOOL_CLASS, ToolClass
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
 
 
 async def paused(env: Any, identifier: str) -> None:

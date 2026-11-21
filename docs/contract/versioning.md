@@ -3,7 +3,7 @@
 Contract for the package version, its mapping to every artifact and the identity of non-release builds. Introduced by
 [#21](https://github.com/descipar/wled-mcp/issues/21) (S2-COMPAT-01) and
 [#70](https://github.com/descipar/wled-mcp/issues/70); decisions DEC-020 (pre-1.0 policy), DEC-012 (identities) and
-ISSUE-21-DEC-002 (technical defaults, [decision log](../decisions/issue-21.md)). Examples use the synthetic version
+ISSUE-21-DEC-002 (technical defaults, [decision log](../decisions/stage-2.md)). Examples use the synthetic version
 `1.2.3`. The support matrix is in [compatibility.md](compatibility.md).
 
 ## Version source
@@ -167,7 +167,7 @@ Applies to the inventory configuration (`schema_version`), the result envelope (
   the newer server stay on disk untouched.
 - What is tested: the current server reading the retained data of earlier releases and rejecting newer versions without
   modifying files. An older server reading data of a newer one is not run in a test (one manual run of two consecutive
-  releases is in the [launch report](../validation/launch-report.md)); it holds while the configuration and snapshot
+  releases is in the [launch report](../validation/releases.md)); it holds while the configuration and snapshot
   formats are unchanged (both are still version 1), and any format change gets a new version and a migration note.
 - A code rollback does not restore any device state, preset or layout; device state is restored only from snapshots or
   presets by an explicit request. The procedures are in [DEPLOYMENT.md](../DEPLOYMENT.md#non-release-builds) and the

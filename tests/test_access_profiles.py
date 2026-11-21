@@ -2,7 +2,7 @@
 
 In-process tests use the mock fleet only. Console tests start the installed ``wled-mcp``
 against synthetic loopback devices on ``127.0.0.1``; nothing contacts a LAN device.
-Scenario IDs T20-xx are those of docs/validation/issue-20.md.
+Scenario IDs T20-xx are those of docs/validation/stage-2-core.md.
 """
 
 from __future__ import annotations
@@ -66,11 +66,6 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "wled_mcp"
 HOSTS = {"desk": "desk.invalid", "shelf": "shelf.invalid", "lamp": "lamp.invalid"}
 PROFILES = ("read-only", "control", "full")
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
 
 
 # ---------------------------------------------------------------------------- helpers

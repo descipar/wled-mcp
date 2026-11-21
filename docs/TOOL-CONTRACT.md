@@ -1,21 +1,16 @@
 # V1 MCP tool contract
 
 Design baseline for [issue #2](https://github.com/descipar/wled-mcp/issues/2) plus the tools added since. Technical
-choices and their authority are in [the issue decisions](decisions/issue-2.md); requirement IDs refer to
+choices and their authority are in [the issue decisions](decisions/stage-1.md); requirement IDs refer to
 [REQUIREMENTS.md](REQUIREMENTS.md); synthetic cases are in [examples/contracts](../examples/contracts/README.md).
 Contract text added from stage 2 on lives in per-area files under `docs/contract/`, linked from the [list at the
 end](#stage-2-and-later-files); see [where new documentation goes](AGENT-WORKFLOW.md#where-new-documentation-goes).
 Inventory and client foundations: [INVENTORY-CLIENT.md](INVENTORY-CLIENT.md).
 
 Status: every tool in the tables below is implemented; the "V1 tools" table names the owning issue and file. The
-discovery tools of M8 (`wled_discover_devices`, `wled_set_discovery_ranges`, `wled_add_device`) are merged but not yet
-released. The live enrollment of #203 ran twice on 2026-11-19 (first attempt `NOT_WLED`, second succeeded; see
-[validation/issue-203.md](validation/issue-203.md)); the discovery runs per deployment mode passed on 2026-11-20
-([validation/issue-204.md](validation/issue-204.md)). `wled_patch_raw_state` remains a design requirement, not
-executable behavior (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06) is recorded for one controller on
-WLED 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06); activating a preset saved by WLED
-16 was refused there ([#66](https://github.com/descipar/wled-mcp/issues/66)) and, with the fix, verified in
-[run 2](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
+discovery tools of M8 are merged but not yet released; live evidence (the #203 enrollment ran twice on 2026-11-19, the #204
+discovery runs passed on 2026-11-20) is in [validation/m7-m8.md](validation/m7-m8.md). `wled_patch_raw_state` remains a design
+requirement, not executable behavior (ISSUE-13-DEC-001). Hardware acceptance of the preset tools (H06): [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-run-2-2026-11-06).
 
 ## Shared conventions
 
@@ -33,7 +28,7 @@ WLED 16.0.1 in [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-1
   verification. Different devices progress concurrently; external clients stay outside this lock.
 - The served schemas are slimmed (#235): generated `title` keys and `default: null` on nullable optional fields are not
   served; validation, field names, bounds and non-null defaults are unchanged. `tests/test_tool_budget.py` enforces a
-  size budget per tool and per profile ([measurements](validation/issue-235.md)); growth is a deliberate decision.
+  size budget per tool and per profile ([measurements](validation/m7-m8.md)); growth is a deliberate decision.
 - Validate the entire request and planned sequence before the first write. Report interference; never repeatedly
   overwrite to make verification pass.
 - User authorization belongs to the MCP host; no interactive approval mechanism is added inside the server. Precise
@@ -46,47 +41,47 @@ essential inputs of each tool.
 
 | Tool | Hint | Purpose |
 | --- | --- | --- |
-| `wled_list_devices` | read-only | Configured device IDs and names; optional bounded reachability probe |
-| `wled_get_service_status` | read-only | Local service facts: profile, per-device ceilings, last observed outcome per device, call counters; contacts no device |
-| `wled_get_state` | read-only | Normalized current state, segments and essential capabilities |
-| `wled_get_live_snapshot` | read-only | Bounded sampled LED colors per segment, explicit missing data and mapping limits |
-| `wled_explain_lighting` | read-only | Observed facts, candidate causes with confidence, unknowns and next checks for one device whose light change seems ineffective; two GETs, never a write |
-| `wled_get_effects` | read-only | The device's effect IDs and names, with cache freshness |
-| `wled_get_palettes` | read-only | The device's palette IDs and names, with cache freshness |
-| `wled_search_effects` | read-only | Effects of one device matching curated properties, with exact device IDs and an explanation per result |
-| `wled_list_zones` | read-only | Stored named zones with warnings; one zone's document by ID or name |
-| `wled_plan_zone` | read-only | Preview of a zone: exact device, segment IDs and LED ranges, or the refusal; optional segment-field plan |
-| `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone; no geometry, no master state |
-| `wled_apply_room` | write | A master state or a stored scene to the members of one room (a group with `kind=room`): strict preflight by default, one verified outcome per device; refused as a whole when anything lies outside the room; not atomic, no rollback |
-| `wled_preview_layout` | read-only | Static SVG (`data.svg`) of the observed or a proposed 1D segment layout with ranges, gaps, overlaps and approximate colours; no write |
-| `wled_start_signal` | write | A colour on chosen segments of one device for 1 to 300 seconds, then a conditional restore of the fields it changed; no preset, nothing persisted |
-| `wled_get_signal_status` | read-only | State of temporary signals from process memory; contacts no device |
-| `wled_cancel_signal` | write | End a signal now with the same conditional restore; never replays |
-| `wled_discover_devices` | read-only | Candidate controllers (new, known, address_changed) from mDNS and stored ranges, a coverage report and proposed ranges; writes nothing ([contract/discovery.md](contract/discovery.md)) |
-| `wled_set_discovery_ranges` | destructive | Replace the stored discovery ranges (RFC 1918, at most four, /24 to /30); writes only the local inventory file; no device contact |
-| `wled_add_device` | write | Add one controller to the inventory after one read-only `GET /json/info` of an explicit RFC 1918 IPv4 address; refuses duplicate ID, address or MAC; no device write |
-| `wled_set_state` | write | Master power, brightness and one-call transition |
-| `wled_patch_segments` | write | Change selected existing segments by ID; others stay unchanged |
-| `wled_replace_layout` | destructive | Set the complete active segment layout; unlisted segments are removed |
+| `wled_list_devices` | read-only | Configured device IDs, names and rooms; optional reachability probe |
+| `wled_get_service_status` | read-only | Local service facts; contacts no device |
+| `wled_get_state` | read-only | Normalized state, segments and capabilities |
+| `wled_get_live_snapshot` | read-only | Sampled LED colors per segment |
+| `wled_explain_lighting` | read-only | Observed facts, candidate causes and next checks; two GETs, never a write |
+| `wled_get_effects` | read-only | Effect IDs and names, with cache freshness |
+| `wled_get_palettes` | read-only | Palette IDs and names, with cache freshness |
+| `wled_search_effects` | read-only | Effects matching curated properties, with an explanation per result |
+| `wled_list_zones` | read-only | Stored named zones, or one zone's document |
+| `wled_plan_zone` | read-only | Preview of a zone's exact segments and LED ranges, or the refusal |
+| `wled_apply_zone` | write | Segment fields on exactly the segments inside one zone |
+| `wled_apply_room` | write | A master state or stored scene to one room; strict preflight, not atomic |
+| `wled_preview_layout` | read-only | Static SVG of the observed or a proposed 1D layout; no write |
+| `wled_start_signal` | write | Temporary colour on chosen segments for 1 to 300 seconds, then conditional restore |
+| `wled_get_signal_status` | read-only | Temporary signals from process memory; contacts no device |
+| `wled_cancel_signal` | write | End a signal now with the same conditional restore |
+| `wled_discover_devices` | read-only | Candidate controllers from mDNS and stored ranges; writes nothing ([contract/discovery.md](contract/discovery.md)) |
+| `wled_set_discovery_ranges` | destructive | Replace the stored discovery ranges; local inventory file only |
+| `wled_add_device` | write | Add one controller after one read-only `GET /json/info`; no device write |
+| `wled_set_state` | write | Master power, brightness and transition |
+| `wled_patch_segments` | write | Change selected existing segments by ID |
+| `wled_replace_layout` | destructive | Set the complete segment layout; unlisted segments are removed |
 | `wled_list_presets` | read-only | Persistent preset IDs, names and types |
-| `wled_get_preset` | read-only | One stored preset exactly as the device keeps it |
-| `wled_activate_preset` | write | Activate an existing state preset or playlist; never edits storage |
+| `wled_get_preset` | read-only | One stored preset as the device keeps it |
+| `wled_activate_preset` | write | Activate an existing state preset or playlist |
 | `wled_save_preset` | destructive | Save the current live state as a preset; overwriting needs `overwrite=true` |
-| `wled_delete_preset` | destructive | Delete exactly one preset after a durable snapshot |
-| `wled_list_snapshots` | read-only | The server's stored preset snapshots, newest first; no device read |
-| `wled_restore_preset` | destructive | Restore one snapshot entry; applies it live (or starts the playlist), then stores it |
-| `wled_store_preset` | destructive | Store a supplied, validated state as a preset; applies it live, then stores it |
-| `wled_save_playlist` | destructive | Create or replace a playlist of existing state presets; saving starts it |
-| `wled_export_presets` | read-only | A portable, versioned preset bundle without device addresses or credentials |
-| `wled_import_presets` | destructive | Import a bundle with dry-run preview, explicit ID/effect/palette mapping and per-entry verification |
-| `wled_list_groups` | read-only | Stored device groups with their exact member expansion; local files only |
-| `wled_save_group` | destructive | Create or replace a named group of configured devices (local file, no device contact) |
+| `wled_delete_preset` | destructive | Delete one preset after a durable snapshot |
+| `wled_list_snapshots` | read-only | Stored preset snapshots, newest first; no device read |
+| `wled_restore_preset` | destructive | Restore one snapshot entry live, then store it |
+| `wled_store_preset` | destructive | Store a supplied, validated state as a preset |
+| `wled_save_playlist` | destructive | Create or replace a playlist of existing state presets |
+| `wled_export_presets` | read-only | Portable preset bundle without addresses or credentials |
+| `wled_import_presets` | destructive | Import a bundle with dry-run preview, explicit mapping and per-entry verification |
+| `wled_list_groups` | read-only | Stored groups with their member expansion; local files only |
+| `wled_save_group` | destructive | Create or replace a named group (local file) |
 | `wled_delete_group` | destructive | Delete one stored group file |
-| `wled_list_scenes` | read-only | Stored scenes, one scene document, or a shareable export without device references |
-| `wled_save_scene` | destructive | Validate and store a versioned scene (local file, no device contact); replacing needs `overwrite=true` |
+| `wled_list_scenes` | read-only | Stored scenes, one scene, or a shareable export |
+| `wled_save_scene` | destructive | Validate and store a versioned scene; replacing needs `overwrite=true` |
 | `wled_delete_scene` | destructive | Delete one stored scene file |
-| `wled_plan_scene` | read-only | Dry-run plan of a scene: exact targets, per-device preflight, names resolved per device; no write |
-| `wled_apply_scene` | write | Apply a stored scene to its devices: strict preflight by default, master then segments per device, one verified outcome per device; not atomic, no rollback |
+| `wled_plan_scene` | read-only | Dry-run plan of a scene; no write |
+| `wled_apply_scene` | write | Apply a stored scene: strict preflight, one verified outcome per device, not atomic |
 
 ## V1 tools
 
@@ -143,7 +138,7 @@ or implicit playlist editing.
 
 ## Read tools: state and catalogs (implemented in #5)
 
-Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions [ISSUE-5-DEC-001–008](decisions/issue-5.md).
+Requirements READ-01/02/03, DEV-02, MCP-02 and partial OPS-04; decisions [ISSUE-5-DEC-001–008](decisions/stage-1.md).
 Inputs are strict (unknown fields and non-boolean `refresh` rejected). All three are read-only, idempotent, closed-world
 and return `application=not_attempted`, `verification=not_requested`, `dry_run=false`. Failures use existing error codes
 only, with `ok=false` and empty `data`; messages name the fixed resource label and numeric HTTP status, never a body,
@@ -220,7 +215,7 @@ readback as failed off. Effects and unrelated transient frames are not equality 
 
 ### Master power rules (`wled_set_state`)
 
-Issue #52, [ISSUE-52-DEC-001](decisions/issue-52.md). The pinned v0.15.1 firmware couples master power to brightness
+Issue #52, [ISSUE-52-DEC-001](decisions/hardening.md). The pinned v0.15.1 firmware couples master power to brightness
 (`on = root["on"] | (bri > 0)`), so a positive `bri` alone turns an off master on. The planner applies these rules
 before any write and identically in a dry run (evidence: [SOURCES.md](SOURCES.md); hardware confirmation stays with
 #12).
@@ -262,7 +257,7 @@ in target catalogs. Should fields: `grouping`, `spacing`, `offset`, `reverse`, `
 
 ### Shared segment limits (`wled_patch_segments` and `wled_replace_layout`)
 
-Issue #48, [ISSUE-48-DEC-001](decisions/issue-48.md) (human decision; supersedes the #7-only name, 255-bound and `bri`
+Issue #48, [ISSUE-48-DEC-001](decisions/hardening.md) (human decision; supersedes the #7-only name, 255-bound and `bri`
 sending points of ISSUE-7-DEC-006). Both tools apply one rule set, implemented once (`src/wled_mcp/segment_rules.py`),
 before any write and identically in a dry run. Evidence is the pinned v0.15.1 source
 ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware confirmation stays with #12.
@@ -340,7 +335,7 @@ noncontiguous layout and a rejected sparse-new-ID request (acceptance targets, n
 ## Layout replacement (implemented in #7)
 
 Requirements SEG-02, SEG-03, SEG-04, SEG-05, MULTI-01 and REL-03 (plus REL-01/02 and the MCP-02 envelope); decisions
-[ISSUE-7-DEC-001–007](decisions/issue-7.md) and [ISSUE-48-DEC-001](decisions/issue-48.md). Evidence is mock-only and
+[ISSUE-7-DEC-001–007](decisions/stage-1.md) and [ISSUE-48-DEC-001](decisions/hardening.md). Evidence is mock-only and
 source-derived ([SOURCES.md](SOURCES.md#issue-7-layout-evidence)); hardware check H05 is recorded for one controller in
 [VALIDATION.md](VALIDATION.md#issue-12-hardware-acceptance-2026-11-06), without stale-ID removal by this tool on
 hardware.
@@ -439,7 +434,7 @@ execution of stored commands.
 
 ### Persistent presets, implemented in #9
 
-Decisions: [ISSUE-9-DEC-001](decisions/issue-9.md), ISSUE-8-DEC-001 to -003. Evidence: mock-only (T11-T13); firmware
+Decisions: [ISSUE-9-DEC-001](decisions/stage-1.md), ISSUE-8-DEC-001 to -003. Evidence: mock-only (T11-T13); firmware
 facts are pinned in [SOURCES.md](SOURCES.md#issue-9-preset-evidence) and are not hardware evidence.
 
 Inputs are strict (`extra=forbid`, booleans are not integers). `preset_id` is an integer 1-250. `wled_save_preset(name,
@@ -649,7 +644,7 @@ background jobs or server-initiated streams. Accepted notifications get 202; req
 method (GET, DELETE, PUT, PATCH, OPTIONS, HEAD) returns 405 with `Allow: POST` after the access checks. A stale
 `Mcp-Session-Id` is ignored and none is issued. Request bodies are limited to 256 KiB (413, SDK); the unauthenticated
 peer's body is never read. Invalid protocol versions, media types/methods use SDK transport/protocol errors rather than
-tool envelopes. #3 locks a compatible SDK; #14 proves actual SDK client behavior ([decisions](decisions/issue-14.md)).
+tool envelopes. #3 locks a compatible SDK; #14 proves actual SDK client behavior ([decisions](decisions/stage-1.md)).
 
 All clients share inventory, one async WLED client, caches, snapshot store and per-device locks for process lifetime.
 Disconnect is not cancellation: bounded verification continues after dispatch where possible, locks are released

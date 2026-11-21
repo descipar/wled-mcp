@@ -20,7 +20,7 @@ Checked 2026-11-04. WLED tag `v0.15.1` resolves to immutable commit `4f3992b4dc5
 | --- | --- |
 | [json.cpp, segment allocation/name handling](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L16) | New IDs append; geometry changes can clear omitted names. Require representability and targeted preservation compensation. |
 | [json.cpp, deletion handling](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L358) | Array deletion can purge/renumber; single-object ID removal follows a different path. Exact-ID multi-step planning needs adapter tests. |
-| [json.cpp, power and transition](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L291) and [serialization](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L526) | Master power/brightness are coupled; readback reports remembered brightness. Temporary transition uses 100 ms units. Issue #52: [json.cpp L314-318](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L314-L318) sets `on = root["on"] \| (bri > 0)` and calls [`toggleOnOff`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/led.cpp#L50-L62) when power and `bri` disagree, so a positive `bri` alone turns an off master on, while `{"on": false, "bri": X}` toggles back in the same call (`bri=0`, `briLast=X`); [L324](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L324) unfreezes segments only when turning on; [L571-575](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L571-L575) reports `on = bri > 0` and `bri = briLast`. The adapter therefore sends the resolved `on=false` with a positive `bri` on an off master and verifies the resolved `on` ([ISSUE-52-DEC-001](decisions/issue-52.md)). Source-derived only: a visible blip, `tt` consumption and the `ps` change on real devices are unverified (#12). |
+| [json.cpp, power and transition](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L291) and [serialization](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L526) | Master power/brightness are coupled; readback reports remembered brightness. Temporary transition uses 100 ms units. Issue #52: [json.cpp L314-318](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L314-L318) sets `on = root["on"] \| (bri > 0)` and calls [`toggleOnOff`](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/led.cpp#L50-L62) when power and `bri` disagree, so a positive `bri` alone turns an off master on, while `{"on": false, "bri": X}` toggles back in the same call (`bri=0`, `briLast=X`); [L324](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L324) unfreezes segments only when turning on; [L571-575](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/json.cpp#L571-L575) reports `on = bri > 0` and `bri = briLast`. The adapter therefore sends the resolved `on=false` with a positive `bri` on an off master and verifies the resolved `on` ([ISSUE-52-DEC-001](decisions/hardening.md)). Source-derived only: a visible blip, `tt` consumption and the `ps` change on real devices are unverified (#12). |
 | [presets.cpp, save controls](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L200) and [capture](https://github.com/wled/WLED/blob/4f3992b4dc57c888b53d9576c894a278e03e4cfc/wled00/presets.cpp#L15) | Persistent IDs 1–250, temporary 255, key 0 initializer; 32-byte name payload; current-state capture is asynchronous. |
 
 Live fields are processed before preset save in the reviewed API; the custom-command storage branch does not establish a safe supplied-state save/restore path. Server defaults, RGB/RGBW validation and result semantics are original design choices; no firmware code was copied.
@@ -96,7 +96,7 @@ Not verified: the real file layout after deletion, flash timing, whether saving 
 
 ## Issue-66 WLED 16 preset evidence
 
-Read 2026-11-06 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c` (`v16.0.0` is `4374f013f5a287630ef33b2d14a6ff0162891bf1`, not separately reviewed). Source evidence only. Basis of [ISSUE-66-DEC-001](decisions/issue-66.md).
+Read 2026-11-06 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c` (`v16.0.0` is `4374f013f5a287630ef33b2d14a6ff0162891bf1`, not separately reviewed). Source evidence only. Basis of [ISSUE-66-DEC-001](decisions/hardening.md).
 
 | Pinned fact (v16.0.1) | Consequence |
 | --- | --- |
@@ -114,7 +114,7 @@ Saving and activating a WLED 16 preset with the #66 fix was verified on the test
 
 ## Issue-18 WLED 16 preset write evidence
 
-Read 2026-11-07 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c` (`playlist.cpp` and `FX.h` re-read 2026-11-08). Source evidence only. Basis of [ISSUE-18-DEC-001](decisions/issue-18.md) and the write routes in [contract/presets.md](contract/presets.md).
+Read 2026-11-07 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c` (`playlist.cpp` and `FX.h` re-read 2026-11-08). Source evidence only. Basis of [ISSUE-18-DEC-001](decisions/stage-2.md) and the write routes in [contract/presets.md](contract/presets.md).
 
 | Pinned fact (v16.0.1) | Consequence |
 | --- | --- |
@@ -133,11 +133,11 @@ Not verified: hardware behavior of both routes, flash timing and the corruption 
 
 ## Issue-14 HTTP service evidence
 
-Observed 2026-11-05 in the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools: the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID and opens a stream for a GET offering `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These motivate [ISSUE-14-DEC-002 to -004](decisions/issue-14.md) and are re-pinned by tests.
+Observed 2026-11-05 in the installed MCP SDK 2.3.0, starlette 1.10.0, uvicorn 0.54.0 and HTTPX2 2.16.0 sources and loopback runs with synthetic tools: the stateless JSON app issues no session ID, answers DELETE 405, serves a stale session ID and opens a stream for a GET offering `text/event-stream`; its Host check returns 421 after any authentication; a disconnected client does not cancel a running stateless handler (legacy and 2026-07-28 paths); uvicorn cancels in-flight handlers only after `timeout_graceful_shutdown` and re-raises a captured signal after serving. These motivate [ISSUE-14-DEC-002 to -004](decisions/stage-1.md) and are re-pinned by tests.
 
 ## Issue-16 WLED mDNS discovery evidence
 
-Read 2026-11-08 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`, as required by [ISSUE-16-DEC-001](decisions/issue-16.md).
+Read 2026-11-08 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`, as required by [ISSUE-16-DEC-001](decisions/stage-2.md).
 
 | Pinned evidence | Consequence for `wled-mcp discover` |
 | --- | --- |
@@ -149,7 +149,7 @@ The multicast exchange itself (IPv4 one-shot query from an ephemeral port, RFC 6
 
 ## Issue-31 effect catalog source pin
 
-Read 2026-11-09 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`, for `src/wled_mcp/catalog_data/effect_properties.json` ([contract/effect-search.md](contract/effect-search.md)): effect IDs from the `FX_MODE_*` definitions in [FX.h](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.h); names, metadata strings and effect functions from the `_data_FX_MODE_*` strings and `mode_*` functions in [FX.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.cpp) (for example `blink()` for Blink and Strobe). Property values are the project's own statements; effect behavior was read, not executed; subjective properties are curated judgement or from the [live check](validation/live-check-2026-11-08.md).
+Read 2026-11-09 from tag `v16.0.1`, commit `29b389df1c1aaec6ff53aea742d17063b985906c`, for `src/wled_mcp/catalog_data/effect_properties.json` ([contract/effect-search.md](contract/effect-search.md)): effect IDs from the `FX_MODE_*` definitions in [FX.h](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.h); names, metadata strings and effect functions from the `_data_FX_MODE_*` strings and `mode_*` functions in [FX.cpp](https://github.com/wled/WLED/blob/29b389df1c1aaec6ff53aea742d17063b985906c/wled00/FX.cpp) (for example `blink()` for Blink and Strobe). Property values are the project's own statements; effect behavior was read, not executed; subjective properties are curated judgement or from the [live check](validation/hardware-checks.md).
 
 ## Licensing
 
@@ -161,7 +161,7 @@ The lenient fxdata parser uses the WLED v16.0.1 pin `29b389df1c1aaec6ff53aea742d
 
 ## Issue-151 MCPB manifest schema
 
-Read 2026-11-12 from tag `v2.1.2` (2025-12-04), commit `2a788100a60db19a6b1c018fb1cf84ae85de9537`, of [modelcontextprotocol/mcpb](https://github.com/modelcontextprotocol/mcpb) (formerly `anthropics/mcpb`): [MANIFEST.md](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/MANIFEST.md) and the JSON schema [schemas/mcpb-manifest-v0.3.schema.json](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/schemas/mcpb-manifest-v0.3.schema.json) (manifest version `0.3`; the published `latest` schema is byte-identical). The npm package `@anthropic-ai/mcpb` 2.1.2 (integrity `sha512-goRbBC8ySo7SWb7tRzr+tL6FxDc4JPTRCdgfD2omba7freofvjq5rom1lBnYHZHo6Mizs1jAHJeN53aZbDoy8A==`) is used only for the one-time cross-check in [validation/issue-151.md](validation/issue-151.md); no upstream code is included.
+Read 2026-11-12 from tag `v2.1.2` (2025-12-04), commit `2a788100a60db19a6b1c018fb1cf84ae85de9537`, of [modelcontextprotocol/mcpb](https://github.com/modelcontextprotocol/mcpb) (formerly `anthropics/mcpb`): [MANIFEST.md](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/MANIFEST.md) and the JSON schema [schemas/mcpb-manifest-v0.3.schema.json](https://github.com/modelcontextprotocol/mcpb/blob/v2.1.2/schemas/mcpb-manifest-v0.3.schema.json) (manifest version `0.3`; the published `latest` schema is byte-identical). The npm package `@anthropic-ai/mcpb` 2.1.2 (integrity `sha512-goRbBC8ySo7SWb7tRzr+tL6FxDc4JPTRCdgfD2omba7freofvjq5rom1lBnYHZHo6Mizs1jAHJeN53aZbDoy8A==`) is used only for the one-time cross-check in [validation/stage-2-release.md](validation/stage-2-release.md); no upstream code is included.
 
 **Vendored file.** `deploy/mcpb/schema/mcpb-manifest-v0.3.schema.json` is an unmodified copy (7902 bytes, SHA-256 `3a0ac9d845711a1b9b17dfa5a52f8b60628239d6a86a9db417206a9efc78592d`), used by `deploy/build_mcpb.py` to validate the bundle manifest ([contract](contract/mcpb-bundle.md)). JSON cannot carry a comment, so the notice is kept here.
 

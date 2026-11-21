@@ -3,7 +3,7 @@
 Mocked evidence only: every test runs in ``tmp_path`` with synthetic RFC 1918 literals
 (written with ``~`` for the dots, see ``d``) and a scripted ``enroll_tools.fetch_info``;
 nothing contacts a device or the network. Permission failures are simulated by patching,
-never by chmod (DEC-033). The live enrollment is separate (docs/validation/issue-203.md).
+never by chmod (DEC-033). The live enrollment is separate (docs/validation/m7-m8.md).
 """
 
 import hashlib
@@ -58,11 +58,6 @@ BASE = (
     "\n# trailing note\n"
 )
 WITH_OLD = BASE + f'\n[[devices]]\nid = "old"\nname = "Old"\nbase_url = "{URL2}"\nmac = "{MAC_A}"\n'
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
 
 
 @pytest.fixture

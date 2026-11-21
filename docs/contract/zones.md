@@ -1,8 +1,8 @@
 # Named physical lighting zones (`wled_list_zones`, `wled_plan_zone`, `wled_apply_zone`, #27)
 
 Requirements S3-ZONE-01 and S3-ZONE-02 ([STAGE-3.md](../STAGE-3.md)). Decisions:
-[ISSUE-27-DEC-001](../decisions/issue-27.md) (agent technical proposals accepted by the
-coordinator, not human decisions). Evidence: [validation/issue-27.md](../validation/issue-27.md).
+[ISSUE-27-DEC-001](../decisions/stage-3.md) (agent technical proposals accepted by the
+coordinator, not human decisions). Evidence: [validation/stage-3.md](../validation/stage-3.md).
 Examples use synthetic IDs.
 
 A zone names a physical region ("shelf, left side") and maps it to configured device IDs and

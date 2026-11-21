@@ -29,11 +29,6 @@ from wled_mcp.playlists import SavePlaylistRequest
 MEMBERS = {"1": state_preset("A"), "2": state_preset("B"), "3": state_preset("C")}
 
 
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
-
-
 def steps(*ids: int, duration_s: float = 10, transition_s: float = 0.7) -> list[dict[str, Any]]:
     return [{"preset_id": i, "duration_s": duration_s, "transition_s": transition_s} for i in ids]
 

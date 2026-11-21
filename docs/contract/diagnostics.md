@@ -4,11 +4,11 @@ Contract for [issue #20](https://github.com/descipar/wled-mcp/issues/20) (S2-ACC
 OPS-05; scenarios T20-14 to T20-17): the correlation ID, bounded call logs and the
 `wled_get_service_status` tool. Profiles and device ceilings are in [profiles.md](profiles.md).
 Decisions:
-[ISSUE-20-DEC-001](../decisions/issue-20.md#issue-20-dec-001--default-profile-device-restrictions-status-surface-classes)
+[ISSUE-20-DEC-001](../decisions/stage-2.md#issue-20-dec-001--default-profile-device-restrictions-status-surface-classes)
 (human: no unauthenticated health route, readiness as a read-class tool, a correlation ID as a
 result-envelope field) and
-[ISSUE-20-DEC-002](../decisions/issue-20.md#issue-20-dec-002--technical-defaults-td-20-1-to-td-20-15)
-(coordinator, TD-20-9 to TD-20-12). Evidence: [validation/issue-20.md](../validation/issue-20.md)
+[ISSUE-20-DEC-002](../decisions/stage-2.md#issue-20-dec-002--technical-defaults-td-20-1-to-td-20-15)
+(coordinator, TD-20-9 to TD-20-12). Evidence: [validation/stage-2-core.md](../validation/stage-2-core.md)
 (mock and loopback only; no hardware claim).
 
 Everything here is local and passive: there is no outbound telemetry, no polling of controllers,

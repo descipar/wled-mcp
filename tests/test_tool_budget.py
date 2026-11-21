@@ -2,7 +2,7 @@
 
 A client sends the name, description and input schema of every registered tool with each model
 request. The limits below sit a few percent above the measured size after the slimming of
-#235 (docs/validation/issue-235.md). Growth is allowed, but it must be a deliberate decision:
+#235 (docs/validation/m7-m8.md). Growth is allowed, but it must be a deliberate decision:
 raise the number here and record the new measurement in that document.
 
 The second half checks that the served guidance resolves: every tool name and every
@@ -72,11 +72,6 @@ GROW = (
     "The served tool list grew past its budget. If the growth is deliberate, raise the limit in "
     "tests/test_tool_budget.py and record the new measurement in the issue-235 validation notes."
 )
-
-
-@pytest.fixture
-def anyio_backend() -> str:
-    return "asyncio"
 
 
 def size(value: object) -> int:

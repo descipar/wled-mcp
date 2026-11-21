@@ -4,11 +4,11 @@ Contract for issue #18. It extends [Persistent presets](../TOOL-CONTRACT.md#pers
 explicit restoration](../TOOL-CONTRACT.md#snapshot-and-explicit-restoration); everything stated there (IDs 1-250, name
 rules, snapshot format 1, ordering of snapshot, recheck and dispatch, outcome envelope and error codes) applies
 unchanged. Decisions:
-[ISSUE-18-DEC-001](../decisions/issue-18.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects)
+[ISSUE-18-DEC-001](../decisions/stage-2.md#issue-18-dec-001--write-route-for-supplied-preset-and-playlist-objects)
 (human: single-entry JSON API writes with a documented live effect) and
-[ISSUE-18-DEC-003](../decisions/issue-18.md#issue-18-dec-003--technical-defaults-for-restore-supplied-state-save-and-bundles)
+[ISSUE-18-DEC-003](../decisions/stage-2.md#issue-18-dec-003--technical-defaults-for-restore-supplied-state-save-and-bundles)
 (coordinator, technical defaults). Firmware facts: [SOURCES.md](../SOURCES.md#issue-18-wled-16-preset-write-evidence).
-Evidence: [validation/issue-18.md](../validation/issue-18.md) (mock only).
+Evidence: [validation/stage-2-core.md](../validation/stage-2-core.md) (mock only).
 
 ## Tools
 
