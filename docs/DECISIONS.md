@@ -555,7 +555,7 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
   released". M7 closes once #183 is closed and this record is merged. Scope: M7 only.
 - Update (after publication): M7's work shipped in release 0.4.1 together with M8's (the owner chose
   0.4.1 over the provisional 0.5.0; DEC-030 counted as satisfied by that release, [DEC-040](#dec-040--release-041-counts-as-the-dec-030-release-for-m8)).
-  Publication date: <fill in at publication>.
+  Published 2026-11-21.
 
 ### DEC-037 — No MCPHub reinstall in project steps
 

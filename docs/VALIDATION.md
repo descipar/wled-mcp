@@ -453,4 +453,4 @@ issue or record (rules in the [validation README](validation/README.md)).
 | [validation/m3-m6.md](validation/m3-m6.md) | #147 agent guidance (local stdio check, ISSUE-147-DEC-001); #148 parsed effect metadata; #149 effect and palette names; #150 live snapshot; #181 source security review |
 | [validation/m7-m8.md](validation/m7-m8.md) | #183 rooms; #200 `wled_discover_devices`; #203 `wled_add_device`; #204 M8 documentation, live runs and release preparation; #235 slim tool schemas and token budget |
 | [validation/hardware-checks.md](validation/hardware-checks.md) | #128 PIN and OTA lock behavior; #134 stage-2 hardware check; #25 live H07 offline-controller check and rollback checklist; live check of the second release |
-| [validation/releases.md](validation/releases.md) | Release records 0.3.0 (M2) and 0.4.0 (M3 to M6), the 0.3.0 launch report, the 0.4.0 deployment record and the visibility runbook (#90) |
+| [validation/releases.md](validation/releases.md) | Release records 0.3.0 (M2), 0.4.0 (M3 to M6) and 0.4.1 (M7, M8), the 0.3.0 launch report, the 0.4.0 deployment record and the visibility runbook (#90) |
