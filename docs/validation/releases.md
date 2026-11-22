@@ -321,6 +321,44 @@ stay. Limits: one update of one deployment, no data-format change between the re
 exercised on 0.4.0 (signal and preview tools not run on hardware here; snapshots written by 0.4.0 not read
 by 0.3.0), rollback 0.4.0 to 0.3.0 not run.
 
+## Deployment record: release 0.4.1 on the deployed target (2026-11-21)
+
+One owner-authorized update of the deployed HTTP service from 0.4.0 to the published 0.4.1, run by the
+session through the hub's SSH tool, following
+[DEPLOYMENT.md](../DEPLOYMENT.md#http-service-update-rollback-recreation-removal); authority: owner
+instruction of 2026-11-21, this update only; the hub is never reinstalled
+([DEC-037](../DECISIONS.md#dec-037--no-mcphub-reinstall-in-project-steps)). Hostnames, paths and
+addresses omitted.
+
+### Result
+
+The update succeeded; no rollback was run. The rollback 0.4.1 to 0.4.0 was not exercised; its source
+(image and staged directory of 0.4.0, compose backup) was kept. Note: 0.4.0 rejects the new optional
+configuration keys `mac` and `[discovery]` at startup; the deployed configuration has neither.
+
+### Steps
+
+Before: image `wled-mcp:0.4.0`, healthy, profile `full`, one device. Backups of the compose file and a
+SHA-256 list of the 9 data files. Source: tag `v0.4.1` at the release commit. Staging (DEC-026): clean
+clone of the tag on the target, `uv sync --locked`, `check_distribution.py` PASS (aarch64, 29 runtime
+versions), `deploy/stage_release.py`, `sha256sum -c` OK, staged wheel byte-identical to the PyPI wheel.
+Image `wled-mcp:0.4.1` built locally, never pushed. Switch `image:` 0.4.0 to 0.4.1 with
+`up -d --no-deps wled-mcp`: healthy within about 45 s. The build clone and its logs were removed afterwards.
+
+### Verification on 0.4.1 (no controller contacted)
+
+`wled_get_service_status` through the hub: version 0.4.1, streamable-http, profile `full`, backups
+writable; the hub's tool list shows `wled_discover_devices`, `wled_add_device`,
+`wled_set_discovery_ranges` and `wled_apply_room` without any hub change; the data checksum list is
+identical afterwards. Counters: 0 calls of the new tools, no write to any controller.
+
+### Hub, left on the target, limits
+
+No hub change and no hub reinstall. Staged directory and image of 0.4.1 are in use; 0.4.0 and older
+images, staged directories and the backups stay. The profile `full` serves the two `manage` tools
+(configuration writes only, never a device write). Limits: one update of one deployment; no new tool
+run through the hub; discovery was validated separately on 2026-11-20 ([record](m7-m8.md)).
+
 ## Issue #90 runbook: visibility change and `main` rules
 
 Status: prepared, not executed. Sections 1 to 4 are owner-only actions in the repository settings;
