@@ -80,3 +80,71 @@ def test_output_envelope_keeps_its_structure():
     assert slimmed["required"] == generated["required"]
     assert set(slimmed["properties"]) == set(generated["properties"])
     assert slimmed["$defs"].keys() == generated["$defs"].keys()
+
+
+# ---------------------------------------------------------------- #246: null branch collapse
+
+
+class Item(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    id: int
+    needed: int | None = Field(description="Required but nullable.")
+    level: int | None = Field(default=None, ge=0, le=9, description="Optional level.")
+    tags: list[str] | None = None
+    mode: int | str | None = None  # three branches
+    flag: bool = False
+
+
+class Wrapper(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    items: list[Item]
+    note: str | None = None
+    one: Item | None = None
+
+
+def collapsed():
+    generated = Wrapper.model_json_schema()
+    return generated, slim_schema(generated, collapse_null_in=["Item"])
+
+
+def test_two_branch_null_union_collapses_and_siblings_stay():
+    _generated, slimmed = collapsed()
+    props = slimmed["$defs"]["Item"]["properties"]
+    assert props["level"] == {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9,
+        "description": "Optional level.",
+    }
+    assert props["tags"] == {"type": "array", "items": {"type": "string"}}
+    assert props["flag"]["default"] is False
+
+
+def test_required_nullable_and_three_branch_unions_are_kept():
+    _generated, slimmed = collapsed()
+    props = slimmed["$defs"]["Item"]["properties"]
+    assert {"type": "null"} in props["needed"]["anyOf"]
+    assert props["needed"]["description"] == "Required but nullable."
+    assert {"type": "null"} in props["mode"]["anyOf"] and len(props["mode"]["anyOf"]) == 3
+    assert slimmed["$defs"]["Item"]["required"] == ["id", "needed"]
+
+
+def test_only_the_named_definitions_change_and_the_input_is_not_mutated():
+    generated = Wrapper.model_json_schema()
+    before = copy.deepcopy(generated)
+    slimmed = slim_schema(generated, collapse_null_in=["Item", "Missing"])
+    assert generated == before
+    # The root's own optional fields are not in a named definition: unchanged.
+    assert {"type": "null"} in slimmed["properties"]["note"]["anyOf"]
+    assert {"type": "null"} in slimmed["properties"]["one"]["anyOf"]
+    # Without the option the output is the plain #235 slimming.
+    plain = slim_schema(generated)
+    assert {"type": "null"} in plain["$defs"]["Item"]["properties"]["level"]["anyOf"]
+
+
+def test_validation_still_accepts_explicit_null_for_a_collapsed_field():
+    assert Item.model_validate({"id": 1, "needed": None, "level": None, "tags": None}).level is None
+    with pytest.raises(ValidationError):
+        Item.model_validate({"id": 1, "needed": None, "level": 10})
+    with pytest.raises(ValidationError):
+        Item.model_validate({"id": 1})

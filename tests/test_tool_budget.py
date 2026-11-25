@@ -2,8 +2,9 @@
 
 A client sends the name, description and input schema of every registered tool with each model
 request. The limits below sit a few percent above the measured size after the slimming of
-#235 (docs/validation/m7-m8.md). Growth is allowed, but it must be a deliberate decision:
-raise the number here and record the new measurement in that document.
+#235 and the simplified segment schema of #246 (docs/validation/m7-m8.md). Growth is allowed,
+but it must be a deliberate decision: raise the number here and record the new measurement in
+that document.
 
 The second half checks that the served guidance resolves: every tool name and every
 ``field=true``-style reference in the served instructions, prompt and tool descriptions names
@@ -20,6 +21,7 @@ from mcp.client import Client
 
 from tests.test_access_profiles import served
 from wled_mcp.guidance import INSTRUCTIONS, PROMPT_DESCRIPTION, PROMPT_TEXT
+from wled_mcp.schema_slim import SEGMENT_MODEL_NAMES
 
 # Characters of compact JSON: name + description + input schema, one tool.
 TOOL_BUDGET = {
@@ -32,8 +34,8 @@ TOOL_BUDGET = {
     "wled_get_live_snapshot": 650,
     "wled_explain_lighting": 1350,
     "wled_set_state": 1350,
-    "wled_patch_segments": 7250,
-    "wled_replace_layout": 7550,
+    "wled_patch_segments": 6000,
+    "wled_replace_layout": 6350,
     "wled_list_presets": 450,
     "wled_get_preset": 500,
     "wled_activate_preset": 600,
@@ -57,7 +59,7 @@ TOOL_BUDGET = {
     "wled_plan_zone": 1950,
     "wled_apply_zone": 2150,
     "wled_apply_room": 2300,
-    "wled_preview_layout": 7650,
+    "wled_preview_layout": 6400,
     "wled_start_signal": 2650,
     "wled_get_signal_status": 800,
     "wled_cancel_signal": 800,
@@ -66,11 +68,12 @@ TOOL_BUDGET = {
     "wled_add_device": 1200,
 }
 # The same measure summed over the tools a profile serves.
-PROFILE_BUDGET = {"full": 68000, "control": 48800, "read-only": 22400}
+PROFILE_BUDGET = {"full": 64850, "control": 45450, "read-only": 21850}
 
 GROW = (
     "The served tool list grew past its budget. If the growth is deliberate, raise the limit in "
-    "tests/test_tool_budget.py and record the new measurement in the issue-235 validation notes."
+    "tests/test_tool_budget.py and record the new measurement in the issue-235/246 validation "
+    "notes."
 )
 
 
@@ -93,7 +96,7 @@ async def test_every_served_tool_has_a_budget_and_stays_within_it(tmp_path):
     tools = await listing(tmp_path, "full")
     assert {tool.name for tool in tools} == set(TOOL_BUDGET), (
         "a tool was added or removed: update TOOL_BUDGET in tests/test_tool_budget.py "
-        "and the issue-235 validation notes"
+        "and the issue-235/246 validation notes"
     )
     over = {tool.name: (cost(tool), TOOL_BUDGET[tool.name]) for tool in tools}
     over = {name: pair for name, pair in over.items() if pair[0] > pair[1]}
@@ -106,6 +109,21 @@ async def test_profile_total_stays_within_its_budget(tmp_path, profile):
     tools = await listing(tmp_path, profile)
     total = sum(cost(tool) for tool in tools)
     assert total <= PROFILE_BUDGET[profile], f"{GROW} Profile {profile}: {total} characters."
+
+
+@pytest.mark.anyio
+async def test_segment_models_advertise_no_null_branch_for_optional_fields(tmp_path):
+    """#246: the served segment definitions list the non-null form of each optional field."""
+    tools = {tool.name: tool for tool in await listing(tmp_path, "full")}
+    for name in ("wled_patch_segments", "wled_replace_layout", "wled_preview_layout"):
+        defs = tools[name].input_schema["$defs"]
+        for model in SEGMENT_MODEL_NAMES:
+            if model not in defs:
+                continue
+            required = set(defs[model].get("required", ()))
+            for field, prop in defs[model]["properties"].items():
+                nulls = [o for o in prop.get("anyOf", []) if o == {"type": "null"}]
+                assert not nulls or field in required, f"{name}/{model}/{field}"
 
 
 @pytest.mark.anyio

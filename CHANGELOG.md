@@ -5,6 +5,19 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
+## Unreleased
+
+### Changed
+
+- **Simpler advertised segment schema (#246).** The served input schemas of `wled_patch_segments`,
+  `wled_replace_layout` and `wled_preview_layout` no longer list a `null` alternative for the optional
+  fields of a segment (for example `brightness`, `colors`, `effect_id`); the field is simply omitted
+  when unused. This is a change of the advertised schema only: the server still accepts an explicit
+  `null` for these fields exactly as before, and bounds, required fields, tool names and results are
+  unchanged. Several repeated phrases in the segment field descriptions are shorter. The `full` profile
+  `tools/list` is about 5.5 percent smaller. Migration: none for clients that omit unused fields; see
+  the [migration notes](docs/contract/versioning.md#migration-notes).
+
 ## 0.4.1 - M7 and M8: rooms, device discovery and enrollment, slimmer tool schemas
 
 Not a bugfix release despite the patch number: it adds four tools, new optional configuration
