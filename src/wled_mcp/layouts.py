@@ -80,9 +80,7 @@ class LayoutSegment(BaseModel):
     )
     start: int = Field(ge=0, description="Inclusive start LED index, or X column on a matrix.")
     stop: int = Field(ge=1, description="Exclusive end LED index, or X column on a matrix.")
-    on: bool | None = Field(
-        default=None, description="Segment power. Omit to preserve the existing value."
-    )
+    on: bool | None = Field(default=None, description="Segment power.")
     brightness: int | None = Field(
         default=None,
         ge=0,
@@ -98,12 +96,12 @@ class LayoutSegment(BaseModel):
     effect_id: int | None = Field(
         default=None,
         ge=0,
-        description="Effect ID from this device’s effect catalog; IDs are device-specific.",
+        description="Effect ID from this device’s effect catalog.",
     )
     palette_id: int | None = Field(
         default=None,
         ge=0,
-        description="Palette ID from this device’s palette catalog; IDs are device-specific.",
+        description="Palette ID from this device’s palette catalog.",
     )
     effect_name: str | None = Field(
         default=None,
@@ -158,7 +156,7 @@ class LayoutSegment(BaseModel):
     name: str | None = Field(
         default=None,
         max_length=32,
-        description="Segment label, at most 32 UTF-8 bytes; omit to preserve an existing label.",
+        description="Segment label, at most 32 UTF-8 bytes.",
     )
     # Issue #19 (ISSUE-19-DEC-003 TD-19-2); additive, all optional.
     cct: int | None = Field(
@@ -171,29 +169,23 @@ class LayoutSegment(BaseModel):
         default=None,
         ge=0,
         le=CUSTOM_MAX,
-        description="First effect-specific custom slider, 0–255; requires field evidence.",
+        description="First effect-specific custom slider, 0–255.",
     )
     custom2: int | None = Field(
         default=None,
         ge=0,
         le=CUSTOM_MAX,
-        description="Second effect-specific custom slider, 0–255; requires field evidence.",
+        description="Second effect-specific custom slider, 0–255.",
     )
     custom3: int | None = Field(
         default=None,
         ge=0,
         le=CUSTOM3_MAX,
-        description="Third effect-specific custom slider, 0–31; requires field evidence.",
+        description="Third effect-specific custom slider, 0–31.",
     )
-    check1: bool | None = Field(
-        default=None, description="First effect-specific checkbox; requires field evidence."
-    )
-    check2: bool | None = Field(
-        default=None, description="Second effect-specific checkbox; requires field evidence."
-    )
-    check3: bool | None = Field(
-        default=None, description="Third effect-specific checkbox; requires field evidence."
-    )
+    check1: bool | None = Field(default=None, description="First effect-specific checkbox.")
+    check2: bool | None = Field(default=None, description="Second effect-specific checkbox.")
+    check3: bool | None = Field(default=None, description="Third effect-specific checkbox.")
     sound_simulation: int | None = Field(
         default=None,
         ge=0,

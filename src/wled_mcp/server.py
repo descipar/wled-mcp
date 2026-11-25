@@ -41,7 +41,7 @@ from wled_mcp.diagnostics import (
 )
 from wled_mcp.guidance import INSTRUCTIONS, PROMPT_DESCRIPTION, PROMPT_NAME, PROMPT_TEXT
 from wled_mcp.models import DomainError, Outcome
-from wled_mcp.schema_slim import slim_schema
+from wled_mcp.schema_slim import SEGMENT_MODEL_NAMES, slim_schema
 
 
 @dataclass(frozen=True)
@@ -104,7 +104,10 @@ def create_server(
     # titles and no ``default: null`` (#235); validation uses the models, not these schemas.
     @functools.cache
     def input_schema(name: str) -> dict[str, Any]:
-        return slim_schema(registry[name].request_model.model_json_schema())
+        return slim_schema(
+            registry[name].request_model.model_json_schema(),
+            collapse_null_in=SEGMENT_MODEL_NAMES,
+        )
 
     @functools.cache
     def outcome_schema() -> dict[str, Any]:

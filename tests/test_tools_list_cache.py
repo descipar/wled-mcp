@@ -16,7 +16,7 @@ from pydantic import BaseModel
 from tests.test_access_profiles import served
 from wled_mcp.models import Outcome
 from wled_mcp.operations import build_operations
-from wled_mcp.schema_slim import slim_schema
+from wled_mcp.schema_slim import SEGMENT_MODEL_NAMES, slim_schema
 
 
 @pytest.mark.anyio
@@ -51,7 +51,9 @@ async def test_cached_listing_equals_fresh_generation(tmp_path):
     assert list(listed) == list(operations)
     for name, operation in operations.items():
         tool = listed[name]
-        assert tool.input_schema == slim_schema(operation.request_model.model_json_schema())
+        assert tool.input_schema == slim_schema(
+            operation.request_model.model_json_schema(), collapse_null_in=SEGMENT_MODEL_NAMES
+        )
         assert tool.output_schema == slim_schema(Outcome.model_json_schema())
         assert tool.description == operation.description
         assert tool.annotations == operation.annotations
