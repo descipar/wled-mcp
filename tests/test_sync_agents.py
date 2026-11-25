@@ -129,6 +129,7 @@ class SyncAgentsTests(unittest.TestCase):
 
     def test_invalid_last_source_never_partially_updates_adapters(self):
         sync_agents.sync(self.root)
+        last_stem = sync_agents.SOURCE_STEMS[-1]
         bad_inputs = (
             '+++\nname = "wled_completion"\n+++\nBody\n',
             '+++\nname = "wled_completion"\nname = "duplicate"\ndescription = "x"\n+++\nBody\n',
@@ -142,7 +143,9 @@ class SyncAgentsTests(unittest.TestCase):
         for bad in bad_inputs:
             with self.subTest(bad=bad):
                 self.write_source("coordinator", "Earlier valid change", "A new prompt\n")
-                (self.root / "agents/completion.md").write_bytes(bad.encode("utf-8"))
+                (self.root / f"agents/{last_stem}.md").write_bytes(
+                    bad.replace("wled_completion", f"wled_{last_stem}").encode("utf-8")
+                )
                 before = self.snapshot()
                 with self.assertRaises(ValueError):
                     sync_agents.sync(self.root)

@@ -27,6 +27,9 @@ Live fields are processed before preset save in the reviewed API; the custom-com
 
 ## Reviewed alternatives
 
+Recurring checks follow the [research brief](RESEARCH.md); the researcher preserves
+this inventory and dates each actual re-check. Role setup alone is not fresh evidence.
+
 | Project | Observed state | Why not adopted automatically |
 | --- | --- | --- |
 | [mrkprdo/wled_mcp](https://github.com/mrkprdo/wled_mcp), MIT | Branch `dev`, commit `92e58bf97848972ec68d91edf805410d4d11efbc`, 2025-08-14; eleven stdio tools; unchanged 2026-11-19, no releases; PyPI re-package `iflow-mcp_mrkprdo-wled_mcp` 0.1.0 | Minimal adapter; module-start and effect-name doc/code mismatches; limited segment/preset authoring |

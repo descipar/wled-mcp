@@ -14,7 +14,14 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-SOURCE_STEMS = ("coordinator", "requirements", "implementer", "reviewer", "completion")
+SOURCE_STEMS = (
+    "coordinator",
+    "requirements",
+    "implementer",
+    "reviewer",
+    "completion",
+    "researcher",
+)
 
 
 @dataclass(frozen=True)

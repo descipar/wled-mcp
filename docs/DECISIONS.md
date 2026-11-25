@@ -613,6 +613,9 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
 
 ## Issue-specific decisions (index)
 
+- Workflow/tooling: [ISSUE-292-DEC-001](decisions/workflow.md) (human, competitor
+  researcher role and owner-selected requirements/issue handoff).
+
 Authority in parentheses: human = owner statement, coordinator/agent = technical proposal or
 delegated decision (not a human decision). Details are in the linked files.
 
