@@ -29,6 +29,10 @@ requirement, not executable behavior (ISSUE-13-DEC-001). Hardware acceptance of 
 - The served schemas are slimmed (#235): generated `title` keys and `default: null` on nullable optional fields are not
   served; validation, field names, bounds and non-null defaults are unchanged. `tests/test_tool_budget.py` enforces a
   size budget per tool and per profile ([measurements](validation/m7-m8.md)); growth is a deliberate decision.
+  Since #246 the segment definitions (`SegmentPatch`, `LayoutSegment`) of `wled_patch_segments`, `wled_replace_layout`
+  and `wled_preview_layout` are served without the `null` branch of optional fields; other tools keep `anyOf [T, null]`
+  for nullable optional fields (#290 measured, not implemented). Explicit `null` is accepted everywhere as before.
+  See [validation notes](validation/m7-m8.md).
 - Validate the entire request and planned sequence before the first write. Report interference; never repeatedly
   overwrite to make verification pass.
 - User authorization belongs to the MCP host; no interactive approval mechanism is added inside the server. Precise
