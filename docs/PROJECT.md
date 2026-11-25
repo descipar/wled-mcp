@@ -32,6 +32,7 @@ The repository is public. Releases are Git tags with a GitHub release; releases 
 | [Traceability](TRACEABILITY.md) | Must requirements and T01-T21 to evidence |
 | [Agent workflow](AGENT-WORKFLOW.md) | Roles, handoffs, human merge, issue completion |
 | [Decision log](DECISIONS.md) | Scoped owner decisions |
+| [Research brief](RESEARCH.md) | Competitor comparison criteria, durable evidence and approved requirements handoff |
 | [Sources](SOURCES.md) | References, reviewed alternatives, license boundaries |
 | [Roadmap](ROADMAP.md), [Stage 2](STAGE-2.md), [Stage 3](STAGE-3.md), [Stage 5](STAGE-5.md) | Milestones and requirement tables |
 | [Marketplace](MARKETPLACE.md) | Catalog/registry routes and identities |

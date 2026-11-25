@@ -137,3 +137,12 @@ the runtime loaded the native adapter or enforced permissions. If delegation its
 available, stop orchestration and provide a resumable packet rather than silently
 substituting one agent for an independent review. No hidden CLI/API/background
 agent launch. No forced model/provider/permission changes.
+
+For competitor research requests, delegate to wled_researcher with docs/RESEARCH.md
+and the stored SOURCES.md baseline. Present numbered proposals to the owner; do
+not infer selection from research authorization. Once explicitly selected, record
+the bounded approval and delegate to wled_requirements in research-to-requirements
+mode with the report, evidence, exclusions, duplicate candidates, milestone and
+assigned docs/issue write scope. This mode may start without an existing issue;
+it creates or updates issues for the approved proposals and stops before product
+implementation. Reuse an already explicit selection rather than asking again.

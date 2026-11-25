@@ -6,6 +6,7 @@ The repository maintains shared role sources and complete native definitions for
 
 | File | Responsibility |
 | --- | --- |
+| [agents/researcher.md](../agents/researcher.md) | Competitor research and proposals before requirements |
 | [agents/requirements.md](../agents/requirements.md) | Requirements and acceptance packet |
 | [agents/implementer.md](../agents/implementer.md) | Scoped implementation and tests |
 | [agents/reviewer.md](../agents/reviewer.md) | Independent review of a fixed candidate |
@@ -17,7 +18,7 @@ The repository maintains shared role sources and complete native definitions for
 | [Packet](agent-workflow/packet.template.md), [implementation](agent-workflow/implementation.template.md), [review](agent-workflow/review.template.md), [completion](agent-workflow/completion.template.md), [decision](agent-workflow/decision.template.md) templates | Handoff formats |
 | [Decision log](DECISIONS.md), [issue records](decisions/README.md) | Durable scoped decisions |
 
-Edit only the five sources under `agents/`. `python scripts/sync_agents.py` generates the checked-in adapters `.codex/agents/*.toml` and `.claude/agents/*.md`; `--check` detects drift without writing (details in the maintenance guide). Models, reasoning, providers, MCP, tools and permissions are inherited from the client session; the adapters add no overrides. One delegation-time exception ([DEC-008](DECISIONS.md#dec-008--reviewer-on-opus-in-claude-code)): in Claude Code the coordinator launches `wled_reviewer` with Opus. Role text is guidance, not OS enforcement, and available files do not prove the runtime discovered the definitions.
+Edit only the six sources under `agents/`. `python scripts/sync_agents.py` generates the checked-in adapters `.codex/agents/*.toml` and `.claude/agents/*.md`; `--check` detects drift without writing (details in the maintenance guide). Models, reasoning, providers, MCP, tools and permissions are inherited from the client session; the adapters add no overrides. One delegation-time exception ([DEC-008](DECISIONS.md#dec-008--reviewer-on-opus-in-claude-code)): in Claude Code the coordinator launches `wled_reviewer` with Opus. Role text is guidance, not OS enforcement, and available files do not prove the runtime discovered the definitions.
 
 ## Starting a workflow
 
@@ -32,6 +33,17 @@ AGENTS.md routes issue implementation here by default. The main session reads `a
 Every open or new issue carries exactly one milestone (Backlog counts) and no `Stage N: ` title prefix or `stage:N` label ([DEC-029](DECISIONS.md#dec-029--milestones-instead-of-stages)). Closing a milestone requires a minor release and a README update ([DEC-030](DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release)); tag, publication and submissions stay owner-gated.
 
 The primary session is the coordinator. If delegation cannot select custom names, load the complete `agents/*.md` instructions into the delegate and disclose the fallback; subagents need the bounded packet and decisions in their handoff. Without subagents, provide a resumable packet and never claim an independent review from a single context.
+
+## Competitor research
+
+A request such as "Konkurrenzcheck aktualisieren" routes to `wled_researcher`
+with the [research brief](RESEARCH.md) and existing SOURCES.md baseline. It returns
+evidence-backed proposals and asks which ones to pursue. Only the owner-selected
+proposals go through the coordinator to `wled_requirements` in research-to-requirements
+mode, with approval source, evidence, scope, exclusions and duplicate checks. That
+mode authors requirements and creates/updates issues for the approved scope; it
+does not start implementation. Unavailable delegation yields a resumable handoff,
+not a claim that a worker ran. The role installs no background job.
 
 ## State machine
 
