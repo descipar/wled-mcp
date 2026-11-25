@@ -90,4 +90,4 @@ Implementation requires its own owner instruction under the normal workflow.
 
 ## Reports
 
-No new research run yet. The historical baseline remains in SOURCES.md.
+- [2026-11-25](research/2026-11-25.md): first full run (five known projects, adjacent leads, bounded search for new direct servers; one new direct alternative, one pending proposal). The earlier baseline (2026-11-19) remains in SOURCES.md.
