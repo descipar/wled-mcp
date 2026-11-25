@@ -33,6 +33,13 @@ Keep committed text English, impersonal and free of private installation details
 discuss findings in the maintainer's language. Do not imply fresh research from
 merely reading the stored baseline.
 
+After a research pass in a writable checkout, commit the docs-only changes on a
+`docs/competitor-research-<date>` branch, push, and open a ready (non-Draft) PR
+with the actual validation and unresolved limits. Do not merge; the coordinator
+merges docs-only PRs with `--admin` once CI is green. A later status change
+(accepted/rejected/deferred) goes in a follow-up commit or PR with the real
+approval source.
+
 Return findings and concrete numbered proposals: user benefit, evidence, gap
 against this project, existing issue/decision, bounded scope and tradeoffs. Ask
 the maintainer which proposals to send for requirements, unless the current
