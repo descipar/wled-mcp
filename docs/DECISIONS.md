@@ -89,6 +89,7 @@ and handed off/committed through the current branch and PR workflow.
 | DEC-038 | Project / roadmap | Milestone M7 is closed without its own minor release: the owner waives DEC-030 item 1 for M7. Its work (#183, rooms), once merged, ships with the next minor release and stays under Unreleased in the changelog until then; the README marks it "not yet released". Applies to M7 only. | Confirmed owner statement, coordinator session, 2026-11-16; see [DEC-038](#dec-038--m7-closes-without-its-own-release) |
 | DEC-039 | Workflow / branches | No long-lived milestone branch: short-lived feature branches merge into `main` one PR at a time; `main` is the integration line (green, not necessarily release-ready) and users receive a release tag on a reviewed `main` commit. Non-standalone changes are split or kept behind an off-by-default option. | Confirmed owner statement, main session, 2026-11-18; see [DEC-039](#dec-039--main-is-the-integration-line-releases-are-tags) |
 | DEC-040 | Project / roadmap | The M8 release is published as 0.4.1; the owner counts it as satisfying DEC-030 item 1 for M8 (no waiver). Applies to this release only, not a rule for patch numbers. | Confirmed owner answer, main session, 2026-11-21; see [DEC-040](#dec-040--release-041-counts-as-the-dec-030-release-for-m8) |
+| DEC-041 | Workflow / parallelism | When the owner commissions a milestone or several issues at once, the coordinator derives the parallel plan itself (dependency/hotspot analysis, at most two implementation tracks in isolated worktrees, serial where coupled) and starts it without asking back. Owner gates and per-PR safety rules are unchanged. | Owner request, main session, 2026-11-26; see [DEC-041](#dec-041--coordinator-plans-and-starts-parallel-issue-batches) |
 
 These seed entries restate decisions already present in the current project
 discussion/rules; they do not claim a separate human GitHub approval comment.
@@ -513,6 +514,27 @@ contract files, CHANGELOG and git history. Quotes are verbatim with translation 
 - Decision: the owner waives DEC-030 item 1 for M4. M4 closes once #28 is closed and this
   record is merged; its work stays under `Unreleased` with M3's and ships with the next minor
   release; nothing is prepared for publication. Scope: M4 only, extends no other waiver.
+
+### DEC-041 — Coordinator plans and starts parallel issue batches
+
+- Status: active workflow decision, global.
+- Source: owner request, main session, 2026-11-26: "kann der koordinator so ergänz werden, das er
+  wenn bei der beautragung der umsetzung eines milestone oder von mehreren issues schaut wie diese
+  am besten parallel umgesetzt werden können und das dann ohne rückfrage anstößt?" (English: "can
+  the coordinator be extended so that, when commissioned to implement a milestone or several
+  issues, it works out how they can best be implemented in parallel and starts that without asking
+  back?"); confirmed with "Ja, mach das so" for the proposed role change.
+- Decision: a request to implement a milestone or several issues authorizes the coordinator to
+  (1) read issue, dependency, PR and decision state, (2) derive the plan itself: coupled issues
+  and shared hotspots (the files listed in docs/STAGE-2-PARALLEL-PLAN.md) run serially or stacked,
+  independent issues in parallel, (3) run at most two implementation tracks at once, each issue
+  with its own coordinator in an isolated worktree on its own branch (DEC-021 rule 1 as the
+  general limit; read-only and docs work may run beside them), (4) record the plan in the work
+  packet or issue state and start it without a confirmation question.
+- Not changed: one PR merged at a time, human merge approval and DEC-022/DEC-029 standing
+  approvals, hardware authorization, owner-only actions, genuine decisions, per-issue review depth.
+  A third implementation track or a different limit needs the owner.
+- Scope: workflow, all milestones. Does not authorize device writes, deployment or publication.
 
 ### DEC-040 — Release 0.4.1 counts as the DEC-030 release for M8
 
