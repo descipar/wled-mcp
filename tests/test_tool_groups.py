@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import dataclasses
+import json
 import re
 from typing import Any
 
@@ -213,6 +214,26 @@ def test_descriptions_name_only_tools_of_their_own_group_or_core(tmp_path):
         for name in set(TOOL_REFERENCE.findall(op.description)) & set(group_of):
             if group_of[name] not in (op.group, "core"):
                 problems.append(f"{op.name} names {name}")
+    assert not problems, problems
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("groups", SUBSETS, ids=lambda g: "+".join(g))
+async def test_served_tools_list_names_no_tool_of_an_unselected_group(tmp_path, profile, groups):
+    """The whole served tools/list JSON (descriptions, input and output schemas) never names
+    a tool of a group that is not selected. Same-group references removed only by the profile
+    are pre-existing and tolerated."""
+    server, _, _ = served(tmp_path, profile, groups)
+    selected = {"core", *(TOOL_GROUPS if groups == ["all"] else groups)}
+    foreign = {t.name for t in EXPECTED_TOOLS if t.group not in selected}
+    async with Client(server) as client:
+        tools = (await client.list_tools()).tools
+    problems = []
+    for tool in tools:
+        text = json.dumps(tool.model_dump(mode="json"))
+        for name in set(TOOL_REFERENCE.findall(text)) & foreign:
+            problems.append(f"{tool.name} names {name}")
     assert not problems, problems
 
 

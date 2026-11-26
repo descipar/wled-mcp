@@ -140,10 +140,10 @@ write the inventory.
   `--tool-groups: unknown group at position 2 (valid: ...)` (also `empty item`; positions count
   from 1 there, from 0 in the file as for other list locators).
 - A disabled tool is absent from `tools/list` and `tools/call` fails as for a made-up name
-  (`-32602`, `Unknown tool`, before any I/O); tool schemas and descriptions of the remaining tools
-  are byte-identical to the unfiltered list (the `wled_plan_zone` text no longer names
-  `wled_replace_layout`, which is in another group: a description names only tools of its own group
-  or `core`). Stdio and HTTP share one registration path and serve the same names and schemas
+  (`-32602`, `Unknown tool`, before any I/O); remaining tools are served exactly as in the unfiltered list. Tool names and schema shapes did not
+  change with groups, but two texts were reworded so that nothing names a tool of another group: the
+  `wled_plan_zone` description and the `wled_store_preset` input schema text no longer name
+  `wled_replace_layout` (a text names only tools of its own group or `core`). Stdio and HTTP share one registration path and serve the same names and schemas
   (`tests/test_tool_groups_parity.py`).
 - The served instructions are composed from the registered set (`build_instructions`): the full set
   is byte-identical to the text before groups, and the layout and room sentences are dropped when

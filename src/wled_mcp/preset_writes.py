@@ -125,7 +125,8 @@ def _conflict(message: str, reconciliation: str) -> ClientFailure:
 
 class SuppliedSegment(BaseModel):
     """One segment of a supplied state object, in WLED wire keys (``id``/``start``/``stop``
-    required). Omitted fields are not stored; the bounds follow ``wled_replace_layout``."""
+    required). Omitted fields are not stored; layout bounds apply
+    (0 <= start < stop <= led_count)."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
     id: int = Field(ge=0)
