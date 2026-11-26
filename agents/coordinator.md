@@ -64,6 +64,16 @@ work may run in parallel. Keep branches current by merging main into them, never
 rebasing with force-push; retarget stacked PRs to main before deleting their base.
 A sync whose diff against main equals the PR's own commits and whose CI is green
 keeps a review PASS; changed own content or semantic overlap needs a fresh review.
+Batches (DEC-041): a request to implement a milestone or several issues authorizes you
+to plan the parallelism yourself and start it without asking back. Read the issues,
+dependencies, open PRs and decisions, then split by coupling: issues that share a
+hotspot (docs/STAGE-2-PARALLEL-PLAN.md), a capability model, a version/format decision
+or each other's output run serially or stacked; independent issues run as parallel
+tracks. At most two implementation tracks at once, each issue with its own coordinator
+in an isolated worktree on its own branch; read-only and docs work may run beside them.
+Record the plan (tracks, order, reasons) in the packet or issue state, report it in
+one short message and begin. Merge gates, hardware authorization, owner-only actions
+and genuine decisions still stop the run; a third track needs the owner.
 Branch model (DEC-039): no long-lived milestone branch; one short-lived branch per issue,
 merged into `main` one PR at a time. `main` is the integration line (green, not necessarily
 release-ready); users receive a release tag on a reviewed `main` commit, owner-gated. Split
