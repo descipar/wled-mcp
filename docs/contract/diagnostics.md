@@ -87,7 +87,7 @@ live check.
 | Key | Content |
 | --- | --- |
 | `service` | `name`, `version`, `transport` (`stdio` or `streamable-http`; `unknown` for an embedding that did not say), `uptime_seconds` |
-| `access` | `profile` and `devices`: per configured device `device_id`, `max_class` (its cap or `null`) and `effective_class` (the lower of profile and cap) |
+| `access` | `profile`, `tool_groups` (sorted effective groups, always with `core`; #236) and `devices`: per configured device `device_id`, `max_class` (its cap or `null`) and `effective_class` (the lower of profile and cap) |
 | `liveness` | `status: "alive"` and a `definition` text |
 | `readiness` | `basis` text, `counts` (`unknown`, `reachable`, `failed`) and `devices`: per configured device `device_id`, `state` and, once observed, `age_seconds`; a failed one also `error_code` |
 | `calls` | counters since start: `total`, `ok`, `failed`, `unknown_tool`, `internal_failure`, `by_class` (`read`, `control`, `manage`) and `by_error_code` (only codes that occurred, from the fixed set of the logs) |

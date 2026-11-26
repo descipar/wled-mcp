@@ -9,7 +9,7 @@ profile is a cumulative set of classes; a device may carry a lower ceiling. The 
 ceiling for a device is the lower of the two.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -46,6 +46,32 @@ PROFILES: Mapping[str, frozenset[ToolClass]] = MappingProxyType(
 )
 
 
+# Tool groups (issue #236, ISSUE-236-DEC-001). ``core`` is always registered; ``all`` is the
+# reserved word for every group and the default.
+TOOL_GROUPS: tuple[str, ...] = (
+    "core",
+    "presets",
+    "scenes",
+    "layout",
+    "signals",
+    "diagnostics",
+    "discovery",
+)
+GROUP_ALL = "all"
+CORE_GROUP = "core"
+ALL_GROUPS: frozenset[str] = frozenset(TOOL_GROUPS)
+
+
+def parse_group_names(names: Sequence[str]) -> frozenset[str]:
+    """The effective group set for validated names: ``core`` plus the listed groups.
+
+    ``all`` anywhere selects every group. Names must already be validated.
+    """
+    if GROUP_ALL in names:
+        return ALL_GROUPS
+    return frozenset(names) | {CORE_GROUP}
+
+
 def lower(first: ToolClass, second: ToolClass) -> ToolClass:
     """The lower of two classes."""
     return first if first.rank <= second.rank else second
@@ -62,10 +88,13 @@ class AccessPolicy:
 
     profile: ProfileName = DEFAULT_PROFILE
     caps: Mapping[str, ToolClass] = field(default_factory=lambda: MappingProxyType({}))
+    groups: frozenset[str] = ALL_GROUPS
 
     def __post_init__(self) -> None:
         if self.profile not in PROFILES:
             raise ValueError("Unknown access profile")
+        if not self.groups <= ALL_GROUPS or CORE_GROUP not in self.groups:
+            raise ValueError("Unknown tool group set")
         object.__setattr__(self, "caps", MappingProxyType(dict(self.caps)))
 
     @property
@@ -82,6 +111,10 @@ class AccessPolicy:
     def permits_class(self, tool_class: ToolClass) -> bool:
         """Whether the profile registers tools of this class."""
         return tool_class in self.classes
+
+    def registers(self, tool_class: ToolClass, group: str) -> bool:
+        """Whether a tool is registered: its class is in the profile AND its group is selected."""
+        return self.permits_class(tool_class) and group in self.groups
 
     def permits(self, tool_class: ToolClass, device_id: str | None = None) -> bool:
         """Whether a tool of this class may act on the device (or at all, without one)."""

@@ -69,6 +69,7 @@ if __name__ == "__main__":
                         read_only_hint=True, destructive_hint=False, idempotent_hint=True
                     ),
                     tool_class=ToolClass.READ,
+                    group="core",
                 )
             ]
         )

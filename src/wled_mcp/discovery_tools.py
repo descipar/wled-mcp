@@ -255,6 +255,7 @@ def build_discovery_operation(resources: Resources) -> Operation:
     return Operation(
         name=OPERATION,
         tool_class=ToolClass.READ,
+        group="discovery",
         description=(
             "Search the local network for WLED controllers: mDNS plus a bounded read of the "
             "stored discovery ranges, never over ranges that were not stored. Returns "

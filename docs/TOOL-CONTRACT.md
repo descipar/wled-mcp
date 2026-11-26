@@ -40,7 +40,9 @@ requirement, not executable behavior (ISSUE-13-DEC-001). Hardware acceptance of 
 
 ## Tools at a glance
 
-Hints are MCP tool annotations for the host; they are advisory, not an authorization barrier. The next section lists the
+Hints are MCP tool annotations for the host; they are advisory, not an authorization barrier. A deployment can
+register only some tools by group ([tool groups](contract/profiles.md#tool-groups)); each tool belongs to one group,
+listed there. The next section lists the
 essential inputs of each tool.
 
 | Tool | Hint | Purpose |
@@ -92,7 +94,7 @@ essential inputs of each tool.
 | Tool | Essential inputs | Behavior | Priority / owner |
 | --- | --- | --- | --- |
 | `wled_list_devices` | `probe=false` | Configured IDs/names, each with its `room` (local groups; never fails the list); optional independent bounded reachability | Must; room fields #183 ([rooms](contract/rooms.md)) |
-| `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile and per-device ceilings, last observed outcome per device, call counters; never contacts a device | S2-ACCESS-03; #20 ([diagnostics](contract/diagnostics.md)) |
+| `wled_get_service_status` | none | Local service facts: version, transport, uptime, profile, tool groups and per-device ceilings, last observed outcome per device, call counters; never contacts a device | S2-ACCESS-03; #20 ([diagnostics](contract/diagnostics.md)) |
 | `wled_get_state` | `device_id` | Normalized current state, raw state, essential info/capabilities | Must |
 | `wled_get_live_snapshot` | `device_id`, optional `max_runs=512` | Sample-only per-segment RGB runs with global bounds, unavailable endpoints and unmapped matrix geometry | LIVE-01; #150 ([live-snapshot](contract/live-snapshot.md)) |
 | `wled_explain_lighting` | `device_id`, optional `segment_id`, optional `requested` (`white_channel`, `effect_id`, `palette_id`) | Fresh state and info read once each, combined with process-local last-control evidence; observations, inferred causes (capped at medium; a directly observed blocker may be high), conclusion, limits | S3-EXPLAIN-01/-02; #30 ([explain](contract/explain.md)) |

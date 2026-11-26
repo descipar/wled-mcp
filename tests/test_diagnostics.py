@@ -242,7 +242,13 @@ def crash_operation(
         raise RuntimeError(f"connection to http://user:{secret}@planted.example failed")
 
     return Operation(
-        "wled_crash", "crashes", model, crash, ToolAnnotations(), tool_class=tool_class
+        "wled_crash",
+        "crashes",
+        model,
+        crash,
+        ToolAnnotations(),
+        tool_class=tool_class,
+        group="core",
     )
 
 
@@ -361,7 +367,9 @@ async def test_a_device_id_the_inventory_does_not_know_is_never_logged(caplog):
             verification="not_requested",
         )
 
-    echo = Operation("wled_echo", "echo", Boom, reply, ToolAnnotations(), tool_class=ToolClass.READ)
+    echo = Operation(
+        "wled_echo", "echo", Boom, reply, ToolAnnotations(), tool_class=ToolClass.READ, group="core"
+    )
     async with Client(create_server([echo], monitor=ServiceMonitor(["desk"]))) as client:
         envelope = await call(client, "wled_echo")
     assert envelope["device_id"] == PLANTED[0]  # the envelope is the caller's own data ...

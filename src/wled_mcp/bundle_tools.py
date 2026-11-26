@@ -715,6 +715,7 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_export_presets",
             tool_class=ToolClass.READ,
+            group="presets",
             description=(
                 "Export presets of one configured device as a portable, versioned bundle "
                 "(format wled-mcp.preset-bundle, format_version 1), returned inline. By "
@@ -731,6 +732,7 @@ def build_bundle_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_import_presets",
             tool_class=ToolClass.MANAGE,
+            group="presets",
             description=(
                 "Import a preset bundle (object or JSON text, at most 192 KiB and 50 entries, "
                 "at most one playlist) into one configured device. LIVE EFFECT: each state "

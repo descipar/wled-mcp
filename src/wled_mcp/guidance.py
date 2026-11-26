@@ -1,20 +1,51 @@
-"""Static agent guidance shared by every MCP transport (AGENT-01)."""
+"""Agent guidance shared by every MCP transport (AGENT-01)."""
 
-INSTRUCTIONS = """Read wled_get_state before changing lighting and choose the smallest change.
-Use wled_patch_segments to patch selected existing segments; wled_replace_layout replaces
-the complete layout and removes active segment IDs omitted from the request. Segment stop
-(and stop_y) is exclusive. Omitted fields preserve existing values; they are not resets.
-Effect and palette IDs are device-specific: read that device's catalogs rather than guess.
-A room (a group saved with kind=room) is where controllers are, at most one room per
-controller: use wled_apply_room for a state or scene across a whole room, a plain group for
-any other set of controllers, a zone for part of a controller and wled_set_state for one
-controller.
-Use dry_run=true to inspect a proposed write, then inspect the result's application and
-verification fields and read state when needed. A timed-out or uncertain write may already
-have applied: never retry it blindly. Overwriting a preset requires overwrite=true and a
-durable snapshot is taken first. Authorization belongs to the MCP host; these instructions
-and tool annotations do not add a confirmation mechanism or grant access.
-"""
+from collections.abc import Collection
+
+_READ_STATE = "Read wled_get_state before changing lighting and choose the smallest change.\n"
+_SEGMENTS_BOTH = (
+    "Use wled_patch_segments to patch selected existing segments; wled_replace_layout replaces\n"
+    "the complete layout and removes active segment IDs omitted from the request. Segment stop\n"
+    "(and stop_y) is exclusive. Omitted fields preserve existing values; they are not resets.\n"
+)
+_SEGMENTS_PATCH_ONLY = (
+    "Use wled_patch_segments to patch selected existing segments. Segment stop (and stop_y) is\n"
+    "exclusive. Omitted fields preserve existing values; they are not resets.\n"
+)
+_CATALOGS = (
+    "Effect and palette IDs are device-specific: read that device's catalogs rather than guess.\n"
+)
+_ROOMS = (
+    "A room (a group saved with kind=room) is where controllers are, at most one room per\n"
+    "controller: use wled_apply_room for a state or scene across a whole room, a plain group for\n"
+    "any other set of controllers, a zone for part of a controller and wled_set_state for one\n"
+    "controller.\n"
+)
+_SAFETY = (
+    "Use dry_run=true to inspect a proposed write, then inspect the result's application and\n"
+    "verification fields and read state when needed. A timed-out or uncertain write may already\n"
+    "have applied: never retry it blindly. Overwriting a preset requires overwrite=true and a\n"
+    "durable snapshot is taken first. Authorization belongs to the MCP host; these instructions\n"
+    "and tool annotations do not add a confirmation mechanism or grant access.\n"
+)
+
+
+def build_instructions(registered: Collection[str]) -> str:
+    """Server instructions naming only tools in ``registered`` (issue #236, AGENT-01).
+
+    The full set gives the text of every release before tool groups, byte for byte; a
+    profile or group selection drops the sentences about tools it does not serve.
+    """
+    parts = [_READ_STATE]
+    if "wled_patch_segments" in registered:
+        both = "wled_replace_layout" in registered
+        parts.append(_SEGMENTS_BOTH if both else _SEGMENTS_PATCH_ONLY)
+    parts.append(_CATALOGS)
+    if "wled_apply_room" in registered and "wled_set_state" in registered:
+        parts.append(_ROOMS)
+    parts.append(_SAFETY)
+    return "".join(parts)
+
 
 PROMPT_NAME = "change_lighting_safely"
 PROMPT_DESCRIPTION = "Plan a small lighting change, preview it, and verify the outcome."

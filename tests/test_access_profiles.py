@@ -13,7 +13,7 @@ import json
 import logging
 import re
 import subprocess
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -71,7 +71,9 @@ PROFILES = ("read-only", "control", "full")
 # ---------------------------------------------------------------------------- helpers
 
 
-def make_config(tmp_path: Path, profile: str = "full", **caps: str) -> StartupConfig:
+def make_config(
+    tmp_path: Path, profile: str = "full", groups: Sequence[str] | None = None, **caps: str
+) -> StartupConfig:
     devices = tuple(
         Device(
             id=identifier,
@@ -84,6 +86,7 @@ def make_config(tmp_path: Path, profile: str = "full", **caps: str) -> StartupCo
     policy = AccessPolicy(
         profile,  # type: ignore[arg-type]
         {identifier: ToolClass(value) for identifier, value in caps.items()},
+        access.ALL_GROUPS if groups is None else access.parse_group_names(groups),
     )
     return StartupConfig(
         tmp_path / "config.toml",
@@ -114,9 +117,9 @@ def tree(directory: Path) -> list[str]:
 
 
 def served(
-    tmp_path: Path, profile: str = "full", **caps: str
+    tmp_path: Path, profile: str = "full", groups: Sequence[str] | None = None, **caps: str
 ) -> tuple[Any, Resources, WriteRouter]:
-    config = make_config(tmp_path, profile, **caps)
+    config = make_config(tmp_path, profile, groups, **caps)
     router = make_router()
     resources = open_resources(config, router)
     return create_server(build_operations(resources), config.access), resources, router
@@ -733,7 +736,17 @@ async def test_the_ambient_class_is_set_per_call_visible_in_children_and_reset(t
     from mcp.types import ToolAnnotations
 
     server = create_server(
-        [Operation("wled_spy", "spy", Empty, spy, ToolAnnotations(), tool_class=ToolClass.CONTROL)]
+        [
+            Operation(
+                "wled_spy",
+                "spy",
+                Empty,
+                spy,
+                ToolAnnotations(),
+                tool_class=ToolClass.CONTROL,
+                group="core",
+            )
+        ]
     )
     async with Client(server) as client:
         await call(client, "wled_spy", {})
@@ -770,7 +783,13 @@ async def test_a_control_composite_cannot_reach_a_read_capped_device_even_when_l
 
     async with open_resources(config, router) as resources:
         composite_op = Operation(
-            "wled_composite", "c", Empty, composite, ToolAnnotations(), tool_class=ToolClass.CONTROL
+            "wled_composite",
+            "c",
+            Empty,
+            composite,
+            ToolAnnotations(),
+            tool_class=ToolClass.CONTROL,
+            group="core",
         )
         server = create_server([composite_op], config.access)
         async with Client(server) as client:
@@ -1015,7 +1034,10 @@ async def test_serve_passes_the_policy_to_create_server_and_logs_one_startup_eve
         await cli.serve(config)
     assert received["access"] == config.access and "served" in received
     events = [r.getMessage() for r in caplog.records if r.name == "wled_mcp"]
-    assert events == ["service starting: transport=stdio profile=control capped_devices=1"]
+    assert events == [
+        "service starting: transport=stdio profile=control capped_devices=1 "
+        "tool_groups=core,diagnostics,discovery,layout,presets,scenes,signals"
+    ]
     assert "desk" not in events[0] and str(tmp_path) not in events[0]
 
 
@@ -1047,7 +1069,8 @@ async def test_serve_http_passes_the_policy_to_create_server_and_logs_the_event(
         await cli.serve_http(config, object())  # type: ignore[arg-type]
     assert received == {"access": config.access, "served": True}
     assert [r.getMessage() for r in caplog.records if r.name == "wled_mcp"] == [
-        "service starting: transport=streamable-http profile=read-only capped_devices=0"
+        "service starting: transport=streamable-http profile=read-only capped_devices=0 "
+        "tool_groups=core,diagnostics,discovery,layout,presets,scenes,signals"
     ]
 
 

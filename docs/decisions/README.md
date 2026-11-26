@@ -13,7 +13,7 @@ per-issue files.
 | [stage-3.md](stage-3.md) | #27 to #31 |
 | [hardening.md](hardening.md) | #48, #52, #53, #55, #61, #62, #66, #74, #94, #98 |
 | [m3-m6.md](m3-m6.md) | #128, #130, #134, #147, #150, #151 |
-| [m7-m8.md](m7-m8.md) | #183, #198, #200 to #204 |
+| [m7-m8.md](m7-m8.md) | #183, #198, #200 to #204, #236 |
 | [workflow.md](workflow.md) | #292 |
 
 Use [the decision template](../agent-workflow/decision.template.md) and stable

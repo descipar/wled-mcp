@@ -18,6 +18,11 @@ mutable-fields object without IDs, ranges or master state (the stored zone selec
 {"zone": "shelf", "segments": [{"colors": [[255, 96, 16]], "effect_name": "Solid"}], "dry_run": true}
 ```
 
+The served instructions are composed from the registered tools (issue #236,
+[profiles](profiles.md#tool-groups)): the full set gives the text below byte for byte, and a profile or tool
+group selection drops the layout and room sentences when `wled_replace_layout` or `wled_apply_room` is not
+registered, so the instructions name only tools the server serves.
+
 The instructions also say when to use a room, group, zone or single device: a room (a group saved
 with `kind=room`, at most one per controller) is where controllers are and `wled_apply_room` applies
 a state or scene across it; a plain group is any other set of controllers; a zone is part of a

@@ -409,6 +409,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=START,
             tool_class=ToolClass.CONTROL,
+            group="signals",
             description=START_DESCRIPTION,
             request_model=StartSignalRequest,
             execute=start_signal,
@@ -417,6 +418,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=STATUS,
             tool_class=ToolClass.READ,
+            group="signals",
             description=STATUS_DESCRIPTION,
             request_model=GetSignalStatusRequest,
             execute=get_status,
@@ -425,6 +427,7 @@ def build_signal_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=CANCEL,
             tool_class=ToolClass.CONTROL,
+            group="signals",
             description=CANCEL_DESCRIPTION,
             request_model=CancelSignalRequest,
             execute=cancel_signal,

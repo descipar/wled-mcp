@@ -29,6 +29,7 @@ class ExpectedTool:
     name: str
     tool_class: ToolClass
     destructive: bool
+    group: str  # ISSUE-236-DEC-001; the tool-group expectation, independent of production
 
 
 READ = ToolClass.READ
@@ -37,47 +38,47 @@ MANAGE = ToolClass.MANAGE
 
 # Registry order; the only tool list in the test suite.
 EXPECTED_TOOLS: tuple[ExpectedTool, ...] = (
-    ExpectedTool("wled_list_devices", READ, destructive=False),
-    ExpectedTool("wled_get_service_status", READ, destructive=False),
-    ExpectedTool("wled_get_state", READ, destructive=False),
-    ExpectedTool("wled_get_effects", READ, destructive=False),
-    ExpectedTool("wled_get_palettes", READ, destructive=False),
-    ExpectedTool("wled_search_effects", READ, destructive=False),
-    ExpectedTool("wled_get_live_snapshot", READ, destructive=False),
-    ExpectedTool("wled_explain_lighting", READ, destructive=False),
-    ExpectedTool("wled_set_state", CONTROL, destructive=False),
-    ExpectedTool("wled_patch_segments", CONTROL, destructive=False),
-    ExpectedTool("wled_replace_layout", CONTROL, destructive=True),
-    ExpectedTool("wled_list_presets", READ, destructive=False),
-    ExpectedTool("wled_get_preset", READ, destructive=False),
-    ExpectedTool("wled_activate_preset", CONTROL, destructive=False),
-    ExpectedTool("wled_save_preset", MANAGE, destructive=True),
-    ExpectedTool("wled_delete_preset", MANAGE, destructive=True),
-    ExpectedTool("wled_list_snapshots", READ, destructive=False),
-    ExpectedTool("wled_restore_preset", MANAGE, destructive=True),
-    ExpectedTool("wled_store_preset", MANAGE, destructive=True),
-    ExpectedTool("wled_save_playlist", MANAGE, destructive=True),
-    ExpectedTool("wled_export_presets", READ, destructive=False),
-    ExpectedTool("wled_import_presets", MANAGE, destructive=True),
-    ExpectedTool("wled_list_groups", READ, destructive=False),
-    ExpectedTool("wled_save_group", MANAGE, destructive=True),
-    ExpectedTool("wled_delete_group", MANAGE, destructive=True),
-    ExpectedTool("wled_list_scenes", READ, destructive=False),
-    ExpectedTool("wled_save_scene", MANAGE, destructive=True),
-    ExpectedTool("wled_delete_scene", MANAGE, destructive=True),
-    ExpectedTool("wled_plan_scene", READ, destructive=False),
-    ExpectedTool("wled_apply_scene", CONTROL, destructive=False),
-    ExpectedTool("wled_list_zones", READ, destructive=False),
-    ExpectedTool("wled_plan_zone", READ, destructive=False),
-    ExpectedTool("wled_apply_zone", CONTROL, destructive=False),
-    ExpectedTool("wled_apply_room", CONTROL, destructive=False),
-    ExpectedTool("wled_preview_layout", READ, destructive=False),
-    ExpectedTool("wled_start_signal", CONTROL, destructive=False),
-    ExpectedTool("wled_get_signal_status", READ, destructive=False),
-    ExpectedTool("wled_cancel_signal", CONTROL, destructive=False),
-    ExpectedTool("wled_discover_devices", READ, destructive=False),
-    ExpectedTool("wled_set_discovery_ranges", MANAGE, destructive=True),
-    ExpectedTool("wled_add_device", MANAGE, destructive=False),
+    ExpectedTool("wled_list_devices", READ, destructive=False, group="core"),
+    ExpectedTool("wled_get_service_status", READ, destructive=False, group="core"),
+    ExpectedTool("wled_get_state", READ, destructive=False, group="core"),
+    ExpectedTool("wled_get_effects", READ, destructive=False, group="core"),
+    ExpectedTool("wled_get_palettes", READ, destructive=False, group="core"),
+    ExpectedTool("wled_search_effects", READ, destructive=False, group="core"),
+    ExpectedTool("wled_get_live_snapshot", READ, destructive=False, group="diagnostics"),
+    ExpectedTool("wled_explain_lighting", READ, destructive=False, group="diagnostics"),
+    ExpectedTool("wled_set_state", CONTROL, destructive=False, group="core"),
+    ExpectedTool("wled_patch_segments", CONTROL, destructive=False, group="core"),
+    ExpectedTool("wled_replace_layout", CONTROL, destructive=True, group="layout"),
+    ExpectedTool("wled_list_presets", READ, destructive=False, group="presets"),
+    ExpectedTool("wled_get_preset", READ, destructive=False, group="presets"),
+    ExpectedTool("wled_activate_preset", CONTROL, destructive=False, group="presets"),
+    ExpectedTool("wled_save_preset", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_delete_preset", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_list_snapshots", READ, destructive=False, group="presets"),
+    ExpectedTool("wled_restore_preset", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_store_preset", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_save_playlist", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_export_presets", READ, destructive=False, group="presets"),
+    ExpectedTool("wled_import_presets", MANAGE, destructive=True, group="presets"),
+    ExpectedTool("wled_list_groups", READ, destructive=False, group="scenes"),
+    ExpectedTool("wled_save_group", MANAGE, destructive=True, group="scenes"),
+    ExpectedTool("wled_delete_group", MANAGE, destructive=True, group="scenes"),
+    ExpectedTool("wled_list_scenes", READ, destructive=False, group="scenes"),
+    ExpectedTool("wled_save_scene", MANAGE, destructive=True, group="scenes"),
+    ExpectedTool("wled_delete_scene", MANAGE, destructive=True, group="scenes"),
+    ExpectedTool("wled_plan_scene", READ, destructive=False, group="scenes"),
+    ExpectedTool("wled_apply_scene", CONTROL, destructive=False, group="scenes"),
+    ExpectedTool("wled_list_zones", READ, destructive=False, group="scenes"),
+    ExpectedTool("wled_plan_zone", READ, destructive=False, group="scenes"),
+    ExpectedTool("wled_apply_zone", CONTROL, destructive=False, group="scenes"),
+    ExpectedTool("wled_apply_room", CONTROL, destructive=False, group="scenes"),
+    ExpectedTool("wled_preview_layout", READ, destructive=False, group="layout"),
+    ExpectedTool("wled_start_signal", CONTROL, destructive=False, group="signals"),
+    ExpectedTool("wled_get_signal_status", READ, destructive=False, group="signals"),
+    ExpectedTool("wled_cancel_signal", CONTROL, destructive=False, group="signals"),
+    ExpectedTool("wled_discover_devices", READ, destructive=False, group="discovery"),
+    ExpectedTool("wled_set_discovery_ranges", MANAGE, destructive=True, group="discovery"),
+    ExpectedTool("wled_add_device", MANAGE, destructive=False, group="discovery"),
 )
 
 # A non-read tool whose repeated call changes nothing more (ISSUE-28-DEC-002): cancelling an
@@ -98,6 +99,37 @@ PROFILE_CLASSES: Mapping[str, frozenset[ToolClass]] = MappingProxyType(
     }
 )
 DEFAULT_PROFILE = "full"
+
+# Tool groups (#236): the expectation data; ``core`` is always registered, ``all`` is the default.
+TOOL_GROUPS: tuple[str, ...] = (
+    "core",
+    "presets",
+    "scenes",
+    "layout",
+    "signals",
+    "diagnostics",
+    "discovery",
+)
+
+
+def group_names(*groups: str) -> frozenset[str]:
+    """Names of the expected tools in any of ``groups``."""
+    return frozenset(tool.name for tool in EXPECTED_TOOLS if tool.group in groups)
+
+
+def expected_names_in(profile: str, groups: Sequence[str]) -> list[str]:
+    """Ordered tool names a server with ``profile`` and the selected ``groups`` registers.
+
+    ``core`` is always served and ``all`` selects every group.
+    """
+    selected = set(TOOL_GROUPS) if "all" in groups else {*groups, "core"}
+    classes = PROFILE_CLASSES[profile]
+    return [
+        tool.name
+        for tool in EXPECTED_TOOLS
+        if tool.tool_class in classes and tool.group in selected
+    ]
+
 
 NAME_PATTERN = re.compile(r"^wled_[a-z0-9_]+$")
 

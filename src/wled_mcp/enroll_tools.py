@@ -406,6 +406,7 @@ def build_enroll_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name=NAME,
             tool_class=ToolClass.MANAGE,
+            group="discovery",
             description=(
                 "Add one WLED controller to the inventory (client-confirmed configuration "
                 "write). Makes one read-only GET /json/info of the given RFC 1918 IPv4 address, "
