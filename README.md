@@ -39,8 +39,9 @@ on WLED 16.0.1. No support is promised
 - Temporary signals: a colour on chosen segments for a bounded time, then restored only if nobody
   changed it; best effort, not a scheduler ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/signals.md)).
 - Agent guidance and profiles: safe-lighting instructions and precise field descriptions served
-  over stdio and HTTP; server-enforced profiles (`read-only`, `control`, `full`); the HTTP service
-  has a bearer credential with Host and Origin allowlists.
+  over stdio and HTTP; server-enforced profiles (`read-only`, `control`, `full`) and optional tool groups (not yet released) that serve a
+  smaller tool list ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/profiles.md#tool-groups));
+  the HTTP service has a bearer credential with Host and Origin allowlists.
 
 All tools, each with its read-only, write or destructive hint, are listed in the
 [tool contract](https://github.com/descipar/wled-mcp/blob/main/docs/TOOL-CONTRACT.md#tools-at-a-glance).

@@ -7,6 +7,16 @@ this file. Fixes are made for the latest release only. See
 
 ## Unreleased
 
+### Added
+
+- **Tool groups (#236).** The optional `tool_groups` key of the `[access]` table and the
+  `wled-mcp serve --tool-groups` option register only the selected groups' tools within the access
+  profile (default `all`, `core` always served), which cuts the tokens of the served tool list. Servers
+  with a profile or group selection now serve shorter instructions (sentences about unregistered tools are
+  dropped). Tool names and schema shapes are unchanged; the `wled_plan_zone` description and the
+  `wled_store_preset` input schema text no longer name `wled_replace_layout`. See
+  [profiles](docs/contract/profiles.md#tool-groups).
+
 ### Changed
 
 - **Simpler advertised segment schema (#246).** The served input schemas of `wled_patch_segments`,

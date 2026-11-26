@@ -631,7 +631,9 @@ def export(report: Report) -> dict[str, Any]:
     }
     if report.access is not None:
         # Class names only: the profile name, never a device ID, URL or path.
-        result["access"] = {"profile": report.access["profile"]}
+        result["access"] = {
+            key: report.access[key] for key in ("profile", "tool_groups") if key in report.access
+        }
     return result
 
 

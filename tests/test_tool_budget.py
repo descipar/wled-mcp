@@ -20,7 +20,8 @@ import pytest
 from mcp.client import Client
 
 from tests.test_access_profiles import served
-from wled_mcp.guidance import INSTRUCTIONS, PROMPT_DESCRIPTION, PROMPT_TEXT
+from tests.tool_contract import EXPECTED_TOOLS
+from wled_mcp.guidance import PROMPT_DESCRIPTION, PROMPT_TEXT
 from wled_mcp.schema_slim import SEGMENT_MODEL_NAMES
 
 # Characters of compact JSON: name + description + input schema, one tool.
@@ -70,6 +71,18 @@ TOOL_BUDGET = {
 # The same measure summed over the tools a profile serves.
 PROFILE_BUDGET = {"full": 64850, "control": 45450, "read-only": 21850}
 
+# The same measure summed over the tools of one group in the ``full`` profile (#236). Groups
+# are disjoint, so a selection costs the sum of its groups.
+GROUP_BUDGET = {
+    "core": 11700,
+    "presets": 14850,
+    "scenes": 17450,
+    "layout": 12950,
+    "signals": 4250,
+    "diagnostics": 2050,
+    "discovery": 3050,
+}
+
 GROW = (
     "The served tool list grew past its budget. If the growth is deliberate, raise the limit in "
     "tests/test_tool_budget.py and record the new measurement in the issue-235/246 validation "
@@ -109,6 +122,18 @@ async def test_profile_total_stays_within_its_budget(tmp_path, profile):
     tools = await listing(tmp_path, profile)
     total = sum(cost(tool) for tool in tools)
     assert total <= PROFILE_BUDGET[profile], f"{GROW} Profile {profile}: {total} characters."
+
+
+@pytest.mark.anyio
+async def test_each_tool_group_stays_within_its_budget(tmp_path):
+    tools = await listing(tmp_path, "full")
+    group_of = {tool.name: tool.group for tool in EXPECTED_TOOLS}
+    assert set(GROUP_BUDGET) == set(group_of.values())
+    totals: dict[str, int] = dict.fromkeys(GROUP_BUDGET, 0)
+    for tool in tools:
+        totals[group_of[tool.name]] += cost(tool)
+    over = {g: (n, GROUP_BUDGET[g]) for g, n in totals.items() if n > GROUP_BUDGET[g]}
+    assert not over, f"{GROW} Over group budget (size, limit): {over}"
 
 
 @pytest.mark.anyio
@@ -166,19 +191,32 @@ def property_names(schema: dict) -> set[str]:
     return names
 
 
+# Representative (profile, groups) configurations: the instructions and every tool description
+# must resolve under each (the instructions name only registered tools, #236).
+GUIDANCE_CONFIGS = [
+    ("full", None),
+    ("full", ["core"]),
+    ("control", ["core", "presets"]),
+    ("read-only", ["diagnostics", "signals"]),
+    ("full", ["scenes", "discovery"]),
+]
+
+
 @pytest.mark.anyio
-async def test_served_guidance_resolves_every_tool_and_field_reference(tmp_path):
-    server, _resources, _router = served(tmp_path, "full")
+@pytest.mark.parametrize(("profile", "groups"), GUIDANCE_CONFIGS)
+async def test_served_guidance_resolves_every_tool_and_field_reference(tmp_path, profile, groups):
+    server, _resources, _router = served(tmp_path, profile, groups)
     async with Client(server) as client:
         tools = (await client.session.list_tools()).tools
-        assert client.instructions == INSTRUCTIONS
+        instructions = client.instructions or ""
         prompt = await client.get_prompt("change_lighting_safely")
     names = {tool.name for tool in tools}
+    full_set = profile == "full" and groups is None
     properties = {tool.name: property_names(tool.input_schema) for tool in tools}
     everything = set().union(*properties.values())
 
     texts = {
-        "instructions": INSTRUCTIONS,
+        "instructions": instructions,
         "prompt description": PROMPT_DESCRIPTION,
         "prompt": PROMPT_TEXT,
         **{tool.name: tool.description or "" for tool in tools},
@@ -187,7 +225,9 @@ async def test_served_guidance_resolves_every_tool_and_field_reference(tmp_path)
     unresolved = []
     for source, text in texts.items():
         for reference in TOOL_REFERENCE.findall(text):
-            if reference not in names:
+            if reference not in names and (source == "instructions" or profile == "full"):
+                # Descriptions of a profile-limited server may still name a tool of their own
+                # group that the profile removed (schemas stay unchanged, #236).
                 unresolved.append(f"{source}: tool {reference}")
         mentioned = set(TOOL_REFERENCE.findall(text)) & names
         known = (
@@ -195,7 +235,9 @@ async def test_served_guidance_resolves_every_tool_and_field_reference(tmp_path)
             if source not in names
             else properties[source].union(*(properties[other] for other in mentioned))
         )
-        for field in FIELD_REFERENCE.findall(text):
+        # The static safety sentences and the prompt keep their write-field wording on
+        # restricted servers (#236, DEC-028); only the tool descriptions are field-checked.
+        for field in FIELD_REFERENCE.findall(text) if (source in names or full_set) else ():
             if field not in known:
                 unresolved.append(f"{source}: field {field}")
     assert not unresolved, unresolved

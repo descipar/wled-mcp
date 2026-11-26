@@ -24,7 +24,12 @@ engine (#199; see [discovery.md](discovery.md) and DEC-035, which supersedes ISS
 - `--profile read-only|control|full` selects the access profile and overrides `[access] profile` (precedence option,
   file, `full`; no environment variable); see [profiles](profiles.md#configuration). An invalid value is the usage error
   below.
-- Serve options (`--transport`, `--host`, `--profile`, ...) together with a subcommand are a usage error. So are unknown
+- `--tool-groups core,presets` (comma list of `core`, `presets`, `scenes`, `layout`, `signals`, `diagnostics`,
+  `discovery`, `all`) selects the tool groups and overrides `[access] tool_groups` (precedence option, file, `all`; no
+  environment variable; `core` is always served). An unknown group or an empty item exits 2 with
+  `--tool-groups: unknown group at position N (valid: ...)`, never echoing the value; see
+  [profiles](profiles.md#tool-groups).
+- Serve options (`--transport`, `--host`, `--profile`, `--tool-groups`, ...) together with a subcommand are a usage error. So are unknown
   options and actions and abbreviated option names; the message is the fixed `Invalid command-line arguments. Use --help
   for supported options.`
 - Every subcommand takes `--format text|json` (default `text`, no terminal detection). JSON output is one object with
@@ -100,7 +105,8 @@ wled-mcp config validate --config <abs> [--data-dir <abs>] [--check-backups]
 - JSON fields: `device_count` (null when unreadable), `problems` (list of `code` and `message`) and, with
   `--check-backups`, `backups_writable`. When the file sets an access setting (`[access]` or a device `max_class`, #20)
   a valid result also has `access` (`profile`, `capped_devices`) and the text output one more line `Access (as
-  configured; a serve --profile overrides it): ...`; without access settings both are absent. A file-system error while
+  configured; a serve --profile overrides it): ...` (with `Tool groups (as configured; a serve --tool-groups overrides
+  it): ...` appended and `access.tool_groups` in JSON only when the file sets `tool_groups`); without access settings both are absent. A file-system error while
   checking is `CHECK_FAILED`; nothing is written.
 - A location that cannot even be inspected counts as not writable (`BACKUPS_NOT_WRITABLE`), here, in `doctor` and for
   the startup advisory.

@@ -663,6 +663,28 @@ def test_doctor_reports_the_configured_profile_and_caps(tmp_path):
     assert doctor.full_json(report)["access"] == {"profile": "read-only", "capped_devices": 1}
 
 
+def test_doctor_reports_and_exports_the_configured_tool_groups_only_as_names(tmp_path):
+    config, data = access_layout(tmp_path)
+    config.write_text(
+        config.read_text("utf-8").replace(
+            '"read-only"\n', '"read-only"\ntool_groups = ["presets", "signals"]\n'
+        ),
+        encoding="utf-8",
+    )
+    router = Router()
+    router.device(DESK)
+    report = diagnose(config, data, router)
+    assert find(report, "ACCESS_CONFIGURED").facts["tool_groups"] == "core,presets,signals"
+    assert (
+        "Tool groups (as configured; a serve --tool-groups overrides it): core,presets,signals."
+        in (doctor.render_text(report))
+    )
+    assert doctor.export(report)["access"] == {
+        "profile": "read-only",
+        "tool_groups": "core,presets,signals",
+    }
+
+
 def test_export_carries_only_the_profile_and_class_names(tmp_path):
     marker_dir = tmp_path / f"path-{SECRET}"
     marker_dir.mkdir()

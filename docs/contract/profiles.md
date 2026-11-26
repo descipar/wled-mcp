@@ -56,7 +56,7 @@ test compares the expectation data with the production table.
 
 ## Configuration
 
-Both settings are optional and additive; `schema_version` stays 1.
+The settings are optional and additive; `schema_version` stays 1.
 
 ```toml
 schema_version = 1
@@ -98,13 +98,133 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
   line of the `wled_mcp` logger, shown only with `WLED_MCP_LOG_LEVEL=info`
   ([diagnostics.md](diagnostics.md#logging)).
 
+## Tool groups
+
+Issue #236 (TOOLGRP-01 to TOOLGRP-05, [ISSUE-236-DEC-001](../decisions/m7-m8.md)). A deployment can
+register only some tools to save the tokens that every request spends on the served list. Groups
+narrow the registered set; they never widen a profile and never touch the device ceilings or the
+class model. Every tool belongs to exactly one group (`Operation.group`, required, no default; the
+expectation is `tests/tool_contract.py`).
+
+| Group | Tools (class) | n |
+| --- | --- | --- |
+| `core` | `wled_list_devices` r, `wled_get_service_status` r, `wled_get_state` r, `wled_get_effects` r, `wled_get_palettes` r, `wled_search_effects` r, `wled_set_state` c, `wled_patch_segments` c | 8 |
+| `presets` | `wled_list_presets` r, `wled_get_preset` r, `wled_activate_preset` c, `wled_list_snapshots` r, `wled_export_presets` r, `wled_save_preset` m, `wled_delete_preset` m, `wled_restore_preset` m, `wled_store_preset` m, `wled_save_playlist` m, `wled_import_presets` m | 11 |
+| `scenes` | `wled_list_groups` r, `wled_list_scenes` r, `wled_plan_scene` r, `wled_list_zones` r, `wled_plan_zone` r, `wled_apply_scene` c, `wled_apply_zone` c, `wled_apply_room` c, `wled_save_group` m, `wled_delete_group` m, `wled_save_scene` m, `wled_delete_scene` m | 12 |
+| `layout` | `wled_preview_layout` r, `wled_replace_layout` c | 2 |
+| `signals` | `wled_get_signal_status` r, `wled_start_signal` c, `wled_cancel_signal` c | 3 |
+| `diagnostics` | `wled_get_live_snapshot` r, `wled_explain_lighting` r | 2 |
+| `discovery` | `wled_discover_devices` r, `wled_set_discovery_ranges` m, `wled_add_device` m | 3 |
+
+(r, c, m: `read`, `control`, `manage`.) `scenes` holds groups, rooms, scenes and zones together
+because their tools refer to each other and share stores; `discovery` isolates the tools that
+write the inventory.
+
+- Selection: `[access] tool_groups = ["presets", "scenes"]` (array of group names, lower case,
+  exact) or `wled-mcp serve ... --tool-groups core,presets` (comma list). The registered set is
+  `core` plus the listed groups, then restricted to the classes of the profile: a tool is
+  registered when its class is in the profile AND its group is selected (G1). `core` is always
+  registered and naming it changes nothing; the reserved word `all` selects every group and is the
+  default, so a deployment without the key is unchanged. Duplicates collapse.
+- Precedence: option, file, `all` (so `--tool-groups all` undoes a file setting). There is no
+  environment variable (containers use the flag or the file). With a subcommand the option is the
+  usual usage error. A restart applies a change; there is no reload.
+- Every group holds a `read` tool, so no profile removes a whole group and the result is never
+  empty. A group whose write tools the profile excludes is still served read-only (for example
+  `control` with `presets`: 5 of 11 tools). That is not an error.
+- Errors (exit 2, stderr `Startup configuration error: ...`, positional, the value is never
+  echoed; the valid names are project vocabulary): `access.tool_groups: invalid (expected a
+  non-empty list of at most 16 group names: core, presets, scenes, layout, signals, diagnostics,
+  discovery, all)` for an empty list, a wrong type or too many items;
+  `access.tool_groups[1]: unknown group (valid: ...)`; on the command line
+  `--tool-groups: unknown group at position 2 (valid: ...)` (also `empty item`; positions count
+  from 1 there, from 0 in the file as for other list locators).
+- A disabled tool is absent from `tools/list` and `tools/call` fails as for a made-up name
+  (`-32602`, `Unknown tool`, before any I/O); remaining tools are served exactly as in the unfiltered list. Tool names and schema shapes did not
+  change with groups, but two texts were reworded so that nothing names a tool of another group: the
+  `wled_plan_zone` description and the `wled_store_preset` input schema text no longer name
+  `wled_replace_layout` (a text names only tools of its own group or `core`). Stdio and HTTP share one registration path and serve the same names and schemas
+  (`tests/test_tool_groups_parity.py`).
+- The served instructions are composed from the registered set (`build_instructions`): the full set
+  is byte-identical to the text before groups, and the layout and room sentences are dropped when
+  their tool is not registered. A profile-limited server therefore also gets shorter instructions.
+  The prompt `change_lighting_safely` stays static and names no tool. Runtime texts (reconciliation
+  hints) stay within their own group or `core` (source scan in `tests/test_tool_groups.py`).
+- `wled_get_service_status` reports `access.tool_groups` (sorted effective groups, always with
+  `core`); the startup event carries `tool_groups=<csv>`; `config validate` and `doctor` report
+  "Tool groups (as configured; a serve --tool-groups overrides it)" only when the file sets the key;
+  `doctor --export` carries group names only.
+- A client that caches `tools/list` sees the new list after a restart as for a profile change; no
+  notification is sent. An older server rejects the key as `access: unsupported field` (exit 2,
+  fail-closed; [versioning.md](versioning.md#migration-notes)).
+- Not in scope: per-endpoint or per-client tool sets (#237), runtime enable and disable, per-tool
+  selection, a reload, group-level device ceilings.
+
+Examples (the configuration blocks are validated by `tests/test_tool_groups_docs.py`; place
+`[access]` before the first `[[devices]]`):
+
+```toml tool-group-example
+# Voice assistant: lighting control only. Tools: state, effects, palettes, devices, status (about 3170 tokens).
+schema_version = 1
+[access]
+profile = "control"
+tool_groups = ["core"]
+```
+
+```toml tool-group-example
+# Daily lighting with presets and scenes, no layout, signals, diagnostics or inventory tools.
+schema_version = 1
+[access]
+profile = "control"
+tool_groups = ["presets", "scenes"]
+```
+
+```toml tool-group-example
+# Read-only monitoring and troubleshooting.
+schema_version = 1
+[access]
+profile = "read-only"
+tool_groups = ["diagnostics", "signals"]
+```
+
+Command line: `wled-mcp --config /abs/wled.toml --data-dir /abs/data --profile control --tool-groups core`;
+Compose: `command: [..., "--tool-groups", "core,presets"]`.
+
+### Token cost
+
+Measured on main at 33e50a8 with the method of [validation/m7-m8.md](../validation/m7-m8.md):
+characters of the compact JSON of name, description and input schema of the tools a server serves
+(output schemas excluded as in #235 and #246), tokens about characters / 3.5. Groups are disjoint,
+so a selection adds up its column values. `tests/test_tool_groups_docs.py` compares every figure
+with the live registry (tool counts exactly, characters and tokens within 3 %) and fails with the
+new numbers: a deliberate update of test and table, as for the tool budget.
+
+<!-- group-cost:start -->
+| Group | `full` tools | `full` chars (tokens) | `control` tools | `control` chars (tokens) | `read-only` tools | `read-only` chars (tokens) |
+| --- | --- | --- | --- | --- | --- | --- |
+| core | 8 | 11087 (3168) | 8 | 11087 (3168) | 6 | 4014 (1147) |
+| presets | 11 | 14110 (4031) | 5 | 2790 (797) | 4 | 2232 (638) |
+| scenes | 12 | 16561 (4732) | 8 | 10987 (3139) | 5 | 5100 (1457) |
+| layout | 2 | 12314 (3518) | 2 | 12314 (3518) | 1 | 6188 (1768) |
+| signals | 3 | 4038 (1154) | 3 | 4038 (1154) | 1 | 765 (219) |
+| diagnostics | 2 | 1919 (548) | 2 | 1919 (548) | 2 | 1919 (548) |
+| discovery | 3 | 2885 (824) | 1 | 963 (275) | 1 | 963 (275) |
+| all groups | 41 | 62914 (17975) | 29 | 44098 (12599) | 20 | 21181 (6052) |
+<!-- group-cost:end -->
+
+`core` alone is about 82 % smaller than the unfiltered `full` list (3168 against 17975 tokens);
+`core,presets` costs 25197 characters (7199 tokens) in `full`, 13877 (3965) in `control` and 6246
+(1785) in `read-only`. `core` is dominated by `wled_patch_segments` (about 5785 characters) and
+`layout` (two segment-schema tools) is the second-largest cost for its tool count; splitting or
+slimming them is a separate issue (#290).
+
 ## Enforcement
 
 Three layers, all in the server process, none depending on the client:
 
 1. **Registration filter (G1).** `create_server` registers only operations whose class is in the
-   profile. `tools/list`, `tools/call` and the SDK's tool-schema lookup (the `Mcp-Param` path)
-   read that one registry. A tool outside the profile is absent from the list, and a direct
+   profile and whose group is selected ([tool groups](#tool-groups)). `tools/list`, `tools/call`
+   and the SDK's tool-schema lookup (the `Mcp-Param` path) read that one registry. A tool outside the profile is absent from the list, and a direct
    `tools/call` fails like a made-up name: JSON-RPC error `-32602` with `Unknown tool`, before any
    I/O. No message lists disabled tools. Remaining tools' schemas and descriptions are
    byte-identical to the `full` list. `build_operations` stays unfiltered.

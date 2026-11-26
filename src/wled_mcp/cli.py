@@ -30,10 +30,11 @@ log = logging.getLogger("wled_mcp")
 def announce_profile(config: StartupConfig, transport: str) -> None:
     """One startup event with the effective profile and the number of capped devices."""
     log.info(
-        "service starting: transport=%s profile=%s capped_devices=%d",
+        "service starting: transport=%s profile=%s capped_devices=%d tool_groups=%s",
         transport,
         config.access.profile,
         len(config.access.caps),
+        ",".join(sorted(config.access.groups)),
     )
 
 
@@ -100,6 +101,13 @@ def build_parser() -> SafeParser:
         choices=PROFILE_NAMES,
         help="Access profile: read-only, control or full (default: [access] profile, else full).",
     )
+    parser.add_argument(
+        "--tool-groups",
+        help=(
+            "Comma list of tool groups to serve besides core: presets, scenes, layout, signals, "
+            "diagnostics, discovery or all (default: [access] tool_groups, else all)."
+        ),
+    )
     http = parser.add_argument_group("streamable-http options")
     http.add_argument("--host", help="Bind address (default 127.0.0.1).")
     http.add_argument("--port", type=int, help="Bind port (default 8000).")
@@ -165,7 +173,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     log_settings = LogSettings()
     try:
         log_settings = load_log_settings(os.environ)
-        config = load_config(args.config, args.data_dir, profile=args.profile)
+        config = load_config(
+            args.config, args.data_dir, profile=args.profile, tool_groups=args.tool_groups
+        )
         if args.transport == "streamable-http":
             settings = load_http_settings(
                 host=args.host,

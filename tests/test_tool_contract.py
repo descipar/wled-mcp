@@ -180,9 +180,9 @@ def test_distribution_check_follows_a_changed_contract(tmp_path):
     script = load_script("check_distribution")
     changed = tmp_path / "tool_contract.py"
     source = CONTRACT.read_text("utf-8")
-    entry = '    ExpectedTool("wled_list_devices", READ, destructive=False),\n'
+    entry = '    ExpectedTool("wled_list_devices", READ, destructive=False, group="core"),\n'
     assert source.count(entry) == 1
-    extra = '    ExpectedTool("wled_synthetic_extra", MANAGE, destructive=True),\n'
+    extra = '    ExpectedTool("wled_synthetic_extra", MANAGE, destructive=True, group="core"),\n'
     changed.write_text(source.replace(entry, entry + extra), encoding="utf-8")
     names = script.expected_tool_names(changed)
     assert names[:2] == [expected_names()[0], "wled_synthetic_extra"]

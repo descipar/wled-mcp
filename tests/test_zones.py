@@ -287,7 +287,7 @@ def test_a_zone_that_does_not_tile_onto_inner_segments_needs_a_layout_change(
     problem = problem_of(part(span), layout)
     assert problem.reason == reason and problem.error.code == "VALIDATION_ERROR"
     assert problem.problem["layout_change_required"] is True and problem.problem["span"] == 1
-    assert "wled_replace_layout" in (problem.error.reconciliation or "")
+    assert "layout change" in (problem.error.reconciliation or "")
     hint = problem.problem["layout_hint"]
     assert hint["span"] == {"start": span.start, "stop": span.stop}
     if offender is not None:

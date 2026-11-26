@@ -191,6 +191,7 @@ def build_discovery_config_operations(resources: Resources) -> tuple[Operation, 
         Operation(
             name=NAME,
             tool_class=ToolClass.MANAGE,
+            group="discovery",
             description=(
                 "Replace the whole stored discovery range list (not a merge; [] clears it, "
                 "leaving mDNS only). IPv4 CIDR, RFC 1918, /24 to /30, at most 4. Writes only "

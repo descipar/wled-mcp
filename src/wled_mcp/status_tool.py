@@ -58,7 +58,11 @@ def service_status(resources: Resources) -> dict[str, JsonValue]:
             "transport": monitor.transport,
             "uptime_seconds": monitor.uptime_seconds(),
         },
-        "access": {"profile": policy.profile, "devices": access_devices},
+        "access": {
+            "profile": policy.profile,
+            "tool_groups": sorted(policy.groups),
+            "devices": access_devices,
+        },
         "liveness": {"status": "alive", "definition": LIVENESS},
         "readiness": {"basis": READINESS_BASIS, "counts": counts, "devices": devices},
         "calls": monitor.call_counts(),
@@ -81,9 +85,10 @@ def build_status_operation(resources: Resources) -> Operation:
     return Operation(
         name="wled_get_service_status",
         tool_class=ToolClass.READ,
+        group="core",
         description=(
-            "Report local service facts: version, transport, uptime, access profile and "
-            "per-device ceilings, the last observed outcome per device and call counters. "
+            "Report local service facts: version, transport, uptime, access profile, tool groups "
+            "and per-device ceilings, the last observed outcome per device and call counters. "
             "Never contacts a device; a device not yet observed is 'unknown', not healthy. "
             "Use wled_list_devices with probe=true for a live check."
         ),

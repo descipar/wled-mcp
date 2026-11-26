@@ -5,14 +5,23 @@ import ipaddress
 import os
 import re
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from wled_mcp.access import AccessPolicy, ClassName, ProfileName, ToolClass
+from wled_mcp.access import (
+    ALL_GROUPS,
+    GROUP_ALL,
+    TOOL_GROUPS,
+    AccessPolicy,
+    ClassName,
+    ProfileName,
+    ToolClass,
+    parse_group_names,
+)
 from wled_mcp.discovery_caps import MAX_RANGES, check_ranges
 
 # ASCII DNS names; labels may contain interior "_" (DHCP-derived names) or "-", but each
@@ -27,6 +36,9 @@ _DEVICE_FIELDS = ("id", "name", "base_url", "mac", "max_class")
 _MAX_LOCATORS = 5
 _ACCESS_ORDER = 1_000_000  # access locators sort after every device entry
 _RANGE_MARK = "ranges rejected at "
+_GROUP_MARK = "groups rejected at "
+_GROUP_NAMES = ", ".join((*TOOL_GROUPS, GROUP_ALL))
+_MAX_GROUP_ITEMS = 16
 _DISCOVERY_ORDER = 2_000_000  # discovery locators sort after the access locators
 _MAC_PLAIN = re.compile(r"[0-9A-Fa-f]{12}", re.ASCII)
 _MAC_COLONS = re.compile(r"[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}", re.ASCII)
@@ -136,6 +148,22 @@ class AccessSettings(StrictModel):
     """Deployment access profile (issue #20); the default keeps every tool."""
 
     profile: ProfileName = "full"
+    # Tool groups (#236): None means every group. Names are validated by position only.
+    tool_groups: list[str] | None = Field(default=None, max_length=_MAX_GROUP_ITEMS)
+
+    @field_validator("tool_groups")
+    @classmethod
+    def known_groups(cls, groups: list[str] | None) -> list[str] | None:
+        if groups is None:
+            return None
+        if not groups:
+            raise ValueError("Empty tool group list")
+        valid = {*TOOL_GROUPS, GROUP_ALL}
+        rejected = [str(index) for index, name in enumerate(groups) if name not in valid]
+        if rejected:
+            # Positions only, never values; _locators turns them into locators.
+            raise ValueError(_GROUP_MARK + ",".join(rejected))
+        return groups
 
 
 class DiscoverySettings(StrictModel):
@@ -193,15 +221,37 @@ class StartupConfig:
     discovery_ranges: tuple[str, ...] = ()
 
 
-def access_policy(inventory: InventoryConfig, profile: ProfileName | None = None) -> AccessPolicy:
-    """Policy from a validated document; an explicit ``profile`` (the CLI option) wins."""
+def parse_tool_groups_option(value: str) -> list[str]:
+    """Names of the serve option ``--tool-groups`` (comma list); invalid input is refused.
+
+    Raises ``ConfigurationError`` naming the position, never the value.
+    """
+    names = value.split(",")
+    valid = {*TOOL_GROUPS, GROUP_ALL}
+    for position, name in enumerate(names, start=1):
+        if name.strip() not in valid:
+            kind = "empty item" if not name.strip() else "unknown group"
+            raise ConfigurationError(
+                f"--tool-groups: {kind} at position {position} (valid: {_GROUP_NAMES})."
+            )
+    return [name.strip() for name in names]
+
+
+def access_policy(
+    inventory: InventoryConfig,
+    profile: ProfileName | None = None,
+    tool_groups: Sequence[str] | None = None,
+) -> AccessPolicy:
+    """Policy from a validated document; an explicit option (the CLI) wins over the file."""
     caps = {
         device.id: ToolClass(device.max_class)
         for device in inventory.devices
         if device.max_class is not None
     }
     chosen = inventory.access.profile if profile is None else profile
-    return AccessPolicy(chosen, caps)
+    names = tool_groups if tool_groups is not None else inventory.access.tool_groups
+    groups = ALL_GROUPS if names is None else parse_group_names(names)
+    return AccessPolicy(chosen, caps, groups)
 
 
 def access_configured(inventory: InventoryConfig) -> bool:
@@ -218,17 +268,26 @@ def access_facts(inventory: InventoryConfig) -> dict[str, str | int] | None:
     """
     if not access_configured(inventory):
         return None
-    return {
+    facts: dict[str, str | int] = {
         "profile": inventory.access.profile,
         "capped_devices": sum(device.max_class is not None for device in inventory.devices),
     }
+    if inventory.access.tool_groups is not None:
+        facts["tool_groups"] = ",".join(sorted(parse_group_names(inventory.access.tool_groups)))
+    return facts
 
 
 def access_line(facts: Mapping[str, str | int]) -> str:
-    return (
+    line = (
         "Access (as configured; a serve --profile overrides it): "
         f"profile {facts['profile']}, {facts['capped_devices']} device(s) with a maximum class."
     )
+    if "tool_groups" in facts:
+        line += (
+            f" Tool groups (as configured; a serve --tool-groups overrides it): "
+            f"{facts['tool_groups']}."
+        )
+    return line
 
 
 MAX_CONFIG_BYTES = 65536
@@ -263,11 +322,13 @@ def load_config(
     data_dir: str | None,
     environ: Mapping[str, str] | None = None,
     profile: ProfileName | None = None,
+    tool_groups: str | None = None,
 ) -> StartupConfig:
     """Validate the entire configuration before creating any device request.
 
     ``profile`` is the serve option ``--profile``; it overrides ``[access] profile``
-    (precedence: option, file, ``full``).
+    (precedence: option, file, ``full``). ``tool_groups`` is the serve option
+    ``--tool-groups`` (comma list), with the same precedence (option, file, ``all``).
     """
     env = os.environ if environ is None else environ
     raw_config = config_path if config_path is not None else env.get("WLED_MCP_CONFIG")
@@ -289,6 +350,7 @@ def load_config(
         if isinstance(exc, ConfigurationError):
             raise
         raise ConfigurationError(_GENERIC_INVALID.format(located="")) from None
+    option_groups = None if tool_groups is None else parse_tool_groups_option(tool_groups)
     validated = validate_document(content)
     return StartupConfig(
         config.resolve(),
@@ -296,7 +358,7 @@ def load_config(
         tuple(validated.devices),
         validated.http,
         validated.backups,
-        access_policy(validated, profile),
+        access_policy(validated, profile, option_groups),
         hashlib.sha256(content).hexdigest(),
         tuple(validated.discovery.ranges),
     )
@@ -356,6 +418,22 @@ def _locators(exc: ValidationError) -> str:
                 text = "access: invalid"
             elif loc[1] == "profile":
                 text = "access.profile: invalid"
+            elif loc[1] == "tool_groups":
+                if len(loc) > 2 and type(loc[2]) is int:  # a non-string entry
+                    found.add((_ACCESS_ORDER, 1 + loc[2], f"access.tool_groups[{loc[2]}]: invalid"))
+                    continue
+                if _GROUP_MARK in error["msg"]:
+                    for mark in error["msg"].split(_GROUP_MARK, 1)[1].split(","):
+                        if mark.isdigit():
+                            text = (
+                                f"access.tool_groups[{mark}]: unknown group (valid: {_GROUP_NAMES})"
+                            )
+                            found.add((_ACCESS_ORDER, 1 + int(mark), text))
+                    continue
+                text = (
+                    "access.tool_groups: invalid (expected a non-empty list of at most "
+                    f"{_MAX_GROUP_ITEMS} group names: {_GROUP_NAMES})"
+                )
             else:
                 text = "access: unsupported field"
             found.add((_ACCESS_ORDER, 0, text))

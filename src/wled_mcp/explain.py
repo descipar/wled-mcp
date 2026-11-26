@@ -309,7 +309,7 @@ def explain(
                 ["state.pl", "state.ps"],
                 "A playlist is reported as running; it can replace the light state when it "
                 "advances.",
-                ["Read wled_list_presets to inspect it; stopping playback is a manual decision."],
+                ["Inspect the stored presets to see what plays; stopping it is a manual decision."],
             )
         )
     if values["info.live"] is True:
@@ -520,6 +520,7 @@ def build_explain_operation(resources: Resources) -> Operation:
     return Operation(
         name=NAME,
         tool_class=ToolClass.READ,
+        group="diagnostics",
         description=(
             "Explain why a light change may not appear or persist on one configured device. "
             "Reads fresh state and info once, adds process-local evidence and returns observed "

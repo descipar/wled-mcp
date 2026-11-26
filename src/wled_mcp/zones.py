@@ -356,7 +356,7 @@ class ZoneProblem(BindingFailure):
             message,
             problem,
             reconciliation=(
-                "Review and apply a layout change explicitly (wled_replace_layout), then "
+                "Review and apply a layout change explicitly, then "
                 "preview the zone again. Nothing was written."
                 if reason in LAYOUT_REASONS
                 else "Correct the zone or the device, then preview the zone again. Nothing "

@@ -453,6 +453,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_list_zones",
             tool_class=ToolClass.READ,
+            group="scenes",
             description=(
                 "List the stored named physical lighting zones (ID, name, devices, number of "
                 "LED ranges, whether each device is still configured) with warnings for "
@@ -469,6 +470,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_plan_zone",
             tool_class=ToolClass.READ,
+            group="scenes",
             description=(
                 "Read-only preview of one zone (ID or unique name): reads the fresh state of "
                 "each device of the zone and reports the exact device, segment IDs and LED "
@@ -476,7 +478,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
                 "the refusal: stale LED count, segment hint mismatch, a segment crossing the "
                 "zone boundary, LEDs no segment covers, an unknown or unreachable device. "
                 "Zones use existing active segments only; a refusal says that an explicit "
-                "layout change (wled_replace_layout) is required. Optional segments (one "
+                "layout change is required. Optional segments (one "
                 "object of segment fields: on, brightness, colors, effect_id or effect_name, "
                 "palette_id or palette_name, speed, intensity, cct, custom1-3, check1-3) also "
                 "plans the change with the real segment planner. Optional room: the zone must "
@@ -491,6 +493,7 @@ def build_zone_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_apply_zone",
             tool_class=ToolClass.CONTROL,
+            group="scenes",
             description=(
                 "Apply segment fields (one object: on, brightness, colors, effect_id or "
                 "effect_name, palette_id or palette_name, speed, intensity, cct, custom1-3, "

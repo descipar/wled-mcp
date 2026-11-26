@@ -197,6 +197,7 @@ def build_live_operation(resources: Resources) -> Operation:
     return Operation(
         name="wled_get_live_snapshot",
         tool_class=ToolClass.READ,
+        group="diagnostics",
         description="Read one bounded sampled LED color observation per active 1D segment. "
         "Reports downsampling, gaps, overlaps, unavailable endpoints and unmapped matrix geometry. "
         "Exclusive segment stops; no animation simulation, calibrated-color or causality proof.",

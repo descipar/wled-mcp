@@ -210,6 +210,7 @@ def build_room_operations(resources: Resources) -> tuple[Operation, ...]:
         Operation(
             name="wled_apply_room",
             tool_class=ToolClass.CONTROL,
+            group="scenes",
             description=(
                 "Apply one master state (on, brightness, transition_ms) or one stored scene to "
                 "the controllers of a room (a group saved with kind=room: where controllers "

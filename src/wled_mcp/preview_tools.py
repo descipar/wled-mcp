@@ -370,6 +370,7 @@ def build_preview_operation(resources: Resources) -> Operation:
     return Operation(
         name=NAME,
         tool_class=ToolClass.READ,
+        group="layout",
         description=(
             "Read-only static SVG preview of one 1D device's segment layout, returned as the "
             "string data.svg (image/svg+xml) with a structured summary. Without segments it "
