@@ -75,13 +75,24 @@ Code references are to the merged `main` at 9ca1bcd.
   paths would be convenience, not a boundary, because its holder could call the widest path; it is
   not offered. A narrow credential never opens `/mcp`.
 - Guard order stays Host, Origin, bearer, path, method (`http_service.AccessGuard._check`, which
-  today compares one `HTTPServiceSettings.token_digest`). Shape: resolve the endpoint from the
-  path, compare the presented credential's digest in constant time (`hmac.compare_digest`, as
-  `_bearer_ok`) against that endpoint's digest only. For an unknown path, still compare against all
-  digests without early exit, so timing and status do not reveal which paths exist. Today a
-  missing or wrong credential gets 401 before the path is looked at, and an authenticated request
-  on an unknown path gets 404; both stay. A valid credential of another endpoint on this path gets
-  the same 401 as a wrong credential, so a narrow credential learns nothing about wider paths.
+  today compares one `HTTPServiceSettings.token_digest`). A credential counts as authenticated
+  only on its own path. Rule when at least one endpoint is configured (with none, today's
+  behavior is kept byte-identical):
+  - Under the `/mcp` prefix (`/mcp` and `/mcp/...`): a request is accepted only if the presented
+    credential's digest equals the digest of the endpoint whose path it is (constant-time
+    `hmac.compare_digest`, as `_bearer_ok`). Every other case gets the same 401 with the same body
+    and headers as a wrong or missing credential: another endpoint's valid credential, the
+    default credential on `/mcp/<x>`, a narrow credential on `/mcp`, and any credential on a
+    path that names no endpoint. Status code and body therefore reveal neither which endpoint
+    names exist nor anything about wider paths. Today an authenticated request on a wrong path gets
+    404; under the prefix that changes to 401 once endpoints exist, and the default credential on
+    an unknown `/mcp/<x>` is 401 as well, to stay uniform.
+  - Outside the `/mcp` prefix: unchanged. A missing or wrong credential gets 401; a credential that
+    is valid for some endpoint gets 404. This reveals nothing about endpoint names, because
+    these paths cannot match any endpoint.
+  - Timing: the digest comparison does fixed work (compare against every endpoint digest without
+    early exit); this is hardening, the contract rests on the uniform status code.
+  - After a path match and valid credential, method handling is as today (405 for non-POST).
 - Rotation stays restart-based, one credential per endpoint, independently.
 - stdio is unchanged: one process, one caller. Per-client sets there are separate processes with
   `--profile` and `--tool-groups`.
@@ -96,7 +107,7 @@ Code references are to the merged `main` at 9ca1bcd.
 
 ## Alternatives with maintenance cost (Q2)
 
-| Option | What it is | Cost and limits |
+| Alternative | What it is | Cost and limits |
 | --- | --- | --- |
 | A. Several instances with #236 | One service per set, each with its own `--profile`/`--tool-groups`, port, Host allowlist, token | Zero code. N containers, ports, tokens, allowlists and hub entries updated in lockstep; each instance probes devices itself (more load on small controllers); evidence (`last_control`) and status counters are per process. [DEPLOYMENT.md](../DEPLOYMENT.md) forbids two independently writing instances because device locks are process-local, so only one writing instance plus read-only instances is within the rules. Two stdio hub entries are separate processes with the same limit. |
 | B. Hub-side tool selection | The hub hides tools from its list | Depends on the hub; this repository documents no such hub feature (unverified for the deployed hub build). It hides names in the hub list but does not constrain the service: the service still serves everything on the shared token, direct access sees all, and a call to a hidden name is the hub's concern. The served instructions still name all tools, so guidance and the token saving are partial. Ownership is outside this repository. |
@@ -115,8 +126,8 @@ Code references are to the merged `main` at 9ca1bcd.
   device-level facts.
 - Evidence: `LastControlStore` entries carry the tool name (`operation`), which
   `wled_explain_lighting` returns (`explain.py: _last_control_observation`). With shared evidence an
-  endpoint without the `layout` group could read `wled_replace_layout`, which violates
-  ISSUE-236-DEC-001 item 5. Recommended: keep the store shared (evidence about a device is useful
+  endpoint without the `layout` group could read `wled_replace_layout`, which conflicts with the
+  intent of ISSUE-236-DEC-001 item 5 (that item covers served texts, not tool results). Recommended: keep the store shared (evidence about a device is useful
   whoever changed it) and, for a tool not in the reading endpoint's registry, return the class-level
   label ("another tool, class control") instead of the name. Open point.
 - Redaction otherwise unchanged: credentials, Host/Origin values and URLs are never logged. The call
@@ -130,13 +141,13 @@ Code references are to the merged `main` at 9ca1bcd.
 
 ## Recommendation and migration (Q4)
 
-Proposed option A (adopt in principle): implement the design as one follow-up issue in M9 or Backlog,
+Recommendation (proposed): adopt C, the per-endpoint design. Implement the design as one follow-up issue in M9 or Backlog,
 only after the owner accepts. Rationale: the main use case needs more than one writer, which several
 instances cannot do within the documented rule, and a hub-side filter is no enforcement; the cost is
 bounded (one config table, one guard change, per-endpoint server construction).
 
-Option B for the owner: defer, and document the several-instances pattern with the single-writer rule
-as the supported way until a concrete need appears. Trade-off: no code and no new security surface,
+Alternative for the owner: defer, and document A (several instances) as the supported pattern, with the single-writer rule,
+until a concrete need appears. Trade-off: no code and no new security surface,
 but at most one writing instance, lockstep upkeep of N entries, and per-process evidence and status.
 
 Not recommended: a shared token across paths, per-endpoint Host/Origin, runtime reload, per-tool
@@ -153,16 +164,16 @@ Cost reference: [profiles.md](profiles.md#token-cost) (core 8 tools 3168 tokens 
 for all groups in `full`; core plus presets 7199 in `full`, 3965 in `control`); not re-measured here.
 
 Follow-up implementation issues to propose after acceptance (not created here): (1) configuration,
-guard, per-endpoint server and tests including cross-path credential cases; (2) status, monitor and
+guard, per-endpoint server and tests including cross-path credential cases (another endpoint's credential, the default credential on an unknown `/mcp/<x>`, a narrow credential on `/mcp`, any credential on an unknown path: all the same 401); (2) status, monitor and
 evidence per endpoint, and docs.
 
 ## Open points for the owner and the spike
 
-1. Accept option A, choose option B, or reject.
+1. Adopt C, defer with A as the supported pattern, or reject.
 2. Startup error versus clamp for an endpoint above the process ceiling (error proposed).
 3. Evidence naming: class-level label for tools outside the reading endpoint (proposed) versus
    per-endpoint stores.
 4. Maximum endpoint count (8 proposed) and name rules.
 5. Spike: composed SDK lifespans, per-endpoint server construction cost, and the constant-time
    guard shape; none of these is verified yet.
-6. Hub-side selection (option B in Q2) was not verified for the deployed hub build.
+6. Hub-side selection (B in Q2) was not verified for the deployed hub build.
