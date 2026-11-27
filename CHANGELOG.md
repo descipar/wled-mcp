@@ -8,7 +8,7 @@ this file. Fixes are made for the latest release only. See
 ## 0.5.0 - M9: lean tool surface
 
 The fixed token cost of the served tool list shrinks, and a deployment chooses which tools it serves.
-One advertised-schema change counts as breaking in the [DEC-020](docs/DECISIONS.md) sense (see Changed
+One advertised-schema change counts as breaking in the [DEC-020](docs/DECISIONS.md#dec-020--support-and-version-policy) sense (see Changed
 and the [migration notes](docs/contract/versioning.md#migration-notes)); everything else is additive:
 the new `tool_groups` key and `--tool-groups` option, and the catalog resources. The optional
 `tool_groups` key is rejected by an older server, so remove it before a downgrade.
