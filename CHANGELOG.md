@@ -5,7 +5,13 @@ early: a minor release may contain breaking changes and then carries migration n
 this file. Fixes are made for the latest release only. See
 [versioning](docs/contract/versioning.md) and the [support policy](README.md#support).
 
-## Unreleased
+## 0.5.0 - M9: lean tool surface
+
+The fixed token cost of the served tool list shrinks, and a deployment chooses which tools it serves.
+One advertised-schema change counts as breaking in the [DEC-020](docs/DECISIONS.md#dec-020--support-and-version-policy) sense (see Changed
+and the [migration notes](docs/contract/versioning.md#migration-notes)); everything else is additive:
+the new `tool_groups` key and `--tool-groups` option, and the catalog resources. The optional
+`tool_groups` key is rejected by an older server, so remove it before a downgrade.
 
 ### Added
 
@@ -33,6 +39,11 @@ this file. Fixes are made for the latest release only. See
   unchanged. Several repeated phrases in the segment field descriptions are shorter. The `full` profile
   `tools/list` is about 5.5 percent smaller. Migration: none for clients that omit unused fields; see
   the [migration notes](docs/contract/versioning.md#migration-notes).
+- **Diagnostics and docs (carried nits).** An unexpected failure while reading a catalog resource now
+  writes a warning to stderr (exception class and resource kind only, no values); the response is
+  unchanged. Per-endpoint tool sets over HTTP (#237) are documented as an accepted target design only and
+  are not implemented in this release. Tests cover the failure log and two concurrent HTTP sessions
+  reading resources.
 
 ## 0.4.1 - M7 and M8: rooms, device discovery and enrollment, slimmer tool schemas
 

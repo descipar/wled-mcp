@@ -3,7 +3,7 @@
 A short description of the components and the request and process lifecycle. Behavior,
 parameters and error codes are specified in [TOOL-CONTRACT.md](TOOL-CONTRACT.md) and the
 [contract files](TOOL-CONTRACT.md#stage-2-and-later-files); this page only shows how the pieces fit.
-Features that are not yet released are described in their contract files, not here.
+Features that are merged but not yet released are described in their contract files, not here.
 
 ## Components
 

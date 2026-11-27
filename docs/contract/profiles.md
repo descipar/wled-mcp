@@ -100,7 +100,7 @@ max_class = "read"         # optional: "read" | "control" | "manage" (no cap in 
 
 ## Tool groups
 
-Not yet released. Issue #236 (TOOLGRP-01 to TOOLGRP-05, [ISSUE-236-DEC-001](../decisions/m7-m8.md)). A deployment can
+Issue #236 (TOOLGRP-01 to TOOLGRP-05, [ISSUE-236-DEC-001](../decisions/m7-m8.md)). A deployment can
 register only some tools to save the tokens that every request spends on the served list. Groups
 narrow the registered set; they never widen a profile and never touch the device ceilings or the
 class model. Every tool belongs to exactly one group (`Operation.group`, required, no default; the
