@@ -22,7 +22,7 @@ must not share reach need two services stays true, because endpoints share devic
 
 ## Design (Q1)
 
-Code references are to the merged `main` at 9ca1bcd.
+Code references are to the merged `main` at 5879a4c.
 
 ### Configuration
 
