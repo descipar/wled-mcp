@@ -1,9 +1,10 @@
 # Per-endpoint tool sets over HTTP (design note, #237)
 
-**Status: proposed design for [#237](https://github.com/descipar/wled-mcp/issues/237), not
-implemented; no behavior changes.** The recommendation is a proposal
-([ISSUE-237-DEC-001](../decisions/m7-m8.md#issue-237-decisions), status PROPOSED) until the owner
-accepts, changes or rejects it. Names, paths and tokens below are synthetic.
+**Status: accepted target design for [#237](https://github.com/descipar/wled-mcp/issues/237),
+not implemented and not scheduled in M9; no behavior changes.** The design is accepted by
+[ISSUE-237-DEC-001](../decisions/m7-m8.md#issue-237-decisions) (2026-11-27, a delegated decision of
+the main session; the owner can change it). A spike (open points 5 and 6) comes first, then
+implementation issues in Backlog or a later milestone. Names, paths and tokens below are synthetic.
 
 ## Problem and non-goals
 
@@ -66,6 +67,12 @@ Code references are to the merged `main` at 5879a4c.
   tool is registered (ISSUE-258-DEC-001). With one registry per endpoint, each endpoint therefore serves
   only the catalog resources of its own tool set, and an unregistered resource is indistinguishable
   from an unknown URI. Resources need no endpoint setting of their own.
+  No extra work is needed because the resource handlers close over the endpoint's own registry and
+  dispatch (`server.py` `create_server`, `catalog_resources.py` `build_resource_handlers`), and
+  resource reads are not counted in tool-call counters, so per-endpoint counters are unaffected. Today
+  all three catalog tools (`wled_list_devices`, `wled_get_effects`, `wled_get_palettes`) are in group
+  `core` and class read, so every endpoint serves all three resources; the rule matters only if one
+  of those tools moves to another class or group.
 - G3 (`CURRENT_TOOL_CLASS` and the write engines) keeps the process-wide policy, which is equal to
   or wider than any endpoint and so never the weaker layer. Contract limit G1 (the registration
   filter is process-wide) becomes endpoint-wide on HTTP; that is a new contract surface.
@@ -79,10 +86,13 @@ Code references are to the merged `main` at 5879a4c.
   different (equal digests are a startup error that never echoes a value). A token shared across
   paths would be convenience, not a boundary, because its holder could call the widest path; it is
   not offered. A narrow credential never opens `/mcp`.
-- Guard order stays Host, Origin, bearer, path, method (`http_service.AccessGuard._check`, which
-  today compares one `HTTPServiceSettings.token_digest`). A credential counts as authenticated
-  only on its own path. Rule when at least one endpoint is configured (with none, today's
-  behavior is kept byte-identical):
+- Guard order. Today `http_service.AccessGuard._check` checks Host, Origin, bearer (against the one
+  `HTTPServiceSettings.token_digest`), path and method, in that order. Under this design Host and
+  Origin stay first and unchanged; bearer and path are checked together under the `/mcp` prefix (the
+  credential must equal the digest of the endpoint whose path it is, one uniform 401 otherwise);
+  outside the prefix the order and results are unchanged; method handling comes last. A credential
+  counts as authenticated only on its own path. Rule when at least one endpoint is configured (with
+  none, today's behavior is kept byte-identical):
   - Under the `/mcp` prefix (`/mcp` and `/mcp/...`): a request is accepted only if the presented
     credential's digest equals the digest of the endpoint whose path it is (constant-time
     `hmac.compare_digest`, as `_bearer_ok`). Every other case gets the same 401 with the same body

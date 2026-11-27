@@ -218,7 +218,9 @@ async def test_unknown_controller_returns_the_tools_error_object(tmp_path):
             assert error.message == expected["message"]
             assert error.error.data["error"] == expected
             assert error.error.data["ok"] is False and error.error.data["device_id"] is None
-            assert "nobody" not in str(error.error.data) or uri.endswith("nobody/effects")
+            # The requested controller segment must never be echoed (strict for every URI).
+            segment = uri.split("/")[3]
+            assert segment not in json.dumps(error.error.data)
     assert router.calls == []
 
 
@@ -278,6 +280,46 @@ async def test_bodies_errors_and_logs_leak_no_address_or_path(tmp_path, caplog):
     joined = "\n".join(seen) + "\n" + caplog.text
     for secret in (*HOSTS.values(), str(tmp_path), "http://"):
         assert secret not in joined
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("uri", "kind"), [(DEVICES, "devices"), (EFFECTS, "effects"), (PALETTES, "palettes")]
+)
+async def test_an_unexpected_exception_logs_only_class_and_kind(uri, kind, caplog, capsys):
+    secret = "synthetic-secret-token-in-exception"
+
+    async def explode(arguments: dict[str, Any]) -> Outcome:
+        raise RuntimeError(f"http://{secret}.invalid/json?token={secret} desk")
+
+    class Request(BaseModel):
+        model_config = ConfigDict(extra="forbid", strict=True)
+        device_id: str | None = None
+
+    operation = tool_operation(MAPPING[uri])
+    operation = Operation(
+        name=operation.name,
+        description=operation.description,
+        request_model=Request,
+        execute=explode,
+        annotations=operation.annotations,
+        tool_class=operation.tool_class,
+        group=operation.group,
+    )
+    server = create_server([operation])
+    caplog.set_level(logging.DEBUG, logger="wled_mcp")
+    async with Client(server) as client:
+        error = await read_error(client, uri)
+    assert (error.code, error.message) == (-32603, "Internal resource failure")
+    records = [r for r in caplog.records if r.name == "wled_mcp.catalog_resources"]
+    assert len(records) == 1 and records[0].levelno == logging.WARNING
+    line = records[0].getMessage()
+    assert "RuntimeError" in line and kind in line
+    everything = caplog.text + json.dumps(error.error.model_dump(), default=str) + str(error)
+    for hidden in (secret, "desk", "http://", "wled://"):
+        assert hidden not in everything
+    captured = capsys.readouterr()
+    assert captured.out == ""
 
 
 @pytest.mark.anyio

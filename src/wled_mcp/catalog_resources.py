@@ -9,6 +9,7 @@ its own. Not to be confused with ``resources.Resources`` (the process graph).
 """
 
 import json
+import logging
 import re
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
@@ -27,6 +28,8 @@ from mcp.types import (
 
 from wled_mcp.client import ClientFailure
 from wled_mcp.models import Outcome
+
+logger = logging.getLogger(__name__)
 
 DEVICES_URI = "wled://devices"
 MIME_TYPE = "application/json"
@@ -57,6 +60,14 @@ def resource_error(outcome: Outcome) -> MCPError:
     return MCPError(
         code=INTERNAL_ERROR, message=error.message, data=outcome.model_dump(mode="json")
     )
+
+
+def kind_of(tool: str) -> str:
+    """The resource kind of a mapped tool: devices, effects or palettes."""
+    for kind, name in CATALOG_TOOLS.items():
+        if name == tool:
+            return kind
+    return "devices"
 
 
 def build_resource_handlers(registry: Mapping[str, Any], run: Runner) -> dict[str, Any]:
@@ -123,8 +134,12 @@ def build_resource_handlers(registry: Mapping[str, Any], run: Runner) -> dict[st
         else:
             try:
                 outcome = await run(registry[tool], arguments)
-            except Exception:
-                # Exceptions can contain configuration, URLs or tokens; do not echo them.
+            except Exception as exc:
+                # Exceptions can contain configuration, URLs or tokens; do not echo them,
+                # neither to the client nor to the log: only the class name and the kind.
+                logger.warning(
+                    "Resource read failed: kind=%s error=%s", kind_of(tool), type(exc).__name__
+                )
                 raise MCPError(code=INTERNAL_ERROR, message=INTERNAL_MESSAGE) from None
         if not outcome.ok:
             raise resource_error(outcome)
