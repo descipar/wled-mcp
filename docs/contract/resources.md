@@ -1,6 +1,6 @@
 # MCP resources (MCPRES-01 to MCPRES-08, #258)
 
-Contract for milestone M9 (not yet released). The device list and the effect and palette catalog of one controller can
+Contract for milestone M9 (released, see the changelog). The device list and the effect and palette catalog of one controller can
 be read as MCP resources, so a client can fetch them without a tool call. Tools stay the primary
 path: some MCP clients ignore resources, so no tool description or instruction depends on them.
 Decision: [ISSUE-258-DEC-001](../decisions/m7-m8.md) (coordinator under the owner's instruction;
