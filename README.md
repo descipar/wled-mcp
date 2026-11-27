@@ -42,8 +42,8 @@ on WLED 16.0.1. No support is promised
   over stdio and HTTP; server-enforced profiles (`read-only`, `control`, `full`) and optional tool groups (not yet released) that serve a
   smaller tool list ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/profiles.md#tool-groups));
   the HTTP service has a bearer credential with Host and Origin allowlists.
-- Catalog resources: the device list and a controller's effect and palette catalogs can also be read
-  as MCP resources (`wled://devices`, `wled://devices/{controller}/effects`); tools stay the primary
+- Catalog resources (not yet released): the device list and a controller's effect and palette catalogs
+  can be read as MCP resources (`wled://devices`, `wled://devices/{controller}/effects`); tools stay the primary
   path, as some clients ignore resources ([contract](https://github.com/descipar/wled-mcp/blob/main/docs/contract/resources.md)).
 
 All tools, each with its read-only, write or destructive hint, are listed in the
