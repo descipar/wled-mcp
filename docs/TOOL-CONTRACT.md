@@ -684,6 +684,7 @@ outside this baseline. Ownership: #14 implements HTTP/access/lifecycle; #10 veri
 - [mcpb-bundle](contract/mcpb-bundle.md): the Claude Desktop MCPB bundle, manifest and release flow (DIST-04, #151).
 - [presets](contract/presets.md): restore, supplied-state save, snapshot listing, playlists, bundles (#18).
 - [profiles](contract/profiles.md): tool classes, access profiles, device ceilings, `ACCESS_DENIED` (#20).
+- [resources](contract/resources.md): MCP resources for the device list and the effect and palette catalogs (#258).
 - [rooms](contract/rooms.md): rooms (a group with `kind=room`), `wled_apply_room` (#183).
 - [segment-names](contract/segment-names.md): catalog names in the segment tools (#149).
 - [segments](contract/segments.md): capability model, WLED 16 segment fields, CCT and 2D layouts (#19).

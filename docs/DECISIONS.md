@@ -719,6 +719,9 @@ delegated decision (not a human decision). Details are in the linked files.
   [ISSUE-200-DEC-001](decisions/m7-m8.md); [ISSUE-201-DEC-001](decisions/m7-m8.md);
   [ISSUE-202-DEC-001](decisions/m7-m8.md); [ISSUE-203-DEC-001](decisions/m7-m8.md);
   all coordinator technical proposals, not human decisions.
+- M9: [ISSUE-236-DEC-001](decisions/m7-m8.md) (tool groups, owner accepted);
+  [ISSUE-258-DEC-001](decisions/m7-m8.md) (coordinator under the owner's instruction, catalog
+  resources; owner reviews at merge).
 - M9 (design): [ISSUE-237-DEC-001](decisions/m7-m8.md) (proposed: adopt design C, per-endpoint tool sets over HTTP, or defer with several instances (A);
   owner decision pending).
 

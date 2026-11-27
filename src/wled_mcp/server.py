@@ -37,6 +37,7 @@ from wled_mcp.access import (
     ToolClass,
     denial_message,
 )
+from wled_mcp.catalog_resources import build_resource_handlers
 from wled_mcp.diagnostics import (
     INTERNAL_FAILURE,
     UNKNOWN_TOOL,
@@ -294,6 +295,7 @@ def create_server(
         on_list_tools=list_tools,
         on_call_tool=call_tool,
         get_tool_input_schema=lambda name: input_schema(name) if name in registry else None,
+        **build_resource_handlers(registry, lambda op, args: dispatch(op, args, [])),
     )
 
 

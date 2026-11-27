@@ -61,6 +61,11 @@ Code references are to the merged `main` at 9ca1bcd.
   (`server.py`: `registry.get(...)` is `None`, `MCPError -32602 "Unknown tool"`) before any I/O.
   Dispatch must use the endpoint's own server object, so the registry cannot be reached from another
   path.
+- Catalog resources ([#258](https://github.com/descipar/wled-mcp/issues/258),
+  [resources.md](resources.md)) follow the registry: a resource is registered if and only if its read
+  tool is registered (ISSUE-258-DEC-001). With one registry per endpoint, each endpoint therefore serves
+  only the catalog resources of its own tool set, and an unregistered resource is indistinguishable
+  from an unknown URI. Resources need no endpoint setting of their own.
 - G3 (`CURRENT_TOOL_CLASS` and the write engines) keeps the process-wide policy, which is equal to
   or wider than any endpoint and so never the weaker layer. Contract limit G1 (the registration
   filter is process-wide) becomes endpoint-wide on HTTP; that is a new contract surface.

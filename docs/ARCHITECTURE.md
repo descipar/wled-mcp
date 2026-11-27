@@ -31,6 +31,11 @@ flowchart LR
   tools whose class is in the active profile and applies the per-device ceiling at dispatch;
   every device write also checks it in the write engines
   ([profiles](contract/profiles.md#enforcement)).
+- **Catalog resources** (`catalog_resources`, wired in `server.create_server`): the device list and the
+  effect and palette catalogs as MCP resources. A handler runs the registered operation of its read tool
+  with default arguments, so there is no second parser, cache or redaction, and a resource exists only
+  while its tool is registered ([contract/resources.md](contract/resources.md)). Not the `resources`
+  process graph below.
 - **Domain operations** (`operations`, `patches`, `layouts`, `presets`, `preset_writes`,
   `preset_tools`, `groups`, `scenes`, `zones`, `explain`, `live_snapshot` and others): pure planning
   and validation plus the verified write routines. No transport code lives here.
