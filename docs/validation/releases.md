@@ -152,6 +152,55 @@ network and one Docker Desktop version only; [validation/m7-m8.md](m7-m8.md#live
 a deployment of 0.4.1 on the owner's target (a separate owner-gated step, DEC-026, DEC-037) and a
 rollback run. Closing #204 and the M7/M8 milestones is left to the owner or the completion step.
 
+## Release 0.5.0 (milestone M9 and all work merged since 0.4.1)
+
+### Preparation
+
+PR #303 (merge commit `c014afe683c44c2467d3f3e3f253fb2693b6ae25`), on the owner's request to prepare the
+[DEC-030](../DECISIONS.md#dec-030--milestone-closure-includes-a-minor-release) release for M9 without further
+Backlog items. Content: the simplified segment schema (#246, one canonical form per optional nullable
+field, a breaking change in the [DEC-020](../DECISIONS.md#dec-020--support-and-version-policy) sense with its
+migration rows), tool groups (#236), catalog resources (#258) and the carried nits (#301); #237 added only a
+design note (ISSUE-237-DEC-001, design C as target, not implemented) and #290 was closed as not planned after
+a measurement. The tool count stays 41. Version `0.5.0` in `pyproject.toml`, `uv.lock` and both `server.json`
+versions; the README feature list is current for M9 and the "not yet released" markers are gone.
+
+Verified before publication (CI and local, Python 3.13): full test suite 4094 passed, 47 skipped; ruff,
+mypy, `sync_agents --check`, `check_traceability`, `check_private_identifiers`,
+`tests/test_version_source.py`, `tests/test_upgrade_compat.py` and `scripts/check_distribution.py` on a
+local `uv build` (clean install, stdio, HTTP, uvx) PASS. An independent Opus review of the first head
+(PASS, no must-fix) was followed by three docs-only corrections that got a light check; CI was green on the
+merged head `afddb4dc3d4e084fb2907d29ef0b7303497f68db`.
+
+### Release and registry publication 2026-11-27
+
+Each step on the owner's explicit instruction
+([DEC-023](../DECISIONS.md#dec-023--staged-first-public-release)); recorded by the main session.
+
+- Annotated tag `v0.5.0` on `c014afe683c44c2467d3f3e3f253fb2693b6ae25` and GitHub release `v0.5.0`
+  (title only, with the changelog section as body like 0.4.1; not a draft or pre-release).
+- `publish.yml` run 46025302645: all jobs succeeded (build and smoke test, MCPB build, PyPI publish,
+  attach MCPB); the owner approved the `pypi` deployment.
+- PyPI files and SHA-256 (equal to the build log; the `mcp-name` marker is in the description; none yanked):
+  `wled_mcp-0.5.0-py3-none-any.whl` `3f2e1513a1424382596652f08e188c513e9558a34475b5a75b4c328005342868`;
+  `wled_mcp-0.5.0.tar.gz` `e38e75e3b71c03f7b70f42363e63c44e127825b04d5a96449a257a9251666cd6`.
+- `uvx --no-cache --isolated --python 3.13 --from wled-mcp==0.5.0 wled-mcp --version` printed `0.5.0`.
+- MCPB: `wled-mcp-0.5.0.mcpb` SHA-256
+  `6ba0dad4434de3dfdf1ef9daf6efc17536c5e2384aca65663ee71e7420ae70bf` with its `.sha256` on the release; the
+  downloaded file hashes to the same value.
+- Registry: `mcp-publisher` 1.8.16 (`mcp-publisher_darwin_arm64.tar.gz` SHA-256
+  `5193b2c55627027cbda652ae8577aa3221fcff9ad743a011f830e81f361fa061` equal to the release's checksum file; the
+  newest release 1.8.17 was a few hours old and not used; the Sigstore bundle was not verified, `cosign` is
+  not installed); after the owner's device-code login the publish succeeded and the registry lists 0.2.0,
+  0.3.0, 0.4.0 and 0.4.1 (active) and 0.5.0 (active, latest, published 2026-11-27 15:32 UTC).
+
+### Limits
+
+Not run: Claude Desktop with the bundle, a real MCP client for tool groups and catalog resources (the
+token figures are heuristics, no client measurement), a hardware check of M9 (no write path changed), a
+deployment of 0.5.0 on the owner's target (a separate owner-gated step, DEC-026, DEC-037) and a rollback
+run. Closing the M9 milestone is left to the owner.
+
 ## Launch report: published release 0.3.0
 
 Evidence for [#25](https://github.com/descipar/wled-mcp/issues/25) (S2-LAUNCH-01, S2-LAUNCH-02,
