@@ -218,6 +218,13 @@ new numbers: a deliberate update of test and table, as for the tool budget.
 `layout` (two segment-schema tools) is the second-largest cost for its tool count; splitting or
 slimming them is a separate issue (#290).
 
+## Resources
+
+MCP resources ([resources.md](resources.md), #258) have no class or group. A catalog resource is
+registered exactly when its read tool is (`wled_list_devices`, `wled_get_effects`,
+`wled_get_palettes`: all `core` and `read`), so a profile or group selection that removes the tool
+removes the resource. The token-cost table above is unaffected: resources add nothing to `tools/list`.
+
 ## Enforcement
 
 Three layers, all in the server process, none depending on the client:
