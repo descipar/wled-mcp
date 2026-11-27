@@ -678,7 +678,7 @@ outside this baseline. Ownership: #14 implements HTTP/access/lifecycle; #10 veri
 - [explain](contract/explain.md): `wled_explain_lighting`, evidence allowlist, cause codes (#30).
 - [zones](contract/zones.md): named lighting zones and the existing-segments policy (#27).
 - [groups-scenes](contract/groups-scenes.md): device groups, scenes, plan, apply and sharing (#17).
-- [per-endpoint-tool-sets](contract/per-endpoint-tool-sets.md): proposed design, not implemented (#237).
+- [per-endpoint-tool-sets](contract/per-endpoint-tool-sets.md): accepted target design, not implemented and not scheduled in M9 (#237).
 - [layout-preview](contract/layout-preview.md): `wled_preview_layout`, the static SVG and its security rules (#29).
 - [live-snapshot](contract/live-snapshot.md): bounded sampled LED observations (#150).
 - [mcpb-bundle](contract/mcpb-bundle.md): the Claude Desktop MCPB bundle, manifest and release flow (DIST-04, #151).

@@ -146,8 +146,10 @@ Code references are to the merged `main` at 5879a4c.
 
 ## Recommendation and migration (Q4)
 
-Recommendation (proposed): adopt C, the per-endpoint design. Implement the design as one follow-up issue in M9 or Backlog,
-only after the owner accepts. Rationale: the main use case needs more than one writer, which several
+Decision ([ISSUE-237-DEC-001](../decisions/m7-m8.md), accepted 2026-11-27 as a delegated decision of
+the main session under the owner's delegation): adopt C, the per-endpoint design, as the target design.
+It is not scheduled for implementation in M9; a spike (open points 5 and 6) comes first, then
+implementation issues in Backlog or a later milestone. Rationale: the main use case needs more than one writer, which several
 instances cannot do within the documented rule, and a hub-side filter is no enforcement; the cost is
 bounded (one config table, one guard change, per-endpoint server construction).
 
@@ -168,17 +170,17 @@ additive key per DEC-020).
 Cost reference: [profiles.md](profiles.md#token-cost) (core 8 tools 3168 tokens against about 17975
 for all groups in `full`; core plus presets 7199 in `full`, 3965 in `control`); not re-measured here.
 
-Follow-up implementation issues to propose after acceptance (not created here): (1) configuration,
+Follow-up issues after the spike (not created yet; opening them is a separate step): (1) configuration,
 guard, per-endpoint server and tests including cross-path credential cases (another endpoint's credential, the default credential on an unknown `/mcp/<x>`, a narrow credential on `/mcp`, any credential on an unknown path: all the same 401); (2) status, monitor and
 evidence per endpoint, and docs.
 
-## Open points for the owner and the spike
+## Open points and the spike
 
-1. Adopt C, defer with A as the supported pattern, or reject.
-2. Startup error versus clamp for an endpoint above the process ceiling (error proposed).
-3. Evidence naming: class-level label for tools outside the reading endpoint (proposed) versus
-   per-endpoint stores.
-4. Maximum endpoint count (8 proposed) and name rules.
+Settled by ISSUE-237-DEC-001 (2026-11-27): (1) adopt C as the target design; (2) startup error, not a
+clamp, for an endpoint above the process ceiling; (3) class-level label for tools outside the reading
+endpoint, not per-endpoint stores; (4) at most 8 endpoints, lower-case names of at most 32 characters.
+Still open for the spike:
+
 5. Spike: composed SDK lifespans, per-endpoint server construction cost, and the constant-time
    guard shape; none of these is verified yet.
 6. Hub-side selection (B in Q2) was not verified for the deployed hub build.
