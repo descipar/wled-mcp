@@ -9,6 +9,12 @@ this file. Fixes are made for the latest release only. See
 
 ### Added
 
+- **MCP resources for catalogs (#258).** `wled://devices` and the templates
+  `wled://devices/{controller}/effects` and `.../palettes` return the same data as
+  `wled_list_devices`, `wled_get_effects` and `wled_get_palettes` with default arguments, read-only, from
+  the same cache. A resource is registered exactly when its tool is (profile and tool groups); a failed
+  read is a JSON-RPC error carrying the tool's structured error. The served tool list is unchanged. See
+  [resources](docs/contract/resources.md).
 - **Tool groups (#236).** The optional `tool_groups` key of the `[access]` table and the
   `wled-mcp serve --tool-groups` option register only the selected groups' tools within the access
   profile (default `all`, `core` always served), which cuts the tokens of the served tool list. Servers

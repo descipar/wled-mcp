@@ -142,9 +142,9 @@ owning issue for planned rows and the decision for excluded rows.
 
 | ID | Feature | WLED key / route | Status | Delivered by | Link | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| W-CAT-01 | Effect list | `/json/eff` | supported | `wled_get_effects` | - | Cached per firmware. |
-| W-CAT-02 | Effect metadata | `/json/fxdata` | supported | `wled_get_effects` | - | Raw and leniently parsed labels, palette selector, flags and defaults; ID-preserving filters. One read-only live probe on one controller (#148). |
-| W-CAT-03 | Palette list | `/json/pal` | supported | `wled_get_palettes` | - | Built-in and gradient palettes; WLED does not list custom palettes there. |
+| W-CAT-01 | Effect list | `/json/eff` | supported | `wled_get_effects` | - | Cached per firmware; also the resource `wled://devices/{controller}/effects` (#258). |
+| W-CAT-02 | Effect metadata | `/json/fxdata` | supported | `wled_get_effects` | - | Raw and leniently parsed labels, palette selector, flags and defaults; ID-preserving filters; also the resource `wled://devices/{controller}/effects` (#258). One read-only live probe on one controller (#148). |
+| W-CAT-03 | Palette list | `/json/pal` | supported | `wled_get_palettes` | - | Built-in and gradient palettes; WLED does not list custom palettes there. Also the resource `wled://devices/{controller}/palettes` (#258). |
 | W-CAT-04 | Palette color data | `/json/palx` | unplanned | - | - | - |
 | W-CAT-05 | Custom palette upload | `/upload` (`palette<n>.json`) | excluded | - | [ISSUE-13-DEC-001](decisions/stage-1.md#issue-13-dec-001--shouldlater-scope-for-stage-1) | ADV-02 "filesystem uploads", applied to palette files by ISSUE-94-DEC-001. |
 | W-CAT-06 | Custom palette removal | `rmcpal` | unplanned | - | - | - |
