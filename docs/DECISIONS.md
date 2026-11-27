@@ -720,8 +720,11 @@ delegated decision (not a human decision). Details are in the linked files.
   [ISSUE-202-DEC-001](decisions/m7-m8.md); [ISSUE-203-DEC-001](decisions/m7-m8.md);
   all coordinator technical proposals, not human decisions.
 - M9: [ISSUE-236-DEC-001](decisions/m7-m8.md) (tool groups, owner accepted);
-  [ISSUE-258-DEC-001](decisions/m7-m8.md) (coordinator under the owner's instruction, catalog
-  resources; owner reviews at merge).
+  [ISSUE-258-DEC-001](decisions/m7-m8.md) (catalog resources; accepted, delegated decision of the
+  main session under the owner's delegation, 2026-11-27).
+- M9 (design): [ISSUE-237-DEC-001](decisions/m7-m8.md) (accepted, delegated decision of the main
+  session under the owner's delegation, 2026-11-27: design C, per-endpoint tool sets over HTTP, is
+  the target design; implementation not scheduled in M9, a spike comes first).
 
 ## Still unresolved
 

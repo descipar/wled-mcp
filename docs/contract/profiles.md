@@ -157,7 +157,7 @@ write the inventory.
 - A client that caches `tools/list` sees the new list after a restart as for a profile change; no
   notification is sent. An older server rejects the key as `access: unsupported field` (exit 2,
   fail-closed; [versioning.md](versioning.md#migration-notes)).
-- Not in scope: per-endpoint or per-client tool sets (#237), runtime enable and disable, per-tool
+- Not in scope: per-endpoint or per-client tool sets (#237; accepted target design, not implemented, in [per-endpoint-tool-sets.md](per-endpoint-tool-sets.md)), runtime enable and disable, per-tool
   selection, a reload, group-level device ceilings.
 
 Examples (the configuration blocks are validated by `tests/test_tool_groups_docs.py`; place
